@@ -1,9 +1,9 @@
 {
-  "fingerprint": "ed3dfaf8b909b6dfae57c7de137a4ae3d0679055d49a78f63b9bcb11283fb14d",
+  "fingerprint": "524a46317dbb3d7f0d317a4cbc729708cf1d06a39b90b338323dcd7b9ed3e52a",
   "files": [
     {
       "path": ".env.example",
-      "sha256": "92948f5490e06794b4083bd67c857e615e4072f15987a4e76e82b5e52d8e6423"
+      "sha256": "78fd8c86482fe1e05172a2d1b2ea472e5eb4cb73f26f4b94013f9d5e15f66451"
     },
     {
       "path": ".gitattributes",
@@ -31,11 +31,11 @@
     },
     {
       "path": "apps/api/src/auth.ts",
-      "sha256": "03aebdb56980531c3d543edb107018550f19ec3f3c260a69bae1c9fdff9dfb89"
+      "sha256": "073d23473a3c017ad1abadb59e0b547bf55047eb5d4858a19302de29079f40c0"
     },
     {
       "path": "apps/api/src/config.ts",
-      "sha256": "47a6794d10400a9de3bfef7869fbada9f56dc3abe0e793823224e41fc705d62f"
+      "sha256": "6d73f5b5ad8274106ee4fc19687e6aea01334136cacf6b3270359c897321be6c"
     },
     {
       "path": "apps/api/src/crypto.ts",
@@ -47,11 +47,19 @@
     },
     {
       "path": "apps/api/src/db.ts",
-      "sha256": "ec3c0b44d1b45c1215b215c770187b3398135a97d985ea5c4ce2bc82d0779916"
+      "sha256": "7590fd377e5a33b67a02207014ce1bdffb6523f520ff8a553fea256b93241568"
     },
     {
       "path": "apps/api/src/errors.ts",
       "sha256": "e942bc102d480f4b45dc7cca2fe7a608cf676e94467a921dabc25ebd129f7073"
+    },
+    {
+      "path": "apps/api/src/mail/mailer.ts",
+      "sha256": "13d0debd3abd3faf68c8c21fb6d6662c34b66add22298c04091303bbeac7adbe"
+    },
+    {
+      "path": "apps/api/src/mail/templates.ts",
+      "sha256": "02736630be361e0552cc82d41f9b6d3069431fa3ee2a5ebd2abd784487f6e292"
     },
     {
       "path": "apps/api/src/main.ts",
@@ -107,7 +115,7 @@
     },
     {
       "path": "apps/api/src/modules/provisioning.ts",
-      "sha256": "79ab3f0796356aa4c8b46c9be64cf6983b309db1e62a6f4f119615f344aab489"
+      "sha256": "6990d97669c95195e74e426097401eafd9274fc4eff4478195628dba050b4cbb"
     },
     {
       "path": "apps/api/src/modules/reporting.ts",
@@ -135,11 +143,11 @@
     },
     {
       "path": "apps/api/src/outbox.ts",
-      "sha256": "ae99b2dfee3d3d5961530ef2130164d5f1519ba1e3504da51337cab8c11779d3"
+      "sha256": "1dd2cd80c7a45d63ed75884441ac43e0ae16035ab518546f19b72938dcf8b9e3"
     },
     {
       "path": "apps/api/src/password-auth.ts",
-      "sha256": "1b2cd442685ded6986f5712d93aaa9bdc62caac234b4eac24e47225c26f0cdd9"
+      "sha256": "fae523db27dcb46d60e674fa2364a8ac79f49fbf990e972744465e34c08941d2"
     },
     {
       "path": "apps/api/src/passwords.ts",
@@ -155,7 +163,7 @@
     },
     {
       "path": "apps/api/src/server.ts",
-      "sha256": "c736107b474b36c9353d3ad762bfa64cc4b5a0cad98258df38be1507a96028a7"
+      "sha256": "f9d79d8e4d4f07f77bef5d14d3987a87434de4b1f2cc04f9cb12b76a5fe7b615"
     },
     {
       "path": "apps/web/index.html",
@@ -195,7 +203,7 @@
     },
     {
       "path": "apps/web/src/api.ts",
-      "sha256": "55fe3cc4c0a4eeaf41d2ba957e60c62e6204012ebab0c1d58577f1e7b825e12c"
+      "sha256": "c3a1422fc1cc68d1f7499d49c4dfa33c44cacaa2f535c1c7571b892e686cbab8"
     },
     {
       "path": "apps/web/src/controls/ColorPicker.tsx",
@@ -247,7 +255,7 @@
     },
     {
       "path": "apps/web/src/features/Auth.tsx",
-      "sha256": "8e6a5a04b0b411b7286d1461889d07ff05f521ecb71506b70854d4882ed3eaa6"
+      "sha256": "17450df7f3289b3ca66a91b2c21369ffd1a0eec904d9cd959c84a0d111e6855b"
     },
     {
       "path": "apps/web/src/features/Branches.tsx",
@@ -267,11 +275,11 @@
     },
     {
       "path": "apps/web/src/features/CustomerOutreach.tsx",
-      "sha256": "b7e92281edcfc2a7ddd86154ac26ef58be7d281d0fd56cb45dc8ee713c1a11aa"
+      "sha256": "957197458a0fdecdeb48db22cc4521bbc580fe842b71904c91ee1ecb259bafe8"
     },
     {
       "path": "apps/web/src/features/CustomerPage.tsx",
-      "sha256": "7c51896d1147548185ab8c451081ff33ec27eaacd2d9a95c9fd1ab36f9e7bfc5"
+      "sha256": "d4c72ab8d5dd9ac90c93affc085f4dcc23a97143ba6b8a720b0510bc39f8f2f7"
     },
     {
       "path": "apps/web/src/features/Customers.tsx",
@@ -362,6 +370,10 @@
       "sha256": "39d2336f159a6d8a0dcb90ce6782715fb8a47e5df901ac1ae64a9f3003984591"
     },
     {
+      "path": "apps/worker/src/auth-mail.ts",
+      "sha256": "154648472771e6d6b424ec03eb6d58f18d692cc83b5e352dd50c73dcb9189328"
+    },
+    {
       "path": "apps/worker/src/export-cleanup.ts",
       "sha256": "817b2a1588d382bf6fc8ec0e81a0158429bfd511e0d94cdd653d41c729ec6444"
     },
@@ -371,11 +383,11 @@
     },
     {
       "path": "apps/worker/src/runner.ts",
-      "sha256": "dc04b689d72fb2a772860b62907e812574ec36988e1b011099a1d6b12a934483"
+      "sha256": "5da02d9d1747bfff0919c5d4461dd4ecfa4e03f96470435cc56933a44fce694d"
     },
     {
       "path": "db/migrate.ts",
-      "sha256": "e2920293b7d795dc867e537b21636d6a5fc6ef9525d627893b866505baa4d783"
+      "sha256": "9052ec77650dadcca644eb9877e4cdf7e49e5fe40d6dd19ffb5e2e423677b54b"
     },
     {
       "path": "db/migrations/001_foundations.sql",
@@ -506,6 +518,10 @@
       "sha256": "4f6927c477bc78bf414ffe7b348b91687f5aee90aa8afeee6eb97788ba06c909"
     },
     {
+      "path": "db/migrations/009u_durable_auth_mail.sql",
+      "sha256": "5c73b416a9d9860897b543a9910b1c0653adfa2fde52056a34120a66d37769a3"
+    },
+    {
       "path": "db/seed.ts",
       "sha256": "8ba8da5880dcd6fcd95228474ff52db4bb563d87cec60392105899f16bee9100"
     },
@@ -515,11 +531,11 @@
     },
     {
       "path": "package-lock.json",
-      "sha256": "746f6fce151d7e25b4120ca6beb62b71239c860aacf326fb3fbc500b09e31f6f"
+      "sha256": "614f17d3bd02882286c29f59f9363cefff7cdd1009460c762ff0b25a358d63c3"
     },
     {
       "path": "package.json",
-      "sha256": "bf1d2034c01f197b0036660415d2c9f41b11c5e62b7a949df60f27fd9f6fbf7f"
+      "sha256": "73b65c200323af60fb925b78d507c61076ae032a209533c7d47f135839b6fb84"
     },
     {
       "path": "packages/contracts/package.json",
@@ -582,6 +598,10 @@
       "sha256": "574e38ee7773fc20009bbdb98dfe73d509dbbabaf0a503125b07c06ed4719507"
     },
     {
+      "path": "tests/fixtures/mail-templates.json",
+      "sha256": "7b9e3414299bb4f1fadd9f5859ec99bd01620c559b65c996b6e8c52415812031"
+    },
+    {
       "path": "tests/helpers.ts",
       "sha256": "3a7af62901c839cdde0057b5bfcf3c70f59c066cc60885d3133af0a2ecf8caa3"
     },
@@ -614,6 +634,10 @@
       "sha256": "e59b7512951195f282d9c07c6bde27202d9fd52af627add332d2e0388990096a"
     },
     {
+      "path": "tests/integration/mail.test.ts",
+      "sha256": "80b537a49f30c0e9451b36843ddd7674c6b958c781219f2f59ce1de547ed6ab4"
+    },
+    {
       "path": "tests/integration/materials.test.ts",
       "sha256": "84ac844ecf50f87e14f5ee658f7722c05816ba1108274567e67068fca879ebf9"
     },
@@ -627,7 +651,7 @@
     },
     {
       "path": "tests/integration/passwords.test.ts",
-      "sha256": "60ce9f333485f629a48037f2c80866f7adfb90b3855d4b82917e0216929cde05"
+      "sha256": "2858e4cd5124899a23af797c4e65e6ce8ef0bf18d2f46e52523aca60a4fd8adf"
     },
     {
       "path": "tests/integration/platform-team.test.ts",
@@ -643,7 +667,7 @@
     },
     {
       "path": "tests/integration/production-auth.test.ts",
-      "sha256": "4c7fb7053722ea3399fffa53506b9337c575b42b6ac256812461f23ebc8771d8"
+      "sha256": "9bb9245781c7997b910a77da0e669602f88f978b18161ddb4d9d36b4da64f587"
     },
     {
       "path": "tests/integration/programs.test.ts",
@@ -686,6 +710,10 @@
       "sha256": "83afed24fda740e7090ec50e49d3834fa3466fb621e42dda0d0f2d0e8caf5775"
     },
     {
+      "path": "tests/unit/mail.test.ts",
+      "sha256": "714ea679d2900c17d5f68521036783ba57e43c67556bf185677e65e103df7da6"
+    },
+    {
       "path": "tests/unit/passwords.test.ts",
       "sha256": "a365ffdfab75027e5390b55cbc5801eae6b133646f5b7360bc421d9d130e0349"
     },
@@ -695,7 +723,7 @@
     },
     {
       "path": "tests/unit/security.test.ts",
-      "sha256": "1b7496e48ab1c2442b10201a7cf0893c8c3ee915d0c93118dfb6ef2438ddc2eb"
+      "sha256": "226259965190b85f476cb60f87777c41c4e84b27f99cf7131a7adfa73251d745"
     },
     {
       "path": "tools/audit/browser-journeys.cjs",
@@ -719,7 +747,7 @@
     },
     {
       "path": "tools/dev.ts",
-      "sha256": "b167b4b922935ecd962787f04138f5299de5788db2eee282d43d547cf91cc759"
+      "sha256": "1b7153f17854f8876efaeb7ce994b18f81de2dd5a62d49f42b83f11664d682a5"
     },
     {
       "path": "tools/env-check.ts",
@@ -751,7 +779,7 @@
     },
     {
       "path": "tools/run-integration.ts",
-      "sha256": "63aeb8bdbb68a99896cb4e7a9b076ba08324fd1f9246aed541a7625a58462201"
+      "sha256": "d9de31ea66a4286108d6f16e633d8552464db6894b152913ee8e49f4b477e411"
     },
     {
       "path": "tools/serve-demo.cjs",
@@ -759,7 +787,7 @@
     },
     {
       "path": "tools/test-e2e.ts",
-      "sha256": "50e207f21242c82a9ff18e61439cd265433438ed3d27edc7c19cf86e1cbee346"
+      "sha256": "8e8adfc285c447983f1c9aa1c3d7320012d501aa5f4c1ed3c0366aa6c7dcfdd5"
     },
     {
       "path": "tools/test-manual-demo.ts",
@@ -771,7 +799,7 @@
     },
     {
       "path": "tools/verify-implementation.ts",
-      "sha256": "f56c5ad847bf254ba50cf8828489ba6edf0bb410787c4f6d9f484d0a3edf651f"
+      "sha256": "3652b2940b75abe6bbf250c7449fa2e0408030f734d4dfba9f427e7fb65fdc3e"
     },
     {
       "path": "tsconfig.json",

@@ -7,7 +7,7 @@ import { mfaModule } from './mfa.js';
 import { type Actor, type Pools, transaction } from './db.js';
 import { keyedHash, opaqueToken, otpCode, safeEqual, tokenHash } from './crypto.js';
 import { requireCondition } from './errors.js';
-import { readdir, readFile } from 'node:fs/promises';
+import { readLocalMailbox } from './mail/mailer.js';
 declare module 'fastify' {
   interface FastifyRequest {
     actor: Actor | null;
@@ -53,7 +53,7 @@ export function authModule(app: FastifyInstance, pools: Pools, c: Config) {
     const raw = req.cookies[cookieName];
     if (!raw) return;
     const s = await pools.authPool.query(
-      'SELECT u.id,u.email,u.global_role,u.status,s.id AS session_id,s.csrf_hash,s.mfa_at,s.auth_method,s.expires_at,s.created_at,s.portal,password_session_portal(u.id) AS current_portal FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token_hash=$1 AND s.revoked_at IS NULL AND s.expires_at>now() AND s.credential_version=u.password_version',
+      'SELECT u.id,u.email,u.global_role,u.status,u.preferred_locale,s.id AS session_id,s.csrf_hash,s.mfa_at,s.auth_method,s.expires_at,s.created_at,s.portal,password_session_portal(u.id) AS current_portal FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token_hash=$1 AND s.revoked_at IS NULL AND s.expires_at>now() AND s.credential_version=u.password_version',
       [tokenHash(raw)],
     );
     const row = s.rows[0];
@@ -88,6 +88,7 @@ export function authModule(app: FastifyInstance, pools: Pools, c: Config) {
       sessionId: row.session_id,
       mfaAt: row.mfa_at,
       authMethod: row.auth_method,
+      locale: row.preferred_locale,
       mfaRequired: deployed(c) && ['platform_admin', 'platform_support'].includes(row.global_role),
       csrfHash: row.csrf_hash,
     };
@@ -197,21 +198,8 @@ export function authModule(app: FastifyInstance, pools: Pools, c: Config) {
     }
     return { csrfToken: csrf, portal };
   }
-  passwordAuth(
-    app,
-    pools,
-    c,
-    (reply, id, version) => issue(reply, id, false, 8 * 60 * 60, 'password', version),
-    (id, email, token, expiresAt) => {
-      if (c.AUTH_PROVIDER !== 'local' || !['development', 'test'].includes(c.APP_ENV)) return;
-      localMail.set(id, {
-        id,
-        to: email,
-        link: c.PUBLIC_APP_ORIGIN + '/reset-password/' + token,
-        expiresAt,
-        createdAt: new Date().toISOString(),
-      });
-    },
+  passwordAuth(app, pools, c, (reply, id, version) =>
+    issue(reply, id, false, 8 * 60 * 60, 'password', version),
   );
   app.post(
     '/api/v1/auth/challenges',
@@ -299,11 +287,16 @@ export function authModule(app: FastifyInstance, pools: Pools, c: Config) {
   app.get('/api/v1/auth/config', async () => ({
     provider: c.AUTH_PROVIDER,
     loginMethod: 'password',
-    localMailAvailable: c.AUTH_PROVIDER === 'local' && ['development', 'test'].includes(c.APP_ENV),
+    localMailAvailable:
+      c.AUTH_PROVIDER === 'local' &&
+      c.MAIL_TRANSPORT === 'file' &&
+      ['development', 'test'].includes(c.APP_ENV),
   }));
   app.get('/api/v1/local/mail', async (req) => {
     requireCondition(
-      c.AUTH_PROVIDER === 'local' && ['development', 'test'].includes(c.APP_ENV),
+      c.AUTH_PROVIDER === 'local' &&
+        c.MAIL_TRANSPORT === 'file' &&
+        ['development', 'test'].includes(c.APP_ENV),
       'NOT_FOUND',
       404,
     );
@@ -311,16 +304,7 @@ export function authModule(app: FastifyInstance, pools: Pools, c: Config) {
     const messages: Record<string, unknown>[] = [...localMail.values()].filter(
       (m) => Date.parse(m.expiresAt) > Date.now(),
     );
-    try {
-      for (const file of (await readdir('.local/mail'))
-        .filter((f) => /^[0-9a-f-]{36}\.json$/.test(f))
-        .slice(-30))
-        messages.push(
-          JSON.parse(await readFile('.local/mail/' + file, 'utf8')) as Record<string, unknown>,
-        );
-    } catch {
-      /* no local invitation mail yet */
-    }
+    messages.push(...(await readLocalMailbox(c)));
     return {
       environment: c.APP_ENV,
       warning: 'Local development mail only. Never available in deployed environments.',

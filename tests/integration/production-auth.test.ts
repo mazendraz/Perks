@@ -16,6 +16,12 @@ const { app } = await buildApp({
   AUTH_PROVIDER: 'password',
   COOKIE_SECURE: 'true',
   PUBLIC_APP_ORIGIN: origin,
+  MAIL_TRANSPORT: 'smtp',
+  SMTP_HOST: 'localhost',
+  SMTP_PORT: 587,
+  SMTP_USER: 'production-fixture',
+  SMTP_PASS: 'no-real-provider',
+  SMTP_FROM: 'fixture@nuqta.test',
   LOG_LEVEL: 'silent',
 });
 const password = 'A production test phrase 2026!';

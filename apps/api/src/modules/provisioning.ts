@@ -46,7 +46,11 @@ async function invitation(
     merchantId,
     eventType: 'staff.invited',
     aggregateId: inv.id,
-    payload: { email: p.email, encryptedToken: seal(token, c.AUTH_PEPPER) },
+    payload: {
+      email: p.email,
+      encryptedToken: seal(token, c.AUTH_PEPPER),
+      locale: actor.locale || 'ar',
+    },
     dedupeKey: 'invite:' + inv.id + ':1',
     kind: 'invitation_email',
   });
@@ -568,7 +572,11 @@ export function provisioningModule(app: FastifyInstance, pools: Pools, c: Config
               eventType: 'staff.invited',
               aggregateId: id,
               revision,
-              payload: { email: inv.email, encryptedToken: seal(token, c.AUTH_PEPPER) },
+              payload: {
+                email: inv.email,
+                encryptedToken: seal(token, c.AUTH_PEPPER),
+                locale: actor.locale || 'ar',
+              },
               dedupeKey: 'invite:' + id + ':' + revision,
               kind: 'invitation_email',
             });

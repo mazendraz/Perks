@@ -2,7 +2,7 @@ import { PhoneInput } from '../controls/PhoneInput.js';
 import { CustomerContact } from './CustomerOutreach.js';
 import { FieldErrors, fieldProps } from '../FieldErrors.js';
 import { CustomerRequests } from './StampRequests.js';
-import { useEffect, useState, type FormEvent, type CSSProperties } from 'react';
+import { useEffect, useState, useRef, type FormEvent, type CSSProperties } from 'react';
 import type {
   Language,
   Session,
@@ -311,6 +311,8 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
     [busy, setBusy] = useState(false),
     [tab, setTab] = useState<'card' | 'history' | 'preferences'>('card'),
     [preferences, setPreferences] = useState<{ channel: string; granted: boolean }[]>([]);
+  const preferenceGeneration = useRef(0);
+  const [loadingPreferences, setLoadingPreferences] = useState(false);
   const load = async () => {
     try {
       const list = await api<{ cards: SavedCard[] }>('/me/memberships');
@@ -335,6 +337,9 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
   useEffect(() => {
     setQr(null);
     setTab('card');
+    preferenceGeneration.current++;
+    setPreferences([]);
+    setLoadingPreferences(false);
     void load();
     const iv = setInterval(() => {
       if (!document.hidden) void load();
@@ -374,17 +379,24 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
       setBusy(false);
     }
   };
-  const preferenceTab = async () => {
+  const refreshPreferences = async () => {
     if (!card) return;
-    setTab('preferences');
+    const generation = ++preferenceGeneration.current;
+    setLoadingPreferences(true);
     try {
       const r = await api<{ preferences: typeof preferences }>(
         '/me/merchants/' + card.merchant_id + '/preferences',
       );
-      setPreferences(r.preferences);
+      if (generation === preferenceGeneration.current) setPreferences(r.preferences);
     } catch (e) {
-      setError(errorText(e, lang));
+      if (generation === preferenceGeneration.current) setError(errorText(e, lang));
+    } finally {
+      if (generation === preferenceGeneration.current) setLoadingPreferences(false);
     }
+  };
+  const preferenceTab = async () => {
+    setTab('preferences');
+    await refreshPreferences();
   };
   const updatePreference = async (channel: string, granted: boolean) => {
     if (!card) return;
@@ -648,16 +660,19 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
                       : 'Consent is optional and can be withdrawn anytime. Delivery depends on channel availability.'}
                   </p>
                   <CustomerContact
+                    key={card.merchant_id}
                     merchantId={card.merchant_id}
                     lang={lang}
-                    onSaved={async () => {
-                      setPreferences(
-                        (
-                          await api<{ preferences: typeof preferences }>(
-                            '/me/merchants/' + card.merchant_id + '/preferences',
-                          )
-                        ).preferences,
-                      );
+                    onSaved={async (reset) => {
+                      if (reset)
+                        setPreferences((current) =>
+                          current.map((preference) =>
+                            preference.channel === 'whatsapp'
+                              ? { ...preference, granted: false }
+                              : preference,
+                          ),
+                        );
+                      await refreshPreferences();
                     }}
                   />
                   {preferences.map((p) => (
@@ -665,7 +680,7 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
                       <input
                         type="checkbox"
                         checked={p.granted}
-                        disabled={busy}
+                        disabled={busy || loadingPreferences}
                         aria-busy={busy}
                         onChange={(e) => void updatePreference(p.channel, e.target.checked)}
                       />

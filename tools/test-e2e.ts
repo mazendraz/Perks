@@ -1183,8 +1183,21 @@ try {
   ok(
     'A consented customer WhatsApp draft uses the stored number and stays a reviewable draft without sending',
   );
+  let contactReadReleased!: () => void;
+  const pendingContactRead = new Promise<void>((resolve) => {
+    contactReadReleased = resolve;
+  });
+  await up.route('**/api/v1/me/merchants/*/contact', async (route) => {
+    const response = await route.fetch();
+    await pendingContactRead;
+    await route.fulfill({ response });
+  });
   await up.getByRole('button', { name: 'Preferences', exact: true }).click();
+  await up.locator('input[type=tel]').waitFor();
+  assert.equal(await up.locator('input[type=tel]').isDisabled(), true);
+  contactReadReleased();
   await up.locator('input[type=tel]').fill('+15555550102');
+  await up.unroute('**/api/v1/me/merchants/*/contact');
   await up.getByRole('button', { name: 'Save number', exact: true }).click();
   await up.getByRole('status').filter({ hasText: 'Number saved.' }).waitFor();
   await up.waitForFunction(() => {
@@ -1441,6 +1454,34 @@ try {
   await up.waitForURL('**/login');
   await up.locator('input[type=email]').waitFor();
   ok('Expired authenticated session returns to sign-in without discarding server card state');
+  await navigateTo(up, '/login?dev=1');
+  if ((await up.locator('html').getAttribute('lang')) === 'ar')
+    await up.getByRole('button', { name: 'English', exact: true }).click();
+  await up.getByRole('button', { name: 'Forgot password?', exact: true }).click();
+  await up.getByLabel('Email', { exact: true }).fill(email('customer'));
+  await up.getByRole('button', { name: 'Send recovery link', exact: true }).click();
+  await up.getByRole('status').filter({ hasText: 'If the account exists' }).waitFor();
+  for (let i = 0; i < 200 && (await runOne(worker, c)); i++) {
+    /* Local-only durable mailbox dispatch. */
+  }
+  await up.locator('.local-inbox summary').click();
+  await up.getByRole('button', { name: 'Open local mailbox', exact: true }).click();
+  const resetEmail = up.locator('.mailbox > div').filter({ hasText: email('customer') });
+  await resetEmail.getByRole('link', { name: 'Choose a new password', exact: true }).click();
+  const recoveredPassword = 'Recovered-' + randomBytes(14).toString('hex');
+  await up.getByLabel('New password', { exact: true }).fill(recoveredPassword);
+  await up.getByLabel('Confirm password', { exact: true }).fill(recoveredPassword);
+  await up.getByRole('button', { name: 'Save password', exact: true }).click();
+  await up.getByRole('status').filter({ hasText: 'Password saved' }).waitFor();
+  await up.getByRole('button', { name: 'Sign in', exact: true }).click();
+  await up.locator('input[type=email]').waitFor();
+  await login(up, email('customer'), '/login', true, recoveredPassword);
+  await up.waitForURL('**/customer');
+  await up.locator('.loyalty-card').first().waitFor();
+  ok(
+    'Forgot password dispatches through the durable worker mailbox; the real recovery link opens the reset screen and the new password restores existing customer cards',
+  );
+  assert.deepEqual(errors, []);
   await writeFile(
     evidence + '/browser.json',
     JSON.stringify(
@@ -1476,7 +1517,9 @@ try {
     }
   console.error(
     'Browser verification failed:',
-    e instanceof Error ? e.message.replace(/\/invite\/[^\s]+/g, '/invite/[redacted]') : 'Unknown',
+    e instanceof Error
+      ? e.message.replace(/\/(invite|reset-password)\/[^\s]+/g, '/$1/[redacted]')
+      : 'Unknown',
   );
   if (e instanceof Error)
     console.error(e.stack?.split('\n').find((line) => line.includes('test-e2e.ts:')) || '');

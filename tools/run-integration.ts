@@ -2,6 +2,9 @@ import { spawnSync } from 'node:child_process';
 import pg from 'pg';
 import { readConfig } from '../apps/api/src/config.js';
 const c = readConfig();
+const requestedFiles = process.argv.slice(2);
+if (requestedFiles.some((file) => !/^[a-z0-9-]+\.test\.ts$/.test(file)))
+  throw new Error('Pass integration test basenames only.');
 if (!c.DATABASE_MIGRATOR_URL)
   throw new Error('A migration connection is required for isolated integration tests.');
 const database = 'nuqta_test_' + Date.now();
@@ -28,7 +31,15 @@ const env = {
 try {
   for (const args of [
     ['--import', 'tsx', 'db/migrate.ts'],
-    ['--import', 'tsx', '--test', '--test-concurrency=1', 'tests/integration/*.test.ts'],
+    [
+      '--import',
+      'tsx',
+      '--test',
+      '--test-concurrency=1',
+      ...(requestedFiles.length
+        ? requestedFiles.map((file) => 'tests/integration/' + file)
+        : ['tests/integration/*.test.ts']),
+    ],
   ]) {
     const result = spawnSync(process.execPath, args, { stdio: 'inherit', env, windowsHide: true });
     if (result.status !== 0) {

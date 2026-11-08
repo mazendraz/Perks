@@ -7,6 +7,7 @@ import { requireCondition } from './errors.js';
 import { keyedHash, opaqueToken, tokenHash } from './crypto.js';
 import { setTimeout } from 'node:timers/promises';
 import { hashPassword, verifyPassword } from './passwords.js';
+import { seal } from './outbox.js';
 import {
   loginInput,
   registerInput,
@@ -16,13 +17,7 @@ import {
 } from '../../../packages/contracts/src/auth.js';
 
 type Issue = (reply: FastifyReply, id: string, version: number) => Promise<{ csrfToken: string }>;
-export function passwordAuth(
-  app: FastifyInstance,
-  pools: Pools,
-  c: Config,
-  issue: Issue,
-  resetMail: (id: string, email: string, token: string, expiresAt: string) => void,
-) {
+export function passwordAuth(app: FastifyInstance, pools: Pools, c: Config, issue: Issue) {
   const enabled = () => requireCondition(passwordEnabled(c), 'PASSWORD_AUTH_NOT_CONFIGURED', 503);
   app.post(
     '/api/v1/auth/login',
@@ -90,6 +85,9 @@ export function passwordAuth(
           p.email,
           ipHash,
         ]);
+        const locale = req.headers['x-nuqta-language'];
+        if (locale === 'ar' || locale === 'en')
+          await db.query('UPDATE users SET preferred_locale=$2 WHERE id=$1', [u.id, locale]);
         return { user: u, delayMs: 0 };
       });
       if (result.delayMs) await setTimeout(result.delayMs);
@@ -109,8 +107,13 @@ export function passwordAuth(
       const hash = await hashPassword(p.password, c.AUTH_PEPPER);
       const user = (
         await pools.authPool.query(
-          'INSERT INTO users(email,display_name,password_hash,password_version) VALUES($1,$2,$3,1) ON CONFLICT(email) DO NOTHING RETURNING id,password_version',
-          [p.email, p.displayName || p.email.split('@')[0], hash],
+          'INSERT INTO users(email,display_name,password_hash,password_version,preferred_locale) VALUES($1,$2,$3,1,$4) ON CONFLICT(email) DO NOTHING RETURNING id,password_version',
+          [
+            p.email,
+            p.displayName || p.email.split('@')[0],
+            hash,
+            req.headers['x-nuqta-language'] === 'en' ? 'en' : 'ar',
+          ],
         )
       ).rows[0];
       requireCondition(user, 'ACCOUNT_UNAVAILABLE', 409);
@@ -169,13 +172,33 @@ export function passwordAuth(
       enabled();
       const p = resetRequestInput.parse(req.body),
         token = opaqueToken();
-      const row = (
-        await pools.authPool.query(
-          "INSERT INTO password_reset_tokens(user_id,token_hash,credential_version,expires_at) SELECT id,$2,password_version,clock_timestamp()+interval '30 minutes' FROM users WHERE email=$1 AND status='active' RETURNING id,expires_at",
-          [p.email, tokenHash(token)],
-        )
-      ).rows[0];
-      if (row) resetMail(row.id, p.email, token, row.expires_at.toISOString());
+      await transaction(pools.authPool, async (db) => {
+        const u = (
+          await db.query(
+            "SELECT id,password_version,preferred_locale FROM users WHERE email=$1 AND status='active' FOR SHARE",
+            [p.email],
+          )
+        ).rows[0];
+        if (!u) return;
+        const row = (
+          await db.query(
+            "INSERT INTO password_reset_tokens(user_id,token_hash,credential_version,expires_at) VALUES($1,$2,$3,clock_timestamp()+interval '30 minutes') RETURNING id,expires_at",
+            [u.id, tokenHash(token), u.password_version],
+          )
+        ).rows[0];
+        await db.query(
+          "INSERT INTO auth_mail_outbox(user_id,kind,reset_token_id,credential_version,payload,locale,dedupe_key,expires_at) VALUES($1,'password_reset',$2,$3,$4,$5,$6,$7)",
+          [
+            u.id,
+            row.id,
+            u.password_version,
+            { encryptedToken: seal(token, c.AUTH_PEPPER) },
+            u.preferred_locale,
+            'password-reset:' + row.id,
+            row.expires_at,
+          ],
+        );
+      });
       reply.code(202);
       return { accepted: true };
     },

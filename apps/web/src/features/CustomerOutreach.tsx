@@ -312,17 +312,30 @@ export function CustomerContact({
 }: {
   merchantId: string;
   lang: Language;
-  onSaved: () => Promise<void>;
+  onSaved: (whatsappConsentReset: boolean) => Promise<void>;
 }) {
   const ar = lang === 'ar',
     [phone, setPhone] = useState(''),
     [error, setError] = useState(''),
     [notice, setNotice] = useState(''),
-    [busy, setBusy] = useState(false);
+    [busy, setBusy] = useState(false),
+    [loading, setLoading] = useState(true);
   useEffect(() => {
+    let current = true;
+    setLoading(true);
     void api<{ contactPhone: string }>('/me/merchants/' + merchantId + '/contact')
-      .then((r) => setPhone(r.contactPhone))
-      .catch((e) => setError(errorText(e, lang)));
+      .then((r) => {
+        if (current) setPhone(r.contactPhone);
+      })
+      .catch((e) => {
+        if (current) setError(errorText(e, lang));
+      })
+      .finally(() => {
+        if (current) setLoading(false);
+      });
+    return () => {
+      current = false;
+    };
   }, [merchantId]);
   return (
     <form
@@ -346,7 +359,7 @@ export function CustomerContact({
                 ? 'الرقم محفوظ.'
                 : 'Number saved.',
           );
-          await onSaved();
+          await onSaved(r.whatsappConsentReset);
         } catch (e) {
           setError(errorText(e, lang));
         } finally {
@@ -366,6 +379,7 @@ export function CustomerContact({
               : 'WhatsApp number for this business (optional)'
           }
           value={phone}
+          disabled={busy || loading}
           onChange={(e) => setPhone(e.target.value)}
         />
       </label>
@@ -380,7 +394,7 @@ export function CustomerContact({
           {error}
         </p>
       )}
-      <button className="secondary small" disabled={busy}>
+      <button className="secondary small" disabled={busy || loading}>
         {ar ? 'حفظ الرقم' : 'Save number'}
       </button>
     </form>

@@ -1,11 +1,11 @@
 {
-  "at": "2026-11-08T19:35:32.965Z",
+  "at": "2026-11-08T20:28:15.976Z",
   "environment": "local PostgreSQL; Fastify inject; no HTTP/TLS or device latency",
   "purchases": 50,
   "concurrency": 20,
-  "totalMs": 900.4860999999999,
-  "p50Ms": 305.95360000000005,
-  "p95Ms": 532.4167,
+  "totalMs": 775.1959999999999,
+  "p50Ms": 220.1214,
+  "p95Ms": 485.95270000000005,
   "gateMs": 3000,
   "state": {
     "balance": 0,

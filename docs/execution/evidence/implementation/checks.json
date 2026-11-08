@@ -1,61 +1,61 @@
 {
-  "at": "2026-11-08T19:34:59.314Z",
+  "at": "2026-11-08T20:27:46.377Z",
   "status": "passed",
   "steps": [
     {
       "command": "npm run typecheck",
       "exitCode": 0,
-      "durationMs": 4932.918500000001
+      "durationMs": 4397.1772
     },
     {
       "command": "npm run lint",
       "exitCode": 0,
-      "durationMs": 2927.830000000001
+      "durationMs": 2466.6678999999995
     },
     {
       "command": "npm run test",
       "exitCode": 0,
-      "durationMs": 4360.219099999999,
-      "passedTests": 16
+      "durationMs": 4101.141299999999,
+      "passedTests": 18
     },
     {
       "command": "npm run build",
       "exitCode": 0,
-      "durationMs": 3714.2235999999994
+      "durationMs": 3222.4066999999995
     },
     {
       "command": "npm run openapi:export",
       "exitCode": 0,
-      "durationMs": 1667.6736999999994
+      "durationMs": 1424.5566999999992
     },
     {
       "command": "npm run test:integration",
       "exitCode": 0,
-      "durationMs": 83835.0725,
-      "passedTests": 52
+      "durationMs": 65352.42790000001,
+      "passedTests": 56
     },
     {
       "command": "npm run test:manual-demo",
       "exitCode": 0,
-      "durationMs": 11485.805500000002
+      "durationMs": 6209.1158
     },
     {
       "command": "npm run test:e2e",
       "exitCode": 0,
-      "durationMs": 133398.5368
+      "durationMs": 75517.6628
     },
     {
       "command": "npm run test:restore",
       "exitCode": 0,
-      "durationMs": 6501.560800000007
+      "durationMs": 2006.8282999999938
     },
     {
       "command": "npm run verify:plan",
       "exitCode": 0,
-      "durationMs": 1063.181200000021
+      "durationMs": 373.2057999999961
     }
   ],
-  "sourceFingerprint": "ed3dfaf8b909b6dfae57c7de137a4ae3d0679055d49a78f63b9bcb11283fb14d",
+  "sourceFingerprint": "524a46317dbb3d7f0d317a4cbc729708cf1d06a39b90b338323dcd7b9ed3e52a",
   "environment": {
     "node": "v24.19.0",
     "platform": "win32",
@@ -63,6 +63,6 @@
     "authProvider": "local",
     "browser": "chromium"
   },
-  "browserChecks": 54,
-  "sourceFingerprintAfter": "ed3dfaf8b909b6dfae57c7de137a4ae3d0679055d49a78f63b9bcb11283fb14d"
+  "browserChecks": 55,
+  "sourceFingerprintAfter": "524a46317dbb3d7f0d317a4cbc729708cf1d06a39b90b338323dcd7b9ed3e52a"
 }

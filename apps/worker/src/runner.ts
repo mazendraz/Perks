@@ -3,6 +3,10 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import type { Config } from '../../api/src/config.js';
 import { unseal } from '../../api/src/outbox.js';
+import { tokenHash } from '../../api/src/crypto.js';
+import { createMailer, MailFailure } from '../../api/src/mail/mailer.js';
+import { mailTemplate } from '../../api/src/mail/templates.js';
+import { runAuthMail } from './auth-mail.js';
 export interface ClaimedJob {
   job_id: string;
   merchant_id: string;
@@ -15,35 +19,40 @@ export interface ClaimedJob {
 }
 export async function runOne(pool: pg.Pool, c: Config): Promise<boolean> {
   const claim = (await pool.query<ClaimedJob>('SELECT * FROM claim_next_job()')).rows[0];
-  if (!claim) return false;
+  if (!claim) return runAuthMail(pool, c);
   const started = new Date();
   let outcome = 'succeeded',
     error: string | null = null;
   try {
     if (claim.kind === 'invitation_email') {
-      if (!['development', 'test'].includes(c.APP_ENV)) {
+      const token = unseal(String(claim.payload.encryptedToken), c.AUTH_PEPPER);
+      const context = (
+        await pool.query('SELECT invitation_mail_context($1,$2,$3) AS value', [
+          claim.merchant_id,
+          claim.aggregate_id,
+          tokenHash(token),
+        ])
+      ).rows[0].value;
+      if (!context) {
         outcome = 'blocked';
-        error = 'EMAIL_PROVIDER_NOT_CONFIGURED';
+        error = 'INVITATION_NOT_AVAILABLE';
       } else {
-        const token = unseal(String(claim.payload.encryptedToken), c.AUTH_PEPPER),
-          dir = resolve('.local/mail');
-        await mkdir(dir, { recursive: true });
-        const value = {
-          id: claim.outbox_id,
-          kind: 'invitation',
-          to: String(claim.payload.email),
-          link: c.PUBLIC_APP_ORIGIN + '/invite/' + token,
-          merchantId: claim.merchant_id,
-          createdAt: new Date().toISOString(),
-        };
-        try {
-          await writeFile(resolve(dir, claim.outbox_id + '.json'), JSON.stringify(value), {
-            flag: 'wx',
-            mode: 0o600,
-          });
-        } catch (e) {
-          if ((e as { code?: string }).code !== 'EEXIST') throw e;
-        }
+        const link = c.PUBLIC_APP_ORIGIN + '/invite/' + token;
+        await createMailer(c, pool).send({
+          ...mailTemplate(
+            'invitation',
+            (context.locale || claim.payload.locale) === 'en' ? 'en' : 'ar',
+            { link, business: context.name },
+          ),
+          to: context.email,
+          idempotencyKey: claim.outbox_id,
+          metadata: {
+            kind: 'invitation',
+            link,
+            merchantId: claim.merchant_id,
+            expiresAt: context.expiresAt,
+          },
+        });
       }
     } else if (claim.kind === 'customer_export') {
       if (!['development', 'test'].includes(c.APP_ENV)) {
@@ -127,7 +136,10 @@ export async function runOne(pool: pg.Pool, c: Config): Promise<boolean> {
     }
   } catch (cause) {
     const code = cause instanceof Error ? cause.message : '';
-    if (
+    if (cause instanceof MailFailure) {
+      outcome = cause.outcome;
+      error = cause.code;
+    } else if (
       claim.kind === 'customer_export' &&
       ['NQ:EXPORT_SCOPE_CHANGED', 'NQ:NOT_FOUND'].includes(code)
     ) {
@@ -164,5 +176,6 @@ export async function runOne(pool: pg.Pool, c: Config): Promise<boolean> {
   } finally {
     db.release();
   }
+  await runAuthMail(pool, c);
   return true;
 }

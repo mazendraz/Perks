@@ -4,6 +4,10 @@ const processes = [
     stdio: 'inherit',
     windowsHide: true,
   }),
+  spawn(process.execPath, ['--watch', '--import', 'tsx', 'apps/worker/src/main.ts'], {
+    stdio: 'inherit',
+    windowsHide: true,
+  }),
   spawn(
     process.execPath,
     ['node_modules/vite/bin/vite.js', '--config', 'apps/web/vite.config.ts', 'apps/web'],

@@ -1,6 +1,6 @@
 {
-  "at": "2026-11-08T19:39:13.162Z",
-  "passed": 427,
+  "at": "2026-11-08T20:30:31.452Z",
+  "passed": 429,
   "failed": 0,
   "errors": [],
   "checks": [
@@ -365,6 +365,11 @@
       "detail": "local link target"
     },
     {
+      "name": "link:docs\\execution\\RUNBOOK.md:../../LAUNCH-PLAN.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
       "name": "link:docs\\execution\\STATUS.md:../../LAUNCH-PLAN.md",
       "ok": true,
       "detail": "local link target"
@@ -541,6 +546,11 @@
     },
     {
       "name": "link:docs\\execution\\README.md:evidence/inventory.json",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\IMPLEMENTATION.md:RUNBOOK.md",
       "ok": true,
       "detail": "local link target"
     },

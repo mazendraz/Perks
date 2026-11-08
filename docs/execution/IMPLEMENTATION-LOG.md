@@ -24,6 +24,12 @@
 
 # Implementation log
 
+## 2026-11-08 — L02 قيد القبول
+
+Nodemailer SMTP وFileSink محلي،وoutbox دائمة لبريد الحسابات دون تخفيف نطاق جداول التاجر. طلب reset والتوكن المشفر في transaction واحدة،وtrigger لإشعار كل تعديل باسورد قائم. SMTP receipt وMessage-ID يحفظان نفس intent؛انقطاع رد DATA أوتعطل تثبيت النتيجة بعد القبول unknown بلا إرسال ثانٍ. تصنيف CONN وحده لا يثبت إن الرسالة لم تُقبل؛الفحص الوهمي أثبت السيناريو واتعدل التصنيف لذلك.
+
+SMTP وهمي TLS محلي أثبت بقاء reset بعد restart وفتح الرابط وتغيير الباسورد وإرسال التأكيد ودعوة التاجر. إضافة فحوص concurrency وعزل الأدوار وتعطل DB بعد القبول،وسيناريو متصفح من Forgot password لصندوق التجربة ثم reset والدخول بالكروت الأصلية. unit snapshots للأنواع الثلاثة باللغتين. انتظار verify:local النهائي؛لا مزود أوDNS أوإرسال حقيقي.
+
 ## 2026-11-08 — L00: baseline وقرارات الإطلاق وCI
 
 ### L01 قيد القبول
@@ -77,3 +83,8 @@ verify:local النهائي passed على Chromium:14 unit،48 integration،53 b
 ### قبول L01
 
 verify:local passed بكل المراحل:16 unit،52 integration،54 browser checks،مع build/lint/typecheck/OpenAPI/manual-demo/restore/verify:plan. بصمة ed3dfaf8b909b6dfae57c7de137a4ae3d0679055d49a78f63b9bcb11283fb14d متطابقة قبل وبعد. إصلاح تزامن اختبارات التركيز وانتظار commit قبل محاكاة فقد الرد؛لا تخطي لأي فحص. ترقية تجربة مازن حافظت على2محل و3حسابات و2staff و1customer وكل hashes/versions/roles؛4180 ready وlogin password local. L01 DONE محليًا؛SMTP ضمن L02،ومفيش نشر إنتاجي.
+
+
+### قبول L02 المحلي
+
+verify:local passed:18 unit و56 integration و55 browser checks وكل مراحل build/lint/typecheck/OpenAPI/manual-demo/restore/verify:plan. بصمة 524a46317dbb3d7f0d317a4cbc729708cf1d06a39b90b338323dcd7b9ed3e52a متطابقة قبل وبعد. إصلاح قراءة رقم العميل المتأخرة مع StrictMode وحماية أحدث رد لتفضيلات الموافقة،مع فحص متصفح يوقف GET قبل إتاحة الكتابة. حفظ دليل التحقق atomic مع retry لأخطاء FS المؤقتة،وحجب روابط reset في أخطاء الاختبارات. المحلات والحسابات اليدوية محفوظة؛لا إرسال حقيقي. L02-01..04 DONE و05 BLOCKED_OWNER؛L03 مستقل ويستكمل حسب قاعدة6.

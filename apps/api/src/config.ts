@@ -13,6 +13,16 @@ const schema = z.object({
   AUTH_PROVIDER: z.enum(['local', 'password']).default('local'),
   AUTH_PEPPER: z.string().min(32),
   COOKIE_SECURE: z.enum(['true', 'false']).default('false'),
+  MAIL_TRANSPORT: z.enum(['file', 'smtp']).default('file'),
+  MAIL_FILE_ROOT: z.string().min(1).default('.local/mail'),
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.coerce.number().int().min(1).max(65535).optional(),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
+  SMTP_FROM: z.union([z.email(), z.literal('')]).optional(),
+  SMTP_SECURE: z.enum(['true', 'false']).default('false'),
+  SMTP_STARTTLS: z.enum(['true', 'false']).default('true'),
+  SMTP_CA_FILE: z.string().optional(),
   LOG_LEVEL: z.enum(['silent', 'fatal', 'error', 'warn', 'info', 'debug']).default('info'),
 });
 export type Config = z.infer<typeof schema>;
@@ -36,6 +46,19 @@ export function readConfig(overrides: Partial<Config> = {}): Config {
   }
   if (c.AUTH_PROVIDER === 'local' && !['127.0.0.1', 'localhost', '::1'].includes(c.HOST))
     throw new Error('Local authentication must bind to loopback.');
+  if (deployed(c) && c.MAIL_TRANSPORT !== 'smtp')
+    throw new Error('Deployed environments require SMTP; the file mail sink is local only.');
+  if (c.MAIL_TRANSPORT === 'smtp') {
+    if (!c.SMTP_HOST || !c.SMTP_PORT || !c.SMTP_USER || !c.SMTP_PASS || !c.SMTP_FROM)
+      throw new Error('SMTP_HOST, PORT, USER, PASS and FROM are required for SMTP.');
+    if (
+      c.SMTP_SECURE !== 'true' &&
+      c.SMTP_PORT !== 465 &&
+      c.SMTP_STARTTLS !== 'true' &&
+      (deployed(c) || !['localhost', '127.0.0.1', '::1'].includes(c.SMTP_HOST))
+    )
+      throw new Error('SMTP requires TLS except for a loopback development/test server.');
+  }
   return c;
 }
 export const passwordEnabled = (c: Config) =>

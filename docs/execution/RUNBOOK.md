@@ -183,3 +183,23 @@ Deploy: backup/readiness →expand migration→compatible artifact→scoped heal
 ## معاينة المحل وكلمات المرور وواتساب
 
 راجع [ACCOUNT-PREVIEW-AND-CONTACT](ACCOUNT-PREVIEW-AND-CONTACT.md). طبّق db:migrate في التطوير،وdemo:setup لترقية بيئة مازن مع الحفاظ على البيانات،ثم أعد تشغيل demo:start بعد build. 009n تضيف أعمدة ودوال محكومة ولا تتطلب reset. لا تعيد كتابة migration مطبقة. واتساب هنا Click to Chat يدوي؛لا توجد مفاتيح مزود أو إرسال آلي أو ادعاء تسليم. لا تغيّر كلمات مرور المستخدم الحقيقي من أجل اختبار؛استخدم شركات QA المعزولة.
+## البريد الدائم وSMTP — L02
+
+المسار الحالي ذاتي الاستضافة حسب [LAUNCH-PLAN](../../LAUNCH-PLAN.md) وD31–D35؛الملاحظات القديمة عن managed Auth وcloud buckets أدناه تاريخية. `npm run dev` يشغّل API وWorker والويب؛`demo:start` يشغّل الثلاثة على4180. استرجاع الباسورد يكتب التوكن كبصمة وطلب البريد مشفرًا في نفس transaction؛إغلاق API لا يفقد الطلب. كل تعديل لباسورد قائم،بما فيه تعديل الإدارة،يضيف إشعارًا دون الباسورد. Worker يراجع صلاحية رابط الدعوة أوالاسترجاع قبل التسليم.
+
+| المتغير | الاستخدام |
+|---|---|
+| MAIL_TRANSPORT=file | dev/test فقط؛صندوق محلي خاص،مش تسليم بريد خارجي |
+| MAIL_FILE_ROOT | افتراضي `.local/mail`؛الـAPI يعرض الأحدث في local/mail فقط عند local Auth +dev/test +file ومن loopback |
+| MAIL_TRANSPORT=smtp | مطلوب staging/production |
+| SMTP_HOST / SMTP_PORT | مزود SMTP الذي يختاره المالك |
+| SMTP_USER / SMTP_PASS / SMTP_FROM | مطلوبة؛FROM عنوان بريد واحد؛لا تُكتب القيم في Git أوالأدلة |
+| SMTP_SECURE | true للـTLS المباشر؛465 يُعامل TLS تلقائيًا |
+| SMTP_STARTTLS | true؛TLS إجباري في الإنتاج،والشهادات متحققة دائمًا |
+| SMTP_CA_FILE | اختياري لشهادة CA خاصة بسيرفر SMTP بتاعنا،مش private key |
+
+إعدادات الإنتاج تُفحص بـ`npm run env:check` دون طباعة الأسرار. لا تُشغّل إرسالًا حقيقيًا قبل اختيار واعتماد المالك. مزود SMTP والدومين وSPF وDKIM وDMARC **BLOCKED_OWNER** حاليًا؛المالك أكد إن مفيش اختيارات بعد. بعد الاختيار يُراجع إعداد DNS الفعلي مع المزود،ثم يُسمح برسالة اختبار حقيقية منفصلة؛مش هنسمي التسليم الخارجي ناجحًا قبلها. مرجع TLS وإعداد transport هو [توثيق Nodemailer الرسمي](https://nodemailer.com/smtp).
+
+SMTP له Message-ID ثابت وإيصال إرسال دائم لكل outbox ID. `sent` يمنع إرسال نفس الرسالة مجددًا؛`unknown` يوقف الإعادة التلقائية إذا انقطع رد قبول الرسالة أوفشل تثبيت النتيجة في DB بعد قبول SMTP. راجع مزود البريد/السجل قبل أي قرار؛لا تغير نفس idempotency key ولا تُحوّل unknown إلىنجاح من غير دليل. طلب استرجاع جديد من المستخدم intent جديد. أخطاء الاتصال المؤكدة قبل التسليم قابلة لإعادة المحاولة؛الرفض الدائم blocked. القوالب text/HTML بالعربي والإنجليزي،ولا يظهر توكن في subject أوlogs.
+
+فحص محلي بلا إرسال حقيقي:`npm run test:integration -- mail.test.ts` يستخدم SMTP وهميًا على127.0.0.1 مع TLS وشهادة مولدة في الذاكرة،ويختبر restart وreset وnotification وdedupe وunknown وعزل أدوار DB. الفحص الجامع `verify:local` يشغّل كل integration tests،مش الملف المختار فقط.

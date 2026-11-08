@@ -17,7 +17,7 @@ export function unseal(value: string, pepper: string) {
   return Buffer.concat([decipher.update(raw.subarray(28)), decipher.final()]).toString('utf8');
 }
 export async function emitOutbox(
-  db: DB,
+  db: Pick<DB, 'query'>,
   p: {
     merchantId: string;
     eventType: string;

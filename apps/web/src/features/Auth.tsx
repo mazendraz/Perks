@@ -269,7 +269,7 @@ export function Login({
             {sent && (
               <p role="status" className="notice success">
                 {ar
-                  ? 'لو البريد مسجل، رابط استعادة الحساب جاهز في بريدك.'
+                  ? 'لو البريد مسجل، هنبعتلك رابط استعادة الحساب.'
                   : 'If the account exists, a recovery link is on its way.'}
               </p>
             )}

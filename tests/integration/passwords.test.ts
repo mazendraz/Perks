@@ -4,9 +4,11 @@ import { randomUUID } from 'node:crypto';
 import pg from 'pg';
 import { readConfig } from '../../apps/api/src/config.js';
 import { buildApp } from '../../apps/api/src/server.js';
+import { runAuthMail } from '../../apps/worker/src/auth-mail.js';
 const c = readConfig(),
   db = new pg.Client({ connectionString: c.DATABASE_MIGRATOR_URL }),
   runtime = new pg.Client({ connectionString: c.DATABASE_URL }),
+  worker = new pg.Pool({ connectionString: c.WORKER_DATABASE_URL }),
   { app } = await buildApp({ APP_ENV: 'development', LOG_LEVEL: 'silent' });
 const password = 'A memorable local password 2026!';
 const origin = { origin: c.PUBLIC_APP_ORIGIN };
@@ -20,6 +22,7 @@ after(async () => {
   await app.close();
   await db.end();
   await runtime.end();
+  await worker.end();
 });
 const headers = (r: {
   cookies: { name: string; value: string }[];
@@ -211,6 +214,9 @@ test('password recovery is generic, single-use and version-fenced, and revokes p
     (await request(actor.email)).json(),
     (await request('missing-' + randomUUID() + '@nuqta.test')).json(),
   );
+  for (let i = 0; i < 100 && (await runAuthMail(worker, c)); i++) {
+    /* Drain durable local mail. */
+  }
   const mail = (await app.inject({ url: '/api/v1/local/mail', remoteAddress: '127.0.0.1' }))
     .json()
     .messages.find((m: { to: string; link?: string }) => m.to === actor.email && m.link);

@@ -1,7 +1,8 @@
 import { spawnSync } from 'node:child_process';
-import { mkdir, readFile, writeFile, readdir } from 'node:fs/promises';
+import { mkdir, readFile, writeFile, rename, unlink, readdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
+import { setTimeout } from 'node:timers/promises';
 import { join } from 'node:path';
 import assert from 'node:assert/strict';
 import { readConfig } from '../apps/api/src/config.js';
@@ -61,6 +62,23 @@ async function snapshot() {
   return { fingerprint: createHash('sha256').update(JSON.stringify(files)).digest('hex'), files };
 }
 const source = await snapshot();
+async function saveEvidence(path: string, content: string) {
+  for (let attempt = 0; attempt < 6; attempt++) {
+    const temporary = path + '.' + randomUUID() + '.tmp';
+    try {
+      await writeFile(temporary, content, { encoding: 'utf8', flag: 'wx' });
+      await rename(temporary, path);
+      return;
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException).code || 'UNKNOWN';
+      if (attempt === 5 || !['UNKNOWN', 'EBUSY', 'EPERM', 'EACCES'].includes(code))
+        throw new Error('Could not persist verification evidence: ' + code, { cause: error });
+      await setTimeout(50 * 2 ** attempt);
+    } finally {
+      await unlink(temporary).catch(() => {});
+    }
+  }
+}
 report.sourceFingerprint = source.fingerprint;
 report.environment = {
   node: process.version,
@@ -69,7 +87,7 @@ report.environment = {
   authProvider: c.AUTH_PROVIDER,
   browser: process.env.NUQTA_E2E_BROWSER || (process.platform === 'win32' ? 'msedge' : 'chromium'),
 };
-await writeFile(
+await saveEvidence(
   'docs/execution/evidence/implementation/source.json',
   JSON.stringify(source, null, 2),
 );
@@ -85,13 +103,13 @@ for (const script of [
   'test:restore',
   'verify:plan',
 ]) {
-  await writeFile(file, JSON.stringify(report, null, 2));
+  await saveEvidence(file, JSON.stringify(report, null, 2));
   const at = performance.now();
   const result = spawnSync(process.execPath, [cli, 'run', script], {
     encoding: 'utf8',
     windowsHide: true,
     maxBuffer: 10 * 1024 * 1024,
-    timeout: 180000,
+    timeout: script === 'test:integration' || script === 'test:e2e' ? 300000 : 180000,
   });
   const passed = /ℹ pass (\d+)/.exec(result.stdout || '');
   report.steps.push({
@@ -103,13 +121,13 @@ for (const script of [
   console.log((result.status === 0 ? 'PASS ' : 'FAIL ') + script);
   if (result.status !== 0) {
     report.status = 'failed';
-    await writeFile(file, JSON.stringify(report, null, 2));
+    await saveEvidence(file, JSON.stringify(report, null, 2));
     console.error(
       (result.stdout + '\n' + result.stderr)
         .slice(-6000)
         .replace(/NQP:[a-f0-9]{64}/g, 'NQP:[redacted]')
         .replace(/postgres(?:ql)?:\/\/[^\s]+/g, '[database URL redacted]')
-        .replace(/\/invite\/[^\s/]+/g, '/invite/[redacted]'),
+        .replace(/\/(invite|reset-password)\/[^\s/]+/g, '/$1/[redacted]'),
     );
     process.exitCode = 1;
     break;
@@ -129,4 +147,4 @@ if (!process.exitCode) {
     );
   }
 }
-await writeFile(file, JSON.stringify(report, null, 2));
+await saveEvidence(file, JSON.stringify(report, null, 2));

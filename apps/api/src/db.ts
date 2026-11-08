@@ -9,6 +9,7 @@ export interface Actor {
   sessionId: string;
   mfaAt: Date | null;
   mfaRequired?: boolean;
+  locale?: 'ar' | 'en';
   authMethod?: 'otp' | 'password' | 'managed';
   csrfHash: string;
   preview?: { adminId: string; merchantId: string; staffId: string };

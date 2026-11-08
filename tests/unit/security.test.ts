@@ -31,6 +31,12 @@ test('deployment fails closed with local authentication or insecure cookies', ()
     DATABASE_URL: 'postgresql://runtime@localhost/nuqta_test',
     AUTH_DATABASE_URL: 'postgresql://auth@localhost/nuqta_test',
     AUTH_PEPPER: 'test-pepper-at-least-thirty-two-characters',
+    MAIL_TRANSPORT: 'smtp' as const,
+    SMTP_HOST: 'localhost',
+    SMTP_PORT: 587,
+    SMTP_USER: 'test',
+    SMTP_PASS: 'test-only',
+    SMTP_FROM: 'test@nuqta.test',
   };
   assert.throws(
     () => readConfig({ ...base, APP_ENV: 'production', AUTH_PROVIDER: 'local' }),
@@ -47,6 +53,19 @@ test('deployment fails closed with local authentication or insecure cookies', ()
     /HTTPS/,
   );
   assert.throws(() => readConfig({ ...base, HOST: '0.0.0.0', AUTH_PROVIDER: 'local' }), /loopback/);
+  const production = {
+    ...base,
+    APP_ENV: 'production' as const,
+    AUTH_PROVIDER: 'password' as const,
+    COOKIE_SECURE: 'true' as const,
+    PUBLIC_APP_ORIGIN: 'https://nuqta.example.test',
+  };
+  assert.throws(() => readConfig({ ...production, MAIL_TRANSPORT: 'file' }), /file mail sink/);
+  assert.throws(() => readConfig({ ...production, SMTP_HOST: '' }), /SMTP_HOST/);
+  assert.throws(
+    () => readConfig({ ...production, SMTP_STARTTLS: 'false', SMTP_SECURE: 'false' }),
+    /TLS/,
+  );
   assert.equal(
     readConfig({
       ...base,

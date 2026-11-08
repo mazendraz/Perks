@@ -29,6 +29,7 @@ export async function api<T>(
   } = {},
 ): Promise<T> {
   const headers: Record<string, string> = {};
+  headers['x-nuqta-language'] = document.documentElement.lang === 'en' ? 'en' : 'ar';
   const authEntry = path === '/auth/login' || path === '/auth/register';
   const portal =
     options.workspace === 'shared'

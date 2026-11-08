@@ -1,5 +1,5 @@
 {
-  "at": "2026-11-08T19:39:04.647Z",
+  "at": "2026-11-08T20:30:28.949Z",
   "browser": "chromium",
   "browserVersion": "151.0.7922.34",
   "appEnv": "development",
@@ -57,11 +57,12 @@
     "No uncaught browser page errors",
     "The platform resets the existing owner account from Preview, invalidates the old owner session and restores sign-in with the new password",
     "Platform MFA setup renders in Arabic/English, decodes its real QR, presents ten recovery codes and resumes with a one-use code; no secrets are written to evidence",
-    "Expired authenticated session returns to sign-in without discarding server card state"
+    "Expired authenticated session returns to sign-in without discarding server card state",
+    "Forgot password dispatches through the durable worker mailbox; the real recovery link opens the reset screen and the new password restores existing customer cards"
   ],
   "errors": [],
-  "merchantId": "30abd801-ba5c-476e-a78f-5e141b220d3c",
-  "membershipId": "0b9d140c-09a8-443d-995d-b4a303d531dd",
+  "merchantId": "cca45345-4948-425b-865e-e41f1ea079ab",
+  "membershipId": "5a1793d1-e060-4b2f-864e-5c8459d9ab37",
   "metrics": {
     "registered": 1,
     "active": 1,

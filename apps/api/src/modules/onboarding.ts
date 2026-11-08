@@ -95,7 +95,7 @@ export function onboardingModule(app: FastifyInstance, pools: Pools, c: Config) 
               z
                 .object({
                   email: z.email().transform((e) => e.toLowerCase()),
-                  password: z.string().min(12).max(128),
+                  password: z.string().min(10).max(128),
                 })
                 .strict(),
             )

@@ -23,11 +23,11 @@ let admin: Awaited<ReturnType<typeof login>>,
 const original = 'Original-' + randomUUID(),
   replacement = 'Replacement-' + randomUUID();
 let ip = 10;
-async function signIn(email: string, password: string, expected = 200) {
+async function signIn(email: string, password: string, expected = 200, remoteAddress?: string) {
   const r = await app.inject({
     method: 'POST',
     url: '/api/v1/auth/login',
-    remoteAddress: '127.0.0.' + ip++,
+    remoteAddress: remoteAddress || '127.0.0.' + ip++,
     headers: { origin: c.PUBLIC_APP_ORIGIN },
     payload: { email, password },
   });
@@ -132,7 +132,7 @@ test('admin and owner reset only authorized credentials; stale versions, replay,
   assert.equal(before.find((a) => a.id === ownerId)!.canManageCredentials, false);
   assert.equal(before.find((a) => a.id === cashId)!.canManageCredentials, true);
   const another = await signIn(cashEmail, original);
-  for (let i = 0; i < 5; i++) await signIn(cashEmail, 'Wrong-password-value', 401);
+  for (let i = 0; i < 5; i++) await signIn(cashEmail, 'Wrong-password-value', 401, '192.0.2.60');
   const target = (await security(owner)).find((a) => a.id === cashId)!;
   assert.ok(target.lockedUntil);
   const command = {
@@ -157,6 +157,15 @@ test('admin and owner reset only authorized credentials; stale versions, replay,
       payload: command,
     });
   assert.equal(changed.statusCode, 200, changed.body);
+  assert.equal(
+    (
+      await db.query(
+        'SELECT count(*)::integer AS total FROM password_login_ip_guards WHERE email=$1',
+        [cashEmail],
+      )
+    ).rows[0].total,
+    0,
+  );
   assert.ok(!changed.body.includes(replacement));
   const replay = await app.inject({
     method: 'POST',

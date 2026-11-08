@@ -6,19 +6,14 @@ import {
 } from '../../../../packages/contracts/src/platform-admin.js';
 import { authenticated } from '../auth.js';
 import { transaction, type Pools } from '../db.js';
-import type { Config } from '../config.js';
+import { passwordEnabled, type Config } from '../config.js';
 import { platform } from '../policy.js';
 import { requireCondition } from '../errors.js';
 import { operation, idempotencyKey } from '../operations.js';
 import { keyedHash } from '../crypto.js';
 import { hashPassword } from '../passwords.js';
 export function platformTeamModule(app: FastifyInstance, pools: Pools, c: Config) {
-  const local = () =>
-    requireCondition(
-      c.AUTH_PROVIDER === 'local' && ['development', 'test'].includes(c.APP_ENV),
-      'PASSWORD_AUTH_NOT_CONFIGURED',
-      503,
-    );
+  const local = () => requireCondition(passwordEnabled(c), 'PASSWORD_AUTH_NOT_CONFIGURED', 503);
   app.get('/api/v1/platform/admins', async (req) => {
     const actor = authenticated(req);
     platform(actor);

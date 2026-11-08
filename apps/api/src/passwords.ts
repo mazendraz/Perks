@@ -1,5 +1,11 @@
 import { createHmac, randomBytes, scrypt, timingSafeEqual } from 'node:crypto';
 import { AppError } from './errors.js';
+import { commonPasswords } from './data/common-passwords.js';
+const denied = new Set(commonPasswords.map((password) => password.toLowerCase()));
+export function assertPasswordPolicy(password: string) {
+  if (password.length < 10 || password.length > 128) throw new AppError('PASSWORD_LENGTH', 422);
+  if (denied.has(password.toLowerCase())) throw new AppError('PASSWORD_TOO_COMMON', 422);
+}
 
 // OWASP scrypt profile: N=2^15, r=8, p=3. A private pepper and a fresh salt
 // protect each credential; plaintext passwords never enter DB rows or logs.
@@ -19,6 +25,7 @@ async function derive(password: string, salt: Buffer, pepper: string) {
   }
 }
 export async function hashPassword(password: string, pepper: string) {
+  assertPasswordPolicy(password);
   const salt = randomBytes(16),
     key = await derive(password, salt, pepper);
   return 'scrypt$32768$8$3$' + salt.toString('hex') + '$' + key.toString('hex');

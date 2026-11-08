@@ -10,13 +10,8 @@ const schema = z.object({
   AUTH_DATABASE_URL: z.string().min(1),
   DATABASE_MIGRATOR_URL: z.string().optional(),
   WORKER_DATABASE_URL: z.string().optional(),
-  AUTH_PROVIDER: z.enum(['local', 'supabase']).default('local'),
+  AUTH_PROVIDER: z.enum(['local', 'password']).default('local'),
   AUTH_PEPPER: z.string().min(32),
-  AUTH_ISSUER: z.string().optional(),
-  AUTH_AUDIENCE: z.string().default('authenticated'),
-  AUTH_JWKS_URL: z.string().optional(),
-  AUTH_PUBLIC_URL: z.string().optional(),
-  AUTH_PUBLIC_KEY: z.string().optional(),
   COOKIE_SECURE: z.enum(['true', 'false']).default('false'),
   LOG_LEVEL: z.enum(['silent', 'fatal', 'error', 'warn', 'info', 'debug']).default('info'),
 });
@@ -28,15 +23,22 @@ export function readConfig(overrides: Partial<Config> = {}): Config {
       throw new Error('Local authentication is forbidden outside development/test.');
     if (c.COOKIE_SECURE !== 'true' || !c.PUBLIC_APP_ORIGIN.startsWith('https://'))
       throw new Error('Deployed environments require HTTPS and secure cookies.');
-    if (
-      new URL(c.DATABASE_URL).username ===
-      new URL(c.DATABASE_MIGRATOR_URL || 'postgresql://unused@localhost/unused').username
-    )
-      throw new Error('Runtime and migration database roles must be separate.');
+    const roles = [
+      c.DATABASE_URL,
+      c.AUTH_DATABASE_URL,
+      c.WORKER_DATABASE_URL,
+      c.DATABASE_MIGRATOR_URL,
+    ]
+      .filter((url): url is string => !!url)
+      .map((url) => new URL(url).username);
+    if (roles.some((role) => !role) || new Set(roles).size !== roles.length)
+      throw new Error('Runtime, auth, worker and migration database roles must be separate.');
   }
   if (c.AUTH_PROVIDER === 'local' && !['127.0.0.1', 'localhost', '::1'].includes(c.HOST))
     throw new Error('Local authentication must bind to loopback.');
-  if (c.AUTH_PROVIDER === 'supabase' && (!c.AUTH_ISSUER || !c.AUTH_JWKS_URL))
-    throw new Error('Supabase issuer and JWKS URL are required.');
   return c;
 }
+export const passwordEnabled = (c: Config) =>
+  c.AUTH_PROVIDER === 'password' ||
+  (c.AUTH_PROVIDER === 'local' && ['development', 'test'].includes(c.APP_ENV));
+export const deployed = (c: Config) => ['staging', 'production'].includes(c.APP_ENV);

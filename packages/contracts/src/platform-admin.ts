@@ -7,7 +7,7 @@ export const platformAdminInput = z
       .email()
       .max(254)
       .transform((e) => e.toLowerCase()),
-    password: z.string().min(12).max(128).meta({ writeOnly: true }),
+    password: z.string().min(10).max(128).meta({ writeOnly: true }),
     reason,
     acknowledgeFullAccess: z.literal(true),
   })
@@ -22,7 +22,7 @@ export const platformAdminCommand = z.discriminatedUnion('action', [
     .object({
       ...common,
       action: z.literal('password'),
-      password: z.string().min(12).max(128).meta({ writeOnly: true }),
+      password: z.string().min(10).max(128).meta({ writeOnly: true }),
     })
     .strict(),
   ...(['sessions', 'unlock', 'disable', 'enable'] as const).map((action) =>

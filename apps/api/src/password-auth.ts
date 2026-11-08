@@ -1,10 +1,11 @@
 import type { FastifyInstance, FastifyReply } from 'fastify';
-import type { Config } from './config.js';
+import { passwordEnabled, type Config } from './config.js';
 import { transaction, type Pools } from './db.js';
 import { authenticated } from './auth.js';
 import { requestPortal } from './portal-auth.js';
 import { requireCondition } from './errors.js';
-import { opaqueToken, tokenHash } from './crypto.js';
+import { keyedHash, opaqueToken, tokenHash } from './crypto.js';
+import { setTimeout } from 'node:timers/promises';
 import { hashPassword, verifyPassword } from './passwords.js';
 import {
   loginInput,
@@ -22,19 +23,15 @@ export function passwordAuth(
   issue: Issue,
   resetMail: (id: string, email: string, token: string, expiresAt: string) => void,
 ) {
-  const local = () =>
-    requireCondition(
-      c.AUTH_PROVIDER === 'local' && ['development', 'test'].includes(c.APP_ENV),
-      'PASSWORD_AUTH_NOT_CONFIGURED',
-      503,
-    );
+  const enabled = () => requireCondition(passwordEnabled(c), 'PASSWORD_AUTH_NOT_CONFIGURED', 503);
   app.post(
     '/api/v1/auth/login',
     { config: { rateLimit: { max: 10, timeWindow: '1 minute' } } },
     async (req, reply) => {
-      local();
+      enabled();
       const p = loginInput.parse(req.body);
-      const user = await transaction(pools.authPool, async (db) => {
+      const result = await transaction(pools.authPool, async (db) => {
+        const ipHash = keyedHash('login-ip:' + req.ip, c.AUTH_PEPPER);
         await db.query(
           'INSERT INTO password_login_guards(email) VALUES($1) ON CONFLICT DO NOTHING',
           [p.email],
@@ -42,6 +39,35 @@ export function passwordAuth(
         const guard = (
           await db.query('SELECT * FROM password_login_guards WHERE email=$1 FOR UPDATE', [p.email])
         ).rows[0];
+        if (Date.now() - guard.window_started_at.getTime() >= 15 * 60_000) {
+          await db.query(
+            'UPDATE password_login_guards SET failures=0,locked_until=NULL,window_started_at=clock_timestamp() WHERE email=$1',
+            [p.email],
+          );
+          guard.failures = 0;
+          guard.locked_until = null;
+        }
+        await db.query(
+          'INSERT INTO password_login_ip_guards(email,ip_hash) VALUES($1,$2) ON CONFLICT DO NOTHING',
+          [p.email, ipHash],
+        );
+        const pair = (
+          await db.query(
+            'SELECT * FROM password_login_ip_guards WHERE email=$1 AND ip_hash=$2 FOR UPDATE',
+            [p.email, ipHash],
+          )
+        ).rows[0];
+        if (Date.now() - pair.window_started_at.getTime() >= 15 * 60_000) {
+          await db.query(
+            'UPDATE password_login_ip_guards SET failures=0,locked_until=NULL,window_started_at=clock_timestamp() WHERE email=$1 AND ip_hash=$2',
+            [p.email, ipHash],
+          );
+          pair.failures = 0;
+          pair.locked_until = null;
+        }
+        const delayMs = Math.min(800, 50 * 2 ** Math.min(pair.failures, 4));
+        if (guard.locked_until > new Date() || pair.locked_until > new Date())
+          return { user: null, delayMs };
         const u = (
           await db.query(
             'SELECT id,password_hash,password_version,status FROM users WHERE email=$1 FOR SHARE',
@@ -49,20 +75,25 @@ export function passwordAuth(
           )
         ).rows[0];
         const correct = await verifyPassword(p.password, u?.password_hash, c.AUTH_PEPPER);
-        const locked = guard.locked_until && guard.locked_until > new Date();
-        if (!correct || !u || u.status !== 'active' || locked) {
+        if (!correct || !u || u.status !== 'active') {
           await db.query(
-            "UPDATE password_login_guards SET failures=CASE WHEN locked_until<=clock_timestamp() THEN 1 ELSE failures+1 END,locked_until=CASE WHEN locked_until>clock_timestamp() THEN locked_until WHEN (CASE WHEN locked_until<=clock_timestamp() THEN 1 ELSE failures+1 END)>=5 THEN clock_timestamp()+interval '15 minutes' ELSE NULL END,last_attempt_at=clock_timestamp() WHERE email=$1",
+            "UPDATE password_login_guards SET failures=failures+1,locked_until=CASE WHEN failures+1>=20 THEN window_started_at+interval '15 minutes' ELSE NULL END,last_attempt_at=clock_timestamp() WHERE email=$1",
             [p.email],
           );
-          return null;
+          await db.query(
+            "UPDATE password_login_ip_guards SET failures=failures+1,locked_until=CASE WHEN failures+1>=5 THEN window_started_at+interval '15 minutes' ELSE NULL END,last_attempt_at=clock_timestamp() WHERE email=$1 AND ip_hash=$2",
+            [p.email, ipHash],
+          );
+          return { user: null, delayMs };
         }
-        await db.query(
-          'UPDATE password_login_guards SET failures=0,locked_until=NULL,last_attempt_at=clock_timestamp() WHERE email=$1',
-          [p.email],
-        );
-        return u;
+        await db.query('DELETE FROM password_login_ip_guards WHERE email=$1 AND ip_hash=$2', [
+          p.email,
+          ipHash,
+        ]);
+        return { user: u, delayMs: 0 };
       });
+      if (result.delayMs) await setTimeout(result.delayMs);
+      const user = result.user;
       requireCondition(user, 'INVALID_CREDENTIALS', 401);
       return issue(reply, user.id, user.password_version);
     },
@@ -71,7 +102,7 @@ export function passwordAuth(
     '/api/v1/auth/register',
     { config: { rateLimit: { max: 10, timeWindow: '10 minutes' } } },
     async (req, reply) => {
-      local();
+      enabled();
       const p = registerInput.parse(req.body),
         portal = requestPortal(req.headers['x-nuqta-workspace']);
       requireCondition(!portal || portal === 'customer', 'REGISTRATION_CLOSED', 403);
@@ -90,10 +121,16 @@ export function passwordAuth(
     '/api/v1/auth/password/change',
     { config: { rateLimit: { max: 5, timeWindow: '10 minutes' } } },
     async (req, reply) => {
-      local();
+      enabled();
       const actor = authenticated(req),
         p = changePasswordInput.parse(req.body),
         hash = await hashPassword(p.password, c.AUTH_PEPPER);
+      if (actor.mfaRequired)
+        requireCondition(
+          actor.mfaAt && Date.now() - actor.mfaAt.getTime() < 900000,
+          'MFA_REQUIRED',
+          403,
+        );
       const version = await transaction(pools.authPool, async (db) => {
         const u = (
           await db.query(
@@ -129,7 +166,7 @@ export function passwordAuth(
     '/api/v1/auth/password/reset-request',
     { config: { rateLimit: { max: 5, timeWindow: '10 minutes' } } },
     async (req, reply) => {
-      local();
+      enabled();
       const p = resetRequestInput.parse(req.body),
         token = opaqueToken();
       const row = (
@@ -147,7 +184,7 @@ export function passwordAuth(
     '/api/v1/auth/password/reset',
     { config: { rateLimit: { max: 10, timeWindow: '10 minutes' } } },
     async (req, reply) => {
-      local();
+      enabled();
       const p = resetPasswordInput.parse(req.body),
         hash = await hashPassword(p.password, c.AUTH_PEPPER);
       await transaction(pools.authPool, async (db) => {

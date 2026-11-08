@@ -26,6 +26,12 @@
 
 ## 2026-11-08 — L00: baseline وقرارات الإطلاق وCI
 
+### L01 قيد القبول
+
+تنفيذ password production وإزالة managed exchange/JWKS/jose،وتصحيح قفل المحاولات لكل IP والإيميل،وضبط الجلسات حسب الدور ومنع تجديد جلسة منتهية/مسحوبة أوترقية عميل لامتياز أطول. TOTP إلزامي للمنصة في staging/production فقط مع enrollment مشفر ومربوط بالجلسة و10 recovery codes أحادية وتدقيق دون أسرار. تجربة المالك المحلية لم تتحول إلى Authenticator.
+
+اختبارات production الجديدة تغطي cookie/CSRF وغياب local mail وexchange،الباسورد/reset/session epochs،MFA للدورين ومنع replay واستخدام recovery متزامن،ومدد وتجديد الجلسات وترقية الدور وحد20محاولة موزعة. حالة قبول L01 النهائية مرجعها تشغيل verify:local المطابق للسورس؛لا ادعاء إرسال بريد فعلي في هذه المرحلة.
+
 تهيئة Git بأمر صريح من LAUNCH-PLAN،وفحص قائمة الملفات قبل commit:لا .env أو.local أومفاتيح خاصة ضمن التتبع. baseline ناجح بكل مراحل verify:local:14 unit و48 integration و53 browser checks وrestore؛بصمة 0060a07210418d78fbb15e4638db42b6b28ed22e0e17bb53e74af24ac5c81826. الملفات الستة الأصلية unchanged.
 
 تسجيل D29–D36،وحفظ القرارات السابقة المتعارضة في الأرقام باسم D29-LEGACY وD30-LEGACY. P11 قنوات مدفوعة/حملات OUT_OF_SCOPE،والـconsent الحالية محفوظة. المالك اختار استكمال المحلي دون حسابات/اختيارات استضافة حاليًا.
@@ -66,3 +72,8 @@ verify:local ناجح بكل مراحله: 5 unit،31 integration،20 browser ch
 ### قبول L00
 
 verify:local النهائي passed على Chromium:14 unit،48 integration،53 browser checks،وكل مراحل build/lint/typecheck/OpenAPI/manual-demo/restore/verify:plan ناجحة. sourceFingerprint=0882fd165b2563d9d518743a768add0eafca2613b9ec3bf75e82d33e58496670،مطابقة قبل وبعد. مهام L00 الأربع DONE؛عدم وجود remote موثق حسب قبول L00-04.
+
+
+### قبول L01
+
+verify:local passed بكل المراحل:16 unit،52 integration،54 browser checks،مع build/lint/typecheck/OpenAPI/manual-demo/restore/verify:plan. بصمة ed3dfaf8b909b6dfae57c7de137a4ae3d0679055d49a78f63b9bcb11283fb14d متطابقة قبل وبعد. إصلاح تزامن اختبارات التركيز وانتظار commit قبل محاكاة فقد الرد؛لا تخطي لأي فحص. ترقية تجربة مازن حافظت على2محل و3حسابات و2staff و1customer وكل hashes/versions/roles؛4180 ready وlogin password local. L01 DONE محليًا؛SMTP ضمن L02،ومفيش نشر إنتاجي.

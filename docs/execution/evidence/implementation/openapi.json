@@ -898,7 +898,7 @@
                   },
                   "password": {
                     "type": "string",
-                    "minLength": 12,
+                    "minLength": 10,
                     "maxLength": 128
                   },
                   "displayName": {
@@ -1501,7 +1501,7 @@
                   },
                   "password": {
                     "type": "string",
-                    "minLength": 12,
+                    "minLength": 10,
                     "maxLength": 128
                   }
                 },
@@ -2698,7 +2698,7 @@
                   },
                   "password": {
                     "type": "string",
-                    "minLength": 12,
+                    "minLength": 10,
                     "maxLength": 128
                   }
                 },
@@ -2756,559 +2756,6 @@
                   "required": [
                     "changed"
                   ]
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Structured error; fields refer to the submitted command paths.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "object",
-                      "properties": {
-                        "code": {
-                          "type": "string"
-                        },
-                        "requestId": {
-                          "type": "string"
-                        },
-                        "retryable": {
-                          "type": "boolean"
-                        },
-                        "fields": {
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "properties": {
-                              "path": {
-                                "type": "string"
-                              },
-                              "code": {
-                                "type": "string"
-                              }
-                            },
-                            "required": [
-                              "path",
-                              "code"
-                            ]
-                          }
-                        }
-                      },
-                      "required": [
-                        "code"
-                      ]
-                    }
-                  },
-                  "required": [
-                    "error"
-                  ],
-                  "description": "Structured error; fields refer to the submitted command paths."
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Structured error; fields refer to the submitted command paths.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "object",
-                      "properties": {
-                        "code": {
-                          "type": "string"
-                        },
-                        "requestId": {
-                          "type": "string"
-                        },
-                        "retryable": {
-                          "type": "boolean"
-                        },
-                        "fields": {
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "properties": {
-                              "path": {
-                                "type": "string"
-                              },
-                              "code": {
-                                "type": "string"
-                              }
-                            },
-                            "required": [
-                              "path",
-                              "code"
-                            ]
-                          }
-                        }
-                      },
-                      "required": [
-                        "code"
-                      ]
-                    }
-                  },
-                  "required": [
-                    "error"
-                  ],
-                  "description": "Structured error; fields refer to the submitted command paths."
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "Structured error; fields refer to the submitted command paths.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "object",
-                      "properties": {
-                        "code": {
-                          "type": "string"
-                        },
-                        "requestId": {
-                          "type": "string"
-                        },
-                        "retryable": {
-                          "type": "boolean"
-                        },
-                        "fields": {
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "properties": {
-                              "path": {
-                                "type": "string"
-                              },
-                              "code": {
-                                "type": "string"
-                              }
-                            },
-                            "required": [
-                              "path",
-                              "code"
-                            ]
-                          }
-                        }
-                      },
-                      "required": [
-                        "code"
-                      ]
-                    }
-                  },
-                  "required": [
-                    "error"
-                  ],
-                  "description": "Structured error; fields refer to the submitted command paths."
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "Structured error; fields refer to the submitted command paths.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "object",
-                      "properties": {
-                        "code": {
-                          "type": "string"
-                        },
-                        "requestId": {
-                          "type": "string"
-                        },
-                        "retryable": {
-                          "type": "boolean"
-                        },
-                        "fields": {
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "properties": {
-                              "path": {
-                                "type": "string"
-                              },
-                              "code": {
-                                "type": "string"
-                              }
-                            },
-                            "required": [
-                              "path",
-                              "code"
-                            ]
-                          }
-                        }
-                      },
-                      "required": [
-                        "code"
-                      ]
-                    }
-                  },
-                  "required": [
-                    "error"
-                  ],
-                  "description": "Structured error; fields refer to the submitted command paths."
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "Structured error; fields refer to the submitted command paths.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "object",
-                      "properties": {
-                        "code": {
-                          "type": "string"
-                        },
-                        "requestId": {
-                          "type": "string"
-                        },
-                        "retryable": {
-                          "type": "boolean"
-                        },
-                        "fields": {
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "properties": {
-                              "path": {
-                                "type": "string"
-                              },
-                              "code": {
-                                "type": "string"
-                              }
-                            },
-                            "required": [
-                              "path",
-                              "code"
-                            ]
-                          }
-                        }
-                      },
-                      "required": [
-                        "code"
-                      ]
-                    }
-                  },
-                  "required": [
-                    "error"
-                  ],
-                  "description": "Structured error; fields refer to the submitted command paths."
-                }
-              }
-            }
-          },
-          "410": {
-            "description": "Structured error; fields refer to the submitted command paths.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "object",
-                      "properties": {
-                        "code": {
-                          "type": "string"
-                        },
-                        "requestId": {
-                          "type": "string"
-                        },
-                        "retryable": {
-                          "type": "boolean"
-                        },
-                        "fields": {
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "properties": {
-                              "path": {
-                                "type": "string"
-                              },
-                              "code": {
-                                "type": "string"
-                              }
-                            },
-                            "required": [
-                              "path",
-                              "code"
-                            ]
-                          }
-                        }
-                      },
-                      "required": [
-                        "code"
-                      ]
-                    }
-                  },
-                  "required": [
-                    "error"
-                  ],
-                  "description": "Structured error; fields refer to the submitted command paths."
-                }
-              }
-            }
-          },
-          "422": {
-            "description": "Structured error; fields refer to the submitted command paths.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "object",
-                      "properties": {
-                        "code": {
-                          "type": "string"
-                        },
-                        "requestId": {
-                          "type": "string"
-                        },
-                        "retryable": {
-                          "type": "boolean"
-                        },
-                        "fields": {
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "properties": {
-                              "path": {
-                                "type": "string"
-                              },
-                              "code": {
-                                "type": "string"
-                              }
-                            },
-                            "required": [
-                              "path",
-                              "code"
-                            ]
-                          }
-                        }
-                      },
-                      "required": [
-                        "code"
-                      ]
-                    }
-                  },
-                  "required": [
-                    "error"
-                  ],
-                  "description": "Structured error; fields refer to the submitted command paths."
-                }
-              }
-            }
-          },
-          "429": {
-            "description": "Structured error; fields refer to the submitted command paths.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "object",
-                      "properties": {
-                        "code": {
-                          "type": "string"
-                        },
-                        "requestId": {
-                          "type": "string"
-                        },
-                        "retryable": {
-                          "type": "boolean"
-                        },
-                        "fields": {
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "properties": {
-                              "path": {
-                                "type": "string"
-                              },
-                              "code": {
-                                "type": "string"
-                              }
-                            },
-                            "required": [
-                              "path",
-                              "code"
-                            ]
-                          }
-                        }
-                      },
-                      "required": [
-                        "code"
-                      ]
-                    }
-                  },
-                  "required": [
-                    "error"
-                  ],
-                  "description": "Structured error; fields refer to the submitted command paths."
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Structured error; fields refer to the submitted command paths.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "object",
-                      "properties": {
-                        "code": {
-                          "type": "string"
-                        },
-                        "requestId": {
-                          "type": "string"
-                        },
-                        "retryable": {
-                          "type": "boolean"
-                        },
-                        "fields": {
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "properties": {
-                              "path": {
-                                "type": "string"
-                              },
-                              "code": {
-                                "type": "string"
-                              }
-                            },
-                            "required": [
-                              "path",
-                              "code"
-                            ]
-                          }
-                        }
-                      },
-                      "required": [
-                        "code"
-                      ]
-                    }
-                  },
-                  "required": [
-                    "error"
-                  ],
-                  "description": "Structured error; fields refer to the submitted command paths."
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "Structured error; fields refer to the submitted command paths.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "object",
-                      "properties": {
-                        "code": {
-                          "type": "string"
-                        },
-                        "requestId": {
-                          "type": "string"
-                        },
-                        "retryable": {
-                          "type": "boolean"
-                        },
-                        "fields": {
-                          "type": "array",
-                          "items": {
-                            "type": "object",
-                            "properties": {
-                              "path": {
-                                "type": "string"
-                              },
-                              "code": {
-                                "type": "string"
-                              }
-                            },
-                            "required": [
-                              "path",
-                              "code"
-                            ]
-                          }
-                        }
-                      },
-                      "required": [
-                        "code"
-                      ]
-                    }
-                  },
-                  "required": [
-                    "error"
-                  ],
-                  "description": "Structured error; fields refer to the submitted command paths."
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/api/v1/auth/exchange": {
-      "post": {
-        "parameters": [
-          {
-            "schema": {
-              "type": "string",
-              "enum": [
-                "platform",
-                "merchant",
-                "cashier",
-                "customer"
-              ]
-            },
-            "in": "header",
-            "name": "x-nuqta-workspace",
-            "required": false,
-            "description": "Selects the portal session and CSRF cookies. Portal authorization is checked on every request. Omit only for the legacy shared sign-in flow."
-          },
-          {
-            "schema": {
-              "type": "string"
-            },
-            "in": "header",
-            "name": "Origin",
-            "required": true,
-            "description": "Must exactly match the configured public app origin."
-          }
-        ],
-        "security": [],
-        "responses": {
-          "200": {
-            "description": "Successful response. This route has no strict documented response DTO yet.",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "description": "Successful response. This route has no strict documented response DTO yet."
                 }
               }
             }
@@ -4938,6 +4385,2209 @@
             "session": []
           }
         ],
+        "responses": {
+          "200": {
+            "description": "Successful response. This route has no strict documented response DTO yet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Successful response. This route has no strict documented response DTO yet."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Structured error; fields refer to the submitted command paths.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "retryable": {
+                          "type": "boolean"
+                        },
+                        "fields": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "code": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "code"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "description": "Structured error; fields refer to the submitted command paths."
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Structured error; fields refer to the submitted command paths.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "retryable": {
+                          "type": "boolean"
+                        },
+                        "fields": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "code": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "code"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "description": "Structured error; fields refer to the submitted command paths."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Structured error; fields refer to the submitted command paths.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "retryable": {
+                          "type": "boolean"
+                        },
+                        "fields": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "code": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "code"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "description": "Structured error; fields refer to the submitted command paths."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Structured error; fields refer to the submitted command paths.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "retryable": {
+                          "type": "boolean"
+                        },
+                        "fields": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "code": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "code"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "description": "Structured error; fields refer to the submitted command paths."
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Structured error; fields refer to the submitted command paths.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "retryable": {
+                          "type": "boolean"
+                        },
+                        "fields": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "code": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "code"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "description": "Structured error; fields refer to the submitted command paths."
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Structured error; fields refer to the submitted command paths.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "retryable": {
+                          "type": "boolean"
+                        },
+                        "fields": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "code": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "code"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "description": "Structured error; fields refer to the submitted command paths."
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Structured error; fields refer to the submitted command paths.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "retryable": {
+                          "type": "boolean"
+                        },
+                        "fields": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "code": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "code"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "description": "Structured error; fields refer to the submitted command paths."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Structured error; fields refer to the submitted command paths.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "retryable": {
+                          "type": "boolean"
+                        },
+                        "fields": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "code": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "code"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "description": "Structured error; fields refer to the submitted command paths."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Structured error; fields refer to the submitted command paths.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "retryable": {
+                          "type": "boolean"
+                        },
+                        "fields": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "code": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "code"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "description": "Structured error; fields refer to the submitted command paths."
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Structured error; fields refer to the submitted command paths.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "retryable": {
+                          "type": "boolean"
+                        },
+                        "fields": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "code": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "code"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "description": "Structured error; fields refer to the submitted command paths."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/mfa/status": {
+      "get": {
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "platform",
+                "merchant",
+                "cashier",
+                "customer"
+              ]
+            },
+            "in": "header",
+            "name": "x-nuqta-workspace",
+            "required": false,
+            "description": "Selects the portal session and CSRF cookies. Portal authorization is checked on every request. Omit only for the legacy shared sign-in flow."
+          }
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Successful response. This route has no strict documented response DTO yet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Successful response. This route has no strict documented response DTO yet."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Structured error; fields refer to the submitted command paths.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "retryable": {
+                          "type": "boolean"
+                        },
+                        "fields": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "code": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "code"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "description": "Structured error; fields refer to the submitted command paths."
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Structured error; fields refer to the submitted command paths.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "retryable": {
+                          "type": "boolean"
+                        },
+                        "fields": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "code": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "code"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "description": "Structured error; fields refer to the submitted command paths."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Structured error; fields refer to the submitted command paths.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "retryable": {
+                          "type": "boolean"
+                        },
+                        "fields": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "code": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "code"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "description": "Structured error; fields refer to the submitted command paths."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Structured error; fields refer to the submitted command paths.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "retryable": {
+                          "type": "boolean"
+                        },
+                        "fields": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "code": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "code"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "description": "Structured error; fields refer to the submitted command paths."
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Structured error; fields refer to the submitted command paths.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "retryable": {
+                          "type": "boolean"
+                        },
+                        "fields": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "code": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "code"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "description": "Structured error; fields refer to the submitted command paths."
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Structured error; fields refer to the submitted command paths.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "retryable": {
+                          "type": "boolean"
+                        },
+                        "fields": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "code": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "code"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "description": "Structured error; fields refer to the submitted command paths."
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Structured error; fields refer to the submitted command paths.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "retryable": {
+                          "type": "boolean"
+                        },
+                        "fields": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "code": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "code"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "description": "Structured error; fields refer to the submitted command paths."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Structured error; fields refer to the submitted command paths.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "retryable": {
+                          "type": "boolean"
+                        },
+                        "fields": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "code": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "code"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "description": "Structured error; fields refer to the submitted command paths."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Structured error; fields refer to the submitted command paths.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "retryable": {
+                          "type": "boolean"
+                        },
+                        "fields": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "code": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "code"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "description": "Structured error; fields refer to the submitted command paths."
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Structured error; fields refer to the submitted command paths.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "retryable": {
+                          "type": "boolean"
+                        },
+                        "fields": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "code": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "code"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "description": "Structured error; fields refer to the submitted command paths."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/mfa/setup": {
+      "post": {
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "platform",
+                "merchant",
+                "cashier",
+                "customer"
+              ]
+            },
+            "in": "header",
+            "name": "x-nuqta-workspace",
+            "required": false,
+            "description": "Selects the portal session and CSRF cookies. Portal authorization is checked on every request. Omit only for the legacy shared sign-in flow."
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "header",
+            "name": "Origin",
+            "required": true,
+            "description": "Must exactly match the configured public app origin."
+          }
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Successful response. This route has no strict documented response DTO yet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Successful response. This route has no strict documented response DTO yet."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Structured error; fields refer to the submitted command paths.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "retryable": {
+                          "type": "boolean"
+                        },
+                        "fields": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "code": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "code"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "description": "Structured error; fields refer to the submitted command paths."
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Structured error; fields refer to the submitted command paths.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "retryable": {
+                          "type": "boolean"
+                        },
+                        "fields": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "code": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "code"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "description": "Structured error; fields refer to the submitted command paths."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Structured error; fields refer to the submitted command paths.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "retryable": {
+                          "type": "boolean"
+                        },
+                        "fields": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "code": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "code"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "description": "Structured error; fields refer to the submitted command paths."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Structured error; fields refer to the submitted command paths.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "retryable": {
+                          "type": "boolean"
+                        },
+                        "fields": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "code": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "code"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "description": "Structured error; fields refer to the submitted command paths."
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Structured error; fields refer to the submitted command paths.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "retryable": {
+                          "type": "boolean"
+                        },
+                        "fields": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "code": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "code"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "description": "Structured error; fields refer to the submitted command paths."
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Structured error; fields refer to the submitted command paths.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "retryable": {
+                          "type": "boolean"
+                        },
+                        "fields": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "code": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "code"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "description": "Structured error; fields refer to the submitted command paths."
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Structured error; fields refer to the submitted command paths.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "retryable": {
+                          "type": "boolean"
+                        },
+                        "fields": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "code": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "code"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "description": "Structured error; fields refer to the submitted command paths."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Structured error; fields refer to the submitted command paths.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "retryable": {
+                          "type": "boolean"
+                        },
+                        "fields": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "code": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "code"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "description": "Structured error; fields refer to the submitted command paths."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Structured error; fields refer to the submitted command paths.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "retryable": {
+                          "type": "boolean"
+                        },
+                        "fields": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "code": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "code"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "description": "Structured error; fields refer to the submitted command paths."
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Structured error; fields refer to the submitted command paths.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "retryable": {
+                          "type": "boolean"
+                        },
+                        "fields": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "code": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "code"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "description": "Structured error; fields refer to the submitted command paths."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/mfa/confirm": {
+      "post": {
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "platform",
+                "merchant",
+                "cashier",
+                "customer"
+              ]
+            },
+            "in": "header",
+            "name": "x-nuqta-workspace",
+            "required": false,
+            "description": "Selects the portal session and CSRF cookies. Portal authorization is checked on every request. Omit only for the legacy shared sign-in flow."
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "header",
+            "name": "Origin",
+            "required": true,
+            "description": "Must exactly match the configured public app origin."
+          }
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Successful response. This route has no strict documented response DTO yet.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "description": "Successful response. This route has no strict documented response DTO yet."
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Structured error; fields refer to the submitted command paths.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "retryable": {
+                          "type": "boolean"
+                        },
+                        "fields": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "code": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "code"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "description": "Structured error; fields refer to the submitted command paths."
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Structured error; fields refer to the submitted command paths.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "retryable": {
+                          "type": "boolean"
+                        },
+                        "fields": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "code": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "code"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "description": "Structured error; fields refer to the submitted command paths."
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Structured error; fields refer to the submitted command paths.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "retryable": {
+                          "type": "boolean"
+                        },
+                        "fields": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "code": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "code"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "description": "Structured error; fields refer to the submitted command paths."
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Structured error; fields refer to the submitted command paths.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "retryable": {
+                          "type": "boolean"
+                        },
+                        "fields": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "code": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "code"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "description": "Structured error; fields refer to the submitted command paths."
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Structured error; fields refer to the submitted command paths.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "retryable": {
+                          "type": "boolean"
+                        },
+                        "fields": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "code": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "code"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "description": "Structured error; fields refer to the submitted command paths."
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Structured error; fields refer to the submitted command paths.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "retryable": {
+                          "type": "boolean"
+                        },
+                        "fields": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "code": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "code"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "description": "Structured error; fields refer to the submitted command paths."
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Structured error; fields refer to the submitted command paths.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "retryable": {
+                          "type": "boolean"
+                        },
+                        "fields": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "code": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "code"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "description": "Structured error; fields refer to the submitted command paths."
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Structured error; fields refer to the submitted command paths.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "retryable": {
+                          "type": "boolean"
+                        },
+                        "fields": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "code": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "code"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "description": "Structured error; fields refer to the submitted command paths."
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Structured error; fields refer to the submitted command paths.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "retryable": {
+                          "type": "boolean"
+                        },
+                        "fields": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "code": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "code"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "description": "Structured error; fields refer to the submitted command paths."
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Structured error; fields refer to the submitted command paths.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "requestId": {
+                          "type": "string"
+                        },
+                        "retryable": {
+                          "type": "boolean"
+                        },
+                        "fields": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "path": {
+                                "type": "string"
+                              },
+                              "code": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "path",
+                              "code"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "code"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "error"
+                  ],
+                  "description": "Structured error; fields refer to the submitted command paths."
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/auth/mfa/recover": {
+      "post": {
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "platform",
+                "merchant",
+                "cashier",
+                "customer"
+              ]
+            },
+            "in": "header",
+            "name": "x-nuqta-workspace",
+            "required": false,
+            "description": "Selects the portal session and CSRF cookies. Portal authorization is checked on every request. Omit only for the legacy shared sign-in flow."
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "in": "header",
+            "name": "Origin",
+            "required": true,
+            "description": "Must exactly match the configured public app origin."
+          }
+        ],
+        "security": [],
         "responses": {
           "200": {
             "description": "Successful response. This route has no strict documented response DTO yet.",
@@ -7156,7 +8806,7 @@
                   },
                   "password": {
                     "type": "string",
-                    "minLength": 12,
+                    "minLength": 10,
                     "maxLength": 128,
                     "writeOnly": true
                   },
@@ -7795,7 +9445,7 @@
                       },
                       "password": {
                         "type": "string",
-                        "minLength": 12,
+                        "minLength": 10,
                         "maxLength": 128,
                         "writeOnly": true
                       }
@@ -23456,7 +25106,7 @@
                       },
                       "password": {
                         "type": "string",
-                        "minLength": 12,
+                        "minLength": 10,
                         "maxLength": 128
                       }
                     },

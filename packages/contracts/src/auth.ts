@@ -3,7 +3,7 @@ export const emailInput = z
   .email()
   .max(254)
   .transform((s) => s.toLowerCase());
-export const newPassword = z.string().min(12).max(128);
+export const newPassword = z.string().min(10).max(128);
 export const loginInput = z
   .object({ email: emailInput, password: z.string().min(1).max(128) })
   .strict();

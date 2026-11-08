@@ -96,7 +96,7 @@ export function provisioningModule(app: FastifyInstance, pools: Pools, c: Config
         body = z
           .object({
             email: z.email().transform((e) => e.toLowerCase()),
-            password: z.string().min(12).max(128),
+            password: z.string().min(10).max(128),
             role: z.enum(['owner', 'manager', 'cashier']),
             branchIds: z.array(z.uuid()).min(1).max(10),
             maxQty: z.number().int().min(1).max(100),
@@ -476,7 +476,7 @@ export function provisioningModule(app: FastifyInstance, pools: Pools, c: Config
         .object({
           email: z.email().transform((e) => e.toLowerCase()),
           role: z.enum(['owner', 'manager', 'cashier']),
-          password: z.string().min(12).max(128).optional(),
+          password: z.string().min(10).max(128).optional(),
           branchIds: z.array(z.uuid()).min(1).max(10),
           maxQty: z.number().int().min(1).max(100),
         })

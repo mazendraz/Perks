@@ -830,7 +830,7 @@ export function PlatformPage({ lang, userId }: { lang: Language; userId: string 
                           aria-label={ar ? 'باسورد الحساب' : 'Account password'}
                           dir="ltr"
                           autoComplete="new-password"
-                          minLength={12}
+                          minLength={10}
                           maxLength={128}
                           required={!savedEmails.includes(s.email.toLowerCase())}
                           value={passwords[i] || ''}
@@ -845,8 +845,8 @@ export function PlatformPage({ lang, userId }: { lang: Language; userId: string 
                         />
                         <small className="muted">
                           {ar
-                            ? '١٢ حرف أو أكتر. الحساب يقدر يدخل فور التفعيل.'
-                            : 'At least 12 characters. The account can sign in immediately after activation.'}
+                            ? '١٠ حروف أو أكتر. الحساب يقدر يدخل فور التفعيل.'
+                            : 'At least 10 characters. The account can sign in immediately after activation.'}
                         </small>
                       </label>
                     )}

@@ -777,3 +777,30 @@ button[aria-busy='true']::after {
     display: none;
   }
 }
+/* Platform MFA keeps secrets in the current screen only. */
+.platform-mfa {
+  max-width: 620px;
+  margin-inline: auto;
+}
+.platform-mfa form {
+  display: grid;
+  gap: 18px;
+}
+.mfa-qr {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin-inline: auto;
+  border-radius: 16px;
+}
+.mfa-recovery-codes {
+  display: grid;
+  gap: 12px;
+  padding-inline-start: 24px;
+  font-size: 0.9rem;
+}
+.mfa-recovery-codes code,
+.platform-mfa details code {
+  overflow-wrap: anywhere;
+  user-select: all;
+}

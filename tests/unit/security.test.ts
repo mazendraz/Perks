@@ -41,10 +41,32 @@ test('deployment fails closed with local authentication or insecure cookies', ()
       readConfig({
         ...base,
         APP_ENV: 'production',
-        AUTH_PROVIDER: 'supabase',
+        AUTH_PROVIDER: 'password',
         COOKIE_SECURE: 'false',
       }),
     /HTTPS/,
   );
   assert.throws(() => readConfig({ ...base, HOST: '0.0.0.0', AUTH_PROVIDER: 'local' }), /loopback/);
+  assert.equal(
+    readConfig({
+      ...base,
+      APP_ENV: 'production',
+      AUTH_PROVIDER: 'password',
+      COOKIE_SECURE: 'true',
+      PUBLIC_APP_ORIGIN: 'https://nuqta.example.test',
+    }).AUTH_PROVIDER,
+    'password',
+  );
+  assert.throws(
+    () =>
+      readConfig({
+        ...base,
+        APP_ENV: 'production',
+        AUTH_PROVIDER: 'password',
+        COOKIE_SECURE: 'true',
+        PUBLIC_APP_ORIGIN: 'https://nuqta.example.test',
+        AUTH_DATABASE_URL: base.DATABASE_URL,
+      }),
+    /separate/,
+  );
 });

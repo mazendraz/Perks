@@ -229,7 +229,7 @@ export function Login({
                     required
                     type={visible ? 'text' : 'password'}
                     autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
-                    minLength={mode === 'register' ? 12 : 1}
+                    minLength={mode === 'register' ? 10 : 1}
                     maxLength={128}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -255,8 +255,8 @@ export function Login({
                 {mode === 'register' && (
                   <small className="muted">
                     {ar
-                      ? '١٢ حرف على الأقل. جملة سهلة تفتكرها اختيار كويس.'
-                      : 'At least 12 characters. A memorable phrase works well.'}
+                      ? '١٠ حروف على الأقل. جملة سهلة تفتكرها اختيار كويس.'
+                      : 'At least 10 characters. A memorable phrase works well.'}
                   </small>
                 )}
               </label>
@@ -439,7 +439,7 @@ export function ResetPassword({ token, lang }: { token: string; lang: Language }
                 required
                 type="password"
                 autoComplete="new-password"
-                minLength={12}
+                minLength={10}
                 maxLength={128}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -528,7 +528,7 @@ export function PasswordSettings({
             required
             type="password"
             autoComplete="new-password"
-            minLength={12}
+            minLength={10}
             maxLength={128}
             value={password}
             onChange={(e) => setPassword(e.target.value)}

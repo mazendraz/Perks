@@ -8,6 +8,7 @@ export interface Actor {
   role: 'platform_admin' | 'platform_support' | 'customer';
   sessionId: string;
   mfaAt: Date | null;
+  mfaRequired?: boolean;
   authMethod?: 'otp' | 'password' | 'managed';
   csrfHash: string;
   preview?: { adminId: string; merchantId: string; staffId: string };

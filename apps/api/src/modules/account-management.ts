@@ -8,7 +8,7 @@ import { requireCondition } from '../errors.js';
 import { hashPassword } from '../passwords.js';
 import { keyedHash } from '../crypto.js';
 import { operation, idempotencyKey } from '../operations.js';
-import type { Config } from '../config.js';
+import { passwordEnabled, type Config } from '../config.js';
 export function accountManagementModule(app: FastifyInstance, pools: Pools, c: Config) {
   app.get('/api/v1/merchants/:m/account-security', async (req) => {
     const actor = authenticated(req),
@@ -22,7 +22,7 @@ export function accountManagementModule(app: FastifyInstance, pools: Pools, c: C
           accounts: (await db.query('SELECT staff_account_security($1) AS account', [m])).rows.map(
             (r) => ({
               ...r.account,
-              canManageCredentials: r.account.canManageCredentials && c.AUTH_PROVIDER === 'local',
+              canManageCredentials: r.account.canManageCredentials && passwordEnabled(c),
             }),
           ),
         };
@@ -38,11 +38,7 @@ export function accountManagementModule(app: FastifyInstance, pools: Pools, c: C
         { m, id } = z.object({ m: z.uuid(), id: z.uuid() }).parse(req.params),
         body = staffSecurityCommand.parse(req.body),
         key = idempotencyKey(req);
-      requireCondition(
-        c.AUTH_PROVIDER === 'local' && ['development', 'test'].includes(c.APP_ENV),
-        'PASSWORD_AUTH_NOT_CONFIGURED',
-        503,
-      );
+      requireCondition(passwordEnabled(c), 'PASSWORD_AUTH_NOT_CONFIGURED', 503);
       await transaction(
         pools.pool,
         async (db) => {

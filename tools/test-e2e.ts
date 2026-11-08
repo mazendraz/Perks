@@ -6,6 +6,8 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import assert from 'node:assert/strict';
 import { readConfig } from '../apps/api/src/config.js';
 import { hashPassword } from '../apps/api/src/passwords.js';
+import { openMfa } from '../apps/api/src/mfa.js';
+import { totp } from '../apps/api/src/crypto.js';
 import { runOne } from '../apps/worker/src/runner.js';
 
 // Uses synthetic, uniquely named tenants in a dedicated local/CI DB.
@@ -76,6 +78,12 @@ async function merchantTab(page: Page, tab: string) {
       .click();
   if (tab !== 'Overview') await page.getByRole('button', { name: tab, exact: true }).click();
 }
+async function navigateTo(page: Page, url: string) {
+  await page.goto(url, { waitUntil: 'domcontentloaded' });
+}
+async function reloadPage(page: Page) {
+  await page.reload({ waitUntil: 'domcontentloaded' });
+}
 async function login(
   page: Page,
   address: string,
@@ -83,7 +91,7 @@ async function login(
   existing = false,
   passwordValue = testPassword,
 ) {
-  await page.goto(route === '/' ? '/login' : route);
+  await navigateTo(page, route === '/' ? '/login' : route);
   if (!existing && route.startsWith('/join/')) {
     await page.getByRole('button', { name: 'Sign in and join', exact: true }).click();
     await page.getByRole('button', { name: 'Create customer account', exact: true }).click();
@@ -121,7 +129,7 @@ try {
   ] as const) {
     const device = await browser.newContext({ baseURL: origin, locale });
     const page = await device.newPage();
-    await page.goto('/');
+    await navigateTo(page, '/');
     await page.locator('input[type=email]').waitFor();
     assert.equal(await page.locator('.portal-tile').count(), 0);
     assert.equal(
@@ -132,7 +140,7 @@ try {
     await page
       .getByRole('button', { name: expected === 'ar' ? 'English' : 'العربية', exact: true })
       .click();
-    await page.reload();
+    await reloadPage(page);
     assert.equal(await page.locator('html').getAttribute('lang'), expected === 'ar' ? 'en' : 'ar');
     await device.close();
   }
@@ -142,7 +150,7 @@ try {
   const admin = await context(),
     ap = await admin.newPage();
   for (const page of [ap]) page.on('pageerror', (e) => errors.push(e.name));
-  await ap.goto('/platform');
+  await navigateTo(ap, '/platform');
   await ap.getByRole('button', { name: 'Sign in', exact: true }).waitFor();
   await ap.locator('.password-control input').fill(testPassword);
   for (const language of ['en', 'ar']) {
@@ -170,7 +178,7 @@ try {
     'Password eye control never overlaps the input and preserves its value in Arabic/English at desktop/mobile widths',
   );
   await login(ap, email('admin'), '/platform', true);
-  await ap.goto('/platform');
+  await navigateTo(ap, '/platform');
   await ap.getByRole('button', { name: 'New merchant', exact: true }).click();
   await ap
     .getByRole('textbox', { name: 'Business name', exact: true })
@@ -191,7 +199,7 @@ try {
   // dropped. Reloads must reuse the frozen create body and key in both cases.
   await ap.route('**/platform/provisioning-drafts', (route) => route.abort('failed'), { times: 1 });
   await next();
-  await ap.reload();
+  await reloadPage(ap);
   assert.equal(
     await ap.getByLabel('Business name', { exact: true }).inputValue(),
     'Browser Cafe ' + stamp,
@@ -206,7 +214,7 @@ try {
     { times: 1 },
   );
   await next();
-  await ap.reload();
+  await reloadPage(ap);
   await next();
   const adminId = (await (await admin.request.get('/api/v1/session')).json()).user.id;
   assert.equal(
@@ -222,7 +230,7 @@ try {
   );
   await ap.getByRole('button', { name: 'Save and exit', exact: true }).click();
   await ap.getByRole('button', { name: 'New merchant', exact: true }).waitFor();
-  await ap.reload();
+  await reloadPage(ap);
   await ap
     .locator('.list-row')
     .filter({ hasText: 'Browser Cafe ' + stamp })
@@ -243,7 +251,7 @@ try {
     { times: 1 },
   );
   await next();
-  await ap.reload();
+  await reloadPage(ap);
   await next();
   ok(
     'A lost draft update response recovers the equal saved content without discarding edits or overwriting another revision',
@@ -391,7 +399,7 @@ try {
   );
   await ap.getByRole('button', { name: 'Activate merchant', exact: true }).click();
   await ap.getByRole('button', { name: 'Check activation', exact: true }).waitFor();
-  await ap.reload();
+  await reloadPage(ap);
   const activated = ap.waitForResponse(
     (r) => r.url().includes('/activate') && r.request().method() === 'POST',
   );
@@ -585,7 +593,7 @@ try {
   await choose(ap.getByLabel('Card template', { exact: true }), 'barber');
   await ap.getByRole('button', { name: 'Publish branding', exact: true }).click();
   await ap.getByRole('alert').filter({ hasText: 'This is an owner preview.' }).waitFor();
-  await ap.reload();
+  await reloadPage(ap);
   await ap.getByRole('heading', { name: 'Merchant dashboard', exact: true }).waitFor();
   await merchantTab(ap, 'Branding');
   assert.equal(
@@ -665,7 +673,7 @@ try {
     up = await customer.newPage();
   up.on('pageerror', (e) => errors.push(e.name));
   await login(up, email('customer'), '/join/qa-' + stamp + '?b=' + branch + '&src=qr');
-  await up.goto('/join/qa-' + stamp + '?b=' + branch + '&src=qr');
+  await navigateTo(up, '/join/qa-' + stamp + '?b=' + branch + '&src=qr');
   await up.getByLabel('Name on your card', { exact: true }).fill('   ');
   await up.getByLabel('WhatsApp number (optional)', { exact: true }).fill('+15555550101');
   await up
@@ -675,12 +683,7 @@ try {
   await up.getByRole('button', { name: 'Create my card', exact: true }).click();
   await up.locator('input[name="alias"][aria-invalid="true"]').waitFor();
   await up.locator('.field-errors button').first().click();
-  assert.equal(
-    await up
-      .getByLabel('Name on your card', { exact: true })
-      .evaluate((el) => el === document.activeElement),
-    true,
-  );
+  await up.waitForFunction(() => document.activeElement?.getAttribute('name') === 'alias');
   await up.getByLabel('Name on your card', { exact: true }).fill('Browser Customer');
   await up.getByRole('button', { name: 'Create my card', exact: true }).click();
   await up.waitForURL('**/customer/*');
@@ -725,7 +728,7 @@ try {
     ).json();
     assert.equal(s.user.email, email(role));
   }
-  await sharedPage.goto('/cashier');
+  await navigateTo(sharedPage, '/cashier');
   await sharedPage.getByRole('button', { name: 'Sign out', exact: true }).click();
   await sharedPage.getByRole('button', { name: 'Sign in', exact: true }).waitFor();
   assert.equal(
@@ -776,7 +779,7 @@ try {
     (await db.query('SELECT count(*)::int AS n FROM assets WHERE merchant_id=$1', [mid])).rows[0].n,
     assetsBefore + 1,
   );
-  await op.reload();
+  await reloadPage(op);
   await merchantTab(op, 'Branding');
   assert.ok(
     (await op.locator('.logo-style-example img').first().getAttribute('src'))?.includes(savedLogo),
@@ -791,7 +794,7 @@ try {
   await op.getByRole('button', { name: 'Framed', exact: true }).click();
   await op.getByRole('button', { name: 'Publish branding', exact: true }).click();
   await op.getByRole('status').filter({ hasText: 'Branding published.' }).waitFor();
-  await op.reload();
+  await reloadPage(op);
   await merchantTab(op, 'Branding');
   assert.equal(
     await op.getByLabel('Stamp shape', { exact: true }).getAttribute('data-value'),
@@ -805,7 +808,7 @@ try {
     await op.getByRole('button', { name: 'Framed', exact: true }).getAttribute('aria-pressed'),
     'true',
   );
-  await up.reload();
+  await reloadPage(up);
   assert.equal(await up.locator('.loyalty-card').getAttribute('data-stamp-icon'), 'scissors');
   assert.equal(
     await up
@@ -832,7 +835,7 @@ try {
     await (await owner.request.get('/api/v1/public/merchants/qa-' + stamp)).json()
   ).programs[0];
   assert.equal(publicProgram.threshold, 8);
-  await up.reload();
+  await reloadPage(up);
   assert.equal(
     await up
       .getByRole('progressbar', { name: 'Stamp progress', exact: true })
@@ -846,7 +849,7 @@ try {
   ok(
     'Owner-published stamp artwork and business template survive reload and reach the customer card',
   );
-  await cp.goto('/cashier');
+  await navigateTo(cp, '/cashier');
   async function scan() {
     await cp.getByRole('button', { name: 'Scan card', exact: true }).click();
     await cp.getByLabel('Or enter the customer card code', { exact: true }).fill(token);
@@ -887,7 +890,7 @@ try {
   );
   await cp.getByRole('button', { name: 'Confirm stamps', exact: true }).click();
   await cp.getByRole('button', { name: 'Check the same operation', exact: true }).waitFor();
-  await cp.reload();
+  await reloadPage(cp);
   await cp.getByRole('button', { name: 'Check the same operation', exact: true }).click();
   await cp.getByText('Saved balance: 3', { exact: true }).waitFor();
   const first = await db.query(
@@ -941,7 +944,7 @@ try {
   await cp.getByLabel('Or enter the customer card code', { exact: true }).fill(token);
   await cp.getByRole('button', { name: 'Read code', exact: true }).click();
   await cp.getByRole('button', { name: 'Redeem', exact: true }).click();
-  await up.reload();
+  await reloadPage(up);
   await up.evaluate(() => {
     const events: string[] = [];
     (window as unknown as { motionEvents: string[] }).motionEvents = events;
@@ -973,7 +976,7 @@ try {
     'Cashier redemption starts card two at zero, animates renewal and respects reduced-motion settings',
   );
   ok('Authenticated holder confirmation completes one redemption and updates the customer card');
-  await op.goto('/merchant');
+  await navigateTo(op, '/merchant');
   await op.getByText('Registered customers', { exact: true }).waitFor();
   const overview = await call(owner, '/merchants/' + mid + '/overview');
   assert.equal(overview.status(), 200);
@@ -1048,11 +1051,16 @@ try {
   );
   assert.equal(queueProof.status(), 200);
   assert.equal((await queueProof.json()).requests.length, 1);
-  await cp.goto('/cashier');
+  await navigateTo(cp, '/cashier');
   await cp.getByRole('button', { name: 'Review request', exact: true }).click();
   await cp.getByLabel('Customer matching code', { exact: true }).fill(requestCode);
   await cp.getByLabel('Request receipt number', { exact: true }).fill('BROWSER-' + stamp + '-3');
   await cp.getByLabel('Stamp quantity', { exact: true }).fill('2');
+  let decisionResolved!: () => void, decisionRejected!: (error: Error) => void;
+  const committedDecision = new Promise<void>((resolve, reject) => {
+    decisionResolved = resolve;
+    decisionRejected = reject;
+  });
   await cp.route(
     '**/stamp-requests/*/decision',
     async (route) => {
@@ -1060,17 +1068,20 @@ try {
       if (response.status() !== 200) {
         errors.push('Intercepted commit returned ' + response.status());
         await route.fulfill({ response });
+        decisionRejected(new Error('Request decision did not commit.'));
         return;
       }
       await route.abort('failed');
+      decisionResolved();
     },
     { times: 1 },
   );
   await cp.getByRole('button', { name: 'Approve stamp request', exact: true }).click();
-  await cp.reload();
+  await committedDecision;
+  await reloadPage(cp);
   await cp.getByRole('button', { name: 'Check the same decision', exact: true }).click();
   await cp.getByRole('dialog').waitFor({ state: 'detached' });
-  await up.reload();
+  await reloadPage(up);
   await up.getByRole('status').filter({ hasText: 'Request approved' }).waitFor();
   const afterRequests = (await (await call(owner, '/merchants/' + mid + '/overview')).json())
     .metrics;
@@ -1101,7 +1112,7 @@ try {
   );
   assert.ok(savedDecision?.body?.award);
   assert.equal('code' in savedDecision.body, false);
-  await cp.reload();
+  await reloadPage(cp);
   await cp.getByRole('button', { name: 'Check the same decision', exact: true }).click();
   await cp.getByRole('dialog').waitFor();
   assert.equal(
@@ -1231,7 +1242,7 @@ try {
   const qrUrl = (await piece.locator('.url-box').getAttribute('href'))!;
   const anonymous = await context(),
     pp = await anonymous.newPage();
-  await pp.goto(qrUrl);
+  await navigateTo(pp, qrUrl);
   await pp.getByRole('button', { name: 'Open loyalty card', exact: true }).click();
   await pp.getByRole('heading', { name: 'Browser Cafe ' + stamp, exact: true }).waitFor();
   await piece.getByRole('button', { name: 'Replace piece', exact: true }).click();
@@ -1316,7 +1327,7 @@ try {
   assert.ok((await ap.locator('.operation-json').textContent())!.includes(reference));
   ok('Platform UI searches the committed redemption by reference');
   await merchantTab(op, 'Overview');
-  await cp.goto('/cashier');
+  await navigateTo(cp, '/cashier');
   await ap.getByRole('button', { name: 'Health', exact: true }).click();
   for (const [p, name] of [
     [up, 'customer'],
@@ -1373,12 +1384,60 @@ try {
   ok(
     'The platform resets the existing owner account from Preview, invalidates the old owner session and restores sign-in with the new password',
   );
+  // Exercise the real MFA setup UI without imposing production MFA on the local demo.
+  // Only the session response flag is overridden; setup/confirm/recovery hit the real API.
+  await ap.route('**/api/v1/session', async (route) => {
+    const response = await route.fetch();
+    const body = await response.json();
+    if (body.user) body.user.mfaRequired = true;
+    await route.fulfill({ response, json: body });
+  });
+  await navigateTo(ap, '/platform');
+  await ap.getByRole('heading', { name: 'Set up your authenticator', exact: true }).waitFor();
+  await screenshot(ap, 'platform-mfa-en');
+  await ap.setViewportSize({ width: 390, height: 844 });
+  await ap.getByRole('button', { name: 'العربية', exact: true }).click();
+  await ap.getByRole('heading', { name: 'جهّز تطبيق التحقق', exact: true }).waitFor();
+  assert.ok(await ap.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
+  await screenshot(ap, 'platform-mfa-ar-mobile');
+  await ap.getByRole('button', { name: 'English', exact: true }).click();
+  await ap.getByLabel('Current password', { exact: true }).fill(testPassword);
+  await ap.getByRole('button', { name: 'Show authenticator QR', exact: true }).click();
+  const setupQr = ap.getByAltText('Authenticator setup QR', { exact: true });
+  await setupQr.evaluate((img: HTMLImageElement) => img.decode());
+  assert.ok(await setupQr.evaluate((img: HTMLImageElement) => img.naturalWidth > 0));
+  const mfaSecret = (
+    await db.query('SELECT secret_encrypted FROM mfa_enrollments WHERE user_id=$1', [adminId])
+  ).rows[0].secret_encrypted;
+  await ap
+    .getByLabel('Authenticator code', { exact: true })
+    .fill(totp(openMfa(mfaSecret, c.AUTH_PEPPER), Math.floor(Date.now() / 30000)));
+  await ap.getByRole('button', { name: 'Verify identity', exact: true }).click();
+  await ap.getByRole('heading', { name: 'Save your recovery codes', exact: true }).waitFor();
+  assert.equal(await ap.locator('.mfa-recovery-codes code').count(), 10);
+  const recoveryCode = await ap.locator('.mfa-recovery-codes code').first().innerText();
+  assert.ok(await ap.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
+  await ap.getByRole('button', { name: 'I saved the codes. Continue', exact: true }).click();
+  await ap.getByRole('button', { name: 'New merchant', exact: true }).waitFor();
+  await db.query("UPDATE sessions SET mfa_at=now()-interval '16 minutes' WHERE user_id=$1", [
+    adminId,
+  ]);
+  await reloadPage(ap);
+  await ap.getByRole('heading', { name: 'Verify your identity', exact: true }).waitFor();
+  await ap.getByRole('button', { name: 'Use a recovery code', exact: true }).click();
+  await ap.getByLabel('Unused recovery code', { exact: true }).fill(recoveryCode);
+  await ap.getByRole('button', { name: 'Verify identity', exact: true }).click();
+  await ap.getByRole('button', { name: 'New merchant', exact: true }).waitFor();
+  await ap.unroute('**/api/v1/session');
+  ok(
+    'Platform MFA setup renders in Arabic/English, decodes its real QR, presents ten recovery codes and resumes with a one-use code; no secrets are written to evidence',
+  );
   const customerUser = (await (await customer.request.get('/api/v1/session')).json()).user.id;
   await db.query(
     "UPDATE sessions SET expires_at=clock_timestamp()-interval '1 second' WHERE user_id=$1",
     [customerUser],
   );
-  await up.reload();
+  await reloadPage(up);
   await up.waitForURL('**/login');
   await up.locator('input[type=email]').waitFor();
   ok('Expired authenticated session returns to sign-in without discarding server card state');

@@ -127,18 +127,33 @@ test('signup cannot set roles or take over an existing account; password users c
     (e: { code: string }) => e.code === '42501',
   );
 });
-test('failed password attempts persist per account and do not disclose unknown or disabled accounts', async () => {
+test('failed passwords lock their email/IP pair without locking the legitimate user on a different IP', async () => {
   const actor = await register();
-  for (let i = 0; i < 5; i++) {
+  for (let i = 0; i < 10; i++) {
     const r = await login(actor.email, 'wrong password');
     assert.equal(r.statusCode, 401);
     assert.equal(r.json().error.code, 'INVALID_CREDENTIALS');
   }
-  assert.equal((await login(actor.email)).statusCode, 401);
-  assert.ok(
+  const pair = (
+    await db.query('SELECT failures,locked_until FROM password_login_ip_guards WHERE email=$1', [
+      actor.email,
+    ])
+  ).rows[0];
+  assert.equal(pair.failures, 5);
+  assert.ok(pair.locked_until > new Date());
+  assert.equal(
     (await db.query('SELECT locked_until FROM password_login_guards WHERE email=$1', [actor.email]))
-      .rows[0].locked_until > new Date(),
+      .rows[0].locked_until,
+    null,
   );
+  const legitimate = await app.inject({
+    method: 'POST',
+    url: '/api/v1/auth/login',
+    headers: origin,
+    remoteAddress: '192.0.2.55',
+    payload: { email: actor.email, password },
+  });
+  assert.equal(legitimate.statusCode, 200);
   const unknown = await login('unknown-' + randomUUID() + '@nuqta.test');
   assert.equal(unknown.json().error.code, 'INVALID_CREDENTIALS');
 });

@@ -71,6 +71,8 @@ export async function api<T>(
   }
   if (response.status === 204) return undefined as T;
   const body = (await response.json()) as T & ApiFailure;
+  if (response.status === 403 && body.error?.code === 'MFA_REQUIRED')
+    window.dispatchEvent(new Event('nuqta:mfa-required'));
   if (response.status === 401 && csrf && body.error?.code === 'UNAUTHENTICATED') {
     csrf = '';
     window.dispatchEvent(new Event('nuqta:session-expired'));
@@ -115,6 +117,8 @@ const arErrors: Record<string, string> = {
   ACCOUNT_UNAVAILABLE: 'الحساب ده موجود بالفعل. سجّل دخولك أوغيّر الباسورد من استعادة الحساب.',
   RESET_LINK_INVALID: 'رابط الاستعادة انتهى أواتستخدم. اطلب رابط جديد.',
   PASSWORD_LOGIN_REQUIRED: 'ادخل بالإيميل والباسورد.',
+  PASSWORD_LENGTH: 'اختار باسورد من ١٠ لـ١٢٨ حرف.',
+  PASSWORD_TOO_COMMON: 'الباسورد ده شائع وسهل تخمينه. اختار جملة أطول ومختلفة.',
   AUTH_BUSY: 'استنى لحظة وحاول تاني.',
   TERMS_CHANGED: 'الشروط اتحدثت. راجع النسخة الجديدة ووافق عليها قبل التسجيل.',
   EXPORT_SCOPE_CHANGED: 'صلاحيات الفروع اتغيرت. اطلب ملف تصدير جديد بصلاحياتك الحالية.',
@@ -152,6 +156,10 @@ const arErrors: Record<string, string> = {
   INTERNAL_ERROR: 'حصل خطأ. استخدم مرجع الطلب مع الدعم.',
 };
 const enErrors: Record<string, string> = {
+  PASSWORD_LENGTH: 'Choose a password with 10 to 128 characters.',
+  PASSWORD_TOO_COMMON: 'This password is commonly used. Choose a different, memorable phrase.',
+  INVALID_MFA_CODE: 'This verification code is incorrect, expired or already used.',
+  MFA_REQUIRED: 'Verify with your authenticator or an unused recovery code to continue.',
   ADMIN_EMAIL_IN_USE: 'This email is already in use. Use a separate email for this administrator.',
   ADMIN_SELF_MANAGEMENT:
     'Manage your current account in My account. You cannot disable yourself here.',

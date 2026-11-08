@@ -53,7 +53,7 @@ try {
   await db.query('GRANT SELECT ON users TO nuqta_auth');
   await db.query('REVOKE INSERT,UPDATE ON users FROM nuqta_auth');
   await db.query(
-    'GRANT INSERT(email,display_name,auth_subject,password_hash,password_version),UPDATE(email,auth_subject,last_totp_counter,password_hash,password_version) ON users TO nuqta_auth',
+    'GRANT INSERT(email,display_name,auth_subject,password_hash,password_version),UPDATE(email,auth_subject,totp_secret,last_totp_counter,password_hash,password_version) ON users TO nuqta_auth',
   );
   await db.query('GRANT SELECT,INSERT,UPDATE ON sessions,auth_challenges TO nuqta_auth');
   for (const t of ['merchants', 'branches', 'staff_memberships', 'staff_branch_grants'])

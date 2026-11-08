@@ -124,7 +124,7 @@ export function AccountSecurity({
                 <td>
                   <span className="badge">{a.status}</span>
                   {a.lockedUntil && (
-                    <small>{ar ? 'الدخول مقفول مؤقتًا' : 'Sign-in temporarily locked'}</small>
+                    <small>{ar ? 'فيه محاولات دخول متوقفة مؤقتًا' : 'Some sign-in attempts are temporarily restricted'}</small>
                   )}
                 </td>
                 <td>
@@ -386,7 +386,7 @@ export function AccountSecurity({
                           aria-label={ar ? 'الباسورد الجديد' : 'New password'}
                           autoComplete="new-password"
                           dir="ltr"
-                          minLength={12}
+                          minLength={10}
                           maxLength={128}
                           required
                           disabled={!!attempt}

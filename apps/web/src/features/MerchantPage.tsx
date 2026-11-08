@@ -1096,15 +1096,15 @@ export function MerchantPage({ grant, lang }: { grant: Grant; lang: Language }) 
                   dir="ltr"
                   autoComplete="new-password"
                   required
-                  minLength={12}
+                  minLength={10}
                   maxLength={128}
                   value={invite.password}
                   onChange={(e) => setInvite({ ...invite, password: e.target.value })}
                 />
                 <small>
                   {ar
-                    ? '١٢ حرف أو أكتر. الموظف يدخل مباشرة بالإيميل والباسورد.'
-                    : 'At least 12 characters. Staff can sign in immediately with email and password.'}
+                    ? '١٠ حروف أو أكتر. الموظف يدخل مباشرة بالإيميل والباسورد.'
+                    : 'At least 10 characters. Staff can sign in immediately with email and password.'}
                 </small>
               </label>
             )}

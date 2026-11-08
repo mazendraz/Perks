@@ -1,5 +1,5 @@
 {
-  "at": "2026-11-08T19:03:05.982Z",
+  "at": "2026-11-08T19:39:04.647Z",
   "browser": "chromium",
   "browserVersion": "151.0.7922.34",
   "appEnv": "development",
@@ -56,11 +56,12 @@
     "All four workspaces render at 390px in Arabic RTL and English LTR without horizontal overflow",
     "No uncaught browser page errors",
     "The platform resets the existing owner account from Preview, invalidates the old owner session and restores sign-in with the new password",
+    "Platform MFA setup renders in Arabic/English, decodes its real QR, presents ten recovery codes and resumes with a one-use code; no secrets are written to evidence",
     "Expired authenticated session returns to sign-in without discarding server card state"
   ],
   "errors": [],
-  "merchantId": "3f5b4e86-5a0c-42ec-8ab3-90b1bf4626c7",
-  "membershipId": "923fcf06-0c89-4257-94d5-b99b0adb641b",
+  "merchantId": "30abd801-ba5c-476e-a78f-5e141b220d3c",
+  "membershipId": "0b9d140c-09a8-443d-995d-b4a303d531dd",
   "metrics": {
     "registered": 1,
     "active": 1,

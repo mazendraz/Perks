@@ -1,9 +1,9 @@
 {
-  "fingerprint": "0882fd165b2563d9d518743a768add0eafca2613b9ec3bf75e82d33e58496670",
+  "fingerprint": "ed3dfaf8b909b6dfae57c7de137a4ae3d0679055d49a78f63b9bcb11283fb14d",
   "files": [
     {
       "path": ".env.example",
-      "sha256": "f9b6da6898a920d87b3dac6412655eb4fb54d93c94cdccb22d3be8f476335bd5"
+      "sha256": "92948f5490e06794b4083bd67c857e615e4072f15987a4e76e82b5e52d8e6423"
     },
     {
       "path": ".gitattributes",
@@ -31,19 +31,23 @@
     },
     {
       "path": "apps/api/src/auth.ts",
-      "sha256": "79f65ff4ce04961fc40bbf0829be70a56973ad76b72ab68629ed222709d3f17a"
+      "sha256": "03aebdb56980531c3d543edb107018550f19ec3f3c260a69bae1c9fdff9dfb89"
     },
     {
       "path": "apps/api/src/config.ts",
-      "sha256": "f5af3174d2274e3ed72c3f417040e22ff4a8ac8a0d11883536c34a83b26e05b8"
+      "sha256": "47a6794d10400a9de3bfef7869fbada9f56dc3abe0e793823224e41fc705d62f"
     },
     {
       "path": "apps/api/src/crypto.ts",
       "sha256": "73772d570478d773f4677f5f815878f5fd3bd5b675fad6f4560dab575505466e"
     },
     {
+      "path": "apps/api/src/data/common-passwords.ts",
+      "sha256": "03bc81e4fea10425b1cb798d950022bf1fd336347aa78c99f392bd3da6ae4f3e"
+    },
+    {
       "path": "apps/api/src/db.ts",
-      "sha256": "be2a084cca9712aa1856826d66e748d78595c289e4796d99f1175867fe85c44e"
+      "sha256": "ec3c0b44d1b45c1215b215c770187b3398135a97d985ea5c4ce2bc82d0779916"
     },
     {
       "path": "apps/api/src/errors.ts",
@@ -54,8 +58,12 @@
       "sha256": "4da54ab24e3ad4434605f8f89c259ce16b6a7a4ee12099b372e9abd0f3fef998"
     },
     {
+      "path": "apps/api/src/mfa.ts",
+      "sha256": "1742720b5979410bfc33a295937a72b61bbd0d3de7fd0bc8cd55fac5daa6c5fe"
+    },
+    {
       "path": "apps/api/src/modules/account-management.ts",
-      "sha256": "539523e3c641658fc72cc29a7c3dd81b78c9107bbdb06fbaf1bb0de6eee45595"
+      "sha256": "75ecbdb404ce5ab3b675cde19b01246c73f3fff54c52003d885b776f518d2a70"
     },
     {
       "path": "apps/api/src/modules/administration.ts",
@@ -79,7 +87,7 @@
     },
     {
       "path": "apps/api/src/modules/onboarding.ts",
-      "sha256": "e027fbcffd2a876d146f196a1f2c168e0dc825785bb85fac699f189f0703631b"
+      "sha256": "0ad401007b53b4246f91ce1ea0aaf41c1670b3eb81cfe17e0ab690a248a91888"
     },
     {
       "path": "apps/api/src/modules/outreach.ts",
@@ -91,7 +99,7 @@
     },
     {
       "path": "apps/api/src/modules/platform-team.ts",
-      "sha256": "671d34e00b5966b07875eda23f4ba6e8e460dd6fb76b72fc7b9a5d31810af32f"
+      "sha256": "f2a157db12fe9e839df450d98b0a99dffcb6f99dad183319876fafb5042c19a6"
     },
     {
       "path": "apps/api/src/modules/platform.ts",
@@ -99,7 +107,7 @@
     },
     {
       "path": "apps/api/src/modules/provisioning.ts",
-      "sha256": "4a1a64f3c743ef4e394da59108e93dba6cab80455ffb8aeef4fcb2cd674c062c"
+      "sha256": "79ab3f0796356aa4c8b46c9be64cf6983b309db1e62a6f4f119615f344aab489"
     },
     {
       "path": "apps/api/src/modules/reporting.ts",
@@ -131,15 +139,15 @@
     },
     {
       "path": "apps/api/src/password-auth.ts",
-      "sha256": "c95d495ff24975c6e4fa4210f41bda5b9e09450542fac7c91c80bea9356d388b"
+      "sha256": "1b2cd442685ded6986f5712d93aaa9bdc62caac234b4eac24e47225c26f0cdd9"
     },
     {
       "path": "apps/api/src/passwords.ts",
-      "sha256": "8dcee97f7e5bf86034c939a72aacfa78f700dfe60d3db782b3055bc1d352c4c9"
+      "sha256": "07382c1bb65f00b57e6ca5f05f487f4c02c170ac297614b6bb6225cb02ac65f9"
     },
     {
       "path": "apps/api/src/policy.ts",
-      "sha256": "2b81ebe2ec8ceb6d32989b6b3f575c16fa4ee5bcdea9f70faa57a9288e5fdf7c"
+      "sha256": "3ad2003c058ce05df816ae2408a1fd2770e211e2108e8e90970fe0f0f6007f81"
     },
     {
       "path": "apps/api/src/portal-auth.ts",
@@ -147,7 +155,7 @@
     },
     {
       "path": "apps/api/src/server.ts",
-      "sha256": "947ba2d17a7252c524bfed300e56307989eec89fe8f10d2085cd3e26d1c589a6"
+      "sha256": "c736107b474b36c9353d3ad762bfa64cc4b5a0cad98258df38be1507a96028a7"
     },
     {
       "path": "apps/web/index.html",
@@ -179,7 +187,7 @@
     },
     {
       "path": "apps/web/src/App.tsx",
-      "sha256": "51fb2994ab581aad65f626b651e57b37961fd7bbf634ae9b8c1772d3f2022c71"
+      "sha256": "6c35bf0d4507a8a9c16d2726da1618313a58752cae376801428b414577aa873a"
     },
     {
       "path": "apps/web/src/FieldErrors.tsx",
@@ -187,7 +195,7 @@
     },
     {
       "path": "apps/web/src/api.ts",
-      "sha256": "f443153f2f85e81363d524d9eb37a6ea73c0cfc6f4ea73b22ed7f53675d648cf"
+      "sha256": "55fe3cc4c0a4eeaf41d2ba957e60c62e6204012ebab0c1d58577f1e7b825e12c"
     },
     {
       "path": "apps/web/src/controls/ColorPicker.tsx",
@@ -231,15 +239,15 @@
     },
     {
       "path": "apps/web/src/features.css",
-      "sha256": "34785b65d3e285d72a669d0b5839151a99e03af92bcbe0a36495000ae7781798"
+      "sha256": "a150a7445ba5f9d1b87f27ac71295ef24bc5117034a9d747188a86ff88feb0c9"
     },
     {
       "path": "apps/web/src/features/AccountSecurity.tsx",
-      "sha256": "daf24ecf92195664741fbb4dccb3939ac43b3f68b12de18ce0a71832b2104b5c"
+      "sha256": "aebe9bbf3a50934897ca0a4e4dd3a455a5a69bc2311cb7a27a99879888698c7b"
     },
     {
       "path": "apps/web/src/features/Auth.tsx",
-      "sha256": "377ef6ed394ea6da8e4903cc2cd01df4b9e67cb1cffdc64f9a0d50d9674631fb"
+      "sha256": "8e6a5a04b0b411b7286d1461889d07ff05f521ecb71506b70854d4882ed3eaa6"
     },
     {
       "path": "apps/web/src/features/Branches.tsx",
@@ -283,7 +291,7 @@
     },
     {
       "path": "apps/web/src/features/MerchantPage.tsx",
-      "sha256": "8c675b219f32d9892b0c13daeeac421e537d6072cf09a6a5d307cbe93bf698ab"
+      "sha256": "f08e2cdc18d60d258efb9f27c9290ed865a4c6427f7db48b0a4ac3cbabb8fbd1"
     },
     {
       "path": "apps/web/src/features/MerchantWorkspace.tsx",
@@ -299,15 +307,19 @@
     },
     {
       "path": "apps/web/src/features/PlatformAccountForm.tsx",
-      "sha256": "8c60872282c9c0f3e1b6f901a5b7d5b972f8a997b2c916c61511ee817ff8caf4"
+      "sha256": "f9867e4e1fe11464c5cfc6d903fff1a118ccc8b704bae2b358c9673fb17f9d1f"
+    },
+    {
+      "path": "apps/web/src/features/PlatformMfa.tsx",
+      "sha256": "7c366ebeef551515b16f8fe93b2f6ac9506fcd26f9e1ef1468fc9fdf106ef27f"
     },
     {
       "path": "apps/web/src/features/PlatformPage.tsx",
-      "sha256": "12a0b3a2ce6a9c4263f383ca0b2f3a4dd074a4f5094a5e2a6367ba2ca0fa6405"
+      "sha256": "650d360d559941ab91ff102fe4fa06bf2f289122752af55eca727de295aa7063"
     },
     {
       "path": "apps/web/src/features/PlatformTeam.tsx",
-      "sha256": "407df992bc2bdddd4492551515d94b2082e7d2bac3a4372ffdf120389993e575"
+      "sha256": "7dad8b1e911584fc0eadd94ce1e8fa3bd13024beb9074b0156baac6e798c7bcb"
     },
     {
       "path": "apps/web/src/features/PurchaseTrend.tsx",
@@ -363,7 +375,7 @@
     },
     {
       "path": "db/migrate.ts",
-      "sha256": "f5b7993f9b25e42ac75139861a6d389a847250bc6fc507495c2e03a80e91990f"
+      "sha256": "e2920293b7d795dc867e537b21636d6a5fc6ef9525d627893b866505baa4d783"
     },
     {
       "path": "db/migrations/001_foundations.sql",
@@ -482,6 +494,18 @@
       "sha256": "fceab196600f23e6b6b60fbf10e9948102ca584b62b9b932abeca5987749a833"
     },
     {
+      "path": "db/migrations/009r_production_password_security.sql",
+      "sha256": "2c6f882490292082b07aaff9232def89c809016c5edbe87fd2bc445153b5fdfc"
+    },
+    {
+      "path": "db/migrations/009s_password_guard_visibility.sql",
+      "sha256": "5b96bdec8f846e3a982add894c53e3156378718226cd438c2eab2242d08c54d5"
+    },
+    {
+      "path": "db/migrations/009t_mfa_audit.sql",
+      "sha256": "4f6927c477bc78bf414ffe7b348b91687f5aee90aa8afeee6eb97788ba06c909"
+    },
+    {
       "path": "db/seed.ts",
       "sha256": "8ba8da5880dcd6fcd95228474ff52db4bb563d87cec60392105899f16bee9100"
     },
@@ -491,11 +515,11 @@
     },
     {
       "path": "package-lock.json",
-      "sha256": "4689383363b9c0b82df9d15c6304bcf5a76d68fb4f6f5aa51a5cb18505717746"
+      "sha256": "746f6fce151d7e25b4120ca6beb62b71239c860aacf326fb3fbc500b09e31f6f"
     },
     {
       "path": "package.json",
-      "sha256": "08073122090332dad963298d0c8766755bc4812aa7472db7e1c9baa8d5273b77"
+      "sha256": "bf1d2034c01f197b0036660415d2c9f41b11c5e62b7a949df60f27fd9f6fbf7f"
     },
     {
       "path": "packages/contracts/package.json",
@@ -503,11 +527,11 @@
     },
     {
       "path": "packages/contracts/src/account-management.ts",
-      "sha256": "2ea4f3fd0dc1ea217cbd128a2ded71b19957071d001cf1e5ddad32b22b4c805f"
+      "sha256": "dfe646bcc24751550711eaf76e1ee0a7a7ab9eb29ac98ff9374c10a0285b9e7a"
     },
     {
       "path": "packages/contracts/src/auth.ts",
-      "sha256": "e4d252c7ca1d231a4bd63fa351580eb5e8cd7b21f0147b14a96fb1c2172a9189"
+      "sha256": "5a9026f7579e953f75d8a772b5bb628c355dfbac18e25c623eb13a7cd00ce806"
     },
     {
       "path": "packages/contracts/src/branding.ts",
@@ -523,7 +547,7 @@
     },
     {
       "path": "packages/contracts/src/platform-admin.ts",
-      "sha256": "b2f33f75ae2e777479ec4baccb430eb4cdb73dbef5d3d7deed750081f0206b91"
+      "sha256": "6d66bc36202165039d1ee290137d4500f260f417cbc05740855edfab33b4b3e9"
     },
     {
       "path": "packages/contracts/src/provisioning.ts",
@@ -563,7 +587,7 @@
     },
     {
       "path": "tests/integration/account-management.test.ts",
-      "sha256": "764402d68462fd552d2c48d3d5bb1833b60c669524787ad33bbf57d0d46ef61e"
+      "sha256": "9c2ad8c5c7ea50714185a38a4bbcef23cacc017fb8e19597894a2d9cb64808c2"
     },
     {
       "path": "tests/integration/administration.test.ts",
@@ -603,7 +627,7 @@
     },
     {
       "path": "tests/integration/passwords.test.ts",
-      "sha256": "1c512fea1a684f3dc48c13f34fc1b39249f9dcb04669634df164282e2fbfb01e"
+      "sha256": "60ce9f333485f629a48037f2c80866f7adfb90b3855d4b82917e0216929cde05"
     },
     {
       "path": "tests/integration/platform-team.test.ts",
@@ -616,6 +640,10 @@
     {
       "path": "tests/integration/portal-sessions.test.ts",
       "sha256": "7a3cba6e483bb53fbec873f9cc8419a109cf7118350e466ce22bc5467dd2a47b"
+    },
+    {
+      "path": "tests/integration/production-auth.test.ts",
+      "sha256": "4c7fb7053722ea3399fffa53506b9337c575b42b6ac256812461f23ebc8771d8"
     },
     {
       "path": "tests/integration/programs.test.ts",
@@ -659,7 +687,7 @@
     },
     {
       "path": "tests/unit/passwords.test.ts",
-      "sha256": "69ca0aaef07162d68d3d58f9bde4f8988f7007707481554dec4191b32e9d8e3d"
+      "sha256": "a365ffdfab75027e5390b55cbc5801eae6b133646f5b7360bc421d9d130e0349"
     },
     {
       "path": "tests/unit/platform-admin.test.ts",
@@ -667,7 +695,7 @@
     },
     {
       "path": "tests/unit/security.test.ts",
-      "sha256": "75c06b7f425af1d7fadaa85d935341f3c0bce533515f3a0d7bc09718f6741178"
+      "sha256": "1b7496e48ab1c2442b10201a7cf0893c8c3ee915d0c93118dfb6ef2438ddc2eb"
     },
     {
       "path": "tools/audit/browser-journeys.cjs",
@@ -731,7 +759,7 @@
     },
     {
       "path": "tools/test-e2e.ts",
-      "sha256": "7bfcf10883cf0ae939fac1f0e0c252bd80241c409a8624a75e53428c1756d1f0"
+      "sha256": "50e207f21242c82a9ff18e61439cd265433438ed3d27edc7c19cf86e1cbee346"
     },
     {
       "path": "tools/test-manual-demo.ts",

@@ -45,7 +45,7 @@ function NewPassword({
           type={visible ? 'text' : 'password'}
           dir="ltr"
           required
-          minLength={12}
+          minLength={10}
           maxLength={128}
           autoComplete="new-password"
           value={value}
@@ -215,7 +215,7 @@ export function PlatformTeam({ lang }: { lang: Language }) {
                     </button>
                     {a.lockedUntil && (
                       <small>
-                        {ar ? 'تسجيل الدخول مقفول مؤقتًا' : 'Sign-in temporarily locked'}
+                        {ar ? 'فيه محاولات دخول متوقفة مؤقتًا' : 'Some sign-in attempts are temporarily restricted'}
                       </small>
                     )}
                   </td>
@@ -400,8 +400,8 @@ export function PlatformTeam({ lang }: { lang: Language }) {
                 />
                 <small className="muted">
                   {ar
-                    ? '١٢ حرف على الأقل. الباسورد مش بيتعرض تاني بعد الحفظ.'
-                    : 'At least 12 characters. The password is not shown again after saving.'}
+                    ? '١٠ حروف على الأقل. الباسورد مش بيتعرض تاني بعد الحفظ.'
+                    : 'At least 10 characters. The password is not shown again after saving.'}
                 </small>
               </fieldset>
             )}

@@ -19,7 +19,7 @@ const actionBase = {
 };
 export const staffSecurityCommand = z.discriminatedUnion('action', [
   z
-    .object({ ...actionBase, action: z.literal('password'), password: z.string().min(12).max(128) })
+    .object({ ...actionBase, action: z.literal('password'), password: z.string().min(10).max(128) })
     .strict(),
   z.object({ ...actionBase, action: z.literal('sessions') }).strict(),
   z.object({ ...actionBase, action: z.literal('unlock') }).strict(),

@@ -1,5 +1,5 @@
 {
-  "at": "2026-11-08T19:03:09.748Z",
+  "at": "2026-11-08T19:39:13.162Z",
   "passed": 427,
   "failed": 0,
   "errors": [],
@@ -450,7 +450,7 @@
       "detail": "local link target"
     },
     {
-      "name": "link:docs\\execution\\STATUS.md:TASKS.md",
+      "name": "link:docs\\execution\\STATUS.md:../../LAUNCH-PLAN.md",
       "ok": true,
       "detail": "local link target"
     },

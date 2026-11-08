@@ -4,6 +4,7 @@ import { portalForPath, defaultPortal, portalInfo, type Portal } from './portals
 import { initialLanguage } from './locale.js';
 import { Icon } from '../../../packages/ui/src/Icon.js';
 import { Login, ResetPassword, PasswordSettings } from './features/Auth.js';
+import { PlatformMfa } from './features/PlatformMfa.js';
 import { useDialogAccessibility } from './dialog-accessibility.js';
 import { Operations } from './features/Operations.js';
 import { PlacementPage } from './features/Materials.js';
@@ -53,6 +54,13 @@ export function App() {
   }, [lang, portal]);
   useEffect(() => {
     void refresh();
+  }, [refresh]);
+  useEffect(() => {
+    const verify = () => {
+      void refresh();
+    };
+    window.addEventListener('nuqta:mfa-required', verify);
+    return () => window.removeEventListener('nuqta:mfa-required', verify);
   }, [refresh]);
   useEffect(() => {
     if (route.endsWith('/login') && route !== '/login') {
@@ -221,9 +229,7 @@ function Workspace({
 }) {
   const ar = lang === 'ar',
     portal = portalForPath(route) || defaultPortal(session);
-  const [merchantId, setMerchantId] = useState(''),
-    [mfa, setMfa] = useState(''),
-    [error, setError] = useState('');
+  const [merchantId, setMerchantId] = useState('');
   const grants =
     portal === 'merchant'
       ? session.grants.filter((g) => g.role !== 'cashier')
@@ -284,7 +290,10 @@ function Workspace({
       </button>
     </div>
   );
-  if (route === account)
+  const needsMfa =
+    platformAccess && session.user.mfaRequired !== false && !session.user.mfaVerified;
+  if (portal === 'platform' && needsMfa) content = <PlatformMfa lang={lang} onVerified={refresh} />;
+  else if (route === account)
     content = (
       <>
         <div className="page-heading">
@@ -300,31 +309,7 @@ function Workspace({
       </>
     );
   else if (portal === 'platform' && platformAccess) {
-    if (session.user.mfaRequired !== false && !session.user.mfaVerified)
-      content = (
-        <section className="panel">
-          <h1>{ar ? 'تأكيد الهوية' : 'Verify your identity'}</h1>
-          <form
-            onSubmit={async (e) => {
-              e.preventDefault();
-              try {
-                await api('/auth/mfa/verify', { method: 'POST', body: { code: mfa } });
-                await refresh();
-              } catch (e) {
-                setError(errorText(e, lang));
-              }
-            }}
-          >
-            <label>
-              {ar ? 'رمز تطبيق التحقق' : 'Authenticator code'}
-              <input type="password" value={mfa} onChange={(e) => setMfa(e.target.value)} />
-            </label>
-            <button className="primary">{ar ? 'تحقق' : 'Verify'}</button>
-            {error && <p role="alert">{error}</p>}
-          </form>
-        </section>
-      );
-    else if (route === '/platform/team' && session.user.role === 'platform_admin')
+    if (route === '/platform/team' && session.user.role === 'platform_admin')
       content = <PlatformTeam lang={lang} />;
     else if (route === '/platform/operations' || session.user.role === 'platform_support')
       content = (
@@ -348,7 +333,7 @@ function Workspace({
   else if (route.startsWith('/invite/'))
     content = <InvitePage token={route.split('/')[2] || ''} lang={lang} refresh={refresh} />;
   const previewMerchant = /^\/platform\/merchants\/([a-f0-9-]{36})\/owner-view$/.exec(route)?.[1];
-  if (previewMerchant && session.user.role === 'platform_admin')
+  if (previewMerchant && session.user.role === 'platform_admin' && !needsMfa)
     return (
       <Suspense
         fallback={<p role="status">{ar ? 'بنفتح واجهة المالك…' : 'Loading owner view…'}</p>}

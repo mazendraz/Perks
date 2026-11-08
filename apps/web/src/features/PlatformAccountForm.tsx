@@ -99,7 +99,7 @@ export function PlatformAccountForm({
             autoComplete="new-password"
             dir="ltr"
             required
-            minLength={12}
+            minLength={10}
             maxLength={128}
             value={password}
             disabled={!!attempt}

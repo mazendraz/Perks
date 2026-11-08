@@ -2,7 +2,7 @@ import type { Actor, DB } from './db.js';
 import { AppError, requireCondition } from './errors.js';
 export function platform(actor: Actor, mfa = true) {
   requireCondition(actor.role === 'platform_admin', 'FORBIDDEN', 403);
-  if (mfa && actor.authMethod !== 'password')
+  if (mfa && (actor.mfaRequired || actor.authMethod !== 'password'))
     requireCondition(
       actor.mfaAt && Date.now() - actor.mfaAt.getTime() < 15 * 60_000,
       'MFA_REQUIRED',

@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<html><head>
+
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="fba44866-dbf9-44c7-ad6f-6fb9984d9c7d"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<title>Super Admin</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<style>/* cyrillic-ext */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("19a0f8f6-db78-43b0-ad39-f0f1be3e0359") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("2c179178-d99a-41e8-a1e8-b757adb86ec3") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("4929da15-3b4f-45eb-9902-edb13280f262") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("6c7500d4-b9cb-400d-b840-f2071d5ba037") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("bae2740c-d142-4ea9-a7a7-8ac587ae5b44") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("19a0f8f6-db78-43b0-ad39-f0f1be3e0359") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("2c179178-d99a-41e8-a1e8-b757adb86ec3") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("4929da15-3b4f-45eb-9902-edb13280f262") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("6c7500d4-b9cb-400d-b840-f2071d5ba037") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("bae2740c-d142-4ea9-a7a7-8ac587ae5b44") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("19a0f8f6-db78-43b0-ad39-f0f1be3e0359") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("2c179178-d99a-41e8-a1e8-b757adb86ec3") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("4929da15-3b4f-45eb-9902-edb13280f262") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("6c7500d4-b9cb-400d-b840-f2071d5ba037") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("bae2740c-d142-4ea9-a7a7-8ac587ae5b44") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("19a0f8f6-db78-43b0-ad39-f0f1be3e0359") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("2c179178-d99a-41e8-a1e8-b757adb86ec3") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("4929da15-3b4f-45eb-9902-edb13280f262") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("6c7500d4-b9cb-400d-b840-f2071d5ba037") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("bae2740c-d142-4ea9-a7a7-8ac587ae5b44") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("2e23ab5d-f918-4e8e-906f-f7d16c012af3") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("8ee58b9b-03ba-4d8c-84fe-2db251e6f999") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* symbols2 */
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("a8deaa35-f11d-48fc-816a-07591def1ccc") format('woff2');
+  unicode-range: U+2000-2001, U+2004-2008, U+200A, U+23B8-23BD, U+2500-259F;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("ab23acf5-57ce-44df-a68e-5444d191ac2e") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("f5f6cbbe-f175-4fba-88af-9be8714c138f") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("86aa00b8-ed15-4405-b793-23868aab1689") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("2e23ab5d-f918-4e8e-906f-f7d16c012af3") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("8ee58b9b-03ba-4d8c-84fe-2db251e6f999") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* symbols2 */
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("a8deaa35-f11d-48fc-816a-07591def1ccc") format('woff2');
+  unicode-range: U+2000-2001, U+2004-2008, U+200A, U+23B8-23BD, U+2500-259F;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("ab23acf5-57ce-44df-a68e-5444d191ac2e") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("f5f6cbbe-f175-4fba-88af-9be8714c138f") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("86aa00b8-ed15-4405-b793-23868aab1689") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("2e23ab5d-f918-4e8e-906f-f7d16c012af3") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("8ee58b9b-03ba-4d8c-84fe-2db251e6f999") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* symbols2 */
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("a8deaa35-f11d-48fc-816a-07591def1ccc") format('woff2');
+  unicode-range: U+2000-2001, U+2004-2008, U+200A, U+23B8-23BD, U+2500-259F;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("ab23acf5-57ce-44df-a68e-5444d191ac2e") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("f5f6cbbe-f175-4fba-88af-9be8714c138f") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("86aa00b8-ed15-4405-b793-23868aab1689") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* arabic */
+@font-face {
+  font-family: 'IBM Plex Sans Arabic';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("454b7e05-257e-4e8e-bd5c-4fe899160f6b") format('woff2');
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC, U+102E0-102FB, U+10E60-10E7E, U+10EC2-10EC7, U+10EC9-10EEE, U+10EF0-10EFF, U+1EE00-1EE03, U+1EE05-1EE1F, U+1EE21-1EE22, U+1EE24, U+1EE27, U+1EE29-1EE32, U+1EE34-1EE37, U+1EE39, U+1EE3B, U+1EE42, U+1EE47, U+1EE49, U+1EE4B, U+1EE4D-1EE4F, U+1EE51-1EE52, U+1EE54, U+1EE57, U+1EE59, U+1EE5B, U+1EE5D, U+1EE5F, U+1EE61-1EE62, U+1EE64, U+1EE67-1EE6A, U+1EE6C-1EE72, U+1EE74-1EE77, U+1EE79-1EE7C, U+1EE7E, U+1EE80-1EE89, U+1EE8B-1EE9B, U+1EEA1-1EEA3, U+1EEA5-1EEA9, U+1EEAB-1EEBB, U+1EEF0-1EEF1;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'IBM Plex Sans Arabic';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("8e31e1d6-bc03-42f4-8512-c85436627aa3") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'IBM Plex Sans Arabic';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("de0292fe-4657-4591-bf9b-8f64dc736172") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'IBM Plex Sans Arabic';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("d12a4dd6-ad01-4189-819e-040cec9deded") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* arabic */
+@font-face {
+  font-family: 'IBM Plex Sans Arabic';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("46bc1e12-8b44-43e2-8064-b4c90490a7c1") format('woff2');
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC, U+102E0-102FB, U+10E60-10E7E, U+10EC2-10EC7, U+10EC9-10EEE, U+10EF0-10EFF, U+1EE00-1EE03, U+1EE05-1EE1F, U+1EE21-1EE22, U+1EE24, U+1EE27, U+1EE29-1EE32, U+1EE34-1EE37, U+1EE39, U+1EE3B, U+1EE42, U+1EE47, U+1EE49, U+1EE4B, U+1EE4D-1EE4F, U+1EE51-1EE52, U+1EE54, U+1EE57, U+1EE59, U+1EE5B, U+1EE5D, U+1EE5F, U+1EE61-1EE62, U+1EE64, U+1EE67-1EE6A, U+1EE6C-1EE72, U+1EE74-1EE77, U+1EE79-1EE7C, U+1EE7E, U+1EE80-1EE89, U+1EE8B-1EE9B, U+1EEA1-1EEA3, U+1EEA5-1EEA9, U+1EEAB-1EEBB, U+1EEF0-1EEF1;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'IBM Plex Sans Arabic';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("1e3da5af-5c22-4318-8f7c-a35aa474b738") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'IBM Plex Sans Arabic';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("7419ac0a-1fb3-4c15-8ae6-37cb3228da10") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'IBM Plex Sans Arabic';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("121ea008-8b91-4a71-b2dd-a19bd18eec4b") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* arabic */
+@font-face {
+  font-family: 'IBM Plex Sans Arabic';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("60176636-98bc-4b12-bbda-0738936db279") format('woff2');
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC, U+102E0-102FB, U+10E60-10E7E, U+10EC2-10EC7, U+10EC9-10EEE, U+10EF0-10EFF, U+1EE00-1EE03, U+1EE05-1EE1F, U+1EE21-1EE22, U+1EE24, U+1EE27, U+1EE29-1EE32, U+1EE34-1EE37, U+1EE39, U+1EE3B, U+1EE42, U+1EE47, U+1EE49, U+1EE4B, U+1EE4D-1EE4F, U+1EE51-1EE52, U+1EE54, U+1EE57, U+1EE59, U+1EE5B, U+1EE5D, U+1EE5F, U+1EE61-1EE62, U+1EE64, U+1EE67-1EE6A, U+1EE6C-1EE72, U+1EE74-1EE77, U+1EE79-1EE7C, U+1EE7E, U+1EE80-1EE89, U+1EE8B-1EE9B, U+1EEA1-1EEA3, U+1EEA5-1EEA9, U+1EEAB-1EEBB, U+1EEF0-1EEF1;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'IBM Plex Sans Arabic';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("d6127f57-47b4-4bb1-b887-a1e46d7894ca") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'IBM Plex Sans Arabic';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("de1d46fc-ff2a-45e2-9707-71c200f08099") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'IBM Plex Sans Arabic';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("3ef97e56-3b2c-4b1a-a3b2-48d73e257b2a") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* arabic */
+@font-face {
+  font-family: 'IBM Plex Sans Arabic';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("911f9fca-bd16-4c80-bcd5-b33df760c201") format('woff2');
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC, U+102E0-102FB, U+10E60-10E7E, U+10EC2-10EC7, U+10EC9-10EEE, U+10EF0-10EFF, U+1EE00-1EE03, U+1EE05-1EE1F, U+1EE21-1EE22, U+1EE24, U+1EE27, U+1EE29-1EE32, U+1EE34-1EE37, U+1EE39, U+1EE3B, U+1EE42, U+1EE47, U+1EE49, U+1EE4B, U+1EE4D-1EE4F, U+1EE51-1EE52, U+1EE54, U+1EE57, U+1EE59, U+1EE5B, U+1EE5D, U+1EE5F, U+1EE61-1EE62, U+1EE64, U+1EE67-1EE6A, U+1EE6C-1EE72, U+1EE74-1EE77, U+1EE79-1EE7C, U+1EE7E, U+1EE80-1EE89, U+1EE8B-1EE9B, U+1EEA1-1EEA3, U+1EEA5-1EEA9, U+1EEAB-1EEBB, U+1EEF0-1EEF1;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'IBM Plex Sans Arabic';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("5ef21b59-b696-4106-ae49-220a650f9d8d") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'IBM Plex Sans Arabic';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("adeb84ae-fca7-49ee-a3e6-c59a603c99cc") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'IBM Plex Sans Arabic';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("72bc9516-55d5-4b79-a3fc-cdd2e76fef10") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+</style>
+<script src="0489335a-d074-4f35-ac55-2788d067c745"></script>
+<style>body{margin:0;background:#F6F6F3;color:#16181D;font-family:'Geist','IBM Plex Sans Arabic',system-ui,sans-serif;-webkit-font-smoothing:antialiased}a{color:#2B55CF;text-decoration:none}a:hover{color:#1C3E9E;text-decoration:underline}*:focus-visible{outline:2px solid #2B55CF;outline-offset:2px}@keyframes nqIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}@keyframes nqSpin{to{transform:rotate(360deg)}}@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}</style>
+</helmet>
+<div dir="{{ dir }}" lang="{{ lang }}" style="min-height:100vh; display:flex; font-family:'Geist','IBM Plex Sans Arabic',system-ui,sans-serif">
+
+  <sc-if value="{{ showSide }}" hint-placeholder-val="{{ true }}">
+    <aside aria-label="{{ t.nav }}" style="width:232px; flex:none; background:#16181D; color:#E9E8E3; display:flex; flex-direction:column; position:{{ sidePos }}; top:0; bottom:0; inset-inline-start:0; height:100vh; z-index:15">
+      <div style="padding:16px; display:flex; align-items:center; gap:10px">
+        <div style="width:30px; height:30px; border-radius:9px; background:#2B55CF; display:grid; place-items:center"><div style="width:10px; height:10px; border-radius:99px; background:#fff"></div></div>
+        <div style="display:flex; flex-direction:column"><span style="font-weight:700; font-size:15px">{{ platform }}</span><span style="font-size:11px; color:#9AA0AC">{{ t.console }}</span></div>
+      </div>
+      <nav style="flex:1; overflow:auto; padding:8px; display:flex; flex-direction:column; gap:2px">
+        <sc-for list="{{ navItems }}" as="n" hint-placeholder-count="9">
+          <button sc-camel-on-click="{{ n.go }}" aria-current="{{ n.current }}" style="display:flex; align-items:center; gap:10px; min-height:38px; padding:0 12px; border:0; border-radius:8px; background:{{ n.bg }}; color:{{ n.fg }}; font:inherit; font-size:14px; cursor:pointer; text-align:start" style-hover="background:#24272E">{{ n.label }}
+            <sc-if value="{{ n.badge }}" hint-placeholder-val="{{ false }}"><span style="margin-inline-start:auto; font-size:11px; padding:1px 7px; border-radius:99px; background:#C2362B; color:#fff">{{ n.badge }}</span></sc-if>
+          </button>
+        </sc-for>
+      </nav>
+      <a href="Nuqta%20-%20Demo%20Launcher.html" style="padding:14px 16px; font-size:12px; color:#9AA0AC; border-top:1px solid #24272E">{{ t.launcher }}</a>
+    </aside>
+  </sc-if>
+  <sc-if value="{{ scrim }}" hint-placeholder-val="{{ false }}"><div sc-camel-on-click="{{ closeSide }}" style="position:fixed; inset:0; background:rgba(16,18,24,.35); z-index:14"></div></sc-if>
+
+  <div style="flex:1; min-width:0; display:flex; flex-direction:column">
+    <header style="position:sticky; top:0; z-index:10; background:rgba(246,246,243,.94); backdrop-filter:blur(8px); border-bottom:1px solid #E6E4DF; padding:10px 20px; display:flex; align-items:center; gap:10px">
+      <sc-if value="{{ narrow }}" hint-placeholder-val="{{ false }}"><button sc-camel-on-click="{{ openSide }}" aria-label="{{ t.nav }}" style="width:40px; height:40px; border:1px solid #D9D7D0; border-radius:10px; background:#fff; font-size:18px; cursor:pointer">☰</button></sc-if>
+      <form sc-camel-on-submit="{{ globalSearch }}" role="search" style="flex:1; max-width:440px; display:flex">
+        <input value="{{ gq }}" sc-camel-on-change="{{ onGq }}" aria-label="{{ t.searchAll }}" placeholder="{{ t.searchAll }}" style="flex:1; min-width:0; min-height:38px; border:1px solid #D9D7D0; border-radius:10px; padding:0 12px; font:inherit; font-size:13px; background:#fff">
+      </form>
+      <div style="flex:1"></div>
+      <button sc-camel-on-click="{{ toggleLang }}" style="height:36px; padding:0 12px; border:1px solid #D9D7D0; border-radius:10px; background:#fff; font:inherit; font-size:13px; cursor:pointer">{{ t.otherLang }}</button>
+      <div style="position:relative">
+        <button sc-camel-on-click="{{ toggleAcct }}" aria-expanded="{{ acctOpen }}" aria-haspopup="menu" style="height:36px; display:flex; align-items:center; gap:8px; padding:0 10px; border:1px solid #D9D7D0; border-radius:10px; background:#fff; font:inherit; font-size:13px; cursor:pointer"><span style="width:24px; height:24px; border-radius:99px; background:#2B55CF; color:#fff; display:grid; place-items:center; font-size:12px">{{ adminInitial }}</span><sc-if value="{{ wide }}" hint-placeholder-val="{{ true }}"><span>{{ adminName }}</span></sc-if></button>
+        <sc-if value="{{ acctOpen }}" hint-placeholder-val="{{ false }}">
+          <div role="menu" style="position:absolute; inset-inline-end:0; top:44px; background:#fff; border:1px solid #E6E4DF; border-radius:12px; box-shadow:0 12px 32px rgba(0,0,0,.12); padding:6px; min-width:220px; display:flex; flex-direction:column">
+            <sc-for list="{{ acctItems }}" as="i" hint-placeholder-count="3"><button role="menuitem" sc-camel-on-click="{{ i.go }}" style="text-align:start; min-height:38px; padding:0 10px; border:0; background:none; border-radius:8px; font:inherit; font-size:13px; cursor:pointer" style-hover="background:#F3F2EE">{{ i.label }}</button></sc-for>
+          </div>
+        </sc-if>
+      </div>
+    </header>
+
+    <main style="padding:24px 20px 64px; max-width:1280px; width:100%; box-sizing:border-box; margin:0 auto; display:flex; flex-direction:column; gap:20px; animation:nqIn .2s ease">
+
+      <!-- OVERVIEW -->
+      <sc-if value="{{ v.overview }}" hint-placeholder-val="{{ true }}">
+        <div><h1 style="margin:0; font-size:24px">{{ t.overview }}</h1><div style="font-size:13px; color:#6B7180; margin-top:4px">{{ updated }}</div></div>
+        <section style="display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px">
+          <sc-for list="{{ kpis }}" as="k" hint-placeholder-count="8">
+            <div style="background:#fff; border:1px solid #E6E4DF; border-radius:14px; padding:14px 16px; display:flex; flex-direction:column; gap:6px"><div style="font-size:13px; color:#5A606C">{{ k.label }}</div><div style="font-size:24px; font-weight:600; font-variant-numeric:tabular-nums">{{ k.value }}</div><div style="font-size:12px; color:#8A8F99">{{ k.def }}</div></div>
+          </sc-for>
+        </section>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(340px,1fr)); gap:16px">
+          <section style="background:#fff; border:1px solid #E6E4DF; border-radius:14px; padding:16px; display:flex; flex-direction:column; gap:10px">
+            <h2 style="margin:0; font-size:15px">{{ t.followUp }}</h2>
+            <sc-for list="{{ followUps }}" as="f" hint-placeholder-count="4">
+              <div style="display:flex; gap:10px; align-items:center; border-top:1px solid #F0EFEB; padding-top:10px; flex-wrap:wrap"><div style="width:8px; height:8px; border-radius:99px; background:{{ f.dot }}"></div><div style="flex:1; min-width:180px; font-size:14px; line-height:1.5">{{ f.text }}</div><button sc-camel-on-click="{{ f.go }}" style="min-height:32px; padding:0 10px; border:1px solid #D9D7D0; border-radius:8px; background:#fff; font:inherit; font-size:12px; cursor:pointer; white-space:nowrap">{{ f.cta }}</button></div>
+            </sc-for>
+          </section>
+          <section style="background:#fff; border:1px solid #E6E4DF; border-radius:14px; padding:16px; display:flex; flex-direction:column; gap:12px">
+            <div><h2 style="margin:0; font-size:15px">{{ t.activityByMerchant }}</h2><div style="font-size:12px; color:#6B7180; margin-top:2px">{{ t.activityDef }}</div></div>
+            <sc-for list="{{ merchantBars }}" as="b" hint-placeholder-count="5">
+              <div style="display:flex; flex-direction:column; gap:4px"><div style="display:flex; justify-content:space-between; font-size:13px; gap:8px"><span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap">{{ b.name }}</span><span style="font-variant-numeric:tabular-nums; color:#5A606C">{{ b.value }}</span></div><div style="height:8px; background:#F0EFEB; border-radius:99px; overflow:hidden"><div style="height:100%; width:{{ b.pct }}; background:{{ b.color }}"></div></div></div>
+            </sc-for>
+          </section>
+        </div>
+      </sc-if>
+
+      <!-- MERCHANTS -->
+      <sc-if value="{{ v.merchants }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap"><h1 style="margin:0; font-size:24px">{{ t.merchants }}</h1><button sc-camel-on-click="{{ newMerchant }}" style="min-height:40px; padding:0 16px; border:0; border-radius:10px; background:#2B55CF; color:#fff; font:inherit; font-weight:500; cursor:pointer">{{ t.newMerchant }}</button></div>
+        <div style="display:flex; gap:10px; flex-wrap:wrap">
+          <input type="search" value="{{ mq }}" sc-camel-on-change="{{ onMq }}" aria-label="{{ t.search }}" placeholder="{{ t.searchMerchants }}" style="flex:1; min-width:220px; min-height:40px; border:1px solid #D9D7D0; border-radius:10px; padding:0 12px; font:inherit; font-size:14px; background:#fff">
+          <div role="group" style="display:flex; gap:6px; flex-wrap:wrap"><sc-for list="{{ mFilters }}" as="o" hint-placeholder-count="4"><button sc-camel-on-click="{{ o.go }}" aria-pressed="{{ o.on }}" style="min-height:36px; padding:0 12px; border-radius:99px; border:1px solid {{ o.border }}; background:{{ o.bg }}; color:{{ o.fg }}; font:inherit; font-size:13px; cursor:pointer">{{ o.label }}</button></sc-for></div>
+        </div>
+        <div style="background:#fff; border:1px solid #E6E4DF; border-radius:14px; overflow-x:auto">
+          <sc-raw-table style="width:100%; min-width:860px; border-collapse:collapse; font-size:14px">
+            <sc-raw-thead><sc-raw-tr style="background:#FAFAF8; color:#6B7180; font-size:12px"><sc-raw-th style="text-align:start; font-weight:500; padding:10px 14px">{{ t.merchant }}</sc-raw-th><sc-raw-th style="text-align:start; font-weight:500">{{ t.plan }}</sc-raw-th><sc-raw-th style="text-align:start; font-weight:500">{{ t.status }}</sc-raw-th><sc-raw-th style="text-align:start; font-weight:500">{{ t.branchesL }}</sc-raw-th><sc-raw-th style="text-align:start; font-weight:500">{{ t.lastActivity }}</sc-raw-th><sc-raw-th style="text-align:start; font-weight:500">{{ t.setup }}</sc-raw-th><sc-raw-th style="text-align:end; font-weight:500; padding-inline-end:14px">{{ t.actions }}</sc-raw-th></sc-raw-tr></sc-raw-thead>
+            <sc-raw-tbody><sc-for list="{{ mRows }}" as="r" hint-placeholder-count="5">
+              <sc-raw-tr style="border-top:1px solid #F0EFEB">
+                <sc-raw-td style="padding:10px 14px"><button sc-camel-on-click="{{ r.open }}" style="display:flex; align-items:center; gap:10px; border:0; background:none; padding:0; font:inherit; cursor:pointer; text-align:start; color:#16181D"><span style="width:32px; height:32px; flex:none; border-radius:9px; background:{{ r.primary }}; color:{{ r.accent }}; display:grid; place-items:center; font-weight:700">{{ r.initials }}</span><span style="font-weight:500; max-width:240px">{{ r.name }}</span></button></sc-raw-td>
+                <sc-raw-td>{{ r.plan }}</sc-raw-td>
+                <sc-raw-td><span style="padding:3px 8px; border-radius:99px; background:{{ r.bg }}; color:{{ r.fg }}; font-size:12px; font-weight:600">{{ r.status }}</span></sc-raw-td>
+                <sc-raw-td style="font-variant-numeric:tabular-nums">{{ r.branches }}</sc-raw-td>
+                <sc-raw-td style="font-size:13px; color:#5A606C">{{ r.last }}</sc-raw-td>
+                <sc-raw-td><span style="font-size:12px; color:{{ r.setupColor }}">{{ r.setup }}</span></sc-raw-td>
+                <sc-raw-td style="text-align:end; padding-inline-end:14px"><div style="display:inline-flex; gap:6px"><sc-for list="{{ r.btns }}" as="b" hint-placeholder-count="2"><button sc-camel-on-click="{{ b.go }}" style="min-height:30px; padding:0 10px; border:1px solid #D9D7D0; border-radius:8px; background:#fff; font:inherit; font-size:12px; cursor:pointer; color:{{ b.fg }}; white-space:nowrap">{{ b.label }}</button></sc-for></div></sc-raw-td>
+              </sc-raw-tr>
+            </sc-for></sc-raw-tbody>
+          </sc-raw-table>
+          <sc-if value="{{ mEmpty }}" hint-placeholder-val="{{ false }}"><div style="padding:28px; text-align:center; color:#6B7180">{{ t.noResults }}</div></sc-if>
+        </div>
+      </sc-if>
+
+      <!-- MERCHANT DETAIL -->
+      <sc-if value="{{ v.merchant }}" hint-placeholder-val="{{ false }}">
+        <button sc-camel-on-click="{{ goMerchants }}" style="align-self:flex-start; border:0; background:none; font:inherit; font-size:13px; color:#2B55CF; cursor:pointer; padding:0">{{ backArrow }} {{ t.merchants }}</button>
+        <div style="display:flex; gap:14px; align-items:center; flex-wrap:wrap">
+          <div style="width:52px; height:52px; border-radius:14px; background:{{ md.primary }}; color:{{ md.accent }}; display:grid; place-items:center; font-size:22px; font-weight:700">{{ md.initials }}</div>
+          <div style="flex:1; min-width:200px"><h1 style="margin:0; font-size:22px">{{ md.name }}</h1><div style="font-size:13px; color:#6B7180; margin-top:4px">{{ md.meta }}</div></div>
+          <span style="padding:4px 10px; border-radius:99px; background:{{ md.bg }}; color:{{ md.fg }}; font-size:13px; font-weight:600">{{ md.status }}</span>
+          <button sc-camel-on-click="{{ md.toggleStatus }}" style="min-height:38px; padding:0 14px; border:1px solid {{ md.actBorder }}; border-radius:10px; background:#fff; color:{{ md.actFg }}; font:inherit; font-size:13px; cursor:pointer">{{ md.actLabel }}</button>
+          <a href="{{ md.dashUrl }}" style="font-size:13px">{{ t.openDash }}</a>
+        </div>
+        <sc-if value="{{ md.suspendNote }}" hint-placeholder-val="{{ false }}"><div role="status" style="background:#FCE9E7; color:#8F1F17; border-radius:12px; padding:12px 14px; font-size:14px">{{ md.suspendNote }}</div></sc-if>
+        <div role="tablist" style="display:flex; gap:2px; overflow-x:auto; border-bottom:1px solid #E6E4DF">
+          <sc-for list="{{ tabs }}" as="tb" hint-placeholder-count="10"><button role="tab" aria-selected="{{ tb.on }}" sc-camel-on-click="{{ tb.go }}" style="min-height:40px; padding:0 12px; border:0; border-bottom:2px solid {{ tb.border }}; background:none; font:inherit; font-size:13px; font-weight:{{ tb.weight }}; color:{{ tb.fg }}; cursor:pointer; white-space:nowrap">{{ tb.label }}</button></sc-for>
+        </div>
+        <div role="tabpanel" style="display:flex; flex-direction:column; gap:14px">
+          <sc-if value="{{ tab.kv }}" hint-placeholder-val="{{ false }}">
+            <dl style="margin:0; background:#fff; border:1px solid #E6E4DF; border-radius:14px; padding:16px; display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:14px">
+              <sc-for list="{{ tab.kv }}" as="x" hint-placeholder-count="6"><div style="display:flex; flex-direction:column; gap:4px"><dt style="font-size:12px; color:#6B7180">{{ x.k }}</dt><dd style="margin:0; font-size:15px; font-weight:500; overflow-wrap:anywhere; unicode-bidi:plaintext; text-align:start">{{ x.v }}</dd></div></sc-for>
+            </dl>
+          </sc-if>
+          <sc-if value="{{ tab.card }}" hint-placeholder-val="{{ false }}">
+            <div style="max-width:380px"><dc-import name="LoyaltyCard" merchant-name="{{ md.name }}" initials="{{ md.initials }}" program-name="{{ tab.card.program }}" alias="{{ t.sampleAlias }}" primary="{{ md.primary }}" accent="{{ md.accent }}" surface="{{ md.surface }}" template="{{ md.template }}" stamps="{{ tab.card.stamps }}" threshold="{{ tab.card.threshold }}" reward="{{ tab.card.reward }}" hint-size="100%,200px"></dc-import></div>
+          </sc-if>
+          <sc-if value="{{ tab.rows }}" hint-placeholder-val="{{ false }}">
+            <div style="background:#fff; border:1px solid #E6E4DF; border-radius:14px; overflow-x:auto">
+              <sc-raw-table style="width:100%; min-width:560px; border-collapse:collapse; font-size:14px">
+                <sc-raw-thead><sc-raw-tr style="background:#FAFAF8; color:#6B7180; font-size:12px"><sc-for list="{{ tab.head }}" as="h" hint-placeholder-count="4"><sc-raw-th style="text-align:start; font-weight:500; padding:10px 14px">{{ h }}</sc-raw-th></sc-for></sc-raw-tr></sc-raw-thead>
+                <sc-raw-tbody><sc-for list="{{ tab.rows }}" as="row" hint-placeholder-count="3"><sc-raw-tr style="border-top:1px solid #F0EFEB"><sc-for list="{{ row.cells }}" as="c" hint-placeholder-count="4"><sc-raw-td style="padding:10px 14px"><span style="padding:{{ c.pad }}; border-radius:99px; background:{{ c.bg }}; color:{{ c.fg }}; font-size:{{ c.size }}; font-family:{{ c.font }}; unicode-bidi:plaintext">{{ c.v }}</span></sc-raw-td></sc-for>
+                  <sc-if value="{{ row.btn }}" hint-placeholder-val="{{ false }}"><sc-raw-td style="padding:6px 14px; text-align:end"><button sc-camel-on-click="{{ row.btn.go }}" disabled="{{ row.btn.busy }}" style="min-height:30px; padding:0 10px; border:1px solid #D9D7D0; border-radius:8px; background:#fff; font:inherit; font-size:12px; cursor:pointer; white-space:nowrap">{{ row.btn.label }}</button></sc-raw-td></sc-if>
+                </sc-raw-tr></sc-for></sc-raw-tbody>
+              </sc-raw-table>
+              <sc-if value="{{ tab.empty }}" hint-placeholder-val="{{ false }}"><div style="padding:20px; text-align:center; color:#6B7180; font-size:14px">{{ tab.empty }}</div></sc-if>
+            </div>
+          </sc-if>
+        </div>
+      </sc-if>
+
+      <!-- PROVISIONING -->
+      <sc-if value="{{ v.provisioning }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap"><h1 style="margin:0; font-size:24px">{{ t.provisioning }}</h1><button sc-camel-on-click="{{ newMerchant }}" style="min-height:40px; padding:0 16px; border:0; border-radius:10px; background:#2B55CF; color:#fff; font:inherit; font-weight:500; cursor:pointer">{{ t.startWizard }}</button></div>
+        <section style="display:flex; flex-direction:column; gap:10px"><h2 style="margin:0; font-size:15px">{{ t.drafts }}</h2>
+          <sc-for list="{{ draftRows }}" as="d" hint-placeholder-count="1">
+            <div style="background:#fff; border:1px solid #E6E4DF; border-radius:14px; padding:14px 16px; display:flex; gap:12px; align-items:center; flex-wrap:wrap"><div style="flex:1; min-width:200px"><div style="font-weight:600">{{ d.name }}</div><div style="font-size:12px; color:#6B7180">{{ d.meta }}</div></div><div style="width:140px; height:6px; background:#F0EFEB; border-radius:99px; overflow:hidden"><div style="height:100%; width:{{ d.pct }}; background:#2B55CF"></div></div><button sc-camel-on-click="{{ d.resume }}" style="min-height:34px; padding:0 12px; border:0; border-radius:8px; background:#2B55CF; color:#fff; font:inherit; font-size:13px; cursor:pointer">{{ t.resume }}</button><button sc-camel-on-click="{{ d.del }}" style="min-height:34px; padding:0 12px; border:1px solid #F1C7C2; border-radius:8px; background:#fff; color:#B42318; font:inherit; font-size:13px; cursor:pointer">{{ t.delete }}</button></div>
+          </sc-for>
+          <sc-if value="{{ noDrafts }}" hint-placeholder-val="{{ false }}"><div style="font-size:14px; color:#6B7180">{{ t.noDrafts }}</div></sc-if>
+        </section>
+        <section style="display:flex; flex-direction:column; gap:10px"><h2 style="margin:0; font-size:15px">{{ t.recentActivations }}</h2>
+          <sc-for list="{{ activationRows }}" as="d" hint-placeholder-count="0">
+            <button sc-camel-on-click="{{ d.open }}" style="text-align:start; background:#fff; border:1px solid #E6E4DF; border-radius:14px; padding:14px 16px; display:flex; gap:12px; align-items:center; font:inherit; cursor:pointer; color:#16181D"><div style="flex:1"><div style="font-weight:600">{{ d.name }}</div><div style="font-size:12px; color:#6B7180">{{ d.meta }}</div></div><span style="font-size:12px; color:{{ d.color }}">{{ d.summary }}</span></button>
+          </sc-for>
+          <sc-if value="{{ noActivations }}" hint-placeholder-val="{{ false }}"><div style="font-size:14px; color:#6B7180">{{ t.noActivations }}</div></sc-if>
+        </section>
+      </sc-if>
+
+      <!-- WIZARD -->
+      <sc-if value="{{ v.wizard }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap">
+          <div><div style="font-size:13px; color:#6B7180">{{ t.newMerchant }} · <bdi dir="ltr" style="font-family:'Geist Mono',monospace">{{ wz.id }}</bdi></div><h1 style="margin:2px 0 0; font-size:22px">{{ wz.stepTitle }}</h1></div>
+          <div style="display:flex; gap:8px; align-items:center"><span style="font-size:12px; color:#6B7180">{{ wz.savedText }}</span><button sc-camel-on-click="{{ wz.save }}" style="min-height:36px; padding:0 12px; border:1px solid #D9D7D0; border-radius:10px; background:#fff; font:inherit; font-size:13px; cursor:pointer; white-space:nowrap">{{ t.saveDraft }}</button><button sc-camel-on-click="{{ wz.exit }}" style="min-height:36px; padding:0 12px; border:0; background:none; font:inherit; font-size:13px; cursor:pointer; color:#5A606C">{{ t.exit }}</button></div>
+        </div>
+        <ol aria-label="{{ t.steps }}" style="list-style:none; margin:0; padding:0; display:grid; grid-template-columns:repeat(auto-fit,minmax(110px,1fr)); gap:6px">
+          <sc-for list="{{ wz.steps }}" as="s" hint-placeholder-count="7"><li><button sc-camel-on-click="{{ s.go }}" aria-current="{{ s.current }}" disabled="{{ s.locked }}" style="width:100%; text-align:start; border:0; border-top:3px solid {{ s.bar }}; background:none; padding:8px 2px 0; font:inherit; cursor:pointer; display:flex; flex-direction:column; gap:2px; opacity:{{ s.opacity }}"><span style="font-size:11px; color:#6B7180">{{ s.num }}</span><span style="font-size:13px; font-weight:{{ s.weight }}; color:#16181D">{{ s.label }}</span></button></li></sc-for>
+        </ol>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(340px,1fr)); gap:20px; align-items:start">
+          <div style="background:#fff; border:1px solid #E6E4DF; border-radius:14px; padding:20px; display:flex; flex-direction:column; gap:14px">
+            <sc-if value="{{ wz.errors.length }}" hint-placeholder-val="{{ false }}"><div role="alert" style="background:#FCE9E7; color:#8F1F17; border-radius:10px; padding:10px 12px; font-size:13px; line-height:1.7"><sc-for list="{{ wz.errors }}" as="e" hint-placeholder-count="1"><div>• {{ e }}</div></sc-for></div></sc-if>
+
+            <sc-if value="{{ wz.s1 }}" hint-placeholder-val="{{ false }}">
+              <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px">
+                <sc-for list="{{ wz.fields1 }}" as="f" hint-placeholder-count="6"><label style="display:flex; flex-direction:column; gap:6px; font-size:13px; font-weight:500">{{ f.label }}<input value="{{ f.value }}" sc-camel-on-change="{{ f.on }}" dir="{{ f.dir }}" aria-invalid="{{ f.invalid }}" style="min-height:40px; border:1px solid {{ f.border }}; border-radius:10px; padding:0 12px; font:inherit; font-size:14px"></label></sc-for>
+              </div>
+              <div style="display:flex; flex-direction:column; gap:6px"><div style="font-size:13px; font-weight:500">{{ t.category }}</div><div role="radiogroup" style="display:flex; gap:6px; flex-wrap:wrap"><sc-for list="{{ wz.cats }}" as="o" hint-placeholder-count="5"><button role="radio" aria-checked="{{ o.on }}" sc-camel-on-click="{{ o.go }}" style="min-height:36px; padding:0 12px; border-radius:99px; border:1px solid {{ o.border }}; background:{{ o.bg }}; color:{{ o.fg }}; font:inherit; font-size:13px; cursor:pointer">{{ o.label }}</button></sc-for></div></div>
+            </sc-if>
+
+            <sc-if value="{{ wz.s2 }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex; gap:14px; align-items:center; flex-wrap:wrap"><div style="width:72px; height:72px; border-radius:16px; border:2px dashed {{ wz.logoBorder }}; display:grid; place-items:center; font-size:28px; font-weight:700; background:{{ wz.d.primary }}; color:{{ wz.d.accent }}">{{ wz.initial }}</div><div style="display:flex; flex-direction:column; gap:6px"><button sc-camel-on-click="{{ wz.uploadLogo }}" style="align-self:flex-start; min-height:36px; padding:0 12px; border:1px solid #D9D7D0; border-radius:10px; background:#fff; font:inherit; font-size:13px; cursor:pointer">{{ wz.logoCta }}</button><div style="font-size:12px; color:#6B7180">{{ t.logoHint }}</div></div></div>
+              <sc-if value="{{ wz.d.logo }}" hint-placeholder-val="{{ false }}">
+                <div style="display:flex; flex-direction:column; gap:6px"><div style="font-size:13px; font-weight:500">{{ t.suggested }}</div><div style="display:flex; gap:8px; flex-wrap:wrap"><sc-for list="{{ wz.palettes }}" as="p" hint-placeholder-count="4"><button sc-camel-on-click="{{ p.go }}" aria-label="{{ p.label }}" aria-pressed="{{ p.on }}" style="display:flex; width:60px; height:34px; padding:0; border-radius:10px; overflow:hidden; border:2px solid {{ p.border }}; cursor:pointer"><span style="flex:2; background:{{ p.primary }}"></span><span style="flex:1; background:{{ p.accent }}"></span></button></sc-for></div></div>
+              </sc-if>
+              <div style="display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:10px">
+                <label style="display:flex; flex-direction:column; gap:6px; font-size:13px; font-weight:500; min-width:0">{{ t.primary }}<div style="display:flex; gap:6px"><input type="color" value="{{ wz.d.primary }}" sc-camel-on-change="{{ wz.onPrimary }}" aria-label="{{ t.primary }}" style="width:44px; height:40px; border:1px solid #D9D7D0; border-radius:8px; padding:2px; background:#fff"><input value="{{ wz.d.primary }}" sc-camel-on-change="{{ wz.onPrimary }}" dir="ltr" style="flex:1; min-width:0; min-height:40px; border:1px solid #D9D7D0; border-radius:8px; padding:0 8px; font-family:'Geist Mono',monospace; font-size:13px"></div></label>
+                <label style="display:flex; flex-direction:column; gap:6px; font-size:13px; font-weight:500; min-width:0">{{ t.accent }}<div style="display:flex; gap:6px"><input type="color" value="{{ wz.d.accent }}" sc-camel-on-change="{{ wz.onAccent }}" aria-label="{{ t.accent }}" style="width:44px; height:40px; border:1px solid #D9D7D0; border-radius:8px; padding:2px; background:#fff"><input value="{{ wz.d.accent }}" sc-camel-on-change="{{ wz.onAccent }}" dir="ltr" style="flex:1; min-width:0; min-height:40px; border:1px solid #D9D7D0; border-radius:8px; padding:0 8px; font-family:'Geist Mono',monospace; font-size:13px"></div></label>
+              </div>
+              <div style="display:flex; flex-direction:column; gap:6px"><div style="font-size:13px; font-weight:500">{{ t.cardTemplate }}</div><div role="radiogroup" style="display:flex; gap:8px; flex-wrap:wrap"><sc-for list="{{ wz.tpls }}" as="o" hint-placeholder-count="3"><button role="radio" aria-checked="{{ o.on }}" sc-camel-on-click="{{ o.go }}" style="min-height:36px; padding:0 14px; border-radius:10px; border:2px solid {{ o.border }}; background:#fff; font:inherit; font-size:13px; cursor:pointer">{{ o.label }}</button></sc-for></div></div>
+            </sc-if>
+
+            <sc-if value="{{ wz.s3 }}" hint-placeholder-val="{{ false }}">
+              <sc-for list="{{ wz.fields3 }}" as="f" hint-placeholder-count="3"><label style="display:flex; flex-direction:column; gap:6px; font-size:13px; font-weight:500">{{ f.label }}<input value="{{ f.value }}" sc-camel-on-change="{{ f.on }}" aria-invalid="{{ f.invalid }}" style="min-height:40px; border:1px solid {{ f.border }}; border-radius:10px; padding:0 12px; font:inherit; font-size:14px"></label></sc-for>
+              <div style="display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px"><sc-for list="{{ wz.nums3 }}" as="f" hint-placeholder-count="3"><label style="display:flex; flex-direction:column; gap:6px; font-size:13px; font-weight:500">{{ f.label }}<input type="number" min="1" value="{{ f.value }}" sc-camel-on-change="{{ f.on }}" style="min-height:40px; border:1px solid #D9D7D0; border-radius:10px; padding:0 10px; font:inherit; min-width:0"></label></sc-for></div>
+              <div style="display:flex; gap:8px; flex-wrap:wrap"><sc-for list="{{ wz.ptypes }}" as="o" hint-placeholder-count="2"><button sc-camel-on-click="{{ o.go }}" aria-pressed="{{ o.on }}" style="min-height:36px; padding:0 12px; border-radius:10px; border:2px solid {{ o.border }}; background:#fff; font:inherit; font-size:13px; cursor:pointer">{{ o.label }}</button></sc-for></div>
+              <label style="display:flex; flex-direction:column; gap:6px; font-size:13px; font-weight:500">{{ t.terms }}<textarea rows="2" value="{{ wz.d.terms }}" sc-camel-on-change="{{ wz.onTerms }}" style="border:1px solid #D9D7D0; border-radius:10px; padding:8px 12px; font:inherit; font-size:14px"></textarea></label>
+            </sc-if>
+
+            <sc-if value="{{ wz.s4 }}" hint-placeholder-val="{{ false }}">
+              <div style="font-size:14px; font-weight:600">{{ t.branchesL }}</div>
+              <sc-for list="{{ wz.branchRows }}" as="b" hint-placeholder-count="1"><div style="display:flex; gap:8px"><input value="{{ b.name }}" sc-camel-on-change="{{ b.onName }}" aria-label="{{ t.branchName }}" placeholder="{{ t.branchName }}" style="flex:1; min-width:0; min-height:40px; border:1px solid {{ b.border }}; border-radius:10px; padding:0 12px; font:inherit"><input value="{{ b.address }}" sc-camel-on-change="{{ b.onAddr }}" aria-label="{{ t.address }}" placeholder="{{ t.address }}" style="flex:1.4; min-width:0; min-height:40px; border:1px solid #D9D7D0; border-radius:10px; padding:0 12px; font:inherit"><button sc-camel-on-click="{{ b.remove }}" aria-label="{{ t.remove }}" style="width:40px; border:1px solid #D9D7D0; border-radius:10px; background:#fff; cursor:pointer">×</button></div></sc-for>
+              <button sc-camel-on-click="{{ wz.addBranch }}" style="align-self:flex-start; min-height:34px; padding:0 12px; border:1px dashed #B9B7B0; border-radius:8px; background:none; font:inherit; font-size:13px; cursor:pointer; white-space:nowrap">+ {{ t.addBranch }}</button>
+              <div style="font-size:14px; font-weight:600; margin-top:6px">{{ t.inviteTeam }}</div>
+              <sc-for list="{{ wz.staffRows }}" as="s" hint-placeholder-count="1"><div style="display:flex; gap:8px"><input value="{{ s.email }}" sc-camel-on-change="{{ s.onEmail }}" dir="ltr" type="email" aria-label="{{ t.email }}" placeholder="name@business.com" style="flex:1.6; min-width:0; min-height:40px; border:1px solid {{ s.border }}; border-radius:10px; padding:0 12px; font:inherit"><sc-raw-select value="{{ s.role }}" sc-camel-on-change="{{ s.onRole }}" aria-label="{{ t.role }}" style="flex:1; min-width:0; min-height:40px; border:1px solid #D9D7D0; border-radius:10px; font:inherit; background:#fff"><option value="owner" selected="{{ s.isOwner }}">{{ t.rOwner }}</option><option value="manager" selected="{{ s.isManager }}">{{ t.rManager }}</option><option value="cashier" selected="{{ s.isCashier }}">{{ t.rCashier }}</option></sc-raw-select><button sc-camel-on-click="{{ s.remove }}" aria-label="{{ t.remove }}" style="width:40px; border:1px solid #D9D7D0; border-radius:10px; background:#fff; cursor:pointer">×</button></div></sc-for>
+              <button sc-camel-on-click="{{ wz.addStaff }}" style="align-self:flex-start; min-height:34px; padding:0 12px; border:1px dashed #B9B7B0; border-radius:8px; background:none; font:inherit; font-size:13px; cursor:pointer; white-space:nowrap">+ {{ t.addPerson }}</button>
+              <div style="font-size:12px; color:#6B7180; line-height:1.6">{{ t.permNote }}</div>
+            </sc-if>
+
+            <sc-if value="{{ wz.s5 }}" hint-placeholder-val="{{ false }}">
+              <div style="font-size:14px; font-weight:600">{{ t.qrMethods }}</div>
+              <sc-for list="{{ wz.qrOpts }}" as="o" hint-placeholder-count="3"><label style="display:flex; gap:10px; align-items:flex-start; font-size:14px; min-height:36px"><input type="checkbox" checked="{{ o.on }}" sc-camel-on-change="{{ o.toggle }}" style="width:18px; height:18px; margin-top:2px"><div style="display:flex; flex-direction:column; gap:2px"><span style="font-weight:500">{{ o.label }}</span><span style="font-size:12px; color:#6B7180">{{ o.hint }}</span></div></label></sc-for>
+              <label style="display:flex; gap:10px; align-items:flex-start; font-size:14px; border-top:1px solid #F0EFEB; padding-top:12px"><input type="checkbox" checked="{{ wz.d.nfc }}" sc-camel-on-change="{{ wz.toggleNfc }}" style="width:18px; height:18px; margin-top:2px"><div style="display:flex; flex-direction:column; gap:2px"><span style="font-weight:500">{{ t.nfcMaterials }}</span><span style="font-size:12px; color:#6B7180; line-height:1.6">{{ t.nfcHint }}</span></div></label>
+              <div style="border-top:1px solid #F0EFEB; padding-top:12px; display:flex; flex-direction:column; gap:8px"><div style="font-size:14px; font-weight:600">{{ t.walletStatus }}</div><sc-for list="{{ wz.walletInfo }}" as="w" hint-placeholder-count="2"><div style="display:flex; justify-content:space-between; gap:10px; font-size:13px; background:#FAFAF8; border-radius:10px; padding:10px 12px"><span>{{ w.name }}</span><span style="color:#5A606C; text-align:end">{{ w.text }}</span></div></sc-for></div>
+            </sc-if>
+
+            <sc-if value="{{ wz.s6 }}" hint-placeholder-val="{{ false }}">
+              <div style="font-size:14px; font-weight:600">{{ t.channels }}</div>
+              <sc-for list="{{ wz.chOpts }}" as="o" hint-placeholder-count="3"><label style="display:flex; gap:10px; align-items:flex-start; font-size:14px; min-height:36px"><input type="checkbox" checked="{{ o.on }}" sc-camel-on-change="{{ o.toggle }}" style="width:18px; height:18px; margin-top:2px"><div style="display:flex; flex-direction:column; gap:2px"><span style="font-weight:500">{{ o.label }}</span><span style="font-size:12px; color:#6B7180">{{ o.hint }}</span></div></label></sc-for>
+              <div style="font-size:14px; font-weight:600; margin-top:6px">{{ t.plan }}</div>
+              <div role="radiogroup" style="display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:8px"><sc-for list="{{ wz.planOpts }}" as="p" hint-placeholder-count="4"><button role="radio" aria-checked="{{ p.on }}" sc-camel-on-click="{{ p.go }}" style="text-align:start; padding:12px; border:2px solid {{ p.border }}; border-radius:12px; background:#fff; font:inherit; cursor:pointer; display:flex; flex-direction:column; gap:4px"><span style="font-weight:600">{{ p.name }}</span><span style="font-size:13px">{{ p.price }}</span><span style="font-size:11px; color:#6B7180; line-height:1.5">{{ p.limits }}</span></button></sc-for></div>
+            </sc-if>
+
+            <sc-if value="{{ wz.s7 }}" hint-placeholder-val="{{ false }}">
+              <sc-if value="{{ wz.missing.length }}" hint-placeholder-val="{{ false }}">
+                <div style="background:#FDF1DC; border-radius:12px; padding:12px 14px; display:flex; flex-direction:column; gap:6px"><div style="font-weight:600; font-size:14px; color:#7A4300">{{ t.missingTitle }}</div><sc-for list="{{ wz.missing }}" as="x" hint-placeholder-count="2"><button sc-camel-on-click="{{ x.go }}" style="text-align:start; border:0; background:none; padding:0; font:inherit; font-size:13px; color:#7A4300; text-decoration:underline; cursor:pointer">{{ x.text }}</button></sc-for></div>
+              </sc-if>
+              <sc-for list="{{ wz.summary }}" as="g" hint-placeholder-count="5">
+                <div style="display:flex; flex-direction:column; gap:6px; border-top:1px solid #F0EFEB; padding-top:10px"><div style="display:flex; justify-content:space-between"><span style="font-size:13px; font-weight:600">{{ g.title }}</span><button sc-camel-on-click="{{ g.edit }}" style="border:0; background:none; font:inherit; font-size:12px; color:#2B55CF; cursor:pointer">{{ t.edit }}</button></div><div style="font-size:13px; color:#2D313A; line-height:1.7">{{ g.text }}</div></div>
+              </sc-for>
+              <button sc-camel-on-click="{{ wz.activate }}" disabled="{{ wz.blocked }}" style="min-height:48px; border:0; border-radius:12px; background:{{ wz.activateBg }}; color:#fff; font:inherit; font-weight:600; font-size:15px; cursor:pointer; margin-top:6px">{{ wz.activateLabel }}</button>
+            </sc-if>
+
+            <div style="display:flex; justify-content:space-between; gap:8px; border-top:1px solid #F0EFEB; padding-top:14px">
+              <button sc-camel-on-click="{{ wz.prev }}" disabled="{{ wz.first }}" style="min-height:40px; padding:0 14px; border:1px solid #D9D7D0; border-radius:10px; background:#fff; font:inherit; cursor:pointer; opacity:{{ wz.prevOpacity }}">{{ t.back }}</button>
+              <sc-if value="{{ wz.notLast }}" hint-placeholder-val="{{ true }}"><button sc-camel-on-click="{{ wz.next }}" style="min-height:40px; padding:0 18px; border:0; border-radius:10px; background:#2B55CF; color:#fff; font:inherit; font-weight:500; cursor:pointer">{{ t.next }}</button></sc-if>
+            </div>
+          </div>
+
+          <div style="position:sticky; top:80px; display:flex; flex-direction:column; gap:10px">
+            <div style="display:flex; justify-content:space-between; align-items:center"><div style="font-size:13px; color:#6B7180">{{ t.livePreview }}</div><div role="group" style="display:flex; background:#ECEBE6; border-radius:8px; padding:2px"><sc-for list="{{ wz.devices }}" as="o" hint-placeholder-count="2"><button sc-camel-on-click="{{ o.go }}" aria-pressed="{{ o.on }}" style="border:0; padding:4px 10px; border-radius:6px; background:{{ o.bg }}; font:inherit; font-size:12px; cursor:pointer">{{ o.label }}</button></sc-for></div></div>
+            <div style="align-self:center; width:{{ wz.previewW }}; max-width:100%; border-radius:18px; border:1px solid #E6E4DF; background:{{ wz.d.surfaceC }}; overflow:hidden; transition:width .25s ease">
+              <div style="background:{{ wz.d.primary }}; color:#fff; padding:10px 14px; font-size:13px; font-weight:600; display:flex; gap:8px; align-items:center"><span style="width:22px; height:22px; border-radius:6px; background:{{ wz.d.accent }}; color:{{ wz.d.primary }}; display:grid; place-items:center; font-size:12px">{{ wz.initial }}</span>{{ wz.previewName }}</div>
+              <div style="padding:14px; display:flex; flex-direction:column; gap:10px">
+                <div style="font-size:15px; font-weight:600; line-height:1.4">{{ wz.previewOffer }}</div>
+                <dc-import name="LoyaltyCard" merchant-name="{{ wz.previewName }}" initials="{{ wz.initial }}" program-name="{{ wz.d.programName }}" alias="{{ t.sampleAlias }}" primary="{{ wz.d.primary }}" accent="{{ wz.d.accent }}" surface="{{ wz.d.surfaceC }}" template="{{ wz.d.template }}" stamps="{{ wz.previewStamps }}" threshold="{{ wz.d.threshold }}" reward="{{ wz.d.reward }}" hint-size="100%,200px"></dc-import>
+                <div style="min-height:40px; border-radius:10px; background:{{ wz.d.primary }}; color:#fff; display:grid; place-items:center; font-size:13px; font-weight:600">{{ t.joinNow }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- ACTIVATION RESULT -->
+      <sc-if value="{{ v.activation }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex; gap:14px; align-items:center; flex-wrap:wrap"><div style="width:52px; height:52px; border-radius:14px; background:{{ act.primary }}; color:{{ act.accent }}; display:grid; place-items:center; font-size:22px; font-weight:700">{{ act.initials }}</div><div style="flex:1"><h1 style="margin:0; font-size:22px">{{ act.title }}</h1><div style="font-size:13px; color:#5A606C; margin-top:4px">{{ act.sub }}</div></div><a href="{{ act.portal }}" target="_blank" style="font-size:13px">{{ t.openPortal }}</a></div>
+        <div style="background:#fff; border:1px solid #E6E4DF; border-radius:14px; overflow:hidden">
+          <sc-for list="{{ act.tasks }}" as="k" hint-placeholder-count="6">
+            <div style="display:flex; gap:12px; align-items:center; padding:14px 16px; border-top:1px solid #F0EFEB; flex-wrap:wrap">
+              <div style="width:28px; height:28px; border-radius:99px; background:{{ k.bg }}; color:{{ k.fg }}; display:grid; place-items:center; font-size:14px; font-weight:700; flex:none">{{ k.icon }}</div>
+              <div style="flex:1; min-width:200px; display:flex; flex-direction:column; gap:2px"><div style="font-weight:500; font-size:14px">{{ k.label }}</div><div style="font-size:12px; color:#6B7180; line-height:1.5">{{ k.detail }}</div></div>
+              <span style="font-size:12px; color:#5A606C">{{ k.owner }}</span>
+              <sc-if value="{{ k.canRetry }}" hint-placeholder-val="{{ false }}"><button sc-camel-on-click="{{ k.retry }}" style="min-height:32px; padding:0 12px; border:1px solid #D9D7D0; border-radius:8px; background:#fff; font:inherit; font-size:12px; cursor:pointer">{{ t.retry }}</button></sc-if>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <!-- OPERATIONS -->
+      <sc-if value="{{ v.operations }}" hint-placeholder-val="{{ false }}">
+        <h1 style="margin:0; font-size:24px">{{ t.operations }}</h1>
+        <form sc-camel-on-submit="{{ ops.search }}" style="display:flex; gap:8px; max-width:560px"><input value="{{ ops.q }}" sc-camel-on-change="{{ ops.onQ }}" dir="ltr" aria-label="{{ t.txSearch }}" placeholder="TX-10421 · R-4100 · AT-…" style="flex:1; min-width:0; min-height:42px; border:1px solid #D9D7D0; border-radius:10px; padding:0 12px; font-family:'Geist Mono',monospace; font-size:14px; background:#fff"><button type="submit" style="min-height:42px; padding:0 16px; border:0; border-radius:10px; background:#16181D; color:#fff; font:inherit; cursor:pointer">{{ t.search }}</button></form>
+        <div style="display:flex; gap:8px; flex-wrap:wrap; font-size:12px; color:#6B7180">{{ t.tryIds }} <sc-for list="{{ ops.samples }}" as="s" hint-placeholder-count="2"><button sc-camel-on-click="{{ s.go }}" style="border:0; background:#ECEBE6; border-radius:6px; padding:2px 8px; font-family:'Geist Mono',monospace; font-size:12px; cursor:pointer">{{ s.id }}</button></sc-for></div>
+        <sc-if value="{{ ops.notFound }}" hint-placeholder-val="{{ false }}"><div role="status" style="background:#fff; border:1px dashed #D9D7D0; border-radius:12px; padding:16px; font-size:14px; color:#5A606C">{{ ops.notFound }}</div></sc-if>
+        <sc-if value="{{ ops.tx }}" hint-placeholder-val="{{ false }}">
+          <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:16px; align-items:start">
+            <div style="background:#fff; border:1px solid #E6E4DF; border-radius:14px; padding:16px; display:flex; flex-direction:column; gap:12px">
+              <div style="display:flex; justify-content:space-between; align-items:center"><h2 style="margin:0; font-size:16px"><bdi dir="ltr" style="font-family:'Geist Mono',monospace">{{ ops.tx.id }}</bdi></h2><span style="padding:3px 8px; border-radius:99px; background:#E6F4EC; color:#1E6B43; font-size:12px; font-weight:600">{{ ops.tx.status }}</span></div>
+              <dl style="margin:0; display:grid; grid-template-columns:auto 1fr; gap:8px 16px; font-size:13px"><sc-for list="{{ ops.tx.kv }}" as="x" hint-placeholder-count="6"><dt style="color:#6B7180">{{ x.k }}</dt><dd style="margin:0; overflow-wrap:anywhere; unicode-bidi:plaintext; text-align:start">{{ x.v }}</dd></sc-for></dl>
+              <button sc-camel-on-click="{{ ops.toggleMask }}" style="align-self:flex-start; min-height:30px; padding:0 10px; border:1px solid #D9D7D0; border-radius:8px; background:#fff; font:inherit; font-size:12px; cursor:pointer">{{ ops.maskLabel }}</button>
+              <div style="display:flex; gap:8px; flex-wrap:wrap; border-top:1px solid #F0EFEB; padding-top:12px"><sc-for list="{{ ops.tx.actions }}" as="b" hint-placeholder-count="1"><button sc-camel-on-click="{{ b.go }}" style="min-height:36px; padding:0 12px; border:1px solid {{ b.border }}; border-radius:8px; background:{{ b.bg }}; color:{{ b.fg }}; font:inherit; font-size:13px; cursor:pointer">{{ b.label }}</button></sc-for></div>
+            </div>
+            <div style="background:#fff; border:1px solid #E6E4DF; border-radius:14px; padding:16px">
+              <h2 style="margin:0 0 12px; font-size:15px">{{ t.timeline }}</h2>
+              <ol style="list-style:none; margin:0; padding:0; display:flex; flex-direction:column">
+                <sc-for list="{{ ops.tx.timeline }}" as="e" hint-placeholder-count="5">
+                  <li style="display:flex; gap:12px"><div style="display:flex; flex-direction:column; align-items:center"><div style="width:12px; height:12px; border-radius:99px; background:{{ e.color }}; margin-top:4px"></div><div style="flex:1; width:2px; background:#ECEBE6; min-height:18px"></div></div><div style="padding-bottom:14px; display:flex; flex-direction:column; gap:2px"><div style="font-size:14px; font-weight:500">{{ e.title }}</div><div style="font-size:12px; color:#6B7180; line-height:1.5">{{ e.detail }}</div></div></li>
+                </sc-for>
+              </ol>
+            </div>
+          </div>
+        </sc-if>
+        <section style="display:flex; flex-direction:column; gap:10px"><h2 style="margin:0; font-size:16px">{{ t.jobs }}</h2>
+          <div style="background:#fff; border:1px solid #E6E4DF; border-radius:14px; overflow-x:auto">
+            <sc-raw-table style="width:100%; min-width:760px; border-collapse:collapse; font-size:13px">
+              <sc-raw-thead><sc-raw-tr style="background:#FAFAF8; color:#6B7180; font-size:12px"><sc-raw-th style="text-align:start; font-weight:500; padding:10px 14px">Job</sc-raw-th><sc-raw-th style="text-align:start; font-weight:500">{{ t.type }}</sc-raw-th><sc-raw-th style="text-align:start; font-weight:500">{{ t.merchant }}</sc-raw-th><sc-raw-th style="text-align:start; font-weight:500">{{ t.status }}</sc-raw-th><sc-raw-th style="text-align:start; font-weight:500">{{ t.attempts }}</sc-raw-th><sc-raw-th></sc-raw-th></sc-raw-tr></sc-raw-thead>
+              <sc-raw-tbody><sc-for list="{{ jobRows }}" as="j" hint-placeholder-count="4"><sc-raw-tr style="border-top:1px solid #F0EFEB; vertical-align:top"><sc-raw-td style="padding:10px 14px"><bdi dir="ltr" style="font-family:'Geist Mono',monospace">{{ j.id }}</bdi></sc-raw-td><sc-raw-td>{{ j.type }}</sc-raw-td><sc-raw-td>{{ j.merchant }}</sc-raw-td><sc-raw-td><span style="padding:2px 8px; border-radius:99px; background:{{ j.bg }}; color:{{ j.fg }}; font-size:12px; font-weight:600">{{ j.status }}</span></sc-raw-td><sc-raw-td style="font-size:12px; color:#5A606C; max-width:320px; line-height:1.5"><div>{{ j.count }}</div><bdi dir="ltr" style="font-family:'Geist Mono',monospace; font-size:11px">{{ j.lastMsg }}</bdi></sc-raw-td><sc-raw-td style="padding:8px 14px; text-align:end"><sc-if value="{{ j.canRetry }}" hint-placeholder-val="{{ false }}"><button sc-camel-on-click="{{ j.retry }}" style="min-height:30px; padding:0 10px; border:1px solid #D9D7D0; border-radius:8px; background:#fff; font:inherit; font-size:12px; cursor:pointer; white-space:nowrap">{{ j.retryLabel }}</button></sc-if></sc-raw-td></sc-raw-tr></sc-for></sc-raw-tbody>
+            </sc-raw-table>
+          </div>
+        </section>
+        <section style="display:flex; flex-direction:column; gap:10px"><div style="display:flex; justify-content:space-between; gap:10px; flex-wrap:wrap; align-items:center"><h2 style="margin:0; font-size:16px">{{ t.audit }}</h2>
+          <div style="display:flex; gap:8px; flex-wrap:wrap"><sc-raw-select aria-label="{{ t.merchant }}" sc-camel-on-change="{{ ops.onAuditM }}" style="min-height:34px; border:1px solid #D9D7D0; border-radius:8px; font:inherit; font-size:13px; background:#fff"><sc-for list="{{ ops.auditMOpts }}" as="o" hint-placeholder-count="3"><option value="{{ o.v }}" selected="{{ o.sel }}">{{ o.l }}</option></sc-for></sc-raw-select><sc-raw-select aria-label="{{ t.type }}" sc-camel-on-change="{{ ops.onAuditA }}" style="min-height:34px; border:1px solid #D9D7D0; border-radius:8px; font:inherit; font-size:13px; background:#fff"><sc-for list="{{ ops.auditAOpts }}" as="o" hint-placeholder-count="3"><option value="{{ o.v }}" selected="{{ o.sel }}">{{ o.l }}</option></sc-for></sc-raw-select></div></div>
+          <div style="background:#fff; border:1px solid #E6E4DF; border-radius:14px; overflow-x:auto"><sc-raw-table style="width:100%; min-width:640px; border-collapse:collapse; font-size:13px"><sc-raw-tbody><sc-for list="{{ auditRows }}" as="a" hint-placeholder-count="4"><sc-raw-tr style="border-top:1px solid #F0EFEB"><sc-raw-td style="padding:9px 14px; color:#6B7180; white-space:nowrap">{{ a.at }}</sc-raw-td><sc-raw-td><bdi dir="ltr" style="font-family:'Geist Mono',monospace; font-size:12px">{{ a.action }}</bdi></sc-raw-td><sc-raw-td>{{ a.actor }}</sc-raw-td><sc-raw-td>{{ a.merchant }}</sc-raw-td><sc-raw-td style="color:#2D313A">{{ a.detail }}</sc-raw-td></sc-raw-tr></sc-for></sc-raw-tbody></sc-raw-table><sc-if value="{{ auditEmpty }}" hint-placeholder-val="{{ false }}"><div style="padding:16px; color:#6B7180; font-size:14px">{{ t.noResults }}</div></sc-if></div>
+        </section>
+      </sc-if>
+
+      <!-- SUPPORT -->
+      <sc-if value="{{ v.support }}" hint-placeholder-val="{{ false }}">
+        <h1 style="margin:0; font-size:24px">{{ t.support }}</h1>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:16px; align-items:start">
+          <div style="display:flex; flex-direction:column; gap:8px">
+            <sc-for list="{{ ticketRows }}" as="k" hint-placeholder-count="3"><button sc-camel-on-click="{{ k.open }}" style="text-align:start; background:#fff; border:2px solid {{ k.border }}; border-radius:12px; padding:12px 14px; display:flex; flex-direction:column; gap:6px; font:inherit; cursor:pointer; color:#16181D"><div style="display:flex; justify-content:space-between; gap:8px"><bdi dir="ltr" style="font-family:'Geist Mono',monospace; font-size:12px; color:#6B7180">{{ k.id }}</bdi><span style="padding:2px 8px; border-radius:99px; background:{{ k.bg }}; color:{{ k.fg }}; font-size:11px; font-weight:600">{{ k.status }}</span></div><div style="font-weight:500; font-size:14px; line-height:1.5">{{ k.subject }}</div><div style="font-size:12px; color:#6B7180">{{ k.meta }}</div></button></sc-for>
+          </div>
+          <sc-if value="{{ tk }}" hint-placeholder-val="{{ false }}">
+            <div style="background:#fff; border:1px solid #E6E4DF; border-radius:14px; padding:16px; display:flex; flex-direction:column; gap:12px">
+              <div style="display:flex; justify-content:space-between; gap:8px; flex-wrap:wrap"><h2 style="margin:0; font-size:16px; line-height:1.5">{{ tk.subject }}</h2><sc-raw-select aria-label="{{ t.status }}" sc-camel-on-change="{{ tk.onStatus }}" style="min-height:32px; border:1px solid #D9D7D0; border-radius:8px; font:inherit; font-size:13px; background:#fff"><sc-for list="{{ tk.statusOpts }}" as="o" hint-placeholder-count="3"><option value="{{ o.v }}" selected="{{ o.sel }}">{{ o.l }}</option></sc-for></sc-raw-select></div>
+              <div style="font-size:13px; color:#5A606C">{{ tk.meta }}</div>
+              <sc-if value="{{ tk.txId }}" hint-placeholder-val="{{ false }}"><button sc-camel-on-click="{{ tk.openTx }}" style="align-self:flex-start; min-height:32px; padding:0 10px; border:1px solid #D9D7D0; border-radius:8px; background:#fff; font:inherit; font-size:12px; cursor:pointer">{{ t.linkedTx }} <bdi dir="ltr" style="font-family:'Geist Mono',monospace">{{ tk.txId }}</bdi></button></sc-if>
+              <sc-for list="{{ tk.messages }}" as="m" hint-placeholder-count="2"><div style="align-self:{{ m.align }}; max-width:85%; background:{{ m.bg }}; border-radius:12px; padding:10px 12px; font-size:14px; line-height:1.6"><div style="font-size:11px; color:#6B7180; margin-bottom:2px">{{ m.by }} · {{ m.at }}</div>{{ m.text }}</div></sc-for>
+              <div style="display:flex; gap:8px"><textarea rows="2" value="{{ tk.reply }}" sc-camel-on-change="{{ tk.onReply }}" aria-label="{{ t.reply }}" placeholder="{{ t.reply }}" style="flex:1; border:1px solid #D9D7D0; border-radius:10px; padding:8px 12px; font:inherit; font-size:14px"></textarea><button sc-camel-on-click="{{ tk.send }}" style="padding:0 14px; border:0; border-radius:10px; background:#2B55CF; color:#fff; font:inherit; cursor:pointer">{{ t.send }}</button></div>
+            </div>
+          </sc-if>
+        </div>
+      </sc-if>
+
+      <!-- BILLING -->
+      <sc-if value="{{ v.billing }}" hint-placeholder-val="{{ false }}">
+        <h1 style="margin:0; font-size:24px">{{ t.billing }}</h1>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px"><sc-for list="{{ planCards }}" as="p" hint-placeholder-count="3"><div style="background:#fff; border:1px solid #E6E4DF; border-radius:14px; padding:16px; display:flex; flex-direction:column; gap:6px"><div style="font-weight:600">{{ p.name }}</div><div style="font-size:20px; font-weight:600">{{ p.price }}</div><div style="font-size:12px; color:#5A606C; line-height:1.7">{{ p.limits }}</div><div style="font-size:12px; color:#2B55CF">{{ p.count }}</div></div></sc-for></div>
+        <sc-for list="{{ billTables }}" as="tb" hint-placeholder-count="4">
+          <section style="display:flex; flex-direction:column; gap:8px"><h2 style="margin:0; font-size:16px">{{ tb.title }}</h2>
+            <div style="background:#fff; border:1px solid #E6E4DF; border-radius:14px; overflow-x:auto"><sc-raw-table style="width:100%; min-width:600px; border-collapse:collapse; font-size:13px"><sc-raw-tbody><sc-for list="{{ tb.rows }}" as="row" hint-placeholder-count="3"><sc-raw-tr style="border-top:1px solid #F0EFEB"><sc-for list="{{ row.cells }}" as="c" hint-placeholder-count="4"><sc-raw-td style="padding:10px 14px"><span style="padding:{{ c.pad }}; border-radius:99px; background:{{ c.bg }}; color:{{ c.fg }}; font-size:{{ c.size }}; font-family:{{ c.font }}; unicode-bidi:plaintext">{{ c.v }}</span></sc-raw-td></sc-for><sc-raw-td style="padding:6px 14px; text-align:end; white-space:nowrap"><sc-for list="{{ row.btns }}" as="b" hint-placeholder-count="0"><button sc-camel-on-click="{{ b.go }}" style="min-height:30px; padding:0 10px; margin-inline-start:6px; border:1px solid #D9D7D0; border-radius:8px; background:#fff; font:inherit; font-size:12px; cursor:pointer; color:{{ b.fg }}">{{ b.label }}</button></sc-for></sc-raw-td></sc-raw-tr></sc-for></sc-raw-tbody></sc-raw-table><sc-if value="{{ tb.empty }}" hint-placeholder-val="{{ false }}"><div style="padding:16px; color:#6B7180; font-size:13px">{{ tb.empty }}</div></sc-if></div>
+          </section>
+        </sc-for>
+      </sc-if>
+
+      <!-- INTEGRATIONS -->
+      <sc-if value="{{ v.integrations }}" hint-placeholder-val="{{ false }}">
+        <h1 style="margin:0; font-size:24px">{{ t.integrations }}</h1>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:12px">
+          <sc-for list="{{ intCards }}" as="i" hint-placeholder-count="6">
+            <div style="background:#fff; border:1px solid {{ i.cardBorder }}; border-radius:14px; padding:16px; display:flex; flex-direction:column; gap:10px">
+              <div style="display:flex; justify-content:space-between; gap:8px; align-items:center"><div style="font-weight:600; font-size:15px">{{ i.name }}</div><span style="padding:3px 8px; border-radius:99px; background:{{ i.bg }}; color:{{ i.fg }}; font-size:12px; font-weight:600">{{ i.status }}</span></div>
+              <dl style="margin:0; display:grid; grid-template-columns:auto 1fr; gap:6px 12px; font-size:13px"><sc-for list="{{ i.kv }}" as="x" hint-placeholder-count="3"><dt style="color:#6B7180">{{ x.k }}</dt><dd style="margin:0; overflow-wrap:anywhere; unicode-bidi:plaintext; text-align:start">{{ x.v }}</dd></sc-for></dl>
+              <sc-if value="{{ i.action }}" hint-placeholder-val="{{ false }}"><div style="font-size:13px; background:#FDF1DC; color:#7A4300; border-radius:8px; padding:8px 10px">{{ i.action }}</div></sc-if>
+              <div style="display:flex; gap:8px; flex-wrap:wrap"><sc-for list="{{ i.btns }}" as="b" hint-placeholder-count="1"><button sc-camel-on-click="{{ b.go }}" style="min-height:32px; padding:0 10px; border:1px solid #D9D7D0; border-radius:8px; background:#fff; font:inherit; font-size:12px; cursor:pointer">{{ b.label }}</button></sc-for></div>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <!-- SYSTEM -->
+      <sc-if value="{{ v.system }}" hint-placeholder-val="{{ false }}">
+        <h1 style="margin:0; font-size:24px">{{ t.system }}</h1>
+        <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:16px; align-items:start">
+          <div style="background:#fff; border:1px solid #E6E4DF; border-radius:14px; padding:16px; display:flex; flex-direction:column; gap:10px"><h2 style="margin:0; font-size:15px">{{ t.health }}</h2><sc-for list="{{ health }}" as="h" hint-placeholder-count="4"><div style="display:flex; justify-content:space-between; font-size:14px; border-top:1px solid #F0EFEB; padding-top:8px"><span>{{ h.k }}</span><span style="font-weight:600; color:{{ h.color }}">{{ h.v }}</span></div></sc-for></div>
+          <div style="background:#fff; border:1px solid #E6E4DF; border-radius:14px; padding:16px; display:flex; flex-direction:column; gap:12px"><h2 style="margin:0; font-size:15px">{{ t.demoControls }}</h2><sc-for list="{{ sysGroups }}" as="g" hint-placeholder-count="2"><div style="display:flex; flex-direction:column; gap:6px"><div style="font-size:13px; color:#5A606C">{{ g.label }}</div><div style="display:flex; gap:6px; flex-wrap:wrap"><sc-for list="{{ g.opts }}" as="o" hint-placeholder-count="3"><button sc-camel-on-click="{{ o.go }}" aria-pressed="{{ o.on }}" style="min-height:32px; padding:0 12px; border-radius:99px; border:1px solid {{ o.border }}; background:{{ o.bg }}; color:{{ o.fg }}; font:inherit; font-size:13px; cursor:pointer">{{ o.label }}</button></sc-for></div></div></sc-for><button sc-camel-on-click="{{ askReset }}" style="align-self:flex-start; min-height:36px; padding:0 12px; border:1px solid #F1C7C2; border-radius:8px; background:#fff; color:#B42318; font:inherit; font-size:13px; cursor:pointer">{{ t.resetDemo }}</button></div>
+          <div style="background:#fff; border:1px solid #E6E4DF; border-radius:14px; padding:16px; display:flex; flex-direction:column; gap:8px"><h2 style="margin:0; font-size:15px">{{ t.platformConfig }}</h2><div style="font-size:14px">{{ t.platformNameL }}: <strong>{{ platform }}</strong></div><div style="font-size:12px; color:#6B7180; line-height:1.6">{{ t.platformNameHint }}</div></div>
+        </div>
+      </sc-if>
+
+      <!-- SETTINGS -->
+      <sc-if value="{{ v.settings }}" hint-placeholder-val="{{ false }}">
+        <h1 style="margin:0; font-size:24px">{{ t.settings }}</h1>
+        <div style="background:#fff; border:1px solid #E6E4DF; border-radius:14px; padding:16px; max-width:760px; display:flex; flex-direction:column; gap:10px"><h2 style="margin:0; font-size:15px">{{ t.adminTeam }}</h2><sc-for list="{{ admins }}" as="a" hint-placeholder-count="2"><div style="display:flex; justify-content:space-between; gap:8px; font-size:14px; border-top:1px solid #F0EFEB; padding-top:8px; flex-wrap:wrap"><span>{{ a.name }}</span><bdi dir="ltr" style="color:#6B7180; font-size:13px">{{ a.email }}</bdi><span style="font-size:13px">{{ a.role }}</span></div></sc-for></div>
+        <div style="background:#fff; border:1px solid #E6E4DF; border-radius:14px; padding:16px; max-width:760px; display:flex; flex-direction:column; gap:10px"><h2 style="margin:0; font-size:15px">{{ t.privacy }}</h2><label style="display:flex; gap:10px; align-items:center; font-size:14px"><input type="checkbox" checked="{{ maskDefault }}" sc-camel-on-change="{{ toggleMaskDefault }}" style="width:18px; height:18px">{{ t.maskDefault }}</label><div style="font-size:12px; color:#6B7180">{{ t.maskNote }}</div></div>
+      </sc-if>
+    </main>
+  </div>
+
+  <sc-if value="{{ dlg }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed; inset:0; z-index:40; background:rgba(16,18,24,.4); display:grid; place-items:center; padding:16px" sc-camel-on-click="{{ closeDlg }}">
+      <div role="dialog" aria-modal="true" aria-labelledby="dlg-t" sc-camel-on-click="{{ stop }}" style="background:#fff; border-radius:16px; width:100%; max-width:520px; max-height:88vh; overflow:auto; padding:22px; display:flex; flex-direction:column; gap:14px; box-shadow:0 24px 60px rgba(0,0,0,.2); animation:nqIn .18s ease">
+        <h2 id="dlg-t" style="margin:0; font-size:18px">{{ dlg.title }}</h2>
+        <sc-if value="{{ dlg.rows }}" hint-placeholder-val="{{ false }}"><dl style="margin:0; display:grid; grid-template-columns:auto 1fr; gap:8px 16px; font-size:14px; background:#FAFAF8; border-radius:10px; padding:12px 14px"><sc-for list="{{ dlg.rows }}" as="r" hint-placeholder-count="3"><dt style="color:#6B7180">{{ r.k }}</dt><dd style="margin:0; font-weight:500; unicode-bidi:plaintext; text-align:start">{{ r.v }}</dd></sc-for></dl></sc-if>
+        <sc-if value="{{ dlg.impact }}" hint-placeholder-val="{{ false }}"><div style="font-size:13px; background:#FDF1DC; color:#7A4300; border-radius:10px; padding:10px 12px; line-height:1.7">{{ dlg.impact }}</div></sc-if>
+        <sc-if value="{{ dlg.reasonField }}" hint-placeholder-val="{{ false }}"><textarea rows="2" value="{{ dlg.reason }}" sc-camel-on-change="{{ dlg.onReason }}" aria-label="{{ t.reason }}" placeholder="{{ t.reason }}" style="border:1px solid {{ dlg.reasonBorder }}; border-radius:10px; padding:8px 12px; font:inherit; font-size:14px"></textarea></sc-if>
+        <sc-if value="{{ dlg.err }}" hint-placeholder-val="{{ false }}"><div role="alert" style="color:#B42318; font-size:13px">{{ dlg.err }}</div></sc-if>
+        <div style="display:flex; gap:8px; justify-content:flex-end"><button sc-camel-on-click="{{ closeDlg }}" style="min-height:40px; padding:0 14px; border:1px solid #D9D7D0; border-radius:10px; background:#fff; font:inherit; cursor:pointer">{{ t.cancel }}</button><button sc-camel-on-click="{{ dlg.ok }}" style="min-height:40px; padding:0 16px; border:0; border-radius:10px; background:{{ dlg.okBg }}; color:#fff; font:inherit; font-weight:500; cursor:pointer">{{ dlg.cta }}</button></div>
+      </div>
+    </div>
+  </sc-if>
+  <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}"><div role="status" style="position:fixed; bottom:24px; inset-inline-end:24px; background:#16181D; color:#fff; padding:12px 16px; border-radius:12px; font-size:14px; z-index:50; max-width:380px; animation:nqIn .2s ease">{{ toast }}</div></sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script="">
+const T = {
+  ar: { nav: 'التنقل', console: 'لوحة إدارة المنصة', launcher: '← Demo Launcher', otherLang: 'English', searchAll: 'دوّر على تاجر أو رقم عملية…', overview: 'نظرة عامة', merchants: 'التجار', provisioning: 'التجهيز', operations: 'التشغيل', support: 'الدعم', billing: 'الفوترة', integrations: 'التكاملات', system: 'النظام', settings: 'الإعدادات', followUp: 'إجراءات محتاجة متابعة', activityByMerchant: 'الأختام حسب التاجر', activityDef: 'آخر 30 يوم — من بيانات التجربة', newMerchant: 'تاجر جديد', search: 'بحث', searchMerchants: 'دوّر بالاسم أو البريد', merchant: 'التاجر', plan: 'الباقة', status: 'الحالة', branchesL: 'الفروع', lastActivity: 'آخر نشاط', setup: 'التجهيز والتكاملات', actions: 'إجراءات', noResults: 'مفيش نتايج.', openDash: 'افتح لوحة التاجر ↗', sampleAlias: 'سارة م.', startWizard: 'ابدأ تجهيز تاجر', drafts: 'مسودات محفوظة', resume: 'كمّل', delete: 'حذف', noDrafts: 'مفيش مسودات.', recentActivations: 'تفعيلات حديثة', noActivations: 'مفيش تفعيلات في الجلسة دي لسه.', saveDraft: 'حفظ المسودة', exit: 'خروج', steps: 'خطوات التجهيز', category: 'الفئة', logoHint: 'PNG أو SVG، 660px على الأقل عشان Google Wallet.', suggested: 'ألوان مقترحة من اللوجو', primary: 'اللون الأساسي', accent: 'اللون الثانوي', cardTemplate: 'قالب الكارت', terms: 'الشروط', branchName: 'اسم الفرع', address: 'العنوان', remove: 'حذف', addBranch: 'إضافة فرع', inviteTeam: 'دعوة المالك والفريق', email: 'البريد', role: 'الدور', rOwner: 'مالك', rManager: 'مدير فرع', rCashier: 'كاشير', addPerson: 'إضافة شخص', permNote: 'الصلاحيات هنا للعرض — التطبيق الفعلي على مستوى السيرفر في مرحلة الـBackend.', qrMethods: 'طرق QR', nfcMaterials: 'مواد NFC', nfcHint: 'هنولد رابط لكل مكان وتعليمات كتابة. الكتابة نفسها محتاجة موبايل فيه NFC في الفرع.', walletStatus: 'المحفظة', channels: 'قنوات الرسائل', missingTitle: 'نواقص لازم تتكمل قبل التفعيل', edit: 'تعديل', back: 'السابق', next: 'التالي', livePreview: 'معاينة مباشرة', joinNow: 'انضم دلوقتي', openPortal: 'افتح بورتال العميل ↗', retry: 'إعادة المحاولة', txSearch: 'رقم العملية أو الإيصال', tryIds: 'جرّب:', timeline: 'مسار العملية', jobs: 'المهام في الخلفية', type: 'النوع', attempts: 'المحاولات', audit: 'سجل التدقيق', linkedTx: 'العملية المرتبطة', reply: 'اكتب رد…', send: 'إرسال', health: 'حالة النظام', demoControls: 'أدوات العرض التجريبي', resetDemo: 'إعادة ضبط بيانات التجربة', platformConfig: 'إعداد المنصة', platformNameL: 'اسم المنصة المؤقت', platformNameHint: 'بيتغير من مكان واحد: CONFIG.platformName في store.js.', adminTeam: 'فريق المنصة', privacy: 'الخصوصية', maskDefault: 'إخفاء بيانات العملاء الحساسة افتراضيًا', maskNote: 'إظهار البيانات بيتسجل في سجل التدقيق باسم المسؤول.', reason: 'السبب (مطلوب)', cancel: 'إلغاء' },
+  en: { nav: 'Navigation', console: 'Platform console', launcher: '← Demo Launcher', otherLang: 'العربية', searchAll: 'Search merchant or transaction…', overview: 'Overview', merchants: 'Merchants', provisioning: 'Provisioning', operations: 'Operations', support: 'Support', billing: 'Billing', integrations: 'Integrations', system: 'System', settings: 'Settings', followUp: 'Needs follow-up', activityByMerchant: 'Stamps by merchant', activityDef: 'Last 30 days — demo data', newMerchant: 'New merchant', search: 'Search', searchMerchants: 'Search by name or email', merchant: 'Merchant', plan: 'Plan', status: 'Status', branchesL: 'Branches', lastActivity: 'Last activity', setup: 'Setup & integrations', actions: 'Actions', noResults: 'No results.', openDash: 'Open merchant dashboard ↗', sampleAlias: 'Sara M.', startWizard: 'Provision a merchant', drafts: 'Saved drafts', resume: 'Resume', delete: 'Delete', noDrafts: 'No drafts.', recentActivations: 'Recent activations', noActivations: 'No activations this session yet.', saveDraft: 'Save draft', exit: 'Exit', steps: 'Provisioning steps', category: 'Category', logoHint: 'PNG or SVG, at least 660px for Google Wallet.', suggested: 'Suggested from logo', primary: 'Primary color', accent: 'Accent color', cardTemplate: 'Card template', terms: 'Terms', branchName: 'Branch name', address: 'Address', remove: 'Remove', addBranch: 'Add branch', inviteTeam: 'Invite owner and team', email: 'Email', role: 'Role', rOwner: 'Owner', rManager: 'Branch manager', rCashier: 'Cashier', addPerson: 'Add person', permNote: 'Permissions here are for display — server-side enforcement comes with the backend.', qrMethods: 'QR methods', nfcMaterials: 'NFC materials', nfcHint: 'We generate a link per placement plus writing instructions. Writing needs an NFC phone on site.', walletStatus: 'Wallet', channels: 'Messaging channels', missingTitle: 'Complete before activating', edit: 'Edit', back: 'Back', next: 'Next', livePreview: 'Live preview', joinNow: 'Join now', openPortal: 'Open customer portal ↗', retry: 'Retry', txSearch: 'Transaction or receipt number', tryIds: 'Try:', timeline: 'Transaction timeline', jobs: 'Background jobs', type: 'Type', attempts: 'Attempts', audit: 'Audit log', linkedTx: 'Linked transaction', reply: 'Write a reply…', send: 'Send', health: 'System health', demoControls: 'Demo controls', resetDemo: 'Reset demo data', platformConfig: 'Platform config', platformNameL: 'Temporary platform name', platformNameHint: 'Change it in one place: CONFIG.platformName in store.js.', adminTeam: 'Platform team', privacy: 'Privacy', maskDefault: 'Mask sensitive customer data by default', maskNote: 'Revealing data is written to the audit log under the admin’s name.', reason: 'Reason (required)', cancel: 'Cancel' }
+};
+const NAV = ['overview', 'merchants', 'provisioning', 'operations', 'support', 'billing', 'integrations', 'system', 'settings'];
+const PAL = [['#6F3F22', '#E2A85B', '#FBF5EE'], ['#8C2F39', '#F4C095', '#FCF4F2'], ['#1F5E4A', '#9FD8B8', '#F2F8F5'], ['#23466B', '#F2B84B', '#F3F6FA']];
+const blankDraft = () => ({ id: 'DR-' + Math.floor(10 + Math.random() * 89), step: 1, updatedAt: Date.now(), data: { name: '', nameEn: '', category: 'cafe', contactName: '', email: '', phone: '', city: '', logo: false, primary: '#23466B', accent: '#F2B84B', surfaceC: '#F3F6FA', template: 'classic', programName: '', programType: 'stamp', threshold: 6, maxPerTx: 2, validity: 30, reward: '', offer: '', terms: '', branches: [{ name: '', address: '' }], staff: [{ email: '', role: 'owner' }], qr: ['merchant', 'branch'], nfc: false, channels: { email: true, sms: false, whatsapp: false }, plan: 'trial' } });
+class Component extends DCLogic {
+  state = { view: 'overview', mid: null, tab: 'overview', mq: '', mf: 'all', draft: null, wErr: [], device: 'mobile', saved: null, activated: null, opsQ: '', opsTx: null, opsMiss: '', unmask: false, auditM: 'all', auditA: 'all', ticketId: 'T-120', reply: '', dlg: null, toast: '', w: 1280, sideOpen: false, acctOpen: false, gq: '', maskDefault: true, busy: {} };
+  componentDidMount() {
+    const go = () => { this.un = NQ.subscribe(() => this.forceUpdate()); const q = new URLSearchParams(location.search); if (q.get('view')) { const p = { view: q.get('view') }; if (p.view === 'operations') { const j = NQ.state.jobs.find(x => x.type === 'wallet_update'); if (j) { p.opsTx = j.txId; p.opsQ = j.txId; } } this.setState(p); } else this.forceUpdate(); };
+    if (window.NQ) go(); else window.addEventListener('nq-ready', go, { once: true });
+    this.onR = () => this.setState({ w: window.innerWidth }); this.onR(); window.addEventListener('resize', this.onR);
+  }
+  componentWillUnmount() { this.un && this.un(); window.removeEventListener('resize', this.onR); }
+  flash(m) { this.setState({ toast: m }); clearTimeout(this._t); this._t = setTimeout(() => this.setState({ toast: '' }), 2800); }
+  go(view, extra) { this.setState({ view, sideOpen: false, acctOpen: false, ...(extra || {}) }); window.scrollTo(0, 0); }
+  confirm(o) { this.setState({ dlg: { reason: '', err: '', ...o } }); }
+  renderVals() {
+    const NQ = window.NQ, st = this.state;
+    if (!NQ) return { t: T.ar, dir: 'rtl', lang: 'ar', v: { overview: true }, navItems: [], showSide: true, wz: {}, md: {}, tab: {}, ops: {}, act: {} };
+    const S = NQ.state, lang = S.session.lang, a = lang === 'ar', t = T[lang], L = o => NQ.L(o, lang);
+    const N = n => NQ.fmtNum(n, lang); const narrow = st.w < 960; const admin = NQ.staffById(S.session.adminId);
+    const chip = k => ({ active: ['#E6F4EC', '#1E6B43'], ready: ['#E6F4EC', '#1E6B43'], done: ['#E6F4EC', '#1E6B43'], succeeded: ['#E6F4EC', '#1E6B43'], paid: ['#E6F4EC', '#1E6B43'], trial: ['#E8EEFC', '#244BB5'], testing: ['#E8EEFC', '#244BB5'], running: ['#E8EEFC', '#244BB5'], pending: ['#FDF1DC', '#7A4300'], open: ['#FDF1DC', '#7A4300'], invited: ['#FDF1DC', '#7A4300'], action_required: ['#FCE9E7', '#A12A20'], failed: ['#FCE9E7', '#A12A20'], suspended: ['#FCE9E7', '#A12A20'], disabled: ['#F1F0EC', '#5A606C'], closed: ['#F1F0EC', '#5A606C'], draft: ['#F1F0EC', '#5A606C'], ended: ['#F1F0EC', '#5A606C'], high: ['#FCE9E7', '#A12A20'], normal: ['#F1F0EC', '#5A606C'] }[k] || ['#F1F0EC', '#5A606C']);
+    const SL = k => ({ active: a ? 'نشط' : 'Active', trial: a ? 'تجربة' : 'Trial', suspended: a ? 'موقوف' : 'Suspended', ready: a ? 'جاهز' : 'Ready', pending: a ? 'قيد الانتظار' : 'Pending', testing: a ? 'اختبار' : 'Testing', action_required: a ? 'محتاج إجراء' : 'Action required', disabled: a ? 'معطل' : 'Disabled', failed: a ? 'فشل' : 'Failed', succeeded: a ? 'نجح' : 'Succeeded', running: a ? 'شغال' : 'Running', done: a ? 'جاهز' : 'Done', paid: a ? 'مدفوعة' : 'Paid', open: a ? 'مفتوحة' : 'Open', closed: a ? 'مقفولة' : 'Closed', invited: a ? 'دعوة معلقة' : 'Invited', draft: a ? 'مسودة' : 'Draft', ended: a ? 'منتهي' : 'Ended', completed: a ? 'مكتملة' : 'Completed' }[k] || k);
+    const cell = (v2, k) => { if (!k) return { v: v2, pad: '0', bg: 'transparent', fg: '#16181D', size: '13px', font: 'inherit' }; if (k === 'mono') return { v: v2, pad: '0', bg: 'transparent', fg: '#16181D', size: '12px', font: "'Geist Mono',monospace" }; const c = chip(k); return { v: v2, pad: '3px 8px', bg: c[0], fg: c[1], size: '12px', font: 'inherit' }; };
+    const pill = on => ({ bg: on ? '#16181D' : '#fff', fg: on ? '#fff' : '#16181D', border: on ? '#16181D' : '#D9D7D0', on });
+    const vw = st.view; const v = { [vw]: true };
+    const pm = NQ.platformMetrics();
+    const failedJobs = S.jobs.filter(j => j.status === 'failed');
+    const openTickets = S.tickets.filter(x => x.status !== 'closed');
+    const r = {
+      t, lang, dir: a ? 'rtl' : 'ltr', v, toast: st.toast, backArrow: a ? '→' : '←', platform: L(NQ.CONFIG.platformName),
+      narrow, wide: !narrow, showSide: !narrow || st.sideOpen, sidePos: narrow ? 'fixed' : 'sticky', scrim: narrow && st.sideOpen,
+      openSide: () => this.setState({ sideOpen: true }), closeSide: () => this.setState({ sideOpen: false }),
+      toggleLang: () => NQ.setLang(a ? 'en' : 'ar'), adminName: L(admin.name), adminInitial: L(admin.name)[0],
+      acctOpen: st.acctOpen, toggleAcct: () => this.setState({ acctOpen: !st.acctOpen }),
+      acctItems: [{ label: (a ? 'الدور: مدير المنصة' : 'Role: platform admin'), go: () => this.setState({ acctOpen: false }) }, { label: a ? 'تبديل لدعم المنصة (محاكاة)' : 'Switch to platform support (simulated)', go: () => { NQ.setSession({ adminId: S.session.adminId === 's_admin' ? 's_support' : 's_admin' }); this.setState({ acctOpen: false }); } }, { label: a ? 'الإعدادات' : 'Settings', go: () => this.go('settings') }, { label: a ? 'تسجيل خروج (محاكاة)' : 'Sign out (simulated)', go: () => { location.href = 'Nuqta%20-%20Demo%20Launcher.html'; } }],
+      gq: st.gq, onGq: e => this.setState({ gq: e.target.value }),
+      globalSearch: e => { e.preventDefault(); const q = st.gq.trim(); if (!q) return; if (/^(TX|R|AT)-/i.test(q)) { const tx = NQ.findTx(q); this.go('operations', { opsQ: q, opsTx: tx ? tx.id : null, opsMiss: tx ? '' : q }); } else this.go('merchants', { mq: q }); },
+      stop: e => e.stopPropagation(), closeDlg: () => this.setState({ dlg: null }),
+      newMerchant: () => this.go('wizard', { draft: blankDraft(), wErr: [], saved: null }), goMerchants: () => this.go('merchants'),
+      maskDefault: st.maskDefault, toggleMaskDefault: () => this.setState({ maskDefault: !st.maskDefault }),
+      admins: S.staff.filter(s => !s.merchantId).map(s => ({ name: L(s.name), email: s.email, role: s.role === 'platform_admin' ? (a ? 'مدير' : 'Admin') : (a ? 'دعم' : 'Support') }))
+    };
+    r.navItems = NAV.map(k => { const on = vw === k || (k === 'merchants' && vw === 'merchant') || (k === 'provisioning' && (vw === 'wizard' || vw === 'activation')); return { label: t[k], current: on ? 'page' : undefined, bg: on ? '#2B3140' : 'transparent', fg: on ? '#fff' : '#C9CBD1', badge: k === 'operations' && failedJobs.length ? String(failedJobs.length) : k === 'support' && openTickets.length ? String(openTickets.length) : k === 'integrations' && pm.integrationIssues ? String(pm.integrationIssues) : '', go: () => this.go(k) }; });
+    // OVERVIEW
+    r.updated = (a ? 'بيانات تجريبية · آخر تحديث ' : 'Demo data · updated ') + NQ.fmtTime(Date.now(), lang);
+    r.kpis = [
+      { label: a ? 'تجار نشطين' : 'Active merchants', value: N(pm.active), def: a ? `${pm.trial} تجربة · ${pm.suspended} موقوف` : `${pm.trial} trial · ${pm.suspended} suspended` },
+      { label: a ? 'الفروع' : 'Branches', value: N(pm.branches), def: a ? `${pm.staff} موظف` : `${pm.staff} staff` },
+      { label: a ? 'العملاء' : 'Customers', value: N(pm.customers), def: a ? `${pm.memberships} عضوية` : `${pm.memberships} memberships` },
+      { label: a ? 'أختام' : 'Stamps', value: N(pm.stamps30), def: a ? 'آخر 30 يوم' : 'Last 30 days' },
+      { label: a ? 'مكافآت مستبدلة' : 'Rewards redeemed', value: N(pm.redeems30), def: a ? 'آخر 30 يوم' : 'Last 30 days' },
+      { label: a ? 'الإيراد الشهري' : 'Monthly revenue', value: NQ.fmtMoney(pm.mrr, lang), def: a ? 'تجريبي — الاشتراكات النشطة' : 'Demo — active subscriptions' },
+      { label: a ? 'مهام فاشلة' : 'Failed jobs', value: N(pm.failedJobs), def: a ? 'محتاجة إعادة محاولة' : 'Need a retry' },
+      { label: a ? 'تكاملات محتاجة إجراء' : 'Integration issues', value: N(pm.integrationIssues), def: a ? 'من 7 تكاملات' : 'Out of 7 integrations' }
+    ];
+    const fu = [];
+    failedJobs.forEach(j => fu.push({ dot: '#C2362B', text: (a ? `فشل ${j.id} (${j.type}) — ` : `${j.id} (${j.type}) failed — `) + L(NQ.merchant(j.merchantId).name), cta: a ? 'افتح' : 'Open', go: () => this.go('operations', { opsTx: j.txId || null, opsQ: j.txId || '' }) }));
+    S.integrations.filter(i => i.status === 'action_required').forEach(i => fu.push({ dot: '#C77700', text: L(i.name) + ' — ' + L(i.action), cta: a ? 'التكاملات' : 'Integrations', go: () => this.go('integrations') }));
+    S.merchants.filter(m => m.status === 'trial' && m.trialEndsAt - Date.now() < 3 * NQ.D).forEach(m => fu.push({ dot: '#2B55CF', text: (a ? `تجربة ${L(m.name)} بتخلص ${NQ.fmtRel(m.trialEndsAt, lang)}` : `${L(m.name)} trial ends ${NQ.fmtRel(m.trialEndsAt, lang)}`), cta: a ? 'الفوترة' : 'Billing', go: () => this.go('billing') }));
+    openTickets.filter(x => x.priority === 'high').forEach(x => fu.push({ dot: '#C2362B', text: (a ? 'تذكرة عاجلة: ' : 'Urgent ticket: ') + L(x.subject), cta: a ? 'الدعم' : 'Support', go: () => this.go('support', { ticketId: x.id }) }));
+    S.drafts.forEach(d => fu.push({ dot: '#9AA0AC', text: (a ? 'مسودة تجهيز متوقفة: ' : 'Paused provisioning draft: ') + (d.data.name || d.id), cta: a ? 'كمّل' : 'Resume', go: () => this.go('wizard', { draft: { ...JSON.parse(JSON.stringify(d)), data: { ...blankDraft().data, ...JSON.parse(JSON.stringify(d.data)) } }, wErr: [] }) }));
+    r.followUps = fu;
+    const sm = S.merchants.map(m => ({ m, n: S.transactions.filter(x => x.merchantId === m.id && x.type === 'stamp' && x.at > Date.now() - 30 * NQ.D).reduce((s2, x) => s2 + x.qty, 0) }));
+    const mxs = Math.max(1, ...sm.map(x => x.n));
+    r.merchantBars = sm.map(x => ({ name: L(x.m.name), value: N(x.n), pct: Math.round(x.n / mxs * 100) + '%', color: x.m.colors.primary }));
+    // MERCHANTS
+    const mq = st.mq.trim().toLowerCase();
+    const ml = S.merchants.filter(m => (st.mf === 'all' || m.status === st.mf) && (!mq || (m.name.ar + ' ' + m.name.en + ' ' + m.contact.email).toLowerCase().includes(mq)));
+    r.mq = st.mq; r.onMq = e => this.setState({ mq: e.target.value });
+    r.mFilters = ['all', 'active', 'trial', 'suspended'].map(k => ({ label: k === 'all' ? (a ? 'الكل' : 'All') : SL(k), ...pill(st.mf === k), go: () => this.setState({ mf: k }) }));
+    const suspendFlow = m => { const members = NQ.membersOf(m.id).length; const staffN = NQ.staffOf(m.id).filter(s => s.status === 'active').length; if (m.status === 'suspended') this.confirm({ title: (a ? 'استعادة ' : 'Restore ') + L(m.name) + '?', rows: [{ k: a ? 'سبب التعليق' : 'Suspension reason', v: L(m.suspendReason) }], impact: a ? `${members} عميل هيقدروا يجمعوا أختام تاني و${staffN} موظف هيرجعلهم الوصول للكاشير.` : `${members} customers can collect stamps again and ${staffN} staff regain cashier access.`, reasonField: true, cta: a ? 'استعادة' : 'Restore', onOk: rs => { NQ.setMerchantStatus(m.id, 'active', rs, S.session.adminId); this.flash(a ? 'اتستعاد التاجر' : 'Merchant restored'); } }); else this.confirm({ title: (a ? 'تعليق ' : 'Suspend ') + L(m.name) + '?', impact: a ? `الأثر: ${members} عميل هيشوفوا «البرنامج متوقف مؤقتًا» ورصيدهم محفوظ. ${staffN} موظف مش هيقدروا يسجلوا أختام أو استبدال. الحملات المجدولة هتتوقف.` : `Impact: ${members} customers will see “Program paused”; balances are kept. ${staffN} staff can’t record stamps or redemptions. Scheduled campaigns stop.`, reasonField: true, danger: true, cta: a ? 'تعليق' : 'Suspend', onOk: rs => { NQ.setMerchantStatus(m.id, 'suspended', rs, S.session.adminId); this.flash(a ? 'اتعلق التاجر' : 'Merchant suspended'); } }); };
+    r.mRows = ml.map(m => { const c = chip(m.status); const walletIssue = ['action_required', 'failed'].includes(m.wallet.apple) || ['action_required', 'failed'].includes(m.wallet.google); const tasksOpen = (m.tasks || []).filter(k => k.status !== 'done').length;
+      return { name: L(m.name), initials: L(m.initials), primary: m.colors.primary, accent: m.colors.accent, plan: L(NQ.plan(m.plan).name), status: SL(m.status), bg: c[0], fg: c[1], branches: NQ.branchesOf(m.id).length, last: NQ.fmtRel(m.lastActivity, lang), setup: tasksOpen ? (a ? `${tasksOpen} مهمة مفتوحة` : `${tasksOpen} open tasks`) : walletIssue ? (a ? 'Wallet محتاج إجراء' : 'Wallet needs action') : (a ? 'مكتمل' : 'Complete'), setupColor: tasksOpen || walletIssue ? '#A12A20' : '#1E6B43',
+        open: () => this.go('merchant', { mid: m.id, tab: 'overview' }), btns: [{ label: a ? 'تفاصيل' : 'Details', fg: '#16181D', go: () => this.go('merchant', { mid: m.id, tab: 'overview' }) }, { label: m.status === 'suspended' ? (a ? 'استعادة' : 'Restore') : (a ? 'تعليق' : 'Suspend'), fg: m.status === 'suspended' ? '#1E6B43' : '#B42318', go: () => suspendFlow(m) }] }; });
+    r.mEmpty = !ml.length;
+    // MERCHANT DETAIL
+    if (vw === 'merchant' && st.mid) {
+      const m = NQ.merchant(st.mid); const c = chip(m.status); const mt = NQ.metrics(m.id, { days: 30 }); const p = NQ.programsOf(m.id).find(x => x.status === 'active') || NQ.programsOf(m.id)[0];
+      r.md = { name: L(m.name), initials: L(m.initials), primary: m.colors.primary, accent: m.colors.accent, surface: m.colors.surface, template: m.template, status: SL(m.status), bg: c[0], fg: c[1], meta: `${m.id} · ${L(m.city)} · ${a ? 'اتسجل' : 'since'} ${NQ.fmtDate(m.createdAt, lang)}`, dashUrl: 'Nuqta%20-%20Merchant%20Dashboard.html?m=' + m.id,
+        actLabel: m.status === 'suspended' ? (a ? 'استعادة' : 'Restore') : (a ? 'تعليق' : 'Suspend'), actFg: m.status === 'suspended' ? '#1E6B43' : '#B42318', actBorder: m.status === 'suspended' ? '#B5DCC6' : '#F1C7C2', toggleStatus: () => suspendFlow(m),
+        suspendNote: m.status === 'suspended' ? (a ? 'موقوف: ' : 'Suspended: ') + L(m.suspendReason) : '' };
+      const TABS = ['overview', 'branding', 'programs', 'branches', 'staff', 'subscription', 'integrations', 'operations', 'tickets', 'history'];
+      const TL = { overview: a ? 'نظرة عامة' : 'Overview', branding: a ? 'الهوية' : 'Branding', programs: a ? 'البرامج' : 'Programs', branches: a ? 'الفروع' : 'Branches', staff: a ? 'الفريق' : 'Staff', subscription: a ? 'الاشتراك' : 'Subscription', integrations: a ? 'التكاملات' : 'Integrations', operations: a ? 'التشغيل' : 'Operations', tickets: a ? 'التذاكر' : 'Tickets', history: a ? 'سجل الإعدادات' : 'Config history' };
+      r.tabs = TABS.map(k => ({ label: TL[k], on: st.tab === k, border: st.tab === k ? '#2B55CF' : 'transparent', fg: st.tab === k ? '#16181D' : '#5A606C', weight: st.tab === k ? 600 : 400, go: () => this.setState({ tab: k }) }));
+      const tab = {};
+      if (st.tab === 'overview') tab.kv = [{ k: a ? 'المسؤول' : 'Contact', v: m.contact.name }, { k: a ? 'البريد' : 'Email', v: m.contact.email }, { k: a ? 'الموبايل' : 'Phone', v: m.contact.phone }, { k: a ? 'العملاء' : 'Customers', v: N(mt.registered) }, { k: a ? 'نشطين (30 يوم)' : 'Active (30d)', v: N(mt.active) }, { k: a ? 'زيارات (30 يوم)' : 'Visits (30d)', v: N(mt.visits) }, { k: a ? 'مكافآت مفتوحة' : 'Open rewards', v: N(mt.rewardsOpen) }, { k: a ? 'آخر نشاط' : 'Last activity', v: NQ.fmtRel(m.lastActivity, lang) }];
+      if (st.tab === 'branding') { tab.card = { program: p ? L(p.name) : '', stamps: 3, threshold: p ? p.threshold : 5, reward: p ? L(p.reward) : '' }; tab.kv = [{ k: a ? 'الأساسي' : 'Primary', v: m.colors.primary }, { k: a ? 'الثانوي' : 'Accent', v: m.colors.accent }, { k: a ? 'القالب' : 'Template', v: m.template }, { k: a ? 'العرض' : 'Offer', v: L(m.offer) }]; }
+      if (st.tab === 'programs') { tab.head = [a ? 'البرنامج' : 'Program', a ? 'القاعدة' : 'Rule', a ? 'النسخة' : 'Version', t.status]; tab.rows = NQ.programsOf(m.id).map(x => ({ cells: [cell(L(x.name)), cell(`${x.threshold} → ${L(x.reward)}`), cell('v' + x.version, 'mono'), cell(SL(x.status), x.status)] })); }
+      if (st.tab === 'branches') { tab.head = [a ? 'الفرع' : 'Branch', a ? 'العنوان' : 'Address', a ? 'زيارات 30 يوم' : 'Visits 30d', a ? 'أماكن' : 'Placements']; tab.rows = NQ.branchesOf(m.id).map(b => ({ cells: [cell(L(b.name)), cell(L(b.address) || '—'), cell(N((mt.branches.find(x => x.id === b.id) || {}).visits || 0)), cell(N(S.materials.filter(x => x.branchId === b.id && !x.revoked).length))] })); }
+      if (st.tab === 'staff') { tab.head = [a ? 'الاسم' : 'Name', a ? 'الدور' : 'Role', a ? 'الفروع' : 'Branches', t.status]; tab.rows = NQ.staffOf(m.id).map(s => ({ cells: [cell(L(s.name)), cell(s.role), cell(s.branches.map(id => L((NQ.branch(id) || {}).name)).join('، ')), cell(SL(s.status), s.status)] })); }
+      if (st.tab === 'subscription') { const pl = NQ.plan(m.plan); tab.kv = [{ k: t.plan, v: L(pl.name) + ' · ' + NQ.fmtMoney(pl.price, lang) }, { k: t.status, v: SL(m.status) }, { k: m.status === 'trial' ? (a ? 'نهاية التجربة' : 'Trial ends') : (a ? 'التجديد' : 'Renews'), v: NQ.fmtDate(m.trialEndsAt || m.renewsAt, lang) }]; tab.head = [a ? 'الفاتورة' : 'Invoice', a ? 'التاريخ' : 'Date', a ? 'المبلغ' : 'Amount', t.status]; tab.rows = S.invoices.filter(i => i.merchantId === m.id).map(i => ({ cells: [cell(i.id, 'mono'), cell(NQ.fmtDate(i.date, lang)), cell(NQ.fmtMoney(i.amount, lang)), cell(SL(i.status), i.status)] })); tab.empty = tab.rows.length ? '' : (a ? 'مفيش فواتير.' : 'No invoices.'); }
+      if (st.tab === 'integrations') { tab.head = [a ? 'المهمة/التكامل' : 'Task / integration', a ? 'المسؤول' : 'Owner', t.status, a ? 'تفاصيل' : 'Detail'];
+        const TK = { web_card: a ? 'كارت الويب' : 'Web card', qr: 'QR', owner_invite: a ? 'دعوة المالك' : 'Owner invite', apple_wallet: 'Apple Wallet', google_wallet: 'Google Wallet', nfc: 'NFC', sms_sender: 'SMS Sender ID' };
+        tab.rows = [{ cells: [cell('Apple Wallet'), cell(a ? 'المنصة' : 'Platform'), cell(SL(m.wallet.apple), m.wallet.apple), cell('—')] }, { cells: [cell('Google Wallet'), cell(a ? 'المنصة' : 'Platform'), cell(SL(m.wallet.google), m.wallet.google), cell('—')] }].concat(['email', 'sms', 'whatsapp'].map(ch => ({ cells: [cell(ch.toUpperCase()), cell(a ? 'المنصة' : 'Platform'), cell(SL(m.channels[ch]), m.channels[ch]), cell('—')] }))).concat((m.tasks || []).map(k => ({ cells: [cell(TK[k.key] || k.key), cell(k.owner), cell(SL(k.status), k.status), cell(k.error || '—')], btn: k.status === 'failed' || k.status === 'pending' ? { label: t.retry, busy: k.status === 'running', go: async () => { await NQ.retryTask(m.id, k.key); this.flash(a ? 'المهمة نجحت' : 'Task succeeded'); } } : null }))); }
+      if (st.tab === 'operations') { tab.head = [a ? 'العملية' : 'Transaction', t.type, a ? 'الفرع' : 'Branch', a ? 'الوقت' : 'Time']; tab.rows = NQ.txOfMerchant(m.id).slice(0, 10).map(x => ({ cells: [cell(x.id, 'mono'), cell(x.type + (x.qty ? ' ' + x.qty : '')), cell(L((NQ.branch(x.branchId) || {}).name)), cell(NQ.fmtDate(x.at, lang, true))], btn: { label: a ? 'المسار' : 'Timeline', go: () => this.go('operations', { opsTx: x.id, opsQ: x.id }) } })); tab.empty = tab.rows.length ? '' : (a ? 'لسه مفيش عمليات.' : 'No transactions yet.'); }
+      if (st.tab === 'tickets') { tab.head = ['ID', a ? 'الموضوع' : 'Subject', t.status]; tab.rows = S.tickets.filter(x => x.merchantId === m.id).map(x => ({ cells: [cell(x.id, 'mono'), cell(L(x.subject)), cell(SL(x.status), x.status)], btn: { label: a ? 'افتح' : 'Open', go: () => this.go('support', { ticketId: x.id }) } })); tab.empty = tab.rows.length ? '' : (a ? 'مفيش تذاكر.' : 'No tickets.'); }
+      if (st.tab === 'history') { tab.head = [a ? 'الوقت' : 'Time', a ? 'الإجراء' : 'Action', a ? 'بواسطة' : 'By', a ? 'التفاصيل' : 'Detail']; tab.rows = S.audit.filter(x => x.merchantId === m.id).map(x => ({ cells: [cell(NQ.fmtDate(x.at, lang, true)), cell(x.action, 'mono'), cell(L((NQ.staffById(x.actor) || { name: x.actor }).name)), cell(L(x.detail))] })); tab.empty = tab.rows.length ? '' : (a ? 'مفيش تغييرات مسجلة.' : 'No recorded changes.'); }
+      r.tab = tab;
+    } else { r.md = {}; r.tab = {}; r.tabs = []; }
+    // PROVISIONING LIST
+    r.draftRows = S.drafts.map(d => ({ name: d.data.name || (a ? 'تاجر بدون اسم' : 'Unnamed merchant'), meta: `${d.id} · ${a ? 'خطوة' : 'step'} ${d.step}/7 · ${a ? 'اتحفظ' : 'saved'} ${NQ.fmtRel(d.updatedAt, lang)}`, pct: Math.round(d.step / 7 * 100) + '%', resume: () => this.go('wizard', { draft: { ...JSON.parse(JSON.stringify(d)), data: { ...blankDraft().data, ...JSON.parse(JSON.stringify(d.data)) } }, wErr: [], saved: d.updatedAt }), del: () => this.confirm({ title: a ? 'حذف المسودة؟' : 'Delete draft?', impact: a ? 'كل البيانات اللي اتدخلت هتتمسح ومش هترجع.' : 'Everything entered will be permanently deleted.', danger: true, cta: t.delete, onOk: () => NQ.deleteDraft(d.id) }) }));
+    r.noDrafts = !S.drafts.length;
+    const actM = S.merchants.filter(m => (m.tasks || []).length);
+    r.activationRows = actM.map(m => { const open = m.tasks.filter(k => k.status !== 'done').length; return { name: L(m.name), meta: NQ.fmtRel(m.createdAt, lang), summary: open ? (a ? `${open} مهمة مفتوحة` : `${open} open`) : (a ? 'كله جاهز' : 'All ready'), color: open ? '#A12A20' : '#1E6B43', open: () => this.go('activation', { activated: m.id }) }; });
+    r.noActivations = !actM.length;
+    // WIZARD
+    if (vw === 'wizard' && st.draft) {
+      const dr = st.draft, d = dr.data, step = dr.step;
+      const setD = p => this.setState({ draft: { ...dr, data: { ...d, ...p } }, wErr: [] });
+      const STEPS = a ? ['النشاط والتواصل', 'اللوجو والهوية', 'قواعد البرنامج', 'الفروع والفريق', 'QR وNFC والمحفظة', 'الرسائل والاشتراك', 'المراجعة والتفعيل'] : ['Business & contact', 'Logo & identity', 'Program rules', 'Branches & team', 'QR, NFC & wallet', 'Messaging & plan', 'Review & activate'];
+      const emailOk = e => /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(e || '');
+      const validate = s => { const e = [];
+        if (s === 1) { if (!d.name.trim()) e.push(a ? 'اسم النشاط بالعربي مطلوب.' : 'Arabic business name is required.'); if (!d.nameEn.trim()) e.push(a ? 'اسم النشاط بالإنجليزي مطلوب للنسخة الإنجليزية.' : 'English business name is required.'); if (!emailOk(d.email)) e.push(a ? 'بريد التواصل مش صحيح.' : 'Contact email is invalid.'); }
+        if (s === 2) { if (!d.logo) e.push(a ? 'ارفع لوجو (أو اختار «من غير لوجو دلوقتي»).' : 'Upload a logo (or choose “No logo for now”).'); }
+        if (s === 3) { if (!d.programName.trim()) e.push(a ? 'اسم البرنامج مطلوب.' : 'Program name is required.'); if (!d.reward.trim()) e.push(a ? 'وصف المكافأة مطلوب.' : 'Reward description is required.'); if (+d.threshold < 2) e.push(a ? 'العتبة لازم 2 أو أكتر.' : 'Threshold must be 2 or more.'); if (+d.maxPerTx > +d.threshold) e.push(a ? 'أقصى كمية في العملية أكبر من العتبة.' : 'Max per transaction exceeds the threshold.'); }
+        if (s === 4) { if (!d.branches.some(b => b.name.trim())) e.push(a ? 'ضيف فرع واحد على الأقل.' : 'Add at least one branch.'); if (!d.staff.some(x => x.role === 'owner' && emailOk(x.email))) e.push(a ? 'لازم مالك واحد ببريد صحيح.' : 'One owner with a valid email is required.'); d.staff.forEach(x => { if (x.email && !emailOk(x.email)) e.push((a ? 'بريد غير صحيح: ' : 'Invalid email: ') + x.email); }); }
+        if (s === 5) { if (!d.qr.length && !d.nfc) e.push(a ? 'اختار طريقة تسجيل واحدة على الأقل.' : 'Choose at least one signup method.'); }
+        return e; };
+      const saveIt = (extra) => { const nd = { ...dr, ...(extra || {}) }; NQ.saveDraft(nd); this.setState({ draft: nd, saved: Date.now() }); };
+      const goStep = n => { saveIt({ step: n }); this.setState({ wErr: [] }); window.scrollTo(0, 0); };
+      const allMissing = [1, 2, 3, 4, 5].flatMap(s => validate(s).map(x => ({ s, x })));
+      const initial = (d.name || d.nameEn || '?').trim()[0] || '?';
+      const wz = { id: dr.id, d, errors: st.wErr, stepTitle: `${step}. ${STEPS[step - 1]}`, initial, previewName: (a ? d.name : d.nameEn) || d.name || (a ? 'اسم النشاط' : 'Business name'), previewOffer: d.offer || (d.reward ? (a ? `اجمع ${d.threshold} أختام واكسب ${d.reward}` : `Collect ${d.threshold} stamps, get ${d.reward}`) : (a ? 'العرض هيظهر هنا' : 'Your offer appears here')), previewStamps: Math.min(2, d.threshold - 1),
+        savedText: st.saved ? (a ? 'اتحفظ ' : 'Saved ') + NQ.fmtRel(st.saved, lang) : '', save: () => { saveIt(); this.flash(a ? 'اتحفظت المسودة' : 'Draft saved'); }, exit: () => { saveIt(); this.go('provisioning'); },
+        steps: STEPS.map((l, i) => ({ num: i + 1, label: l, current: step === i + 1 ? 'step' : undefined, bar: i + 1 < step ? '#1E7F4F' : i + 1 === step ? '#2B55CF' : '#E6E4DF', weight: step === i + 1 ? 600 : 400, opacity: i + 1 <= Math.max(step, dr.maxStep || step) ? 1 : .55, locked: false, go: () => goStep(i + 1) })),
+        first: step === 1, prevOpacity: step === 1 ? .4 : 1, notLast: step < 7,
+        prev: () => step > 1 && goStep(step - 1),
+        next: () => { const e = validate(step); if (e.length) return this.setState({ wErr: e }); goStep(step + 1); this.setState(s2 => ({ draft: { ...s2.draft, maxStep: Math.max(s2.draft.maxStep || 1, step + 1) } })); },
+        devices: [['mobile', a ? 'موبايل' : 'Mobile'], ['desktop', a ? 'ديسكتوب' : 'Desktop']].map(([k, l]) => ({ label: l, on: st.device === k, bg: st.device === k ? '#fff' : 'transparent', go: () => this.setState({ device: k }) })),
+        previewW: st.device === 'mobile' ? '340px' : '100%' };
+      wz.s1 = step === 1; wz.s2 = step === 2; wz.s3 = step === 3; wz.s4 = step === 4; wz.s5 = step === 5; wz.s6 = step === 6; wz.s7 = step === 7;
+      const fld = (key, label, dir, req) => ({ label, value: d[key], dir: dir || 'auto', invalid: false, border: '#D9D7D0', on: e => setD({ [key]: e.target.value }) });
+      wz.fields1 = [fld('name', a ? 'اسم النشاط (عربي) *' : 'Business name (Arabic) *'), fld('nameEn', a ? 'اسم النشاط (English) *' : 'Business name (English) *', 'ltr'), fld('contactName', a ? 'اسم المسؤول' : 'Contact person'), fld('email', a ? 'بريد التواصل *' : 'Contact email *', 'ltr'), fld('phone', a ? 'الموبايل' : 'Phone', 'ltr'), fld('city', a ? 'المدينة' : 'City')];
+      wz.cats = [['cafe', a ? 'كافيه' : 'Café'], ['restaurant', a ? 'مطعم' : 'Restaurant'], ['salon', a ? 'صالون' : 'Salon'], ['bakery', a ? 'مخبز' : 'Bakery'], ['retail', a ? 'محل' : 'Retail'], ['gym', a ? 'جيم' : 'Gym']].map(([k, l]) => ({ label: l, ...pill(d.category === k), go: () => setD({ category: k }) }));
+      wz.logoBorder = d.logo ? 'transparent' : '#B9B7B0'; wz.logoCta = d.logo ? (a ? 'غيّر اللوجو' : 'Replace logo') : (a ? 'ارفع لوجو (محاكاة)' : 'Upload logo (simulated)');
+      wz.uploadLogo = () => { setD({ logo: true }); this.flash(a ? 'محاكاة: اترفع اللوجو واقترحنا ألوان منه' : 'Simulated: logo uploaded, palette suggested'); };
+      wz.palettes = PAL.map(p => ({ primary: p[0], accent: p[1], label: p.join(' '), on: d.primary === p[0], border: d.primary === p[0] ? '#16181D' : 'transparent', go: () => setD({ primary: p[0], accent: p[1], surfaceC: p[2] }) }));
+      wz.onPrimary = e => setD({ primary: e.target.value }); wz.onAccent = e => setD({ accent: e.target.value });
+      wz.tpls = [['classic', a ? 'كلاسيك' : 'Classic'], ['minimal', a ? 'بسيط' : 'Minimal'], ['bold', a ? 'جريء' : 'Bold']].map(([k, l]) => ({ label: l, on: d.template === k, border: d.template === k ? '#2B55CF' : '#E6E4DF', go: () => setD({ template: k }) }));
+      wz.fields3 = [fld('programName', a ? 'اسم البرنامج *' : 'Program name *'), fld('reward', a ? 'وصف المكافأة *' : 'Reward description *'), fld('offer', a ? 'نص العرض في صفحة التسجيل' : 'Offer headline on signup page')];
+      wz.nums3 = [['threshold', a ? 'العتبة' : 'Threshold'], ['maxPerTx', a ? 'أقصى/عملية' : 'Max/tx'], ['validity', a ? 'الصلاحية (يوم)' : 'Validity (days)']].map(([k, l]) => ({ label: l, value: d[k], on: e => setD({ [k]: Math.max(1, +e.target.value || 1) }) }));
+      wz.ptypes = [['stamp', a ? 'بالأختام' : 'Stamp-based'], ['visit', a ? 'بالزيارات' : 'Visit-based']].map(([k, l]) => ({ label: l, on: d.programType === k, border: d.programType === k ? '#2B55CF' : '#E6E4DF', go: () => setD({ programType: k }) }));
+      wz.onTerms = e => setD({ terms: e.target.value });
+      wz.branchRows = d.branches.map((b, i) => ({ name: b.name, address: b.address, border: '#D9D7D0', onName: e => setD({ branches: d.branches.map((x, j) => j === i ? { ...x, name: e.target.value } : x) }), onAddr: e => setD({ branches: d.branches.map((x, j) => j === i ? { ...x, address: e.target.value } : x) }), remove: () => setD({ branches: d.branches.filter((x, j) => j !== i) }) }));
+      wz.addBranch = () => setD({ branches: [...d.branches, { name: '', address: '' }] });
+      wz.staffRows = d.staff.map((s, i) => ({ email: s.email, role: s.role, isOwner: s.role === 'owner', isManager: s.role === 'manager', isCashier: s.role === 'cashier', border: s.email && !emailOk(s.email) ? '#B42318' : '#D9D7D0', onEmail: e => setD({ staff: d.staff.map((x, j) => j === i ? { ...x, email: e.target.value } : x) }), onRole: e => setD({ staff: d.staff.map((x, j) => j === i ? { ...x, role: e.target.value } : x) }), remove: () => setD({ staff: d.staff.filter((x, j) => j !== i) }) }));
+      wz.addStaff = () => setD({ staff: [...d.staff, { email: '', role: 'cashier' }] });
+      wz.qrOpts = [['merchant', a ? 'QR عام للتاجر' : 'Merchant-wide QR', a ? 'للسوشيال والمنيو' : 'For social and menus'], ['branch', a ? 'QR لكل فرع' : 'QR per branch', a ? 'يربط التسجيل بالفرع' : 'Links signup to the branch'], ['placement', a ? 'QR لكل مكان داخل الفرع' : 'QR per placement', a ? 'كاشير، باب، ترابيزات…' : 'Counter, door, tables…']].map(([k, l, h]) => ({ label: l, hint: h, on: d.qr.includes(k), toggle: () => setD({ qr: d.qr.includes(k) ? d.qr.filter(x => x !== k) : [...d.qr, k] }) }));
+      wz.toggleNfc = () => setD({ nfc: !d.nfc });
+      wz.walletInfo = [{ name: 'Apple Wallet', text: a ? 'هيبدأ Pending بعد التفعيل — كارت الويب شغال فورًا.' : 'Starts as Pending after activation — the web card works immediately.' }, { name: 'Google Wallet', text: a ? 'محتاج لوجو 660px+ — هيتراجع بعد التفعيل.' : 'Needs a 660px+ logo — reviewed after activation.' }];
+      wz.chOpts = [['email', a ? 'البريد' : 'Email', a ? 'جاهز فورًا' : 'Ready immediately'], ['sms', 'SMS', a ? 'محتاج اعتماد Sender ID (2–5 أيام)' : 'Needs Sender ID approval (2–5 days)'], ['whatsapp', a ? 'واتساب' : 'WhatsApp', a ? 'محتاج اعتماد القوالب' : 'Needs template approval']].map(([k, l, h]) => ({ label: l, hint: h, on: !!d.channels[k], toggle: () => setD({ channels: { ...d.channels, [k]: !d.channels[k] } }) }));
+      wz.planOpts = [{ id: 'trial', name: a ? 'تجربة 14 يوم' : '14-day trial', price: a ? 'مجانًا' : 'Free', limits: a ? 'حدود الباقة الأساسية' : 'Starter limits' }].concat(S.plans.map(p => ({ id: p.id, name: L(p.name), price: NQ.fmtMoney(p.price, lang), limits: a ? `${p.limits.branches} فرع · ${p.limits.staff} موظف` : `${p.limits.branches} branches · ${p.limits.staff} staff` }))).map(p => ({ ...p, on: d.plan === p.id, border: d.plan === p.id ? '#2B55CF' : '#E6E4DF', go: () => setD({ plan: p.id }) }));
+      const planObj = d.plan === 'trial' ? NQ.plan('starter') : NQ.plan(d.plan); const nBr = d.branches.filter(b => b.name.trim()).length;
+      if (planObj && nBr > planObj.limits.branches) allMissing.push({ s: 6, x: a ? `الباقة تسمح بـ${planObj.limits.branches} فرع وانت مضيف ${nBr}.` : `Plan allows ${planObj.limits.branches} branch(es); you added ${nBr}.` });
+      wz.missing = allMissing.map(m2 => ({ text: `${a ? 'خطوة' : 'Step'} ${m2.s}: ${m2.x}`, go: () => goStep(m2.s) }));
+      wz.blocked = allMissing.length > 0; wz.activateBg = wz.blocked ? '#B9B7B0' : '#1E7F4F';
+      wz.activateLabel = st.busy.activate ? (a ? 'بنفعّل…' : 'Activating…') : (a ? 'تفعيل التاجر' : 'Activate merchant');
+      wz.summary = [
+        { title: STEPS[0], text: `${d.name || '—'} / ${d.nameEn || '—'} · ${d.email || '—'} · ${d.phone || ''}`, edit: () => goStep(1) },
+        { title: STEPS[1], text: `${d.logo ? (a ? 'لوجو مرفوع' : 'Logo uploaded') : (a ? 'من غير لوجو' : 'No logo')} · ${d.primary} / ${d.accent} · ${d.template}`, edit: () => goStep(2) },
+        { title: STEPS[2], text: `${d.programName || '—'} · ${d.threshold} → ${d.reward || '—'} · ${a ? 'أقصى' : 'max'} ${d.maxPerTx} · ${d.validity} ${a ? 'يوم' : 'days'}`, edit: () => goStep(3) },
+        { title: STEPS[3], text: `${nBr} ${a ? 'فرع' : 'branch(es)'} · ${d.staff.filter(s => s.email).map(s => s.email + ' (' + s.role + ')').join('، ')}`, edit: () => goStep(4) },
+        { title: STEPS[4], text: `QR: ${d.qr.join(', ') || '—'} · NFC: ${d.nfc ? (a ? 'أيوه' : 'yes') : (a ? 'لا' : 'no')} · Wallet: Pending`, edit: () => goStep(5) },
+        { title: STEPS[5], text: `${Object.keys(d.channels).filter(k => d.channels[k]).join(', ')} · ${wz.planOpts.find(p => p.on).name}`, edit: () => goStep(6) }
+      ];
+      wz.activate = () => this.confirm({ title: a ? `تفعيل ${d.name}؟` : `Activate ${d.nameEn || d.name}?`, impact: a ? 'هيتعمل كارت الويب وروابط QR فورًا، وهتتبعت دعوات الفريق. Wallet والقنوات بتكمل في الخلفية وتقدر تعيد أي مهمة لوحدها.' : 'The web card and QR links go live immediately and team invites are sent. Wallet and channels continue in the background; each task can be retried on its own.', cta: a ? 'تفعيل' : 'Activate', onOk: async () => { this.setState({ busy: { activate: true } }); const res = await NQ.activateMerchant({ ...dr, data: d }); this.setState({ busy: {} }); this.go('activation', { activated: res.merchant.id, draft: null }); } });
+      r.wz = wz;
+    } else r.wz = { errors: [], d: {}, missing: [] };
+    // ACTIVATION
+    if (vw === 'activation' && st.activated) {
+      const m = NQ.merchant(st.activated);
+      const TK = { web_card: [a ? 'كارت الويب وبورتال العميل' : 'Web card & customer portal', a ? 'جاهز — العملاء يقدروا يسجلوا دلوقتي.' : 'Live — customers can join now.'], qr: [a ? 'روابط وملفات QR' : 'QR links & files', a ? 'اتعملت لكل فرع ومكان.' : 'Generated per branch and placement.'], owner_invite: [a ? 'دعوات الفريق' : 'Team invitations', a ? 'اتبعتت. صالحة 7 أيام.' : 'Sent. Valid for 7 days.'], apple_wallet: ['Apple Wallet', a ? 'في انتظار توقيع Pass Type. العملاء يستخدموا كارت الويب لحد ما يجهز.' : 'Awaiting Pass Type signing. Customers use the web card meanwhile.'], google_wallet: ['Google Wallet', ''], nfc: [a ? 'مواد NFC' : 'NFC materials', a ? 'في التصنيع. الكتابة والتأكيد في الفرع من مركز المواد.' : 'In production. Writing and verification happen on site via the material center.'], sms_sender: ['SMS Sender ID', a ? 'التاجر لازم يرفع السجل التجاري لاعتماد الاسم.' : 'Merchant must upload a commercial register to approve the name.'] };
+      const OW = { system: a ? 'النظام' : 'System', platform: a ? 'فريق المنصة' : 'Platform team', ops: a ? 'فريق التشغيل' : 'Ops team', merchant: a ? 'التاجر' : 'Merchant' };
+      const open = m.tasks.filter(k => k.status !== 'done').length;
+      r.act = { title: open ? (a ? `${L(m.name)} اتفعّل — فيه ${open} مهام لسه` : `${L(m.name)} is live — ${open} task(s) remaining`) : (a ? `${L(m.name)} جاهز بالكامل` : `${L(m.name)} is fully ready`), sub: a ? 'كارت الويب شغال حتى لو المحفظة لسه Pending. كل مهمة ليها مسؤول وتقدر تتعاد لوحدها.' : 'The web card works even while wallets are pending. Each task has an owner and can be retried on its own.', initials: L(m.initials), primary: m.colors.primary, accent: m.colors.accent, portal: 'Nuqta%20-%20Customer%20Portal.html?m=' + m.id + '&src=link&new=1',
+        tasks: m.tasks.map(k => { const c = chip(k.status); return { label: TK[k.key][0], detail: k.status === 'failed' ? (a ? 'فشل: ' : 'Failed: ') + k.error : k.status === 'running' ? (a ? 'بنعيد المحاولة…' : 'Retrying…') : k.status === 'done' ? (a ? 'تم.' : 'Done.') : TK[k.key][1], owner: OW[k.owner], icon: k.status === 'done' ? '✓' : k.status === 'failed' ? '!' : k.status === 'running' ? '…' : '•', bg: c[0], fg: c[1], canRetry: ['failed', 'pending', 'action_required'].includes(k.status), retry: async () => { await NQ.retryTask(m.id, k.key); this.flash(a ? 'المهمة خلصت' : 'Task completed'); } }; }) };
+    } else r.act = { tasks: [] };
+    // OPERATIONS
+    const tx = st.opsTx && st.opsTx !== 'JOB' ? NQ.tx(st.opsTx) : null;
+    const ops = { q: st.opsQ, onQ: e => this.setState({ opsQ: e.target.value }), notFound: st.opsMiss ? (a ? `مفيش عملية بالرقم ${st.opsMiss}. اتأكد من الرقم أو دوّر بالإيصال.` : `No transaction matches ${st.opsMiss}. Check the number or search by receipt.`) : '',
+      search: e => { e.preventDefault(); const f = NQ.findTx(st.opsQ); this.setState({ opsTx: f ? f.id : null, opsMiss: f ? '' : st.opsQ, unmask: false }); },
+      samples: [S.jobs[0] && S.jobs[0].txId, 'R-4100'].filter(Boolean).map(id => ({ id, go: () => { const f = NQ.findTx(id); this.setState({ opsQ: id, opsTx: f ? f.id : null, opsMiss: f ? '' : id }); } })),
+      maskLabel: st.unmask ? (a ? 'إخفاء بيانات العميل' : 'Mask customer data') : (a ? 'إظهار بيانات العميل (بيتسجل)' : 'Reveal customer data (logged)'),
+      toggleMask: () => { if (!st.unmask && tx) { NQ.state.audit.unshift({ id: 'AU-' + NQ.code(5), at: Date.now(), actor: S.session.adminId, action: 'pii.reveal', merchantId: tx.merchantId, detail: NQ.bi('إظهار بيانات عميل في ' + tx.id, 'Revealed customer data on ' + tx.id) }); NQ.save && NQ.save(); } this.setState({ unmask: !st.unmask }); } };
+    if (tx) {
+      const cu = NQ.customer(tx.customerId); const job = S.jobs.find(j => j.txId === tx.id && j.type === 'wallet_update'); const msg = S.jobs.find(j => j.txId === tx.id && j.type === 'message'); const staff = NQ.staffById(tx.staffId); const req = tx.requestId && NQ.state.requests.find(x => x.id === tx.requestId);
+      const masked = st.maskDefault && !st.unmask;
+      const tl = [];
+      if (req) tl.push({ title: a ? 'العميل طلب ختم' : 'Customer requested a stamp', detail: `${req.id} · ${a ? 'كود' : 'code'} ${req.matchCode} · ${NQ.fmtTime(req.createdAt, lang)}`, color: '#2B55CF' });
+      else tl.push({ title: a ? 'الكاشير مسح الكارت' : 'Cashier scanned the card', detail: NQ.fmtTime(tx.at - 40000, lang), color: '#2B55CF' });
+      tl.push({ title: a ? 'التحقق من الصلاحيات والإيصال' : 'Permissions & receipt validated', detail: `${tx.attemptId} · ${tx.receipt || '—'}`, color: '#1E7F4F' });
+      tl.push({ title: tx.type === 'redeem' ? (a ? 'الاستبدال اتسجل' : 'Redemption recorded') : (a ? `اتسجل ${tx.qty} ختم` : `${tx.qty} stamp(s) recorded`), detail: NQ.fmtDate(tx.at, lang, true), color: '#1E7F4F' });
+      tl.push({ title: a ? 'مزامنة المحفظة' : 'Wallet sync', detail: job ? `${job.id} · ${SL(job.status)} · ${job.attempts[job.attempts.length - 1].msg}` : (tx.walletSync === 'ok' ? (a ? 'تمت' : 'Synced') : SL(tx.walletSync)), color: job && job.status === 'failed' ? '#C2362B' : tx.walletSync === 'pending' ? '#C77700' : '#1E7F4F' });
+      tl.push({ title: a ? 'الرسالة' : 'Message', detail: msg ? `${msg.id} · ${SL(msg.status)}` : (a ? 'مفيش رسالة مرتبطة' : 'No linked message'), color: msg ? '#1E7F4F' : '#B9B7B0' });
+      const actions = [];
+      if (job && job.status === 'failed') actions.push({ label: a ? 'إعادة مزامنة المحفظة' : 'Retry wallet sync', bg: '#2B55CF', fg: '#fff', border: '#2B55CF', go: () => this.confirm({ title: a ? 'إعادة محاولة ' + job.id + '؟' : 'Retry ' + job.id + '?', impact: a ? 'هنبعت تحديث للكارت في محفظة العميل. لو الشهادة لسه محتاجة تجديد هتفشل تاني.' : 'Pushes an update to the customer’s wallet pass. If the certificate still needs renewal it will fail again.', cta: t.retry, onOk: async () => { const ok = await NQ.retryJob(job.id); this.flash(ok.ok ? (a ? 'نجحت المزامنة' : 'Sync succeeded') : (a ? 'فشلت تاني — جدّد شهادة Apple من التكاملات' : 'Failed again — renew the Apple certificate in Integrations')); } }) });
+      if (tx.type === 'stamp') actions.push({ label: a ? 'تصحيح الرصيد' : 'Correct balance', bg: '#fff', fg: '#16181D', border: '#D9D7D0', go: () => this.confirm({ title: a ? 'تصحيح رصيد ' + tx.id : 'Correct balance for ' + tx.id, rows: [{ k: a ? 'التغيير' : 'Change', v: '-1' }, { k: a ? 'الرصيد الحالي' : 'Current balance', v: NQ.membership(tx.membershipId).balance }], impact: a ? 'هيتعمل طلب تصحيح وبيتعتمد فورًا باسمك وبيظهر في سجل التاجر والعميل.' : 'Creates a correction approved immediately under your name; visible to merchant and customer.', reasonField: true, cta: a ? 'تصحيح' : 'Correct', onOk: async rs => { const res = await NQ.requestCorrection({ txId: tx.id, merchantId: tx.merchantId, customerId: tx.customerId, membershipId: tx.membershipId, requestedBy: S.session.adminId, delta: -1, reason: NQ.bi(rs, rs) }); NQ.decideCorrection(res.correction.id, true, S.session.adminId); this.flash(a ? 'اتسجل التصحيح' : 'Correction recorded'); } }) });
+      ops.tx = { id: tx.id, status: SL(tx.status), timeline: tl, actions, kv: [{ k: t.type, v: tx.type }, { k: t.merchant, v: L(NQ.merchant(tx.merchantId).name) }, { k: a ? 'الفرع' : 'Branch', v: L((NQ.branch(tx.branchId) || {}).name) }, { k: a ? 'الفاعل' : 'Actor', v: staff ? L(staff.name) + ' · ' + staff.role : tx.staffId }, { k: a ? 'العميل' : 'Customer', v: masked ? L(cu.alias) + ' · ' + NQ.maskEmail(cu.email) : L(cu.name) + ' · ' + cu.email + ' · ' + cu.phone }, { k: a ? 'الإيصال' : 'Receipt', v: tx.receipt || '—' }, { k: a ? 'مرجع المحاولة' : 'Attempt ref', v: tx.attemptId }, { k: a ? 'المحفظة' : 'Wallet', v: SL(job ? job.status : tx.walletSync === 'ok' ? 'succeeded' : tx.walletSync) }] };
+      ops.maskLabel = st.maskDefault ? ops.maskLabel : '';
+    } else ops.tx = null;
+    const JT = { wallet_update: a ? 'تحديث محفظة' : 'Wallet update', message: a ? 'رسالة' : 'Message', wallet_class: a ? 'إنشاء كلاس محفظة' : 'Wallet class', invoice_charge: a ? 'تحصيل فاتورة' : 'Invoice charge' };
+    r.jobRows = S.jobs.map(j => { const c = chip(j.status); const last = j.attempts[j.attempts.length - 1]; return { id: j.id, type: JT[j.type] + ' · ' + j.provider, merchant: L(NQ.merchant(j.merchantId).name), status: SL(j.status), bg: c[0], fg: c[1], count: (a ? `${j.attempts.length} محاولة · آخرها ` : `${j.attempts.length} attempt(s) · last `) + NQ.fmtRel(last.at, lang), lastMsg: last.msg, canRetry: j.status === 'failed', retryLabel: t.retry, retry: async () => { const ok = await NQ.retryJob(j.id); this.flash(ok.ok ? (a ? 'نجحت' : 'Succeeded') : (a ? 'فشلت تاني — نفس الخطأ' : 'Failed again — same error')); } }; });
+    ops.auditMOpts = [{ v: 'all', l: a ? 'كل التجار' : 'All merchants', sel: st.auditM === 'all' }].concat(S.merchants.map(m => ({ v: m.id, l: L(m.name), sel: st.auditM === m.id })));
+    const acts = [...new Set(S.audit.map(x => x.action.split('.')[0]))];
+    ops.auditAOpts = [{ v: 'all', l: a ? 'كل الإجراءات' : 'All actions', sel: st.auditA === 'all' }].concat(acts.map(x => ({ v: x, l: x, sel: st.auditA === x })));
+    ops.onAuditM = e => this.setState({ auditM: e.target.value }); ops.onAuditA = e => this.setState({ auditA: e.target.value });
+    const au = S.audit.filter(x => (st.auditM === 'all' || x.merchantId === st.auditM) && (st.auditA === 'all' || x.action.startsWith(st.auditA + '.'))).slice(0, 30);
+    r.auditRows = au.map(x => ({ at: NQ.fmtDate(x.at, lang, true), action: x.action, actor: L((NQ.staffById(x.actor) || { name: x.actor }).name), merchant: x.merchantId ? L((NQ.merchant(x.merchantId) || { name: x.merchantId }).name) : '—', detail: L(x.detail) }));
+    r.auditEmpty = !au.length; r.ops = ops;
+    // SUPPORT
+    r.ticketRows = S.tickets.map(x => { const c = chip(x.status); return { id: x.id, subject: L(x.subject), status: SL(x.status), bg: c[0], fg: c[1], meta: `${L(NQ.merchant(x.merchantId).name)} · ${x.priority === 'high' ? (a ? 'عاجل' : 'High') : (a ? 'عادي' : 'Normal')} · ${NQ.fmtRel(x.createdAt, lang)}`, border: st.ticketId === x.id ? '#2B55CF' : '#E6E4DF', open: () => this.setState({ ticketId: x.id, reply: '' }) }; });
+    const tk = S.tickets.find(x => x.id === st.ticketId);
+    r.tk = tk ? { subject: L(tk.subject), meta: `${tk.id} · ${L(NQ.merchant(tk.merchantId).name)} · ${a ? 'مسؤول' : 'assignee'}: ${tk.assignee ? L(NQ.staffById(tk.assignee).name) : '—'}`, txId: tk.txId || '', openTx: () => this.go('operations', { opsTx: tk.txId, opsQ: tk.txId }),
+      statusOpts: ['open', 'pending', 'closed'].map(k => ({ v: k, l: SL(k), sel: tk.status === k })), onStatus: e => { NQ.setTicket(tk.id, { status: e.target.value }); this.flash(a ? 'اتحدثت الحالة' : 'Status updated'); },
+      messages: tk.messages.map(mm => ({ by: mm.by === 'platform' ? L(NQ.CONFIG.platformName) : L(NQ.merchant(tk.merchantId).name), at: NQ.fmtRel(mm.at, lang), text: L(mm.text), align: mm.by === 'platform' ? 'flex-end' : 'flex-start', bg: mm.by === 'platform' ? '#E8EEFC' : '#F3F2EE' })),
+      reply: st.reply, onReply: e => this.setState({ reply: e.target.value }), send: () => { if (!st.reply.trim()) return; NQ.replyTicket(tk.id, st.reply.trim(), 'platform'); this.setState({ reply: '' }); this.flash(a ? 'اتبعت الرد' : 'Reply sent'); } } : null;
+    // BILLING
+    r.planCards = S.plans.map(p => ({ name: L(p.name), price: NQ.fmtMoney(p.price, lang) + (a ? ' / شهر' : ' / mo'), limits: a ? `${p.limits.branches} فرع · ${p.limits.staff} موظف · ${p.limits.customers || '∞'} عميل · ${p.limits.messages} رسالة · ${p.limits.programs} برامج` : `${p.limits.branches} branches · ${p.limits.staff} staff · ${p.limits.customers || '∞'} customers · ${p.limits.messages} messages · ${p.limits.programs} programs`, count: (a ? 'مشتركين: ' : 'Subscribers: ') + S.merchants.filter(m => m.plan === p.id).length }));
+    const subRows = S.merchants.map(m => ({ cells: [cell(L(m.name)), cell(L(NQ.plan(m.plan).name)), cell(SL(m.status), m.status), cell(m.status === 'trial' ? (a ? 'التجربة: ' : 'Trial: ') + NQ.fmtDate(m.trialEndsAt, lang) : m.renewsAt ? (a ? 'تجديد: ' : 'Renews: ') + NQ.fmtDate(m.renewsAt, lang) : '—')], btns: m.status === 'active' ? [{ label: a ? 'إلغاء التجديد' : 'Cancel renewal', fg: '#B42318', go: () => this.confirm({ title: (a ? 'إلغاء تجديد ' : 'Cancel renewal for ') + L(m.name) + '?', impact: a ? `الاشتراك هيفضل شغال لحد ${NQ.fmtDate(m.renewsAt, lang)} وبعدها البرنامج يتوقف والعملاء يشوفوا رسالة إيقاف. الرصيد محفوظ.` : `Stays active until ${NQ.fmtDate(m.renewsAt, lang)}, then the program pauses and customers see a notice. Balances are kept.`, reasonField: true, danger: true, cta: a ? 'إلغاء التجديد' : 'Cancel renewal', onOk: () => { NQ.updateMerchant(m.id, { renewsAt: null, cancelAt: m.renewsAt }, S.session.adminId); this.flash(a ? 'اتلغى التجديد' : 'Renewal cancelled'); } }) }] : [] }));
+    const invRows = S.invoices.map(i => ({ cells: [cell(i.id, 'mono'), cell(L(NQ.merchant(i.merchantId).name)), cell(NQ.fmtMoney(i.amount, lang)), cell(SL(i.status), i.status), cell(NQ.fmtDate(i.date, lang))], btns: [] }));
+    const payRows = S.invoices.filter(i => i.status === 'paid').map(i => ({ cells: [cell(i.id, 'mono'), cell(L(NQ.merchant(i.merchantId).name)), cell(NQ.fmtMoney(i.amount, lang)), cell(NQ.fmtDate(i.paidAt || i.date, lang))], btns: [] }));
+    const failRows = S.invoices.filter(i => i.status === 'failed').map(i => ({ cells: [cell(i.id, 'mono'), cell(L(NQ.merchant(i.merchantId).name)), cell(NQ.fmtMoney(i.amount, lang)), cell(a ? '3 محاولات · card_declined' : '3 attempts · card_declined')], btns: [{ label: a ? 'إعادة التحصيل' : 'Retry charge', fg: '#16181D', go: () => this.confirm({ title: a ? 'إعادة تحصيل ' + i.id + '؟' : 'Retry charge ' + i.id + '?', impact: a ? 'محاكاة: هتنجح. لو التاجر موقوف بسبب الدفع، استعيده يدويًا بعدها من صفحته.' : 'Simulated: it will succeed. If the merchant was suspended for payment, restore them manually afterwards.', cta: a ? 'تحصيل' : 'Charge', onOk: async () => { await NQ.chargeInvoice(i.id); this.flash(a ? 'اتحصلت الفاتورة' : 'Invoice paid'); } }) }] }));
+    const trialRows = S.merchants.filter(m => m.status === 'trial').sort((x, y) => x.trialEndsAt - y.trialEndsAt).map(m => ({ cells: [cell(L(m.name)), cell(NQ.fmtDate(m.trialEndsAt, lang)), cell(NQ.fmtRel(m.trialEndsAt, lang), m.trialEndsAt - Date.now() < 3 * NQ.D ? 'failed' : 'pending')], btns: [{ label: a ? 'مد 7 أيام' : 'Extend 7 days', fg: '#16181D', go: () => { NQ.updateMerchant(m.id, { trialEndsAt: m.trialEndsAt + 7 * NQ.D }, S.session.adminId); this.flash(a ? 'اتمدت التجربة' : 'Trial extended'); } }, { label: a ? 'تحويل لاشتراك' : 'Convert to paid', fg: '#1E6B43', go: () => { NQ.updateMerchant(m.id, { status: 'active', renewsAt: Date.now() + 30 * NQ.D, trialEndsAt: null }, S.session.adminId); this.flash(a ? 'اتحول لاشتراك مدفوع' : 'Converted to paid'); } }] }));
+    r.billTables = [{ title: a ? 'الاشتراكات' : 'Subscriptions', rows: subRows }, { title: a ? 'مدفوعات فاشلة' : 'Failed payments', rows: failRows, empty: failRows.length ? '' : (a ? 'مفيش مدفوعات فاشلة.' : 'No failed payments.') }, { title: a ? 'تجارب قربت تخلص' : 'Trial expirations', rows: trialRows, empty: trialRows.length ? '' : (a ? 'مفيش تجارب.' : 'No trials.') }, { title: a ? 'الفواتير' : 'Invoices', rows: invRows }, { title: a ? 'المدفوعات' : 'Payments', rows: payRows }];
+    // INTEGRATIONS
+    r.intCards = S.integrations.map(i => { const c = chip(i.status); const kv = [{ k: a ? 'آخر نجاح' : 'Last success', v: i.lastSuccess ? NQ.fmtRel(i.lastSuccess, lang) : '—' }, { k: a ? 'آخر خطأ' : 'Last error', v: i.lastError ? NQ.fmtRel(i.lastError, lang) + (i.errorMsg ? ' — ' + i.errorMsg : '') : '—' }]; if (i.certExpiresAt) kv.push({ k: a ? 'انتهاء الشهادة' : 'Certificate expires', v: NQ.fmtDate(i.certExpiresAt, lang) + ' (' + NQ.fmtRel(i.certExpiresAt, lang) + ')' });
+      const btns = [];
+      if (i.status !== 'disabled') btns.push({ label: a ? 'اختبار الاتصال' : 'Test connection', go: () => { NQ.setIntegration(i.id, { status: 'testing' }); setTimeout(() => { const ok = i.id !== 'apple_wallet' || !i.certExpiresAt || i.certRenewed; NQ.setIntegration(i.id, ok ? { status: i.id === 'whatsapp' ? 'pending' : 'ready', lastSuccess: Date.now() } : { status: 'action_required', lastError: Date.now() }); this.flash(ok ? (a ? 'الاتصال سليم' : 'Connection OK') : (a ? 'فشل — الشهادة محتاجة تجديد' : 'Failed — certificate needs renewal')); }, 1200); } });
+      if (i.id === 'apple_wallet' && i.status === 'action_required') btns.push({ label: a ? 'رفع شهادة جديدة (محاكاة)' : 'Upload new certificate (simulated)', go: () => { NQ.setIntegration(i.id, { status: 'ready', certRenewed: true, certExpiresAt: Date.now() + 365 * NQ.D, lastSuccess: Date.now(), action: null }); S.merchants.forEach(m => { if (m.wallet.apple === 'action_required') NQ.setMerchantWallet(m.id, 'apple', 'ready'); }); this.flash(a ? 'اتجددت الشهادة — أعد محاولة المهام الفاشلة من التشغيل' : 'Certificate renewed — retry failed jobs from Operations'); } });
+      if (i.status === 'disabled') btns.push({ label: a ? 'تفعيل للاختبار' : 'Enable for testing', go: () => NQ.setIntegration(i.id, { status: 'testing' }) });
+      return { name: L(i.name), status: SL(i.status), bg: c[0], fg: c[1], cardBorder: i.status === 'action_required' ? '#F1C7C2' : '#E6E4DF', kv, action: i.action ? L(i.action) : '', btns }; });
+    // SYSTEM
+    r.health = [{ k: a ? 'مهام فاشلة' : 'Failed jobs', v: failedJobs.length, color: failedJobs.length ? '#B42318' : '#1E6B43' }, { k: a ? 'مهام قيد الانتظار' : 'Pending jobs', v: S.jobs.filter(j => j.status === 'pending').length, color: '#7A4300' }, { k: a ? 'طلبات ختم مفتوحة' : 'Open stamp requests', v: S.requests.filter(x => x.status === 'pending').length, color: '#16181D' }, { k: a ? 'إجمالي العمليات' : 'Total transactions', v: N(S.transactions.length), color: '#16181D' }, { k: a ? 'وضع الشبكة (محاكاة)' : 'Network (simulated)', v: S.session.network, color: S.session.network === 'ok' ? '#1E6B43' : '#B42318' }];
+    r.sysGroups = [{ label: a ? 'الشبكة' : 'Network', opts: ['ok', 'offline', 'lost'].map(k => ({ label: k, ...pill(S.session.network === k), go: () => NQ.setSession({ network: k }) })) }, { label: a ? 'الكاميرا' : 'Camera', opts: ['granted', 'denied'].map(k => ({ label: k, ...pill(S.session.camera === k), go: () => NQ.setSession({ camera: k }) })) }];
+    r.askReset = () => this.confirm({ title: t.resetDemo + '?', impact: a ? 'كل اللي اتعمل في التجربة هيتمسح ويرجع للبيانات الأصلية في كل الواجهات.' : 'Everything done in the demo is erased and seed data restored across all interfaces.', danger: true, cta: a ? 'إعادة ضبط' : 'Reset', onOk: () => { NQ.reset(); this.go('overview'); this.flash(a ? 'رجعت البيانات لأولها' : 'Demo data reset'); } });
+    // DIALOG
+    if (st.dlg) { const d = st.dlg; r.dlg = { title: d.title, rows: d.rows || null, impact: d.impact || '', reasonField: !!d.reasonField, reason: d.reason, err: d.err, reasonBorder: d.err ? '#B42318' : '#D9D7D0', onReason: e => this.setState({ dlg: { ...st.dlg, reason: e.target.value, err: '' } }), cta: d.cta, okBg: d.danger ? '#B42318' : '#2B55CF', ok: () => { if (d.reasonField && !(d.reason || '').trim()) return this.setState({ dlg: { ...st.dlg, err: a ? 'السبب مطلوب عشان يتسجل في سجل التدقيق.' : 'A reason is required for the audit log.' } }); const fn = d.onOk; this.setState({ dlg: null }); fn && fn((d.reason || '').trim()); } }; } else r.dlg = null;
+    return r;
+  }
+}
+</script>
+
+
+</body></html>

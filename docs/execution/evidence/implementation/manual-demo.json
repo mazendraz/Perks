@@ -1,0 +1,30 @@
+{
+  "at": "2026-11-08T18:53:29.434Z",
+  "passed": true,
+  "database": "isolated temporary database removed after test",
+  "checks": [
+    "zero companies before user provisioning",
+    "platform invites owner only",
+    "owner invites cashier and cashier accepts",
+    "population is blocked before an accepted cashier",
+    "12 synthetic customers use real loyalty commands",
+    "4 registered only, 8 active, 2 available rewards, 2 redeemed",
+    "fixture rerun creates no duplicate transactions",
+    "owner reports and platform health reconcile with zero balance drift"
+  ],
+  "metrics": {
+    "registered": 12,
+    "active": 8,
+    "inactive": 0,
+    "neverActive": 4,
+    "newSignups": 12,
+    "stamps": 31,
+    "visits": 14,
+    "rewardsOpen": 2,
+    "rewardsRedeemed": 2,
+    "corrections": 0,
+    "purchasingCustomers": 8,
+    "returningCustomers": 0,
+    "returnRate": 0
+  }
+}

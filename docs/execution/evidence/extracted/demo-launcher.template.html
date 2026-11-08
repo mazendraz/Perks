@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html><head>
+
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="421e1a2b-636f-4218-a00f-d5976d0046ff"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<title>Demo Launcher</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<style>/* cyrillic-ext */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("2e2df7ad-3f4d-4b74-a5d9-50145b1d8bcf") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("6293b941-b3f0-48d4-b3a7-9083be14d846") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("5bda01e4-8f91-4163-840b-a028be6da1ed") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("bc2241ae-250e-4c18-b181-0d1c5fc01198") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("424d2354-f068-4e21-ac6e-01fe1a5c54bb") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("2e2df7ad-3f4d-4b74-a5d9-50145b1d8bcf") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("6293b941-b3f0-48d4-b3a7-9083be14d846") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("5bda01e4-8f91-4163-840b-a028be6da1ed") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("bc2241ae-250e-4c18-b181-0d1c5fc01198") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("424d2354-f068-4e21-ac6e-01fe1a5c54bb") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("2e2df7ad-3f4d-4b74-a5d9-50145b1d8bcf") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("6293b941-b3f0-48d4-b3a7-9083be14d846") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("5bda01e4-8f91-4163-840b-a028be6da1ed") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("bc2241ae-250e-4c18-b181-0d1c5fc01198") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("424d2354-f068-4e21-ac6e-01fe1a5c54bb") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("2e2df7ad-3f4d-4b74-a5d9-50145b1d8bcf") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("6293b941-b3f0-48d4-b3a7-9083be14d846") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("5bda01e4-8f91-4163-840b-a028be6da1ed") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("bc2241ae-250e-4c18-b181-0d1c5fc01198") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("424d2354-f068-4e21-ac6e-01fe1a5c54bb") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("187c0fed-618d-4ee0-84a2-d136750adc81") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("39fee53a-9860-47aa-b87a-fc1d52d8b029") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* symbols2 */
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("f86ada32-1446-4fcf-8a84-176209673cb9") format('woff2');
+  unicode-range: U+2000-2001, U+2004-2008, U+200A, U+23B8-23BD, U+2500-259F;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("18815b91-8dba-4249-9678-a30ae2c8e696") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("77fc1695-eca7-4b20-ada7-9c376ea32500") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("86977129-0cf2-4c3e-8125-e4dedeffbc6c") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("187c0fed-618d-4ee0-84a2-d136750adc81") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("39fee53a-9860-47aa-b87a-fc1d52d8b029") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* symbols2 */
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("f86ada32-1446-4fcf-8a84-176209673cb9") format('woff2');
+  unicode-range: U+2000-2001, U+2004-2008, U+200A, U+23B8-23BD, U+2500-259F;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("18815b91-8dba-4249-9678-a30ae2c8e696") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("77fc1695-eca7-4b20-ada7-9c376ea32500") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("86977129-0cf2-4c3e-8125-e4dedeffbc6c") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* arabic */
+@font-face {
+  font-family: 'IBM Plex Sans Arabic';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("7782ebee-d68f-44f9-86cb-9c69bbd7bb4a") format('woff2');
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC, U+102E0-102FB, U+10E60-10E7E, U+10EC2-10EC7, U+10EC9-10EEE, U+10EF0-10EFF, U+1EE00-1EE03, U+1EE05-1EE1F, U+1EE21-1EE22, U+1EE24, U+1EE27, U+1EE29-1EE32, U+1EE34-1EE37, U+1EE39, U+1EE3B, U+1EE42, U+1EE47, U+1EE49, U+1EE4B, U+1EE4D-1EE4F, U+1EE51-1EE52, U+1EE54, U+1EE57, U+1EE59, U+1EE5B, U+1EE5D, U+1EE5F, U+1EE61-1EE62, U+1EE64, U+1EE67-1EE6A, U+1EE6C-1EE72, U+1EE74-1EE77, U+1EE79-1EE7C, U+1EE7E, U+1EE80-1EE89, U+1EE8B-1EE9B, U+1EEA1-1EEA3, U+1EEA5-1EEA9, U+1EEAB-1EEBB, U+1EEF0-1EEF1;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'IBM Plex Sans Arabic';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("35a90fe0-2198-48b2-8271-0561b3ed5a21") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'IBM Plex Sans Arabic';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("c4ce82f4-13b2-49a6-a485-63ffd0e684c2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'IBM Plex Sans Arabic';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("de1e609b-14fd-442c-8307-9a44e633fd80") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* arabic */
+@font-face {
+  font-family: 'IBM Plex Sans Arabic';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("e3a4d7e2-8dd1-40dd-b35d-039947a7b030") format('woff2');
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC, U+102E0-102FB, U+10E60-10E7E, U+10EC2-10EC7, U+10EC9-10EEE, U+10EF0-10EFF, U+1EE00-1EE03, U+1EE05-1EE1F, U+1EE21-1EE22, U+1EE24, U+1EE27, U+1EE29-1EE32, U+1EE34-1EE37, U+1EE39, U+1EE3B, U+1EE42, U+1EE47, U+1EE49, U+1EE4B, U+1EE4D-1EE4F, U+1EE51-1EE52, U+1EE54, U+1EE57, U+1EE59, U+1EE5B, U+1EE5D, U+1EE5F, U+1EE61-1EE62, U+1EE64, U+1EE67-1EE6A, U+1EE6C-1EE72, U+1EE74-1EE77, U+1EE79-1EE7C, U+1EE7E, U+1EE80-1EE89, U+1EE8B-1EE9B, U+1EEA1-1EEA3, U+1EEA5-1EEA9, U+1EEAB-1EEBB, U+1EEF0-1EEF1;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'IBM Plex Sans Arabic';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("a15e9896-c39e-4278-a0ac-b5657b5c6f9f") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'IBM Plex Sans Arabic';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("9290dd13-a563-4e7d-8afc-33c719649c63") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'IBM Plex Sans Arabic';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("e077cd10-78a3-4457-904a-2fbe714df13f") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* arabic */
+@font-face {
+  font-family: 'IBM Plex Sans Arabic';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("85dbbd30-0ece-4a82-a899-30a49988e834") format('woff2');
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC, U+102E0-102FB, U+10E60-10E7E, U+10EC2-10EC7, U+10EC9-10EEE, U+10EF0-10EFF, U+1EE00-1EE03, U+1EE05-1EE1F, U+1EE21-1EE22, U+1EE24, U+1EE27, U+1EE29-1EE32, U+1EE34-1EE37, U+1EE39, U+1EE3B, U+1EE42, U+1EE47, U+1EE49, U+1EE4B, U+1EE4D-1EE4F, U+1EE51-1EE52, U+1EE54, U+1EE57, U+1EE59, U+1EE5B, U+1EE5D, U+1EE5F, U+1EE61-1EE62, U+1EE64, U+1EE67-1EE6A, U+1EE6C-1EE72, U+1EE74-1EE77, U+1EE79-1EE7C, U+1EE7E, U+1EE80-1EE89, U+1EE8B-1EE9B, U+1EEA1-1EEA3, U+1EEA5-1EEA9, U+1EEAB-1EEBB, U+1EEF0-1EEF1;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'IBM Plex Sans Arabic';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("23c5aeb4-1aae-48c8-b86a-60f64bfaf5c6") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'IBM Plex Sans Arabic';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("13049b0f-ecdc-41a6-acb5-e10ba4feccbc") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'IBM Plex Sans Arabic';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("2da9bf67-11e3-40f2-a036-05d49e211c3c") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* arabic */
+@font-face {
+  font-family: 'IBM Plex Sans Arabic';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("daed7547-dbd3-4cba-9c79-90f0a82f97e7") format('woff2');
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC, U+102E0-102FB, U+10E60-10E7E, U+10EC2-10EC7, U+10EC9-10EEE, U+10EF0-10EFF, U+1EE00-1EE03, U+1EE05-1EE1F, U+1EE21-1EE22, U+1EE24, U+1EE27, U+1EE29-1EE32, U+1EE34-1EE37, U+1EE39, U+1EE3B, U+1EE42, U+1EE47, U+1EE49, U+1EE4B, U+1EE4D-1EE4F, U+1EE51-1EE52, U+1EE54, U+1EE57, U+1EE59, U+1EE5B, U+1EE5D, U+1EE5F, U+1EE61-1EE62, U+1EE64, U+1EE67-1EE6A, U+1EE6C-1EE72, U+1EE74-1EE77, U+1EE79-1EE7C, U+1EE7E, U+1EE80-1EE89, U+1EE8B-1EE9B, U+1EEA1-1EEA3, U+1EEA5-1EEA9, U+1EEAB-1EEBB, U+1EEF0-1EEF1;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'IBM Plex Sans Arabic';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("6447af45-4be3-442f-bfc2-655e44d6f537") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'IBM Plex Sans Arabic';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("f3aa6815-6ab5-4ea0-97f5-86c5e452e42b") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'IBM Plex Sans Arabic';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("109cd336-22e0-4b46-81ab-49f3ab4a6731") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+</style>
+<script src="d33eefa2-d3c0-416a-acc3-685f10ae5100"></script>
+<style>body{margin:0;background:#F6F6F3;color:#16181D;font-family:'Geist','IBM Plex Sans Arabic',system-ui,sans-serif;-webkit-font-smoothing:antialiased}a{color:#2B55CF;text-decoration:none}a:hover{color:#1C3E9E;text-decoration:underline}*:focus-visible{outline:2px solid #2B55CF;outline-offset:2px}@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}</style>
+</helmet>
+<div dir="{{ dir }}" lang="{{ lang }}" style="min-height:100vh; font-family:'Geist','IBM Plex Sans Arabic',system-ui,sans-serif">
+  <header style="position:sticky; top:0; z-index:5; background:rgba(246,246,243,.92); backdrop-filter:blur(8px); border-bottom:1px solid #E4E3DE">
+    <div style="max-width:1200px; margin:0 auto; padding:14px 24px; display:flex; align-items:center; gap:16px; flex-wrap:wrap">
+      <div style="display:flex; align-items:center; gap:10px">
+        <div style="width:30px; height:30px; border-radius:9px; background:#2B55CF; display:grid; place-items:center"><div style="width:10px; height:10px; border-radius:99px; background:#fff"></div></div>
+        <div style="font-weight:700; font-size:17px">{{ platform }}</div>
+        <div style="font-size:12px; padding:3px 8px; border-radius:99px; background:#FDF1DC; color:#8A4D00; font-weight:500">{{ t.demo }}</div>
+      </div>
+      <div style="flex:1"></div>
+      <div role="group" aria-label="Language" style="display:flex; background:#ECEBE6; border-radius:10px; padding:3px; gap:2px">
+        <button sc-camel-on-click="{{ setAr }}" aria-pressed="{{ isAr }}" style="border:0; padding:6px 12px; border-radius:8px; font:inherit; font-size:13px; cursor:pointer; background:{{ arBg }}; color:#16181D; box-shadow:{{ arShadow }}">العربية</button>
+        <button sc-camel-on-click="{{ setEn }}" aria-pressed="{{ isEn }}" style="border:0; padding:6px 12px; border-radius:8px; font:inherit; font-size:13px; cursor:pointer; background:{{ enBg }}; color:#16181D; box-shadow:{{ enShadow }}">English</button>
+      </div>
+      <button sc-camel-on-click="{{ askReset }}" style="border:1px solid #D9D7D0; background:#fff; padding:8px 14px; border-radius:10px; font:inherit; font-size:13px; font-weight:500; cursor:pointer; color:#B42318; white-space:nowrap" style-hover="background:#FEF3F2">{{ t.reset }}</button>
+    </div>
+  </header>
+
+  <main style="max-width:1200px; margin:0 auto; padding:32px 24px 64px; display:flex; flex-direction:column; gap:32px">
+    <section style="display:flex; flex-direction:column; gap:8px; max-width:720px">
+      <h1 style="margin:0; font-size:30px; line-height:1.25; font-weight:700; text-wrap:balance">{{ t.title }}</h1>
+      <p style="margin:0; color:#5A606C; font-size:15px; line-height:1.7; text-wrap:pretty">{{ t.sub }}</p>
+    </section>
+
+    <section style="display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:16px">
+      <sc-for list="{{ apps }}" as="app" hint-placeholder-count="4">
+        <div style="background:#fff; border:1px solid #E4E3DE; border-radius:16px; padding:20px; display:flex; flex-direction:column; gap:14px">
+          <div style="display:flex; align-items:center; gap:10px">
+            <div style="width:10px; height:10px; border-radius:3px; background:{{ app.color }}"></div>
+            <div style="font-weight:600; font-size:16px">{{ app.title }}</div>
+          </div>
+          <div style="font-size:13px; color:#5A606C; line-height:1.6; min-height:42px">{{ app.desc }}</div>
+          <div style="display:flex; flex-direction:column; gap:6px">
+            <sc-for list="{{ app.entries }}" as="e" hint-placeholder-count="3">
+              <button sc-camel-on-click="{{ e.go }}" style="display:flex; align-items:center; gap:10px; text-align:start; width:100%; border:1px solid #ECEBE6; background:#FAFAF8; border-radius:10px; padding:10px 12px; font:inherit; cursor:pointer; color:#16181D" style-hover="border-color:#2B55CF; background:#F3F6FE">
+                <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:2px">
+                  <div style="font-size:14px; font-weight:500">{{ e.label }}</div>
+                  <div style="font-size:12px; color:#6B7180">{{ e.hint }}</div>
+                </div>
+                <div aria-hidden="true" style="color:#9AA0AC; font-size:16px">{{ arrow }}</div>
+              </button>
+            </sc-for>
+          </div>
+        </div>
+      </sc-for>
+    </section>
+
+    <section style="display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:16px">
+      <div style="background:#fff; border:1px solid #E4E3DE; border-radius:16px; padding:20px; display:flex; flex-direction:column; gap:14px">
+        <div style="font-weight:600; font-size:16px">{{ t.journeys }}</div>
+        <ol style="margin:0; padding-inline-start:20px; display:flex; flex-direction:column; gap:12px; font-size:14px; line-height:1.6; color:#2D313A">
+          <sc-for list="{{ journeys }}" as="j" hint-placeholder-count="5">
+            <li><div style="font-weight:600">{{ j.title }}</div><div style="color:#5A606C; font-size:13px">{{ j.steps }}</div></li>
+          </sc-for>
+        </ol>
+      </div>
+      <div style="background:#fff; border:1px solid #E4E3DE; border-radius:16px; padding:20px; display:flex; flex-direction:column; gap:16px">
+        <div style="font-weight:600; font-size:16px">{{ t.sim }}</div>
+        <div style="display:flex; flex-direction:column; gap:8px">
+          <div style="font-size:13px; color:#5A606C">{{ t.network }}</div>
+          <div style="display:flex; gap:6px; flex-wrap:wrap">
+            <sc-for list="{{ netOpts }}" as="o" hint-placeholder-count="3">
+              <button sc-camel-on-click="{{ o.go }}" aria-pressed="{{ o.on }}" style="border:1px solid {{ o.border }}; background:{{ o.bg }}; color:{{ o.fg }}; padding:7px 12px; border-radius:99px; font:inherit; font-size:13px; cursor:pointer">{{ o.label }}</button>
+            </sc-for>
+          </div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:8px">
+          <div style="font-size:13px; color:#5A606C">{{ t.camera }}</div>
+          <div style="display:flex; gap:6px; flex-wrap:wrap">
+            <sc-for list="{{ camOpts }}" as="o" hint-placeholder-count="2">
+              <button sc-camel-on-click="{{ o.go }}" aria-pressed="{{ o.on }}" style="border:1px solid {{ o.border }}; background:{{ o.bg }}; color:{{ o.fg }}; padding:7px 12px; border-radius:99px; font:inherit; font-size:13px; cursor:pointer">{{ o.label }}</button>
+            </sc-for>
+          </div>
+        </div>
+        <div style="font-size:13px; color:#5A606C; line-height:1.7; background:#F6F6F3; border-radius:10px; padding:12px 14px">{{ t.simNote }}</div>
+        <div style="display:flex; gap:16px; flex-wrap:wrap; font-size:13px">
+          <a href="Nuqta%20-%20Design%20System.html">{{ t.ds }}</a>
+          <a href="README.md">README</a>
+          <a href="HANDOFF.md">{{ t.handoff }}</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <sc-if value="{{ confirmReset }}" hint-placeholder-val="{{ false }}">
+    <div style="position:fixed; inset:0; background:rgba(16,18,24,.4); display:grid; place-items:center; padding:16px; z-index:20" sc-camel-on-click="{{ cancelReset }}">
+      <div role="alertdialog" aria-modal="true" aria-labelledby="rst-t" sc-camel-on-click="{{ stop }}" style="background:#fff; border-radius:16px; padding:24px; max-width:420px; width:100%; display:flex; flex-direction:column; gap:12px; box-shadow:0 20px 60px rgba(0,0,0,.2)">
+        <div id="rst-t" style="font-weight:600; font-size:18px">{{ t.resetQ }}</div>
+        <div style="font-size:14px; color:#5A606C; line-height:1.7">{{ t.resetImpact }}</div>
+        <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:8px">
+          <button sc-camel-on-click="{{ cancelReset }}" style="border:1px solid #D9D7D0; background:#fff; padding:9px 16px; border-radius:10px; font:inherit; cursor:pointer">{{ t.cancel }}</button>
+          <button sc-camel-on-click="{{ doReset }}" style="border:0; background:#C4320A; color:#fff; padding:9px 16px; border-radius:10px; font:inherit; font-weight:500; cursor:pointer">{{ t.reset }}</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+  <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+    <div role="status" style="position:fixed; bottom:24px; inset-inline-start:50%; transform:translateX(-50%); background:#16181D; color:#fff; padding:12px 18px; border-radius:12px; font-size:14px; z-index:30">{{ toast }}</div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script="">
+const T = {
+  ar: { demo: 'نسخة عرض', reset: 'إعادة ضبط بيانات التجربة', title: 'افتح أي تجربة في المنصة', sub: 'كل الواجهات بتقرأ وتكتب من نفس البيانات التجريبية. افتح الكاشير في تاب والعميل في تاب تاني عشان تشوف الختم والطلبات بتنعكس فورًا.', journeys: 'رحلات مقترحة للعرض', sim: 'محاكاة الظروف', network: 'الشبكة (تأثيرها على عمليات الكاشير والعميل)', camera: 'إذن الكاميرا', simNote: '«الرد ضاع» بيسجّل العملية فعلًا لكن الواجهة متستلمش الرد، عشان نجرب حالة «بنتأكد من نتيجة العملية». بيرجع طبيعي بعد محاولة واحدة.', ds: 'نظام التصميم', handoff: 'تقرير التسليم', resetQ: 'نرجّع بيانات التجربة لأولها؟', resetImpact: 'كل الأختام والطلبات والتجار والمسودات اللي اتعملت هتتمسح وترجع البيانات الأصلية. ده بيأثر على كل الواجهات المفتوحة.', cancel: 'إلغاء', done: 'رجعت البيانات لأولها', ok: 'طبيعي', offline: 'مفيش اتصال', lost: 'الرد ضاع بعد النجاح', granted: 'مسموح', denied: 'مرفوض' },
+  en: { demo: 'Demo build', reset: 'Reset demo data', title: 'Open any experience on the platform', sub: 'All four interfaces read and write the same demo data. Open the cashier in one tab and the customer in another to see stamps and requests sync live.', journeys: 'Suggested demo journeys', sim: 'Simulated conditions', network: 'Network (affects cashier and customer actions)', camera: 'Camera permission', simNote: '“Response lost” commits the operation but drops the reply, so you can see the “Confirming the result” state. It reverts to normal after one attempt.', ds: 'Design system', handoff: 'Delivery report', resetQ: 'Reset demo data to its original state?', resetImpact: 'All stamps, requests, merchants and drafts created during the demo will be erased and the seed data restored. This affects every open interface.', cancel: 'Cancel', done: 'Demo data restored', ok: 'Normal', offline: 'Offline', lost: 'Response lost after success', granted: 'Allowed', denied: 'Denied' }
+};
+const APPS = l => {
+  const a = l === 'ar';
+  return [
+    { k: 'admin', color: '#2B55CF', title: a ? 'إدارة المنصة' : 'Platform Super Admin', desc: a ? 'التجار والتجهيز والتشغيل والدعم والفوترة والتكاملات.' : 'Merchants, provisioning, operations, support, billing, integrations.', entries: [
+      { label: a ? 'هالة — مدير المنصة' : 'Hala — Platform admin', hint: a ? 'نظرة عامة' : 'Overview', url: 'Nuqta%20-%20Super%20Admin.html' },
+      { label: a ? 'إنشاء تاجر جديد' : 'Provision a merchant', hint: a ? 'Wizard + مسودة محفوظة' : 'Wizard + saved draft', url: 'Nuqta%20-%20Super%20Admin.html?view=provisioning' },
+      { label: a ? 'عملية فشل فيها الـWallet' : 'Transaction with failed wallet job', hint: 'Operations → JOB-9001', url: 'Nuqta%20-%20Super%20Admin.html?view=operations' } ] },
+    { k: 'merchant', color: '#6F3F22', title: a ? 'لوحة التاجر' : 'Merchant Dashboard', desc: a ? 'العملاء والبرامج والفروع والفريق والتسويق والهوية والمواد.' : 'Customers, programs, branches, team, marketing, brand & materials.', entries: [
+      { label: a ? 'كريم — مالك بن وحكاية' : 'Karim — Bunn & Hekaya owner', hint: a ? 'كافيه، فرعين' : 'Café, 2 branches', url: 'Nuqta%20-%20Merchant%20Dashboard.html?m=m_cafe' },
+      { label: a ? 'نادية — مالكة صالون لمسة' : 'Nadia — Lamsa Salon owner', hint: a ? 'تجربة مجانية، هوية مختلفة' : 'Trial, different identity', url: 'Nuqta%20-%20Merchant%20Dashboard.html?m=m_salon' },
+      { label: a ? 'مركز المواد QR/NFC' : 'QR/NFC material center', hint: a ? 'بن وحكاية' : 'Bunn & Hekaya', url: 'Nuqta%20-%20Merchant%20Dashboard.html?m=m_cafe&view=brand' } ] },
+    { k: 'cashier', color: '#1F7A4D', title: a ? 'بورتال الكاشير' : 'Cashier Portal', desc: a ? 'مسح الكارت، طلبات الختم، الاستبدال. واجهة موبايل سريعة.' : 'Scan cards, approve requests, redeem. Fast mobile UI.', entries: [
+      { label: a ? 'يوسف — فرع الزمالك' : 'Youssef — Zamalek', hint: a ? 'حد أقصى 3 أختام' : 'Max 3 stamps', url: 'Nuqta%20-%20Cashier%20Portal.html?staff=s_youssef&branch=b_zam' },
+      { label: a ? 'مي على جهاز الزمالك' : 'Mai on the Zamalek device', hint: a ? 'فرع غير مصرح' : 'Unauthorized branch', url: 'Nuqta%20-%20Cashier%20Portal.html?staff=s_mai&branch=b_zam' },
+      { label: a ? 'عمر — حساب موقوف' : 'Omar — disabled account', hint: a ? 'موظف موقوف' : 'Disabled staff', url: 'Nuqta%20-%20Cashier%20Portal.html?staff=s_omar&branch=b_zam' } ] },
+    { k: 'customer', color: '#5E2750', title: a ? 'بورتال العميل' : 'Customer Portal', desc: a ? 'تسجيل من QR أو NFC، الكارت، المكافآت، طلب ختم.' : 'Join via QR or NFC, card, rewards, stamp requests.', entries: [
+      { label: a ? 'سارة — كروتي' : 'Sara — my cards', hint: a ? 'عضوة عند تاجرين، رصيد 4/5' : 'Member of 2 merchants, 4/5', url: 'Nuqta%20-%20Customer%20Portal.html?c=c1' },
+      { label: a ? 'عميل جديد عبر QR الكافيه' : 'New customer via café QR', hint: a ? 'كود OTP التجريبي 123456' : 'Demo OTP 123456', url: 'Nuqta%20-%20Customer%20Portal.html?m=m_cafe&src=qr&b=b_zam&new=1' },
+      { label: a ? 'تاجر موقوف' : 'Suspended merchant', hint: a ? 'فرن الحارة' : 'Hara Bakery', url: 'Nuqta%20-%20Customer%20Portal.html?m=m_bakery&src=nfc&new=1' } ] }
+  ];
+};
+const JOURNEYS = l => l === 'ar' ? [
+  { title: 'ختم من البداية للنهاية', steps: 'كاشير يوسف ← امسح كارت ← سارة ← إيصال جديد ← تأكيد. سارة توصل 5/5 وتتفتح مكافأة، وتقرير التاجر يتحدث.' },
+  { title: 'العميل يطلب ختم', steps: 'سارة ← كارت بن وحكاية ← اطلب ختم ← الزمالك. الكاشير يشوف الطلب بكود المطابقة ويعتمده.' },
+  { title: 'استبدال مكافأة', steps: 'الكاشير ← سارة ← استبدال ← مستني تأكيد حامل الكارت. من تاب العميل اضغط «أيوه، أنا» ثم أكمل من الكاشير.' },
+  { title: 'إنشاء تاجر', steps: 'إدارة المنصة ← التجهيز ← كمّل مسودة «مخبز ورد» أو ابدأ جديد ← تفعيل ← أعد محاولة Google Wallet.' },
+  { title: 'تغيير الهوية', steps: 'لوحة التاجر ← الهوية والمواد ← غيّر اللون ← افتح كارت العميل والستاند.' }
+] : [
+  { title: 'Stamp end to end', steps: 'Cashier Youssef → Scan card → Sara → new receipt → confirm. Sara reaches 5/5, a reward unlocks, merchant reports update.' },
+  { title: 'Customer requests a stamp', steps: 'Sara → Bunn & Hekaya card → Request stamp → Zamalek. The cashier sees it with a match code and approves.' },
+  { title: 'Redeem a reward', steps: 'Cashier → Sara → Redeem → waiting for cardholder. In the customer tab tap “Yes, it’s me”, then complete on the cashier.' },
+  { title: 'Provision a merchant', steps: 'Super Admin → Provisioning → resume “Ward Bakery” draft or start fresh → Activate → retry Google Wallet.' },
+  { title: 'Change identity', steps: 'Merchant → Brand & materials → change color → open the customer card and QR stand.' }
+];
+class Component extends DCLogic {
+  state = { confirmReset: false, toast: '' };
+  componentDidMount() { const go = () => { this.un = NQ.subscribe(() => this.forceUpdate()); this.forceUpdate(); }; if (window.NQ) go(); else window.addEventListener('nq-ready', go, { once: true }); }
+  componentWillUnmount() { this.un && this.un(); }
+  flash(m) { this.setState({ toast: m }); clearTimeout(this._t); this._t = setTimeout(() => this.setState({ toast: '' }), 2600); }
+  renderVals() {
+    const NQ = window.NQ; const lang = NQ ? NQ.state.session.lang : 'ar'; const t = T[lang];
+    const s = NQ ? NQ.state.session : {};
+    const pill = (on) => ({ bg: on ? '#16181D' : '#fff', fg: on ? '#fff' : '#16181D', border: on ? '#16181D' : '#D9D7D0', on });
+    return {
+      t, lang, dir: lang === 'ar' ? 'rtl' : 'ltr', arrow: lang === 'ar' ? '←' : '→',
+      platform: NQ ? NQ.L(NQ.CONFIG.platformName) : '',
+      isAr: lang === 'ar', isEn: lang === 'en',
+      arBg: lang === 'ar' ? '#fff' : 'transparent', enBg: lang === 'en' ? '#fff' : 'transparent',
+      arShadow: lang === 'ar' ? '0 1px 2px rgba(0,0,0,.08)' : 'none', enShadow: lang === 'en' ? '0 1px 2px rgba(0,0,0,.08)' : 'none',
+      setAr: () => NQ.setLang('ar'), setEn: () => NQ.setLang('en'),
+      apps: APPS(lang).map(a => ({ ...a, entries: a.entries.map(e => ({ ...e, go: () => { location.href = e.url; } })) })),
+      journeys: JOURNEYS(lang),
+      netOpts: ['ok', 'offline', 'lost'].map(k => ({ label: t[k], ...pill(s.network === k), go: () => NQ.setSession({ network: k }) })),
+      camOpts: ['granted', 'denied'].map(k => ({ label: t[k], ...pill(s.camera === k), go: () => NQ.setSession({ camera: k }) })),
+      confirmReset: this.state.confirmReset, toast: this.state.toast,
+      askReset: () => this.setState({ confirmReset: true }), cancelReset: () => this.setState({ confirmReset: false }), stop: e => e.stopPropagation(),
+      doReset: () => { NQ.reset(); this.setState({ confirmReset: false }); this.flash(t.done); }
+    };
+  }
+}
+</script>
+
+
+</body></html>

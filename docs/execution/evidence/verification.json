@@ -1,0 +1,2380 @@
+{
+  "at": "2026-11-08T18:55:14.572Z",
+  "passed": 413,
+  "failed": 0,
+  "errors": [],
+  "checks": [
+    {
+      "name": "document:PROJECT-AUDIT",
+      "ok": true,
+      "detail": "required Markdown file"
+    },
+    {
+      "name": "document:SCREEN-TO-FEATURE-MAP",
+      "ok": true,
+      "detail": "required Markdown file"
+    },
+    {
+      "name": "document:ARCHITECTURE",
+      "ok": true,
+      "detail": "required Markdown file"
+    },
+    {
+      "name": "document:DATABASE-PLAN",
+      "ok": true,
+      "detail": "required Markdown file"
+    },
+    {
+      "name": "document:API-PLAN",
+      "ok": true,
+      "detail": "required Markdown file"
+    },
+    {
+      "name": "document:PHASES",
+      "ok": true,
+      "detail": "required Markdown file"
+    },
+    {
+      "name": "document:TASKS",
+      "ok": true,
+      "detail": "required Markdown file"
+    },
+    {
+      "name": "document:TEST-PLAN",
+      "ok": true,
+      "detail": "required Markdown file"
+    },
+    {
+      "name": "document:INTEGRATIONS",
+      "ok": true,
+      "detail": "required Markdown file"
+    },
+    {
+      "name": "document:RUNBOOK",
+      "ok": true,
+      "detail": "required Markdown file"
+    },
+    {
+      "name": "document:STATUS",
+      "ok": true,
+      "detail": "required Markdown file"
+    },
+    {
+      "name": "document:DECISIONS",
+      "ok": true,
+      "detail": "required Markdown file"
+    },
+    {
+      "name": "document:README",
+      "ok": true,
+      "detail": "required Markdown file"
+    },
+    {
+      "name": "link:docs\\execution\\PROJECT-AUDIT.md:IMPLEMENTATION.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\PROJECT-AUDIT.md:STATUS.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\PROJECT-AUDIT.md:evidence/inventory.json",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\PROJECT-AUDIT.md:evidence/extracted/dc-runtime.js",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\PROJECT-AUDIT.md:evidence/extracted/mock-repository.js",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\PROJECT-AUDIT.md:evidence/extracted/LoyaltyCard.dc.html",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\PROJECT-AUDIT.md:SCREEN-TO-FEATURE-MAP.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\PROJECT-AUDIT.md:evidence/browser-smoke.json",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\PROJECT-AUDIT.md:evidence/browser-journeys.json",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\PROJECT-AUDIT.md:evidence/journey-stamp-replay.png",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\SCREEN-TO-FEATURE-MAP.md:IMPLEMENTATION.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\SCREEN-TO-FEATURE-MAP.md:STATUS.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\SCREEN-TO-FEATURE-MAP.md:evidence/extracted/super-admin.app.js",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\SCREEN-TO-FEATURE-MAP.md:evidence/extracted/super-admin.template.html",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\SCREEN-TO-FEATURE-MAP.md:evidence/extracted/merchant-dashboard.app.js",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\SCREEN-TO-FEATURE-MAP.md:evidence/extracted/merchant-dashboard.template.html",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\SCREEN-TO-FEATURE-MAP.md:evidence/extracted/cashier-portal.app.js",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\SCREEN-TO-FEATURE-MAP.md:evidence/extracted/cashier-portal.template.html",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\SCREEN-TO-FEATURE-MAP.md:evidence/extracted/customer-portal.app.js",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\SCREEN-TO-FEATURE-MAP.md:evidence/extracted/customer-portal.template.html",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\SCREEN-TO-FEATURE-MAP.md:evidence/extracted/mock-repository.js",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\SCREEN-TO-FEATURE-MAP.md:evidence/extracted/LoyaltyCard.dc.html",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\SCREEN-TO-FEATURE-MAP.md:API-PLAN.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\ARCHITECTURE.md:IMPLEMENTATION.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\ARCHITECTURE.md:STATUS.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\ARCHITECTURE.md:PROJECT-AUDIT.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\ARCHITECTURE.md:RUNBOOK.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\ARCHITECTURE.md:TEST-PLAN.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\DATABASE-PLAN.md:IMPLEMENTATION.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\DATABASE-PLAN.md:STATUS.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\API-PLAN.md:IMPLEMENTATION.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\API-PLAN.md:STATUS.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\API-PLAN.md:evidence/implementation/openapi.json",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\API-PLAN.md:../../packages/contracts/src/commands.ts",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\API-PLAN.md:../../apps/api/src/openapi.ts",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\PHASES.md:IMPLEMENTATION.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\PHASES.md:STATUS.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\PHASES.md:TASKS.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\PHASES.md:DATABASE-PLAN.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\PHASES.md:API-PLAN.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\TASKS.md:IMPLEMENTATION.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\TASKS.md:evidence/implementation/checks.json",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\TASKS.md:evidence/implementation/browser.json",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\TASKS.md:ONBOARDING-AND-SUPPORT.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\TASKS.md:STAMP-DESIGN.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\TASKS.md:ACCOUNT-PREVIEW-AND-CONTACT.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\TEST-PLAN.md:IMPLEMENTATION.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\TEST-PLAN.md:STATUS.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\TEST-PLAN.md:evidence/inventory.json",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\TEST-PLAN.md:evidence/browser-smoke.json",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\TEST-PLAN.md:evidence/browser-journeys.json",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\INTEGRATIONS.md:IMPLEMENTATION.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\INTEGRATIONS.md:STATUS.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\RUNBOOK.md:PASSWORD-AND-DESIGN.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\RUNBOOK.md:IMPLEMENTATION.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\RUNBOOK.md:evidence/implementation/checks.json",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\RUNBOOK.md:ONBOARDING-AND-SUPPORT.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\RUNBOOK.md:STAMP-DESIGN.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\RUNBOOK.md:ACCOUNT-PREVIEW-AND-CONTACT.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\STATUS.md:PASSWORD-AND-DESIGN.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\STATUS.md:ONBOARDING-AND-SUPPORT.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\STATUS.md:STAMP-DESIGN.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\STATUS.md:ACCOUNT-PREVIEW-AND-CONTACT.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\STATUS.md:ACCOUNT-PREVIEW-AND-CONTACT.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\STATUS.md:MANUAL-DEMO.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\STATUS.md:IMPLEMENTATION.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\STATUS.md:RUNBOOK.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\STATUS.md:evidence/implementation/checks.json",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\STATUS.md:evidence/implementation/browser.json",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\STATUS.md:MANUAL-DEMO.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\STATUS.md:evidence/implementation/manual-demo.json",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\STATUS.md:evidence/implementation/source.json",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\STATUS.md:evidence/implementation/load.json",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\STATUS.md:evidence/implementation/restore.json",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\STATUS.md:evidence/verification.json",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\STATUS.md:TASKS.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\DECISIONS.md:INTEGRATIONS.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\README.md:IMPLEMENTATION.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\README.md:IMPLEMENTATION.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\README.md:STATUS.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\README.md:PROJECT-AUDIT.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\README.md:SCREEN-TO-FEATURE-MAP.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\README.md:DECISIONS.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\README.md:ARCHITECTURE.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\README.md:DATABASE-PLAN.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\README.md:API-PLAN.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\README.md:PHASES.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\README.md:TASKS.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\README.md:TEST-PLAN.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\README.md:INTEGRATIONS.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\README.md:RUNBOOK.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\README.md:TASKS.md#first-operational-loop",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\README.md:evidence/inventory.json",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:README.md:docs/execution/ACCOUNT-PREVIEW-AND-CONTACT.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:README.md:docs/execution/STAMP-DESIGN.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:README.md:docs/execution/ONBOARDING-AND-SUPPORT.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:README.md:docs/execution/MANUAL-DEMO.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:README.md:docs/execution/STATUS.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:README.md:docs/execution/IMPLEMENTATION.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:README.md:docs/execution/RUNBOOK.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:README.md:docs/execution/README.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:README.md:docs/execution/MANUAL-DEMO.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:README.md:docs/execution/README.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "task IDs unique",
+      "ok": true,
+      "detail": "61 tasks"
+    },
+    {
+      "name": "task-ref:P01-05",
+      "ok": true,
+      "detail": "API-PLAN"
+    },
+    {
+      "name": "task-ref:P00-01",
+      "ok": true,
+      "detail": "PHASES"
+    },
+    {
+      "name": "task-ref:P00-02",
+      "ok": true,
+      "detail": "PHASES"
+    },
+    {
+      "name": "task-ref:P00-03",
+      "ok": true,
+      "detail": "PHASES"
+    },
+    {
+      "name": "task-ref:P01-01",
+      "ok": true,
+      "detail": "PHASES"
+    },
+    {
+      "name": "task-ref:P01-05",
+      "ok": true,
+      "detail": "PHASES"
+    },
+    {
+      "name": "task-ref:P02-01",
+      "ok": true,
+      "detail": "PHASES"
+    },
+    {
+      "name": "task-ref:P02-05",
+      "ok": true,
+      "detail": "PHASES"
+    },
+    {
+      "name": "task-ref:P03-01",
+      "ok": true,
+      "detail": "PHASES"
+    },
+    {
+      "name": "task-ref:P03-04",
+      "ok": true,
+      "detail": "PHASES"
+    },
+    {
+      "name": "task-ref:P04-01",
+      "ok": true,
+      "detail": "PHASES"
+    },
+    {
+      "name": "task-ref:P04-05",
+      "ok": true,
+      "detail": "PHASES"
+    },
+    {
+      "name": "task-ref:P05-01",
+      "ok": true,
+      "detail": "PHASES"
+    },
+    {
+      "name": "task-ref:P05-04",
+      "ok": true,
+      "detail": "PHASES"
+    },
+    {
+      "name": "task-ref:P05-04",
+      "ok": true,
+      "detail": "PHASES"
+    },
+    {
+      "name": "task-ref:P06-01",
+      "ok": true,
+      "detail": "PHASES"
+    },
+    {
+      "name": "task-ref:P06-03",
+      "ok": true,
+      "detail": "PHASES"
+    },
+    {
+      "name": "task-ref:P07-01",
+      "ok": true,
+      "detail": "PHASES"
+    },
+    {
+      "name": "task-ref:P07-04",
+      "ok": true,
+      "detail": "PHASES"
+    },
+    {
+      "name": "task-ref:P08-01",
+      "ok": true,
+      "detail": "PHASES"
+    },
+    {
+      "name": "task-ref:P08-03",
+      "ok": true,
+      "detail": "PHASES"
+    },
+    {
+      "name": "task-ref:P09-01",
+      "ok": true,
+      "detail": "PHASES"
+    },
+    {
+      "name": "task-ref:P09-03",
+      "ok": true,
+      "detail": "PHASES"
+    },
+    {
+      "name": "task-ref:P10-01",
+      "ok": true,
+      "detail": "PHASES"
+    },
+    {
+      "name": "task-ref:P10-04",
+      "ok": true,
+      "detail": "PHASES"
+    },
+    {
+      "name": "task-ref:P11-01",
+      "ok": true,
+      "detail": "PHASES"
+    },
+    {
+      "name": "task-ref:P11-04",
+      "ok": true,
+      "detail": "PHASES"
+    },
+    {
+      "name": "task-ref:P12-01",
+      "ok": true,
+      "detail": "PHASES"
+    },
+    {
+      "name": "task-ref:P12-04",
+      "ok": true,
+      "detail": "PHASES"
+    },
+    {
+      "name": "task-ref:P13-01",
+      "ok": true,
+      "detail": "PHASES"
+    },
+    {
+      "name": "task-ref:P13-04",
+      "ok": true,
+      "detail": "PHASES"
+    },
+    {
+      "name": "task-ref:P14-01",
+      "ok": true,
+      "detail": "PHASES"
+    },
+    {
+      "name": "task-ref:P14-03",
+      "ok": true,
+      "detail": "PHASES"
+    },
+    {
+      "name": "task-ref:P15-01",
+      "ok": true,
+      "detail": "PHASES"
+    },
+    {
+      "name": "task-ref:P15-03",
+      "ok": true,
+      "detail": "PHASES"
+    },
+    {
+      "name": "task-ref:P00-01",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P00-02",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P00-01",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P00-03",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P00-01",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P01-01",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P00-03",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P01-02",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P01-01",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P01-03",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P00-03",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P01-04",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P01-02",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P01-05",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P01-01",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P02-01",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P01-02",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P02-02",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P02-01",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P01-05",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P02-03",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P02-02",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P02-04",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P02-01",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P01-04",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P02-05",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P02-01",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P03-01",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P02-01",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P03-02",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P03-01",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P01-04",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P03-03",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P03-01",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P03-04",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P03-03",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P04-01",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P03-04",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P01-05",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P04-02",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P04-01",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P03-01",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P04-03",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P04-02",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P02-04",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P04-04",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P04-02",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P04-05",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P04-02",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P05-01",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P04-02",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P05-02",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P05-01",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P03-01",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P05-03",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P05-02",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P05-04",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P01-05",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P02-03",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P03-03",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P04-04",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P05-01",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P06-01",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P03-04",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P05-02",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P06-02",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P06-01",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P04-02",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P06-03",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P06-02",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P07-01",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P04-05",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P05-02",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P07-02",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P07-01",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P07-03",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P07-01",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P07-04",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P07-02",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P01-02",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P08-01",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P03-04",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P02-01",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P08-02",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P08-01",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P08-03",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P08-01",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P09-01",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P04-05",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P09-02",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P09-01",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P01-04",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P09-03",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P09-01",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P10-01",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P00-03",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P10-02",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P10-01",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P09-01",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P10-03",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P10-01",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P09-01",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P10-04",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P10-02",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P11-01",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P00-03",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P03-01",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P11-02",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P11-01",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P09-01",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P11-03",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P11-02",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P07-02",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P11-04",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P11-02",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P12-01",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P02-05",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P12-02",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P12-01",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P12-03",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P12-02",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P12-04",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P12-03",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P13-01",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P05-04",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P13-02",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P04-02",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P09-01",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P13-03",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P07-03",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P09-01",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P13-04",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P05-04",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P14-01",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P13-01",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P14-02",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P14-01",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P08-02",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P14-03",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P14-02",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P05-03",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P07-04",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P09-03",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P15-01",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P14-03",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P15-02",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P15-01",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P15-03",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P15-01",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P01-01",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P01-05",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P02-01",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P02-05",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P03-01",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P03-04",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P04-01",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P04-05",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P05-01",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P05-02",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P05-04",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P04-05",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P05-04",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P01-04",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P02-02",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P02-01",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P03-01",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P02-04",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P03-02",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P03-01",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P04-01",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P04-02",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P04-01",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P04-02",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P05-01",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P04-05",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P01-02",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P04-04",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P05-04",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P05-03",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P05-04",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P10-01",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P11-01",
+      "ok": true,
+      "detail": "TASKS"
+    },
+    {
+      "name": "task-ref:P01-02",
+      "ok": true,
+      "detail": "TEST-PLAN"
+    },
+    {
+      "name": "task-ref:P04-04",
+      "ok": true,
+      "detail": "TEST-PLAN"
+    },
+    {
+      "name": "task-ref:P02-04",
+      "ok": true,
+      "detail": "TEST-PLAN"
+    },
+    {
+      "name": "task-ref:P04-04",
+      "ok": true,
+      "detail": "TEST-PLAN"
+    },
+    {
+      "name": "task-ref:P01-04",
+      "ok": true,
+      "detail": "TEST-PLAN"
+    },
+    {
+      "name": "task-ref:P04-04",
+      "ok": true,
+      "detail": "TEST-PLAN"
+    },
+    {
+      "name": "task-ref:P03-01",
+      "ok": true,
+      "detail": "TEST-PLAN"
+    },
+    {
+      "name": "task-ref:P04-01",
+      "ok": true,
+      "detail": "TEST-PLAN"
+    },
+    {
+      "name": "task-ref:P04-01",
+      "ok": true,
+      "detail": "TEST-PLAN"
+    },
+    {
+      "name": "task-ref:P06-02",
+      "ok": true,
+      "detail": "TEST-PLAN"
+    },
+    {
+      "name": "task-ref:P04-03",
+      "ok": true,
+      "detail": "TEST-PLAN"
+    },
+    {
+      "name": "task-ref:P04-04",
+      "ok": true,
+      "detail": "TEST-PLAN"
+    },
+    {
+      "name": "task-ref:P05-01",
+      "ok": true,
+      "detail": "TEST-PLAN"
+    },
+    {
+      "name": "task-ref:P06-03",
+      "ok": true,
+      "detail": "TEST-PLAN"
+    },
+    {
+      "name": "task-ref:P03-01",
+      "ok": true,
+      "detail": "TEST-PLAN"
+    },
+    {
+      "name": "task-ref:P05-02",
+      "ok": true,
+      "detail": "TEST-PLAN"
+    },
+    {
+      "name": "task-ref:P05-02",
+      "ok": true,
+      "detail": "TEST-PLAN"
+    },
+    {
+      "name": "task-ref:P05-03",
+      "ok": true,
+      "detail": "TEST-PLAN"
+    },
+    {
+      "name": "task-ref:P10-04",
+      "ok": true,
+      "detail": "TEST-PLAN"
+    },
+    {
+      "name": "task-ref:P11-02",
+      "ok": true,
+      "detail": "TEST-PLAN"
+    },
+    {
+      "name": "task-ref:P12-03",
+      "ok": true,
+      "detail": "TEST-PLAN"
+    },
+    {
+      "name": "task-ref:P13-02",
+      "ok": true,
+      "detail": "TEST-PLAN"
+    },
+    {
+      "name": "task-ref:P07-04",
+      "ok": true,
+      "detail": "TEST-PLAN"
+    },
+    {
+      "name": "task-ref:P13-04",
+      "ok": true,
+      "detail": "TEST-PLAN"
+    },
+    {
+      "name": "task-ref:P02-03",
+      "ok": true,
+      "detail": "TEST-PLAN"
+    },
+    {
+      "name": "task-ref:P04-02",
+      "ok": true,
+      "detail": "TEST-PLAN"
+    },
+    {
+      "name": "task-ref:P04-02",
+      "ok": true,
+      "detail": "TEST-PLAN"
+    },
+    {
+      "name": "task-ref:P05-03",
+      "ok": true,
+      "detail": "TEST-PLAN"
+    },
+    {
+      "name": "task-ref:P03-04",
+      "ok": true,
+      "detail": "TEST-PLAN"
+    },
+    {
+      "name": "task-ref:P04-03",
+      "ok": true,
+      "detail": "TEST-PLAN"
+    },
+    {
+      "name": "task-ref:P09-01",
+      "ok": true,
+      "detail": "TEST-PLAN"
+    },
+    {
+      "name": "task-ref:P11-02",
+      "ok": true,
+      "detail": "TEST-PLAN"
+    },
+    {
+      "name": "task-ref:P13-01",
+      "ok": true,
+      "detail": "TEST-PLAN"
+    },
+    {
+      "name": "task-ref:P02-01",
+      "ok": true,
+      "detail": "TEST-PLAN"
+    },
+    {
+      "name": "task-ref:P13-01",
+      "ok": true,
+      "detail": "TEST-PLAN"
+    },
+    {
+      "name": "task-ref:P12-04",
+      "ok": true,
+      "detail": "TEST-PLAN"
+    },
+    {
+      "name": "task-ref:P14-02",
+      "ok": true,
+      "detail": "TEST-PLAN"
+    },
+    {
+      "name": "task-ref:P10-04",
+      "ok": true,
+      "detail": "TEST-PLAN"
+    },
+    {
+      "name": "task-ref:P09-02",
+      "ok": true,
+      "detail": "TEST-PLAN"
+    },
+    {
+      "name": "task-ref:P13-01",
+      "ok": true,
+      "detail": "TEST-PLAN"
+    },
+    {
+      "name": "task-ref:P13-03",
+      "ok": true,
+      "detail": "TEST-PLAN"
+    },
+    {
+      "name": "task-ref:P11-01",
+      "ok": true,
+      "detail": "INTEGRATIONS"
+    },
+    {
+      "name": "task-ref:P01-03",
+      "ok": true,
+      "detail": "DECISIONS"
+    },
+    {
+      "name": "phase count",
+      "ok": true,
+      "detail": 16
+    },
+    {
+      "name": "phase P00 has 18 fields",
+      "ok": true,
+      "detail": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18
+      ]
+    },
+    {
+      "name": "phase P01 has 18 fields",
+      "ok": true,
+      "detail": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18
+      ]
+    },
+    {
+      "name": "phase P02 has 18 fields",
+      "ok": true,
+      "detail": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18
+      ]
+    },
+    {
+      "name": "phase P03 has 18 fields",
+      "ok": true,
+      "detail": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18
+      ]
+    },
+    {
+      "name": "phase P04 has 18 fields",
+      "ok": true,
+      "detail": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18
+      ]
+    },
+    {
+      "name": "phase P05 has 18 fields",
+      "ok": true,
+      "detail": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18
+      ]
+    },
+    {
+      "name": "phase P06 has 18 fields",
+      "ok": true,
+      "detail": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18
+      ]
+    },
+    {
+      "name": "phase P07 has 18 fields",
+      "ok": true,
+      "detail": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18
+      ]
+    },
+    {
+      "name": "phase P08 has 18 fields",
+      "ok": true,
+      "detail": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18
+      ]
+    },
+    {
+      "name": "phase P09 has 18 fields",
+      "ok": true,
+      "detail": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18
+      ]
+    },
+    {
+      "name": "phase P10 has 18 fields",
+      "ok": true,
+      "detail": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18
+      ]
+    },
+    {
+      "name": "phase P11 has 18 fields",
+      "ok": true,
+      "detail": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18
+      ]
+    },
+    {
+      "name": "phase P12 has 18 fields",
+      "ok": true,
+      "detail": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18
+      ]
+    },
+    {
+      "name": "phase P13 has 18 fields",
+      "ok": true,
+      "detail": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18
+      ]
+    },
+    {
+      "name": "phase P14 has 18 fields",
+      "ok": true,
+      "detail": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18
+      ]
+    },
+    {
+      "name": "phase P15 has 18 fields",
+      "ok": true,
+      "detail": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18
+      ]
+    },
+    {
+      "name": "original unchanged:standalone/Nuqta - Cashier Portal.html",
+      "ok": true,
+      "detail": "17f3b051c1c3f932c89495e9f86eee312681c73e24ee8428ca7db4f43553675b"
+    },
+    {
+      "name": "original unchanged:standalone/Nuqta - Customer Portal.html",
+      "ok": true,
+      "detail": "7051b504848cb76357ea66c3bb36654ed0516a78474d375e195a5867ee431393"
+    },
+    {
+      "name": "original unchanged:standalone/Nuqta - Demo Launcher.html",
+      "ok": true,
+      "detail": "c7d2d705a5fef1c193f0cf0bf98aec5382c9aed1d3a3d02326d13d6d01f7a419"
+    },
+    {
+      "name": "original unchanged:standalone/Nuqta - Design System.html",
+      "ok": true,
+      "detail": "afd9d6c17d2d232656fbb7f5079a9b98c9cf09703c925f3f2ac1ef38c72244b0"
+    },
+    {
+      "name": "original unchanged:standalone/Nuqta - Merchant Dashboard.html",
+      "ok": true,
+      "detail": "b0301ae40cb268be4ba11bf5f478c90edc666703ba96aa4f3302b337427a0adf"
+    },
+    {
+      "name": "original unchanged:standalone/Nuqta - Super Admin.html",
+      "ok": true,
+      "detail": "e9bf7d27f99411395627639637fe1ccc086e006c5dd5409b0b363b78458a1a56"
+    },
+    {
+      "name": "syntax:cashier-portal.app.js",
+      "ok": true,
+      "detail": "parsed, not executed"
+    },
+    {
+      "name": "syntax:customer-portal.app.js",
+      "ok": true,
+      "detail": "parsed, not executed"
+    },
+    {
+      "name": "syntax:dc-runtime.js",
+      "ok": true,
+      "detail": "parsed, not executed"
+    },
+    {
+      "name": "syntax:demo-launcher.app.js",
+      "ok": true,
+      "detail": "parsed, not executed"
+    },
+    {
+      "name": "syntax:design-system.app.js",
+      "ok": true,
+      "detail": "parsed, not executed"
+    },
+    {
+      "name": "syntax:merchant-dashboard.app.js",
+      "ok": true,
+      "detail": "parsed, not executed"
+    },
+    {
+      "name": "syntax:mock-repository.js",
+      "ok": true,
+      "detail": "parsed, not executed"
+    },
+    {
+      "name": "syntax:super-admin.app.js",
+      "ok": true,
+      "detail": "parsed, not executed"
+    },
+    {
+      "name": "evidence:browser-smoke.json",
+      "ok": true,
+      "detail": "results present"
+    },
+    {
+      "name": "no browser errors:browser-smoke.json",
+      "ok": true,
+      "detail": "browser page errors"
+    },
+    {
+      "name": "evidence:browser-journeys.json",
+      "ok": true,
+      "detail": "results present"
+    },
+    {
+      "name": "no browser errors:browser-journeys.json",
+      "ok": true,
+      "detail": "browser page errors"
+    },
+    {
+      "name": "no unresolved harness failures",
+      "ok": true,
+      "detail": {
+        "PASS": 34,
+        "REPRODUCED": 9
+      }
+    }
+  ]
+}

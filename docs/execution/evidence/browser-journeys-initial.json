@@ -1,0 +1,643 @@
+{
+  "at": "2026-11-07T10:13:19.017Z",
+  "results": [
+    {
+      "id": "VIEW:Super Admin:overview",
+      "kind": "render",
+      "status": "PASS",
+      "evidence": {
+        "url": "http://127.0.0.1:4175/Nuqta%20-%20Super%20Admin.html?view=overview",
+        "textLength": 893,
+        "headings": [
+          "نظرة عامة",
+          "إجراءات محتاجة متابعة",
+          "الأختام حسب التاجر"
+        ]
+      }
+    },
+    {
+      "id": "VIEW:Super Admin:merchants",
+      "kind": "render",
+      "status": "PASS",
+      "evidence": {
+        "url": "http://127.0.0.1:4175/Nuqta%20-%20Super%20Admin.html?view=merchants",
+        "textLength": 583,
+        "headings": [
+          "التجار"
+        ]
+      }
+    },
+    {
+      "id": "VIEW:Super Admin:provisioning",
+      "kind": "render",
+      "status": "PASS",
+      "evidence": {
+        "url": "http://127.0.0.1:4175/Nuqta%20-%20Super%20Admin.html?view=provisioning",
+        "textLength": 276,
+        "headings": [
+          "التجهيز",
+          "مسودات محفوظة",
+          "تفعيلات حديثة"
+        ]
+      }
+    },
+    {
+      "id": "VIEW:Super Admin:operations",
+      "kind": "render",
+      "status": "PASS",
+      "evidence": {
+        "url": "http://127.0.0.1:4175/Nuqta%20-%20Super%20Admin.html?view=operations",
+        "textLength": 1601,
+        "headings": [
+          "التشغيل",
+          "TX-10060",
+          "مسار العملية",
+          "المهام في الخلفية",
+          "سجل التدقيق"
+        ]
+      }
+    },
+    {
+      "id": "VIEW:Super Admin:support",
+      "kind": "render",
+      "status": "PASS",
+      "evidence": {
+        "url": "http://127.0.0.1:4175/Nuqta%20-%20Super%20Admin.html?view=support",
+        "textLength": 578,
+        "headings": [
+          "الدعم",
+          "عميلة مش شايفة آخر ختم على Apple Wallet"
+        ]
+      }
+    },
+    {
+      "id": "VIEW:Super Admin:billing",
+      "kind": "render",
+      "status": "PASS",
+      "evidence": {
+        "url": "http://127.0.0.1:4175/Nuqta%20-%20Super%20Admin.html?view=billing",
+        "textLength": 1335,
+        "headings": [
+          "الفوترة",
+          "الاشتراكات",
+          "مدفوعات فاشلة",
+          "تجارب قربت تخلص",
+          "الفواتير",
+          "المدفوعات"
+        ]
+      }
+    },
+    {
+      "id": "VIEW:Super Admin:integrations",
+      "kind": "render",
+      "status": "PASS",
+      "evidence": {
+        "url": "http://127.0.0.1:4175/Nuqta%20-%20Super%20Admin.html?view=integrations",
+        "textLength": 899,
+        "headings": [
+          "التكاملات"
+        ]
+      }
+    },
+    {
+      "id": "VIEW:Super Admin:system",
+      "kind": "render",
+      "status": "PASS",
+      "evidence": {
+        "url": "http://127.0.0.1:4175/Nuqta%20-%20Super%20Admin.html?view=system",
+        "textLength": 436,
+        "headings": [
+          "النظام",
+          "حالة النظام",
+          "أدوات العرض التجريبي",
+          "إعداد المنصة"
+        ]
+      }
+    },
+    {
+      "id": "VIEW:Super Admin:settings",
+      "kind": "render",
+      "status": "PASS",
+      "evidence": {
+        "url": "http://127.0.0.1:4175/Nuqta%20-%20Super%20Admin.html?view=settings",
+        "textLength": 328,
+        "headings": [
+          "الإعدادات",
+          "فريق المنصة",
+          "الخصوصية"
+        ]
+      }
+    },
+    {
+      "id": "VIEW:Merchant Dashboard:home",
+      "kind": "render",
+      "status": "PASS",
+      "evidence": {
+        "url": "http://127.0.0.1:4175/Nuqta%20-%20Merchant%20Dashboard.html?view=home",
+        "textLength": 1062,
+        "headings": [
+          "الرئيسية",
+          "محتاج إجراء",
+          "رجوع العملاء — آخر 8 أسابيع",
+          "أداء الفروع"
+        ]
+      }
+    },
+    {
+      "id": "VIEW:Merchant Dashboard:customers",
+      "kind": "render",
+      "status": "PASS",
+      "evidence": {
+        "url": "http://127.0.0.1:4175/Nuqta%20-%20Merchant%20Dashboard.html?view=customers",
+        "textLength": 1186,
+        "headings": [
+          "العملاء"
+        ]
+      }
+    },
+    {
+      "id": "VIEW:Merchant Dashboard:programs",
+      "kind": "render",
+      "status": "PASS",
+      "evidence": {
+        "url": "http://127.0.0.1:4175/Nuqta%20-%20Merchant%20Dashboard.html?view=programs",
+        "textLength": 442,
+        "headings": [
+          "البرامج"
+        ]
+      }
+    },
+    {
+      "id": "VIEW:Merchant Dashboard:branches",
+      "kind": "render",
+      "status": "PASS",
+      "evidence": {
+        "url": "http://127.0.0.1:4175/Nuqta%20-%20Merchant%20Dashboard.html?view=branches",
+        "textLength": 376,
+        "headings": [
+          "الفروع"
+        ]
+      }
+    },
+    {
+      "id": "VIEW:Merchant Dashboard:team",
+      "kind": "render",
+      "status": "PASS",
+      "evidence": {
+        "url": "http://127.0.0.1:4175/Nuqta%20-%20Merchant%20Dashboard.html?view=team",
+        "textLength": 669,
+        "headings": [
+          "الفريق"
+        ]
+      }
+    },
+    {
+      "id": "VIEW:Merchant Dashboard:marketing",
+      "kind": "render",
+      "status": "PASS",
+      "evidence": {
+        "url": "http://127.0.0.1:4175/Nuqta%20-%20Merchant%20Dashboard.html?view=marketing",
+        "textLength": 1000,
+        "headings": [
+          "التسويق",
+          "حملة جديدة",
+          "تقارير الإرسال"
+        ]
+      }
+    },
+    {
+      "id": "VIEW:Merchant Dashboard:brand",
+      "kind": "render",
+      "status": "PASS",
+      "evidence": {
+        "url": "http://127.0.0.1:4175/Nuqta%20-%20Merchant%20Dashboard.html?view=brand",
+        "textLength": 1743,
+        "headings": [
+          "الهوية والمواد",
+          "مركز المواد QR وNFC"
+        ]
+      }
+    },
+    {
+      "id": "VIEW:Merchant Dashboard:subscription",
+      "kind": "render",
+      "status": "PASS",
+      "evidence": {
+        "url": "http://127.0.0.1:4175/Nuqta%20-%20Merchant%20Dashboard.html?view=subscription",
+        "textLength": 672,
+        "headings": [
+          "الاشتراك",
+          "الفواتير"
+        ]
+      }
+    },
+    {
+      "id": "VIEW:Merchant Dashboard:settings",
+      "kind": "render",
+      "status": "PASS",
+      "evidence": {
+        "url": "http://127.0.0.1:4175/Nuqta%20-%20Merchant%20Dashboard.html?view=settings",
+        "textLength": 503,
+        "headings": [
+          "الإعدادات",
+          "قنوات الرسائل"
+        ]
+      }
+    },
+    {
+      "id": "UI:stamp-lost-response-replay-cross-tab",
+      "kind": "journey",
+      "status": "FAIL",
+      "error": "locator.click: Timeout 7000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('button', { name: 'Scan card', exact: true })\u001b[22m\n"
+    },
+    {
+      "id": "UI:customer-enrollment",
+      "kind": "journey",
+      "status": "FAIL",
+      "error": "locator.click: Timeout 7000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('checkbox').first()\u001b[22m\n"
+    },
+    {
+      "id": "UI:merchant-nested-screens",
+      "kind": "journey",
+      "status": "FAIL",
+      "error": "locator.click: Timeout 7000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('button', { name: 'View', exact: true }).first()\u001b[22m\n"
+    },
+    {
+      "id": "UI:provisioning-wizard",
+      "kind": "journey",
+      "status": "FAIL",
+      "error": "locator.click: Timeout 7000ms exceeded.\nCall log:\n\u001b[2m  - waiting for getByRole('button', { name: 'New merchant', exact: true }).first()\u001b[22m\n"
+    },
+    {
+      "id": "MOCK:arithmetic-replay-receipt",
+      "kind": "mock",
+      "status": "PASS",
+      "evidence": {
+        "balance": 1,
+        "rewards": 1,
+        "replay": true,
+        "duplicate": "receipt_used"
+      }
+    },
+    {
+      "id": "MOCK:branch-and-disabled",
+      "kind": "mock",
+      "status": "PASS",
+      "evidence": {
+        "branch": "branch_unauthorized",
+        "disabled": "staff_disabled"
+      }
+    },
+    {
+      "id": "MOCK:redeem-once",
+      "kind": "mock",
+      "status": "PASS",
+      "evidence": {
+        "first": true,
+        "second": "reward_redeemed"
+      }
+    },
+    {
+      "id": "MOCK:request-approval",
+      "kind": "mock",
+      "status": "PASS",
+      "evidence": {
+        "ok": true,
+        "status": "approved"
+      }
+    },
+    {
+      "id": "F01:cross-tenant-readable",
+      "kind": "finding",
+      "status": "REPRODUCED",
+      "evidence": {
+        "selectedMerchant": "m_salon",
+        "foreignEmail": "ahmed.ali@example.com",
+        "foreignMembership": "ms_cafe_c2"
+      }
+    },
+    {
+      "id": "F02:foreign-owner-awards",
+      "kind": "finding",
+      "status": "REPRODUCED",
+      "evidence": {
+        "ok": true,
+        "tx": {
+          "id": "TX-10061",
+          "type": "stamp",
+          "merchantId": "m_cafe",
+          "branchId": "b_zam",
+          "staffId": "s_nadia",
+          "customerId": "c1",
+          "membershipId": "ms_cafe_c1",
+          "programId": "p_cafe",
+          "qty": 1,
+          "receipt": "FOREIGN-OWNER",
+          "status": "completed",
+          "attemptId": "FOREIGN-OWNER",
+          "at": 1794046361467,
+          "visit": true,
+          "source": "scan",
+          "requestId": null,
+          "walletSync": "failed",
+          "message": "queued",
+          "rewardsCreated": [
+            "RW-527"
+          ]
+        },
+        "balance": 0,
+        "rewards": [
+          {
+            "id": "RW-527",
+            "membershipId": "ms_cafe_c1",
+            "customerId": "c1",
+            "merchantId": "m_cafe",
+            "programId": "p_cafe",
+            "title": {
+              "ar": "أي مشروب ساخن مجانًا",
+              "en": "Any hot drink, free"
+            },
+            "status": "available",
+            "earnedAt": 1794046361467,
+            "expiresAt": 1796638361467,
+            "redemption": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "F03:fractional-quantity",
+      "kind": "finding",
+      "status": "REPRODUCED",
+      "evidence": {
+        "ok": true,
+        "tx": {
+          "id": "TX-10061",
+          "type": "stamp",
+          "merchantId": "m_cafe",
+          "branchId": "b_zam",
+          "staffId": "s_youssef",
+          "customerId": "c1",
+          "membershipId": "ms_cafe_c1",
+          "programId": "p_cafe",
+          "qty": 1.5,
+          "receipt": "FRACTION",
+          "status": "completed",
+          "attemptId": "FRACTION",
+          "at": 1794046362195,
+          "visit": true,
+          "source": "scan",
+          "requestId": null,
+          "walletSync": "failed",
+          "message": "queued",
+          "rewardsCreated": [
+            "RW-527"
+          ]
+        },
+        "balance": 0.5,
+        "rewards": [
+          {
+            "id": "RW-527",
+            "membershipId": "ms_cafe_c1",
+            "customerId": "c1",
+            "merchantId": "m_cafe",
+            "programId": "p_cafe",
+            "title": {
+              "ar": "أي مشروب ساخن مجانًا",
+              "en": "Any hot drink, free"
+            },
+            "status": "available",
+            "earnedAt": 1794046362195,
+            "expiresAt": 1796638362195,
+            "redemption": null
+          }
+        ]
+      }
+    },
+    {
+      "id": "F04:unsigned-qr-no-expiry",
+      "kind": "finding",
+      "status": "REPRODUCED",
+      "evidence": {
+        "ok": true,
+        "membership": {
+          "id": "ms_cafe_c1",
+          "customerId": "c1",
+          "merchantId": "m_cafe",
+          "programId": "p_cafe",
+          "balance": 4,
+          "joinedAt": 1792318362209,
+          "lastActivity": 1794035562209,
+          "source": "qr"
+        }
+      }
+    },
+    {
+      "id": "F05:provisioning-duplicates",
+      "kind": "finding",
+      "status": "REPRODUCED",
+      "evidence": {
+        "first": "m_aatjc",
+        "second": "m_6q3xq",
+        "created": 2
+      }
+    },
+    {
+      "id": "F06:correction-applied-twice",
+      "kind": "finding",
+      "status": "REPRODUCED",
+      "evidence": {
+        "before": 1,
+        "after": 3,
+        "transactions": 2
+      }
+    },
+    {
+      "id": "F07:expired-reward-after-holder-confirm",
+      "kind": "finding",
+      "status": "REPRODUCED",
+      "evidence": {
+        "ok": true,
+        "tx": {
+          "id": "TX-10061",
+          "type": "redeem",
+          "merchantId": "m_cafe",
+          "branchId": "b_zam",
+          "staffId": "s_youssef",
+          "customerId": "c1",
+          "membershipId": "ms_cafe_c1",
+          "programId": "p_cafe",
+          "qty": 1,
+          "receipt": "",
+          "rewardId": "RW-501",
+          "status": "completed",
+          "attemptId": "AT-HFZHZA",
+          "at": 1794046365361,
+          "visit": false,
+          "source": "scan",
+          "walletSync": "ok",
+          "message": "none"
+        },
+        "reward": {
+          "id": "RW-501",
+          "membershipId": "ms_cafe_c1",
+          "customerId": "c1",
+          "merchantId": "m_cafe",
+          "programId": "p_cafe",
+          "title": {
+            "ar": "أي مشروب ساخن مجانًا",
+            "en": "Any hot drink, free"
+          },
+          "status": "redeemed",
+          "earnedAt": 1793527964048,
+          "expiresAt": 1794046364654,
+          "redemption": {
+            "status": "holder_confirmed",
+            "code": "3338",
+            "staffId": "s_youssef",
+            "branchId": "b_zam",
+            "startedAt": 1794046364653,
+            "confirmedAt": 1794046364653
+          },
+          "redeemedAt": 1794046365361,
+          "txId": "TX-10061"
+        }
+      }
+    },
+    {
+      "id": "F08:request-approval-race",
+      "kind": "finding",
+      "status": "REPRODUCED",
+      "evidence": {
+        "results": [
+          true,
+          true
+        ],
+        "transactions": 2
+      }
+    },
+    {
+      "id": "F09:replay-before-authorization",
+      "kind": "finding",
+      "status": "REPRODUCED",
+      "evidence": {
+        "ok": true,
+        "tx": {
+          "id": "TX-10061",
+          "type": "stamp",
+          "merchantId": "m_cafe",
+          "branchId": "b_zam",
+          "staffId": "s_youssef",
+          "customerId": "c1",
+          "membershipId": "ms_cafe_c1",
+          "programId": "p_cafe",
+          "qty": 1,
+          "receipt": "REPLAY-AUTH",
+          "status": "completed",
+          "attemptId": "REPLAY-AUTH",
+          "at": 1794046366791,
+          "visit": true,
+          "source": "scan",
+          "requestId": null,
+          "walletSync": "failed",
+          "message": "queued",
+          "rewardsCreated": [
+            "RW-527"
+          ]
+        },
+        "replay": true,
+        "balance": 0,
+        "rewards": []
+      }
+    },
+    {
+      "id": "LAYOUT:Cashier Portal:ar",
+      "kind": "layout",
+      "status": "PASS",
+      "evidence": {
+        "width": 390,
+        "scrollWidth": 390,
+        "dir": "rtl",
+        "buttons": 2
+      }
+    },
+    {
+      "id": "LAYOUT:Cashier Portal:en",
+      "kind": "layout",
+      "status": "PASS",
+      "evidence": {
+        "width": 390,
+        "scrollWidth": 390,
+        "dir": "ltr",
+        "buttons": 14
+      }
+    },
+    {
+      "id": "LAYOUT:Customer Portal:ar",
+      "kind": "layout",
+      "status": "PASS",
+      "evidence": {
+        "width": 390,
+        "scrollWidth": 390,
+        "dir": "rtl",
+        "buttons": 6
+      }
+    },
+    {
+      "id": "LAYOUT:Customer Portal:en",
+      "kind": "layout",
+      "status": "PASS",
+      "evidence": {
+        "width": 390,
+        "scrollWidth": 390,
+        "dir": "ltr",
+        "buttons": 6
+      }
+    },
+    {
+      "id": "LAYOUT:Merchant Dashboard:ar",
+      "kind": "layout",
+      "status": "PASS",
+      "evidence": {
+        "width": 390,
+        "scrollWidth": 390,
+        "dir": "rtl",
+        "buttons": 5
+      }
+    },
+    {
+      "id": "LAYOUT:Merchant Dashboard:en",
+      "kind": "layout",
+      "status": "PASS",
+      "evidence": {
+        "width": 390,
+        "scrollWidth": 390,
+        "dir": "ltr",
+        "buttons": 5
+      }
+    },
+    {
+      "id": "LAYOUT:Super Admin:ar",
+      "kind": "layout",
+      "status": "PASS",
+      "evidence": {
+        "width": 390,
+        "scrollWidth": 390,
+        "dir": "rtl",
+        "buttons": 9
+      }
+    },
+    {
+      "id": "LAYOUT:Super Admin:en",
+      "kind": "layout",
+      "status": "PASS",
+      "evidence": {
+        "width": 390,
+        "scrollWidth": 390,
+        "dir": "ltr",
+        "buttons": 9
+      }
+    }
+  ],
+  "errors": []
+}

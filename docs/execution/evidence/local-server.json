@@ -1,0 +1,42 @@
+{
+  "at": "2026-11-07T10:48:01.377Z",
+  "origin": "http://127.0.0.1:4173",
+  "checks": [
+    {
+      "file": "Nuqta - Cashier Portal.html",
+      "status": 200,
+      "bytes": 810094,
+      "expectedBytes": 810094
+    },
+    {
+      "file": "Nuqta - Customer Portal.html",
+      "status": 200,
+      "bytes": 807274,
+      "expectedBytes": 807274
+    },
+    {
+      "file": "Nuqta - Demo Launcher.html",
+      "status": 200,
+      "bytes": 751423,
+      "expectedBytes": 751423
+    },
+    {
+      "file": "Nuqta - Design System.html",
+      "status": 200,
+      "bytes": 731484,
+      "expectedBytes": 731484
+    },
+    {
+      "file": "Nuqta - Merchant Dashboard.html",
+      "status": 200,
+      "bytes": 860138,
+      "expectedBytes": 860138
+    },
+    {
+      "file": "Nuqta - Super Admin.html",
+      "status": 200,
+      "bytes": 869673,
+      "expectedBytes": 869673
+    }
+  ]
+}

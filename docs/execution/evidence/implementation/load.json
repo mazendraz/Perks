@@ -1,0 +1,17 @@
+{
+  "at": "2026-11-08T18:52:42.298Z",
+  "environment": "local PostgreSQL; Fastify inject; no HTTP/TLS or device latency",
+  "purchases": 50,
+  "concurrency": 20,
+  "totalMs": 998.1310999999998,
+  "p50Ms": 304.8132999999998,
+  "p95Ms": 595.5563,
+  "gateMs": 3000,
+  "state": {
+    "balance": 0,
+    "ledger": 0,
+    "rewards": 30,
+    "visits": 50
+  },
+  "productionSloProven": false
+}

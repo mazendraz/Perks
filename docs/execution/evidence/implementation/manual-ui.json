@@ -1,0 +1,15 @@
+{
+  "at": "2026-11-08T10:55:22.162Z",
+  "origin": "http://localhost:4180",
+  "passed": true,
+  "checks": [
+    "Arabic browser sign-in using a real local OTP",
+    "Mazen account completes TOTP MFA",
+    "Platform shows zero companies and zero customers",
+    "New company wizard opens with blank business inputs",
+    "Sign out completes after smoke test",
+    "No uncaught browser page errors"
+  ],
+  "companyCreatedByTest": false,
+  "customersCreatedByTest": false
+}

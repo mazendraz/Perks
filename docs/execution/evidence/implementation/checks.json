@@ -1,0 +1,67 @@
+{
+  "at": "2026-11-08T18:52:08.190Z",
+  "status": "passed",
+  "steps": [
+    {
+      "command": "npm run typecheck",
+      "exitCode": 0,
+      "durationMs": 5072.594800000001
+    },
+    {
+      "command": "npm run lint",
+      "exitCode": 0,
+      "durationMs": 3170.8584
+    },
+    {
+      "command": "npm run test",
+      "exitCode": 0,
+      "durationMs": 4161.178599999999,
+      "passedTests": 14
+    },
+    {
+      "command": "npm run build",
+      "exitCode": 0,
+      "durationMs": 4339.685299999997
+    },
+    {
+      "command": "npm run openapi:export",
+      "exitCode": 0,
+      "durationMs": 1619.1733000000022
+    },
+    {
+      "command": "npm run test:integration",
+      "exitCode": 0,
+      "durationMs": 55250.5729,
+      "passedTests": 48
+    },
+    {
+      "command": "npm run test:manual-demo",
+      "exitCode": 0,
+      "durationMs": 7676.509699999995
+    },
+    {
+      "command": "npm run test:e2e",
+      "exitCode": 0,
+      "durationMs": 102022.47720000001
+    },
+    {
+      "command": "npm run test:restore",
+      "exitCode": 0,
+      "durationMs": 2598.445799999987
+    },
+    {
+      "command": "npm run verify:plan",
+      "exitCode": 0,
+      "durationMs": 439.3350999999966
+    }
+  ],
+  "sourceFingerprint": "0060a07210418d78fbb15e4638db42b6b28ed22e0e17bb53e74af24ac5c81826",
+  "environment": {
+    "node": "v24.19.0",
+    "platform": "win32",
+    "appEnv": "development",
+    "authProvider": "local"
+  },
+  "browserChecks": 53,
+  "sourceFingerprintAfter": "0060a07210418d78fbb15e4638db42b6b28ed22e0e17bb53e74af24ac5c81826"
+}

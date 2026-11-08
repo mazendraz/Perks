@@ -1,0 +1,37 @@
+name: Nuqta checks
+on: [push, pull_request]
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: nuqta_migrator
+          POSTGRES_PASSWORD: ci-only-password
+          POSTGRES_DB: nuqta_ci
+        ports: ['5432:5432']
+        options: --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      APP_ENV: test
+      AUTH_PROVIDER: local
+      AUTH_PEPPER: ci-only-auth-pepper-32-characters-minimum
+      DATABASE_MIGRATOR_URL: postgresql://nuqta_migrator:ci-only-password@127.0.0.1:5432/nuqta_ci
+      DATABASE_URL: postgresql://nuqta_runtime:ci-only-runtime@127.0.0.1:5432/nuqta_ci
+      AUTH_DATABASE_URL: postgresql://nuqta_auth:ci-only-auth@127.0.0.1:5432/nuqta_ci
+      NUQTA_RUNTIME_DB_PASSWORD: ci-only-runtime
+      NUQTA_AUTH_DB_PASSWORD: ci-only-auth
+      WORKER_DATABASE_URL: postgresql://nuqta_worker:ci-only-worker@127.0.0.1:5432/nuqta_ci
+      NUQTA_WORKER_DB_PASSWORD: ci-only-worker
+      PUBLIC_APP_ORIGIN: http://127.0.0.1:5173
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: npm }
+      - run: npm ci
+      - run: npm run db:migrate
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+      - run: npm run test:integration
+      - run: npm run build

@@ -1,0 +1,1221 @@
+[
+  {
+    "file": "standalone/Nuqta - Cashier Portal.html",
+    "bytes": 810094,
+    "sha256": "17f3b051c1c3f932c89495e9f86eee312681c73e24ee8428ca7db4f43553675b",
+    "template": "cashier-portal.template.html",
+    "application": "cashier-portal.app.js",
+    "assets": [
+      {
+        "uuid": "4455acb2-1a5f-4224-962c-5e5a18bb878a",
+        "mime": "application/javascript",
+        "bytes": 54591,
+        "sha256": "eea58335fbd5e796c97b30cb0efc091cae0d00acca211fee016c0cbf221c95c7",
+        "extracted": "mock-repository.js"
+      },
+      {
+        "uuid": "226b619c-2148-47b9-a1d3-5764462b7fdc",
+        "mime": "text/javascript",
+        "bytes": 69150,
+        "sha256": "8fe7df74405f3c55f49b7249c74ea1397e65d07dea2b1bd3b4a489bec2e28cbe",
+        "extracted": "dc-runtime.js"
+      },
+      {
+        "uuid": "fe4e139e-4f13-411a-a12b-5f2d279048a9",
+        "mime": "text/javascript",
+        "bytes": 10751,
+        "sha256": "d949f1c3687aedadcedac85261865f29b17cd273997e7f6b2bfc53b2f9d4c4dd",
+        "source": "https://unpkg.com/react@18.3.1/umd/react.production.min.js"
+      },
+      {
+        "uuid": "c4b895b6-5c0d-4144-bc84-9582e919d40d",
+        "mime": "text/javascript",
+        "bytes": 131835,
+        "sha256": "35f4f974f4b2bcd44da73963347f8952e341f83909e4498227d4e26b98f66f0d",
+        "source": "https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"
+      },
+      {
+        "uuid": "283585f2-ccc2-4171-ae7d-f8a0ae6acbb4",
+        "mime": "font/woff2",
+        "bytes": 7420,
+        "sha256": "2317fa4bb293c9c0b110e18315d529235c47a0ddd3338cea3d8c7955e927899e"
+      },
+      {
+        "uuid": "e2b085a2-e8c9-4e44-a392-c6339089e4c0",
+        "mime": "font/woff2",
+        "bytes": 15084,
+        "sha256": "6894439694946a589d157ece003086960a6a4013d74a813dab7602efdb3d8c09"
+      },
+      {
+        "uuid": "18236944-ae71-4474-a08b-33df89f80cd1",
+        "mime": "font/woff2",
+        "bytes": 8004,
+        "sha256": "8fa40e5d248247735eb97a0bd593b8852440430600d6ba01364c31fe0abc1fe1"
+      },
+      {
+        "uuid": "e1aaa54a-0081-4133-8ec8-aea322b328ce",
+        "mime": "font/woff2",
+        "bytes": 16512,
+        "sha256": "824f485b5d26e2f2da3c2b236132ece1bc8e4e43373452950bb0e40548b4313f"
+      },
+      {
+        "uuid": "1bba4289-72be-4868-b7d9-c7191fc37365",
+        "mime": "font/woff2",
+        "bytes": 29400,
+        "sha256": "19f9c92546aa300c312235e3125af1b81394d8db9a4bc4a425cd5b641d2d54e1"
+      },
+      {
+        "uuid": "6a191eda-f263-426f-8ffc-957673676325",
+        "mime": "font/woff2",
+        "bytes": 6176,
+        "sha256": "cd8800999070b729e1cc0bf7a48da6c3ac096a044251171b9a7574b56d96d4b4"
+      },
+      {
+        "uuid": "8afb7590-f293-423f-b206-73ec580ba722",
+        "mime": "font/woff2",
+        "bytes": 12940,
+        "sha256": "4866787fc952dbdbd591d6923d67bc21c2d894b93f34ab69d0cdf25d47bfb2df"
+      },
+      {
+        "uuid": "6b1a1c59-1e78-4f20-8997-dfa3e0c719be",
+        "mime": "font/woff2",
+        "bytes": 5812,
+        "sha256": "5bb66d8319ba1602bb2eb67dce8d79c2b4687be8ce183a0574433e949b3c60ad"
+      },
+      {
+        "uuid": "d578ce3e-7f76-4726-bdfa-c47601f746ad",
+        "mime": "font/woff2",
+        "bytes": 7696,
+        "sha256": "d39b60889a94a527a7f73c7988a2d6efb6c081614aef683b0b386c02d74c2175"
+      },
+      {
+        "uuid": "82116636-959a-44f9-b25e-9c7569e1f7ef",
+        "mime": "font/woff2",
+        "bytes": 14696,
+        "sha256": "1a189eb997c3e2ece68373e387afaec9e8617424186c4b1ab3cff7c54ba6223b"
+      },
+      {
+        "uuid": "527d34c2-6dbb-45f3-af7c-d64e40313b5b",
+        "mime": "font/woff2",
+        "bytes": 23128,
+        "sha256": "684ad5b531f81d43c1e8c7038262d5db7cdc1f68006e04d6c7769efa8d33c8cc"
+      },
+      {
+        "uuid": "9488498b-c941-474e-804c-909e4a9f39a7",
+        "mime": "font/woff2",
+        "bytes": 42848,
+        "sha256": "6010e7fd0dce5d527583951750728cbe3c895efbd16aa0f809ab8c824878c9d8"
+      },
+      {
+        "uuid": "8f993a8b-09c0-4f84-9fc4-a0819f30d7f8",
+        "mime": "font/woff2",
+        "bytes": 1448,
+        "sha256": "1144843a05a0eaef92032c0406ee3f001804f2caddba9522e8a265e0a79d46ea"
+      },
+      {
+        "uuid": "c1435e8b-6e9a-450f-8fb6-8f5520adc206",
+        "mime": "font/woff2",
+        "bytes": 6656,
+        "sha256": "1935fa1a3326fcd48e20abe864bb30ace43fe58bd572f354c24271ea66208e04"
+      },
+      {
+        "uuid": "c912693b-17f6-4c54-9e3f-0b9159c05c67",
+        "mime": "font/woff2",
+        "bytes": 19164,
+        "sha256": "9ed8dcb02e6c7246de4c120295fafa39a7bb73085f4951a4524a07dc911069f2"
+      },
+      {
+        "uuid": "d6c638a9-12cc-450b-a451-3c98b0b8f500",
+        "mime": "font/woff2",
+        "bytes": 45296,
+        "sha256": "90aef64fea9794f232332e907d45810ab268d1a11721340025eba2a2cdb36d5c"
+      },
+      {
+        "uuid": "45ded061-0367-4560-beb4-338133fb7910",
+        "mime": "font/woff2",
+        "bytes": 1456,
+        "sha256": "93ae908392a01f9af1f73e86e99f1665f899a5b58fe9e56517abd199e47dcd01"
+      },
+      {
+        "uuid": "da6c5ae3-3acf-4039-ad52-739cf51f7529",
+        "mime": "font/woff2",
+        "bytes": 6540,
+        "sha256": "ae5c1a58c18d253e20691f00e401319f01fc568d24d0e50165f276d1a99035b5"
+      },
+      {
+        "uuid": "62dab080-6fd9-4829-ada7-7aebe643bff6",
+        "mime": "font/woff2",
+        "bytes": 20088,
+        "sha256": "be6a3b2e37f3ad67aa822a55ce356d28c416331c97530a1ec076c2118240ca2d"
+      },
+      {
+        "uuid": "bd4e446e-ea6e-4dcf-87e5-5c5403568090",
+        "mime": "font/woff2",
+        "bytes": 45688,
+        "sha256": "16734a5adb27b0f363e566cbbeacec480da0dc0baa19c8f0053251c2e2bc0eac"
+      },
+      {
+        "uuid": "417abf41-84b6-4fd0-924c-8c3f5622a4c4",
+        "mime": "font/woff2",
+        "bytes": 1476,
+        "sha256": "95875e4fa8928fa68e01e53e0b2cdb0f6dbec1ac61d9af493bb05d2ed230f350"
+      },
+      {
+        "uuid": "c760875e-9498-4306-b293-6bafff56fdfb",
+        "mime": "font/woff2",
+        "bytes": 6680,
+        "sha256": "0f7c03bb523b8084a84c4b7d95a5c7b294b7318f88b2e51829d5fe7aaef0d0bb"
+      },
+      {
+        "uuid": "c57952ec-183e-45e9-b1e3-5a017efd0a56",
+        "mime": "font/woff2",
+        "bytes": 20500,
+        "sha256": "63f4757271e403f7baec0862f284ffaa4560ea6096ba9fe8bc6e585ca656e724"
+      },
+      {
+        "uuid": "51c35971-fa29-4c2e-8139-d907e2a56c21",
+        "mime": "font/woff2",
+        "bytes": 44280,
+        "sha256": "04c730b4292731ccedadd5bd80756124364ae4923895145d9cd7b1f28e443de1"
+      },
+      {
+        "uuid": "51f7c7df-0d07-4108-b6e9-16509e6a3089",
+        "mime": "font/woff2",
+        "bytes": 1476,
+        "sha256": "0c4e072fcf4f07a388448ae321d51fd3915797371a7378270e5630c6d023ea6b"
+      },
+      {
+        "uuid": "e62fd389-31a5-40c1-8277-64132c681496",
+        "mime": "font/woff2",
+        "bytes": 6564,
+        "sha256": "ab0b9584271f492336d9eadcef96f99b0da07e8e7046220aea5084f1644a9c9d"
+      },
+      {
+        "uuid": "a500de15-3298-4940-8be8-d7c116e11053",
+        "mime": "font/woff2",
+        "bytes": 19504,
+        "sha256": "ae2d59f91ecf9f7ed279e4a1fc1a9da8170fb0ce5b9152917a8f759033f5777c"
+      }
+    ]
+  },
+  {
+    "file": "standalone/Nuqta - Customer Portal.html",
+    "bytes": 807274,
+    "sha256": "7051b504848cb76357ea66c3bb36654ed0516a78474d375e195a5867ee431393",
+    "template": "customer-portal.template.html",
+    "application": "customer-portal.app.js",
+    "assets": [
+      {
+        "uuid": "d08c974d-54f8-4344-82b5-ed807a8f3ff0",
+        "mime": "text/javascript",
+        "bytes": 69150,
+        "sha256": "8fe7df74405f3c55f49b7249c74ea1397e65d07dea2b1bd3b4a489bec2e28cbe",
+        "extracted": "dc-runtime.js"
+      },
+      {
+        "uuid": "e21b3c4b-732f-41c9-bef7-128639dc4537",
+        "mime": "application/javascript",
+        "bytes": 54591,
+        "sha256": "eea58335fbd5e796c97b30cb0efc091cae0d00acca211fee016c0cbf221c95c7",
+        "extracted": "mock-repository.js"
+      },
+      {
+        "uuid": "77984d94-69ad-4c28-ae12-80f6e6581a3c",
+        "mime": "text/html",
+        "bytes": 5944,
+        "sha256": "e0af4fd705492d4cbc11fea44a8659e1455285bc19dff7f5bcb155633faa6b75",
+        "source": "./LoyaltyCard.dc.html",
+        "extracted": "LoyaltyCard.dc.html"
+      },
+      {
+        "uuid": "3d39e4d5-7e21-40d4-9527-ba29eeadc973",
+        "mime": "text/javascript",
+        "bytes": 10751,
+        "sha256": "d949f1c3687aedadcedac85261865f29b17cd273997e7f6b2bfc53b2f9d4c4dd",
+        "source": "https://unpkg.com/react@18.3.1/umd/react.production.min.js"
+      },
+      {
+        "uuid": "38878166-1495-4a62-a3ab-476c5e82aade",
+        "mime": "text/javascript",
+        "bytes": 131835,
+        "sha256": "35f4f974f4b2bcd44da73963347f8952e341f83909e4498227d4e26b98f66f0d",
+        "source": "https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"
+      },
+      {
+        "uuid": "d773cea0-334b-4b2d-8452-138391d9f076",
+        "mime": "font/woff2",
+        "bytes": 7420,
+        "sha256": "2317fa4bb293c9c0b110e18315d529235c47a0ddd3338cea3d8c7955e927899e"
+      },
+      {
+        "uuid": "1a3d00c4-2d31-4408-9378-a80941df3396",
+        "mime": "font/woff2",
+        "bytes": 15084,
+        "sha256": "6894439694946a589d157ece003086960a6a4013d74a813dab7602efdb3d8c09"
+      },
+      {
+        "uuid": "b74db0d5-51e4-41d5-9776-f118eb256588",
+        "mime": "font/woff2",
+        "bytes": 8004,
+        "sha256": "8fa40e5d248247735eb97a0bd593b8852440430600d6ba01364c31fe0abc1fe1"
+      },
+      {
+        "uuid": "e55bce24-a15c-4923-8e7b-59059bfb65b2",
+        "mime": "font/woff2",
+        "bytes": 16512,
+        "sha256": "824f485b5d26e2f2da3c2b236132ece1bc8e4e43373452950bb0e40548b4313f"
+      },
+      {
+        "uuid": "b99510a5-ae21-40c1-a359-0c07767da4d6",
+        "mime": "font/woff2",
+        "bytes": 29400,
+        "sha256": "19f9c92546aa300c312235e3125af1b81394d8db9a4bc4a425cd5b641d2d54e1"
+      },
+      {
+        "uuid": "43ff124d-da49-43ae-b499-2e8163cce93c",
+        "mime": "font/woff2",
+        "bytes": 6176,
+        "sha256": "cd8800999070b729e1cc0bf7a48da6c3ac096a044251171b9a7574b56d96d4b4"
+      },
+      {
+        "uuid": "94ad253b-2cd5-4768-963f-e4c17d0475b6",
+        "mime": "font/woff2",
+        "bytes": 12940,
+        "sha256": "4866787fc952dbdbd591d6923d67bc21c2d894b93f34ab69d0cdf25d47bfb2df"
+      },
+      {
+        "uuid": "e6cd70a3-0b5e-4af9-a2e1-c447ba10e171",
+        "mime": "font/woff2",
+        "bytes": 5812,
+        "sha256": "5bb66d8319ba1602bb2eb67dce8d79c2b4687be8ce183a0574433e949b3c60ad"
+      },
+      {
+        "uuid": "c52be942-9dfe-4eb4-9563-a36ff59b608f",
+        "mime": "font/woff2",
+        "bytes": 7696,
+        "sha256": "d39b60889a94a527a7f73c7988a2d6efb6c081614aef683b0b386c02d74c2175"
+      },
+      {
+        "uuid": "8f7c8c12-66f0-4826-8fb7-3af359604eb3",
+        "mime": "font/woff2",
+        "bytes": 14696,
+        "sha256": "1a189eb997c3e2ece68373e387afaec9e8617424186c4b1ab3cff7c54ba6223b"
+      },
+      {
+        "uuid": "086691b6-9905-4fec-8374-483ea6d9414b",
+        "mime": "font/woff2",
+        "bytes": 23128,
+        "sha256": "684ad5b531f81d43c1e8c7038262d5db7cdc1f68006e04d6c7769efa8d33c8cc"
+      },
+      {
+        "uuid": "7993fad9-38a1-48a8-a39d-e47940612d52",
+        "mime": "font/woff2",
+        "bytes": 42848,
+        "sha256": "6010e7fd0dce5d527583951750728cbe3c895efbd16aa0f809ab8c824878c9d8"
+      },
+      {
+        "uuid": "17615e2a-cdf0-41b1-8376-fc515844bffa",
+        "mime": "font/woff2",
+        "bytes": 1448,
+        "sha256": "1144843a05a0eaef92032c0406ee3f001804f2caddba9522e8a265e0a79d46ea"
+      },
+      {
+        "uuid": "4aad2e80-91e9-4a20-b29a-cbdd8ff98aba",
+        "mime": "font/woff2",
+        "bytes": 6656,
+        "sha256": "1935fa1a3326fcd48e20abe864bb30ace43fe58bd572f354c24271ea66208e04"
+      },
+      {
+        "uuid": "dd318d0c-5c4d-4433-9b20-7366d6004173",
+        "mime": "font/woff2",
+        "bytes": 19164,
+        "sha256": "9ed8dcb02e6c7246de4c120295fafa39a7bb73085f4951a4524a07dc911069f2"
+      },
+      {
+        "uuid": "9a7cda0e-b736-4ed2-8406-2159e31daed8",
+        "mime": "font/woff2",
+        "bytes": 45296,
+        "sha256": "90aef64fea9794f232332e907d45810ab268d1a11721340025eba2a2cdb36d5c"
+      },
+      {
+        "uuid": "bbe38488-0d0b-4366-b1a5-87b7922730fb",
+        "mime": "font/woff2",
+        "bytes": 1456,
+        "sha256": "93ae908392a01f9af1f73e86e99f1665f899a5b58fe9e56517abd199e47dcd01"
+      },
+      {
+        "uuid": "fce75259-a39c-47bb-8c0d-02a12e318ad9",
+        "mime": "font/woff2",
+        "bytes": 6540,
+        "sha256": "ae5c1a58c18d253e20691f00e401319f01fc568d24d0e50165f276d1a99035b5"
+      },
+      {
+        "uuid": "087521ca-c610-44a0-a882-6d9d0b37b46a",
+        "mime": "font/woff2",
+        "bytes": 20088,
+        "sha256": "be6a3b2e37f3ad67aa822a55ce356d28c416331c97530a1ec076c2118240ca2d"
+      },
+      {
+        "uuid": "612347a0-4274-4451-89dc-5bb40c64276f",
+        "mime": "font/woff2",
+        "bytes": 45688,
+        "sha256": "16734a5adb27b0f363e566cbbeacec480da0dc0baa19c8f0053251c2e2bc0eac"
+      },
+      {
+        "uuid": "988694b6-6fdd-4565-8607-5c02db600ab4",
+        "mime": "font/woff2",
+        "bytes": 1476,
+        "sha256": "95875e4fa8928fa68e01e53e0b2cdb0f6dbec1ac61d9af493bb05d2ed230f350"
+      },
+      {
+        "uuid": "8be2665f-ec65-4cb3-91c1-b2a5103148ba",
+        "mime": "font/woff2",
+        "bytes": 6680,
+        "sha256": "0f7c03bb523b8084a84c4b7d95a5c7b294b7318f88b2e51829d5fe7aaef0d0bb"
+      },
+      {
+        "uuid": "4dad78ff-afda-4c70-9950-068fb2036e3c",
+        "mime": "font/woff2",
+        "bytes": 20500,
+        "sha256": "63f4757271e403f7baec0862f284ffaa4560ea6096ba9fe8bc6e585ca656e724"
+      },
+      {
+        "uuid": "ec848124-f9af-448a-a304-186b222acdfa",
+        "mime": "font/woff2",
+        "bytes": 44280,
+        "sha256": "04c730b4292731ccedadd5bd80756124364ae4923895145d9cd7b1f28e443de1"
+      },
+      {
+        "uuid": "977f8e1f-48c6-4ec6-8b8d-04d32e7186b0",
+        "mime": "font/woff2",
+        "bytes": 1476,
+        "sha256": "0c4e072fcf4f07a388448ae321d51fd3915797371a7378270e5630c6d023ea6b"
+      },
+      {
+        "uuid": "5e00b42a-1d04-42f3-9973-604a02296099",
+        "mime": "font/woff2",
+        "bytes": 6564,
+        "sha256": "ab0b9584271f492336d9eadcef96f99b0da07e8e7046220aea5084f1644a9c9d"
+      },
+      {
+        "uuid": "834793ed-6167-44ae-a5cf-bd1056bf080a",
+        "mime": "font/woff2",
+        "bytes": 19504,
+        "sha256": "ae2d59f91ecf9f7ed279e4a1fc1a9da8170fb0ce5b9152917a8f759033f5777c"
+      }
+    ]
+  },
+  {
+    "file": "standalone/Nuqta - Demo Launcher.html",
+    "bytes": 751423,
+    "sha256": "c7d2d705a5fef1c193f0cf0bf98aec5382c9aed1d3a3d02326d13d6d01f7a419",
+    "template": "demo-launcher.template.html",
+    "application": "demo-launcher.app.js",
+    "assets": [
+      {
+        "uuid": "421e1a2b-636f-4218-a00f-d5976d0046ff",
+        "mime": "text/javascript",
+        "bytes": 69150,
+        "sha256": "8fe7df74405f3c55f49b7249c74ea1397e65d07dea2b1bd3b4a489bec2e28cbe",
+        "extracted": "dc-runtime.js"
+      },
+      {
+        "uuid": "d33eefa2-d3c0-416a-acc3-685f10ae5100",
+        "mime": "application/javascript",
+        "bytes": 54591,
+        "sha256": "eea58335fbd5e796c97b30cb0efc091cae0d00acca211fee016c0cbf221c95c7",
+        "extracted": "mock-repository.js"
+      },
+      {
+        "uuid": "2e58ee5a-1be3-4641-9af1-9362b7d01a1a",
+        "mime": "text/javascript",
+        "bytes": 10751,
+        "sha256": "d949f1c3687aedadcedac85261865f29b17cd273997e7f6b2bfc53b2f9d4c4dd",
+        "source": "https://unpkg.com/react@18.3.1/umd/react.production.min.js"
+      },
+      {
+        "uuid": "fa1f669a-5fbb-45b9-96a5-fe1d922c58e8",
+        "mime": "text/javascript",
+        "bytes": 131835,
+        "sha256": "35f4f974f4b2bcd44da73963347f8952e341f83909e4498227d4e26b98f66f0d",
+        "source": "https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"
+      },
+      {
+        "uuid": "2e2df7ad-3f4d-4b74-a5d9-50145b1d8bcf",
+        "mime": "font/woff2",
+        "bytes": 7420,
+        "sha256": "2317fa4bb293c9c0b110e18315d529235c47a0ddd3338cea3d8c7955e927899e"
+      },
+      {
+        "uuid": "6293b941-b3f0-48d4-b3a7-9083be14d846",
+        "mime": "font/woff2",
+        "bytes": 15084,
+        "sha256": "6894439694946a589d157ece003086960a6a4013d74a813dab7602efdb3d8c09"
+      },
+      {
+        "uuid": "5bda01e4-8f91-4163-840b-a028be6da1ed",
+        "mime": "font/woff2",
+        "bytes": 8004,
+        "sha256": "8fa40e5d248247735eb97a0bd593b8852440430600d6ba01364c31fe0abc1fe1"
+      },
+      {
+        "uuid": "bc2241ae-250e-4c18-b181-0d1c5fc01198",
+        "mime": "font/woff2",
+        "bytes": 16512,
+        "sha256": "824f485b5d26e2f2da3c2b236132ece1bc8e4e43373452950bb0e40548b4313f"
+      },
+      {
+        "uuid": "424d2354-f068-4e21-ac6e-01fe1a5c54bb",
+        "mime": "font/woff2",
+        "bytes": 29400,
+        "sha256": "19f9c92546aa300c312235e3125af1b81394d8db9a4bc4a425cd5b641d2d54e1"
+      },
+      {
+        "uuid": "187c0fed-618d-4ee0-84a2-d136750adc81",
+        "mime": "font/woff2",
+        "bytes": 6176,
+        "sha256": "cd8800999070b729e1cc0bf7a48da6c3ac096a044251171b9a7574b56d96d4b4"
+      },
+      {
+        "uuid": "39fee53a-9860-47aa-b87a-fc1d52d8b029",
+        "mime": "font/woff2",
+        "bytes": 12940,
+        "sha256": "4866787fc952dbdbd591d6923d67bc21c2d894b93f34ab69d0cdf25d47bfb2df"
+      },
+      {
+        "uuid": "f86ada32-1446-4fcf-8a84-176209673cb9",
+        "mime": "font/woff2",
+        "bytes": 5812,
+        "sha256": "5bb66d8319ba1602bb2eb67dce8d79c2b4687be8ce183a0574433e949b3c60ad"
+      },
+      {
+        "uuid": "18815b91-8dba-4249-9678-a30ae2c8e696",
+        "mime": "font/woff2",
+        "bytes": 7696,
+        "sha256": "d39b60889a94a527a7f73c7988a2d6efb6c081614aef683b0b386c02d74c2175"
+      },
+      {
+        "uuid": "77fc1695-eca7-4b20-ada7-9c376ea32500",
+        "mime": "font/woff2",
+        "bytes": 14696,
+        "sha256": "1a189eb997c3e2ece68373e387afaec9e8617424186c4b1ab3cff7c54ba6223b"
+      },
+      {
+        "uuid": "86977129-0cf2-4c3e-8125-e4dedeffbc6c",
+        "mime": "font/woff2",
+        "bytes": 23128,
+        "sha256": "684ad5b531f81d43c1e8c7038262d5db7cdc1f68006e04d6c7769efa8d33c8cc"
+      },
+      {
+        "uuid": "7782ebee-d68f-44f9-86cb-9c69bbd7bb4a",
+        "mime": "font/woff2",
+        "bytes": 42848,
+        "sha256": "6010e7fd0dce5d527583951750728cbe3c895efbd16aa0f809ab8c824878c9d8"
+      },
+      {
+        "uuid": "35a90fe0-2198-48b2-8271-0561b3ed5a21",
+        "mime": "font/woff2",
+        "bytes": 1448,
+        "sha256": "1144843a05a0eaef92032c0406ee3f001804f2caddba9522e8a265e0a79d46ea"
+      },
+      {
+        "uuid": "c4ce82f4-13b2-49a6-a485-63ffd0e684c2",
+        "mime": "font/woff2",
+        "bytes": 6656,
+        "sha256": "1935fa1a3326fcd48e20abe864bb30ace43fe58bd572f354c24271ea66208e04"
+      },
+      {
+        "uuid": "de1e609b-14fd-442c-8307-9a44e633fd80",
+        "mime": "font/woff2",
+        "bytes": 19164,
+        "sha256": "9ed8dcb02e6c7246de4c120295fafa39a7bb73085f4951a4524a07dc911069f2"
+      },
+      {
+        "uuid": "e3a4d7e2-8dd1-40dd-b35d-039947a7b030",
+        "mime": "font/woff2",
+        "bytes": 45296,
+        "sha256": "90aef64fea9794f232332e907d45810ab268d1a11721340025eba2a2cdb36d5c"
+      },
+      {
+        "uuid": "a15e9896-c39e-4278-a0ac-b5657b5c6f9f",
+        "mime": "font/woff2",
+        "bytes": 1456,
+        "sha256": "93ae908392a01f9af1f73e86e99f1665f899a5b58fe9e56517abd199e47dcd01"
+      },
+      {
+        "uuid": "9290dd13-a563-4e7d-8afc-33c719649c63",
+        "mime": "font/woff2",
+        "bytes": 6540,
+        "sha256": "ae5c1a58c18d253e20691f00e401319f01fc568d24d0e50165f276d1a99035b5"
+      },
+      {
+        "uuid": "e077cd10-78a3-4457-904a-2fbe714df13f",
+        "mime": "font/woff2",
+        "bytes": 20088,
+        "sha256": "be6a3b2e37f3ad67aa822a55ce356d28c416331c97530a1ec076c2118240ca2d"
+      },
+      {
+        "uuid": "85dbbd30-0ece-4a82-a899-30a49988e834",
+        "mime": "font/woff2",
+        "bytes": 45688,
+        "sha256": "16734a5adb27b0f363e566cbbeacec480da0dc0baa19c8f0053251c2e2bc0eac"
+      },
+      {
+        "uuid": "23c5aeb4-1aae-48c8-b86a-60f64bfaf5c6",
+        "mime": "font/woff2",
+        "bytes": 1476,
+        "sha256": "95875e4fa8928fa68e01e53e0b2cdb0f6dbec1ac61d9af493bb05d2ed230f350"
+      },
+      {
+        "uuid": "13049b0f-ecdc-41a6-acb5-e10ba4feccbc",
+        "mime": "font/woff2",
+        "bytes": 6680,
+        "sha256": "0f7c03bb523b8084a84c4b7d95a5c7b294b7318f88b2e51829d5fe7aaef0d0bb"
+      },
+      {
+        "uuid": "2da9bf67-11e3-40f2-a036-05d49e211c3c",
+        "mime": "font/woff2",
+        "bytes": 20500,
+        "sha256": "63f4757271e403f7baec0862f284ffaa4560ea6096ba9fe8bc6e585ca656e724"
+      },
+      {
+        "uuid": "daed7547-dbd3-4cba-9c79-90f0a82f97e7",
+        "mime": "font/woff2",
+        "bytes": 44280,
+        "sha256": "04c730b4292731ccedadd5bd80756124364ae4923895145d9cd7b1f28e443de1"
+      },
+      {
+        "uuid": "6447af45-4be3-442f-bfc2-655e44d6f537",
+        "mime": "font/woff2",
+        "bytes": 1476,
+        "sha256": "0c4e072fcf4f07a388448ae321d51fd3915797371a7378270e5630c6d023ea6b"
+      },
+      {
+        "uuid": "f3aa6815-6ab5-4ea0-97f5-86c5e452e42b",
+        "mime": "font/woff2",
+        "bytes": 6564,
+        "sha256": "ab0b9584271f492336d9eadcef96f99b0da07e8e7046220aea5084f1644a9c9d"
+      },
+      {
+        "uuid": "109cd336-22e0-4b46-81ab-49f3ab4a6731",
+        "mime": "font/woff2",
+        "bytes": 19504,
+        "sha256": "ae2d59f91ecf9f7ed279e4a1fc1a9da8170fb0ce5b9152917a8f759033f5777c"
+      }
+    ]
+  },
+  {
+    "file": "standalone/Nuqta - Design System.html",
+    "bytes": 731484,
+    "sha256": "afd9d6c17d2d232656fbb7f5079a9b98c9cf09703c925f3f2ac1ef38c72244b0",
+    "template": "design-system.template.html",
+    "application": "design-system.app.js",
+    "assets": [
+      {
+        "uuid": "d6771c41-0bf2-448b-9166-a921e3399ee4",
+        "mime": "text/javascript",
+        "bytes": 69150,
+        "sha256": "8fe7df74405f3c55f49b7249c74ea1397e65d07dea2b1bd3b4a489bec2e28cbe",
+        "extracted": "dc-runtime.js"
+      },
+      {
+        "uuid": "ab6e2dd2-b16e-4190-9d0a-f39e3b7f01e2",
+        "mime": "text/html",
+        "bytes": 5944,
+        "sha256": "e0af4fd705492d4cbc11fea44a8659e1455285bc19dff7f5bcb155633faa6b75",
+        "source": "./LoyaltyCard.dc.html",
+        "extracted": "LoyaltyCard.dc.html"
+      },
+      {
+        "uuid": "6f3447ca-e169-414b-86b1-ace3988b165e",
+        "mime": "text/javascript",
+        "bytes": 10751,
+        "sha256": "d949f1c3687aedadcedac85261865f29b17cd273997e7f6b2bfc53b2f9d4c4dd",
+        "source": "https://unpkg.com/react@18.3.1/umd/react.production.min.js"
+      },
+      {
+        "uuid": "0d57c19f-fc6c-445c-9b84-2ec735c31a42",
+        "mime": "text/javascript",
+        "bytes": 131835,
+        "sha256": "35f4f974f4b2bcd44da73963347f8952e341f83909e4498227d4e26b98f66f0d",
+        "source": "https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"
+      },
+      {
+        "uuid": "68552851-bd17-4ec5-be42-263d3c0d03f6",
+        "mime": "font/woff2",
+        "bytes": 7420,
+        "sha256": "2317fa4bb293c9c0b110e18315d529235c47a0ddd3338cea3d8c7955e927899e"
+      },
+      {
+        "uuid": "61259dd1-d1f1-4c1a-94b2-1d057c0629cd",
+        "mime": "font/woff2",
+        "bytes": 15084,
+        "sha256": "6894439694946a589d157ece003086960a6a4013d74a813dab7602efdb3d8c09"
+      },
+      {
+        "uuid": "ebf921d0-1243-4a35-9fcd-07e0ab6037df",
+        "mime": "font/woff2",
+        "bytes": 8004,
+        "sha256": "8fa40e5d248247735eb97a0bd593b8852440430600d6ba01364c31fe0abc1fe1"
+      },
+      {
+        "uuid": "41bbc7ea-c469-42ab-b69b-3312210c987c",
+        "mime": "font/woff2",
+        "bytes": 16512,
+        "sha256": "824f485b5d26e2f2da3c2b236132ece1bc8e4e43373452950bb0e40548b4313f"
+      },
+      {
+        "uuid": "bc19fe82-c61a-47d6-8c43-e560e824c758",
+        "mime": "font/woff2",
+        "bytes": 29400,
+        "sha256": "19f9c92546aa300c312235e3125af1b81394d8db9a4bc4a425cd5b641d2d54e1"
+      },
+      {
+        "uuid": "2824ed78-048c-485f-83e8-8220ae4264da",
+        "mime": "font/woff2",
+        "bytes": 6176,
+        "sha256": "cd8800999070b729e1cc0bf7a48da6c3ac096a044251171b9a7574b56d96d4b4"
+      },
+      {
+        "uuid": "05b15132-5020-47c6-88ec-d367142418d8",
+        "mime": "font/woff2",
+        "bytes": 12940,
+        "sha256": "4866787fc952dbdbd591d6923d67bc21c2d894b93f34ab69d0cdf25d47bfb2df"
+      },
+      {
+        "uuid": "5d7f9e48-c0ba-4330-84ba-01d848b5320d",
+        "mime": "font/woff2",
+        "bytes": 5812,
+        "sha256": "5bb66d8319ba1602bb2eb67dce8d79c2b4687be8ce183a0574433e949b3c60ad"
+      },
+      {
+        "uuid": "f26be191-0e50-49c6-90ec-f03d5d981231",
+        "mime": "font/woff2",
+        "bytes": 7696,
+        "sha256": "d39b60889a94a527a7f73c7988a2d6efb6c081614aef683b0b386c02d74c2175"
+      },
+      {
+        "uuid": "bccec9bf-6c03-493d-8e77-36deb84933d0",
+        "mime": "font/woff2",
+        "bytes": 14696,
+        "sha256": "1a189eb997c3e2ece68373e387afaec9e8617424186c4b1ab3cff7c54ba6223b"
+      },
+      {
+        "uuid": "f87cba51-3528-4fc5-af58-ec44a9b58392",
+        "mime": "font/woff2",
+        "bytes": 23128,
+        "sha256": "684ad5b531f81d43c1e8c7038262d5db7cdc1f68006e04d6c7769efa8d33c8cc"
+      },
+      {
+        "uuid": "00577461-dda2-4042-b923-831fa5256099",
+        "mime": "font/woff2",
+        "bytes": 42848,
+        "sha256": "6010e7fd0dce5d527583951750728cbe3c895efbd16aa0f809ab8c824878c9d8"
+      },
+      {
+        "uuid": "a498a3f1-6770-4cd3-8d79-7bd87475a765",
+        "mime": "font/woff2",
+        "bytes": 1448,
+        "sha256": "1144843a05a0eaef92032c0406ee3f001804f2caddba9522e8a265e0a79d46ea"
+      },
+      {
+        "uuid": "c91c8ee7-7272-4813-ab13-b541988657e4",
+        "mime": "font/woff2",
+        "bytes": 6656,
+        "sha256": "1935fa1a3326fcd48e20abe864bb30ace43fe58bd572f354c24271ea66208e04"
+      },
+      {
+        "uuid": "cee650bb-eeee-47f6-af33-7a46761bd832",
+        "mime": "font/woff2",
+        "bytes": 19164,
+        "sha256": "9ed8dcb02e6c7246de4c120295fafa39a7bb73085f4951a4524a07dc911069f2"
+      },
+      {
+        "uuid": "a2522cb9-d699-4195-986a-c1d750b1436b",
+        "mime": "font/woff2",
+        "bytes": 45296,
+        "sha256": "90aef64fea9794f232332e907d45810ab268d1a11721340025eba2a2cdb36d5c"
+      },
+      {
+        "uuid": "c7b6d3a3-fdef-4b31-bb5b-0029a3308c66",
+        "mime": "font/woff2",
+        "bytes": 1456,
+        "sha256": "93ae908392a01f9af1f73e86e99f1665f899a5b58fe9e56517abd199e47dcd01"
+      },
+      {
+        "uuid": "d73ba11d-5a03-4f79-baf4-4b08425578db",
+        "mime": "font/woff2",
+        "bytes": 6540,
+        "sha256": "ae5c1a58c18d253e20691f00e401319f01fc568d24d0e50165f276d1a99035b5"
+      },
+      {
+        "uuid": "2de6b0bb-011d-4616-bd4e-d0e89c5175b7",
+        "mime": "font/woff2",
+        "bytes": 20088,
+        "sha256": "be6a3b2e37f3ad67aa822a55ce356d28c416331c97530a1ec076c2118240ca2d"
+      },
+      {
+        "uuid": "6e1ef6d9-f71f-4043-bd84-82e1657e575f",
+        "mime": "font/woff2",
+        "bytes": 45688,
+        "sha256": "16734a5adb27b0f363e566cbbeacec480da0dc0baa19c8f0053251c2e2bc0eac"
+      },
+      {
+        "uuid": "511ff237-1087-4ff9-916f-39ae8cb3954b",
+        "mime": "font/woff2",
+        "bytes": 1476,
+        "sha256": "95875e4fa8928fa68e01e53e0b2cdb0f6dbec1ac61d9af493bb05d2ed230f350"
+      },
+      {
+        "uuid": "b56ca6ff-7ca8-40e8-aae5-da3fc06fec37",
+        "mime": "font/woff2",
+        "bytes": 6680,
+        "sha256": "0f7c03bb523b8084a84c4b7d95a5c7b294b7318f88b2e51829d5fe7aaef0d0bb"
+      },
+      {
+        "uuid": "68438c65-0630-40cc-83f1-944a5eccc493",
+        "mime": "font/woff2",
+        "bytes": 20500,
+        "sha256": "63f4757271e403f7baec0862f284ffaa4560ea6096ba9fe8bc6e585ca656e724"
+      },
+      {
+        "uuid": "5a82e7e0-4afc-45db-8832-fcbde5c5e460",
+        "mime": "font/woff2",
+        "bytes": 44280,
+        "sha256": "04c730b4292731ccedadd5bd80756124364ae4923895145d9cd7b1f28e443de1"
+      },
+      {
+        "uuid": "a1fb29ac-a2cd-4b71-960b-817d7ac4dc99",
+        "mime": "font/woff2",
+        "bytes": 1476,
+        "sha256": "0c4e072fcf4f07a388448ae321d51fd3915797371a7378270e5630c6d023ea6b"
+      },
+      {
+        "uuid": "850a6967-0cb9-45f5-9a43-40502fc78823",
+        "mime": "font/woff2",
+        "bytes": 6564,
+        "sha256": "ab0b9584271f492336d9eadcef96f99b0da07e8e7046220aea5084f1644a9c9d"
+      },
+      {
+        "uuid": "8f1a3dec-40e2-4620-87e5-4815d35323d2",
+        "mime": "font/woff2",
+        "bytes": 19504,
+        "sha256": "ae2d59f91ecf9f7ed279e4a1fc1a9da8170fb0ce5b9152917a8f759033f5777c"
+      }
+    ]
+  },
+  {
+    "file": "standalone/Nuqta - Merchant Dashboard.html",
+    "bytes": 860138,
+    "sha256": "b0301ae40cb268be4ba11bf5f478c90edc666703ba96aa4f3302b337427a0adf",
+    "template": "merchant-dashboard.template.html",
+    "application": "merchant-dashboard.app.js",
+    "assets": [
+      {
+        "uuid": "16dfb5fd-9921-4642-8a1a-acd7bf322441",
+        "mime": "text/javascript",
+        "bytes": 69150,
+        "sha256": "8fe7df74405f3c55f49b7249c74ea1397e65d07dea2b1bd3b4a489bec2e28cbe",
+        "extracted": "dc-runtime.js"
+      },
+      {
+        "uuid": "282adf20-2814-4836-8c0a-6f7b116f624e",
+        "mime": "application/javascript",
+        "bytes": 54591,
+        "sha256": "eea58335fbd5e796c97b30cb0efc091cae0d00acca211fee016c0cbf221c95c7",
+        "extracted": "mock-repository.js"
+      },
+      {
+        "uuid": "037c4dba-b260-4ed9-95ca-d6ad2c2c7363",
+        "mime": "text/html",
+        "bytes": 5944,
+        "sha256": "e0af4fd705492d4cbc11fea44a8659e1455285bc19dff7f5bcb155633faa6b75",
+        "source": "./LoyaltyCard.dc.html",
+        "extracted": "LoyaltyCard.dc.html"
+      },
+      {
+        "uuid": "99d4c2e0-eae4-4796-8006-a72a220147a8",
+        "mime": "text/javascript",
+        "bytes": 10751,
+        "sha256": "d949f1c3687aedadcedac85261865f29b17cd273997e7f6b2bfc53b2f9d4c4dd",
+        "source": "https://unpkg.com/react@18.3.1/umd/react.production.min.js"
+      },
+      {
+        "uuid": "4c923bb9-0554-4cb5-8c78-b657b643108f",
+        "mime": "text/javascript",
+        "bytes": 131835,
+        "sha256": "35f4f974f4b2bcd44da73963347f8952e341f83909e4498227d4e26b98f66f0d",
+        "source": "https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"
+      },
+      {
+        "uuid": "3fedc2fe-bf15-4a8e-94a5-84f15f2f25c3",
+        "mime": "font/woff2",
+        "bytes": 7420,
+        "sha256": "2317fa4bb293c9c0b110e18315d529235c47a0ddd3338cea3d8c7955e927899e"
+      },
+      {
+        "uuid": "502a9ef1-6e15-4319-a988-9bf44081a2cd",
+        "mime": "font/woff2",
+        "bytes": 15084,
+        "sha256": "6894439694946a589d157ece003086960a6a4013d74a813dab7602efdb3d8c09"
+      },
+      {
+        "uuid": "2b9b0583-ce72-4ed3-ba97-f5c49b8ff077",
+        "mime": "font/woff2",
+        "bytes": 8004,
+        "sha256": "8fa40e5d248247735eb97a0bd593b8852440430600d6ba01364c31fe0abc1fe1"
+      },
+      {
+        "uuid": "871c34c0-9bf8-4067-aaca-11214c2a8a25",
+        "mime": "font/woff2",
+        "bytes": 16512,
+        "sha256": "824f485b5d26e2f2da3c2b236132ece1bc8e4e43373452950bb0e40548b4313f"
+      },
+      {
+        "uuid": "a703f969-9163-45b6-b0dd-6ac119e310e2",
+        "mime": "font/woff2",
+        "bytes": 29400,
+        "sha256": "19f9c92546aa300c312235e3125af1b81394d8db9a4bc4a425cd5b641d2d54e1"
+      },
+      {
+        "uuid": "8d141c51-0578-4008-b43b-c1ba448ec5c7",
+        "mime": "font/woff2",
+        "bytes": 6176,
+        "sha256": "cd8800999070b729e1cc0bf7a48da6c3ac096a044251171b9a7574b56d96d4b4"
+      },
+      {
+        "uuid": "ec8ed697-608b-4a80-bd21-4abcecf01f91",
+        "mime": "font/woff2",
+        "bytes": 12940,
+        "sha256": "4866787fc952dbdbd591d6923d67bc21c2d894b93f34ab69d0cdf25d47bfb2df"
+      },
+      {
+        "uuid": "07d54e28-56fb-44ba-b072-a6ca2af1bc49",
+        "mime": "font/woff2",
+        "bytes": 5812,
+        "sha256": "5bb66d8319ba1602bb2eb67dce8d79c2b4687be8ce183a0574433e949b3c60ad"
+      },
+      {
+        "uuid": "825222ee-3e61-4d01-8d76-499197f4366a",
+        "mime": "font/woff2",
+        "bytes": 7696,
+        "sha256": "d39b60889a94a527a7f73c7988a2d6efb6c081614aef683b0b386c02d74c2175"
+      },
+      {
+        "uuid": "6031cc5c-40a2-41d7-9e77-e69ea91fede7",
+        "mime": "font/woff2",
+        "bytes": 14696,
+        "sha256": "1a189eb997c3e2ece68373e387afaec9e8617424186c4b1ab3cff7c54ba6223b"
+      },
+      {
+        "uuid": "83a1e7c7-5346-4c92-a126-ca73b43fe47a",
+        "mime": "font/woff2",
+        "bytes": 23128,
+        "sha256": "684ad5b531f81d43c1e8c7038262d5db7cdc1f68006e04d6c7769efa8d33c8cc"
+      },
+      {
+        "uuid": "c98c8b94-92c7-4595-8a97-8059871bf7c9",
+        "mime": "font/woff2",
+        "bytes": 42848,
+        "sha256": "6010e7fd0dce5d527583951750728cbe3c895efbd16aa0f809ab8c824878c9d8"
+      },
+      {
+        "uuid": "e2fb3061-8d62-4ab0-bba3-4ac57a6f04fe",
+        "mime": "font/woff2",
+        "bytes": 1448,
+        "sha256": "1144843a05a0eaef92032c0406ee3f001804f2caddba9522e8a265e0a79d46ea"
+      },
+      {
+        "uuid": "9fa87629-91cc-48dc-87dd-eca27426e11e",
+        "mime": "font/woff2",
+        "bytes": 6656,
+        "sha256": "1935fa1a3326fcd48e20abe864bb30ace43fe58bd572f354c24271ea66208e04"
+      },
+      {
+        "uuid": "a77b1272-d154-4a98-9393-12c32fbee69c",
+        "mime": "font/woff2",
+        "bytes": 19164,
+        "sha256": "9ed8dcb02e6c7246de4c120295fafa39a7bb73085f4951a4524a07dc911069f2"
+      },
+      {
+        "uuid": "bdd5efc1-bff0-4089-9fc5-a862cf896448",
+        "mime": "font/woff2",
+        "bytes": 45296,
+        "sha256": "90aef64fea9794f232332e907d45810ab268d1a11721340025eba2a2cdb36d5c"
+      },
+      {
+        "uuid": "a08474de-aa0e-41fe-b251-096ef2e19410",
+        "mime": "font/woff2",
+        "bytes": 1456,
+        "sha256": "93ae908392a01f9af1f73e86e99f1665f899a5b58fe9e56517abd199e47dcd01"
+      },
+      {
+        "uuid": "a476bdc4-5483-4414-85ab-fc961cdd1847",
+        "mime": "font/woff2",
+        "bytes": 6540,
+        "sha256": "ae5c1a58c18d253e20691f00e401319f01fc568d24d0e50165f276d1a99035b5"
+      },
+      {
+        "uuid": "b9765e90-0668-4fde-b229-4c4522bb02a5",
+        "mime": "font/woff2",
+        "bytes": 20088,
+        "sha256": "be6a3b2e37f3ad67aa822a55ce356d28c416331c97530a1ec076c2118240ca2d"
+      },
+      {
+        "uuid": "76a12d04-4b53-4f01-99e9-6a281b441f13",
+        "mime": "font/woff2",
+        "bytes": 45688,
+        "sha256": "16734a5adb27b0f363e566cbbeacec480da0dc0baa19c8f0053251c2e2bc0eac"
+      },
+      {
+        "uuid": "646e77f5-664e-42e3-aa4c-ec0773f85c78",
+        "mime": "font/woff2",
+        "bytes": 1476,
+        "sha256": "95875e4fa8928fa68e01e53e0b2cdb0f6dbec1ac61d9af493bb05d2ed230f350"
+      },
+      {
+        "uuid": "427733c7-b164-42fb-8356-292367fa913f",
+        "mime": "font/woff2",
+        "bytes": 6680,
+        "sha256": "0f7c03bb523b8084a84c4b7d95a5c7b294b7318f88b2e51829d5fe7aaef0d0bb"
+      },
+      {
+        "uuid": "231a355c-a687-42cf-8c13-c730b09f807c",
+        "mime": "font/woff2",
+        "bytes": 20500,
+        "sha256": "63f4757271e403f7baec0862f284ffaa4560ea6096ba9fe8bc6e585ca656e724"
+      },
+      {
+        "uuid": "f5f4384d-e7b3-47b1-bd98-e985d3bd138a",
+        "mime": "font/woff2",
+        "bytes": 44280,
+        "sha256": "04c730b4292731ccedadd5bd80756124364ae4923895145d9cd7b1f28e443de1"
+      },
+      {
+        "uuid": "24041465-fe54-43ac-9ceb-8df18caedc9d",
+        "mime": "font/woff2",
+        "bytes": 1476,
+        "sha256": "0c4e072fcf4f07a388448ae321d51fd3915797371a7378270e5630c6d023ea6b"
+      },
+      {
+        "uuid": "f567427f-f78d-4417-a08c-793fce85e6f6",
+        "mime": "font/woff2",
+        "bytes": 6564,
+        "sha256": "ab0b9584271f492336d9eadcef96f99b0da07e8e7046220aea5084f1644a9c9d"
+      },
+      {
+        "uuid": "fd8b914e-37a1-4b2b-8d32-d1bea6a8c4a2",
+        "mime": "font/woff2",
+        "bytes": 19504,
+        "sha256": "ae2d59f91ecf9f7ed279e4a1fc1a9da8170fb0ce5b9152917a8f759033f5777c"
+      }
+    ]
+  },
+  {
+    "file": "standalone/Nuqta - Super Admin.html",
+    "bytes": 869673,
+    "sha256": "e9bf7d27f99411395627639637fe1ccc086e006c5dd5409b0b363b78458a1a56",
+    "template": "super-admin.template.html",
+    "application": "super-admin.app.js",
+    "assets": [
+      {
+        "uuid": "0489335a-d074-4f35-ac55-2788d067c745",
+        "mime": "application/javascript",
+        "bytes": 54591,
+        "sha256": "eea58335fbd5e796c97b30cb0efc091cae0d00acca211fee016c0cbf221c95c7",
+        "extracted": "mock-repository.js"
+      },
+      {
+        "uuid": "fba44866-dbf9-44c7-ad6f-6fb9984d9c7d",
+        "mime": "text/javascript",
+        "bytes": 69150,
+        "sha256": "8fe7df74405f3c55f49b7249c74ea1397e65d07dea2b1bd3b4a489bec2e28cbe",
+        "extracted": "dc-runtime.js"
+      },
+      {
+        "uuid": "c5594919-9be7-4caa-bb30-01c8877723aa",
+        "mime": "text/html",
+        "bytes": 5944,
+        "sha256": "e0af4fd705492d4cbc11fea44a8659e1455285bc19dff7f5bcb155633faa6b75",
+        "source": "./LoyaltyCard.dc.html",
+        "extracted": "LoyaltyCard.dc.html"
+      },
+      {
+        "uuid": "5158fef4-c781-44c0-b674-73423f51adc0",
+        "mime": "text/javascript",
+        "bytes": 10751,
+        "sha256": "d949f1c3687aedadcedac85261865f29b17cd273997e7f6b2bfc53b2f9d4c4dd",
+        "source": "https://unpkg.com/react@18.3.1/umd/react.production.min.js"
+      },
+      {
+        "uuid": "e9538daa-34db-4d33-ab9e-38988c3dd0af",
+        "mime": "text/javascript",
+        "bytes": 131835,
+        "sha256": "35f4f974f4b2bcd44da73963347f8952e341f83909e4498227d4e26b98f66f0d",
+        "source": "https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js"
+      },
+      {
+        "uuid": "19a0f8f6-db78-43b0-ad39-f0f1be3e0359",
+        "mime": "font/woff2",
+        "bytes": 7420,
+        "sha256": "2317fa4bb293c9c0b110e18315d529235c47a0ddd3338cea3d8c7955e927899e"
+      },
+      {
+        "uuid": "2c179178-d99a-41e8-a1e8-b757adb86ec3",
+        "mime": "font/woff2",
+        "bytes": 15084,
+        "sha256": "6894439694946a589d157ece003086960a6a4013d74a813dab7602efdb3d8c09"
+      },
+      {
+        "uuid": "4929da15-3b4f-45eb-9902-edb13280f262",
+        "mime": "font/woff2",
+        "bytes": 8004,
+        "sha256": "8fa40e5d248247735eb97a0bd593b8852440430600d6ba01364c31fe0abc1fe1"
+      },
+      {
+        "uuid": "6c7500d4-b9cb-400d-b840-f2071d5ba037",
+        "mime": "font/woff2",
+        "bytes": 16512,
+        "sha256": "824f485b5d26e2f2da3c2b236132ece1bc8e4e43373452950bb0e40548b4313f"
+      },
+      {
+        "uuid": "bae2740c-d142-4ea9-a7a7-8ac587ae5b44",
+        "mime": "font/woff2",
+        "bytes": 29400,
+        "sha256": "19f9c92546aa300c312235e3125af1b81394d8db9a4bc4a425cd5b641d2d54e1"
+      },
+      {
+        "uuid": "2e23ab5d-f918-4e8e-906f-f7d16c012af3",
+        "mime": "font/woff2",
+        "bytes": 6176,
+        "sha256": "cd8800999070b729e1cc0bf7a48da6c3ac096a044251171b9a7574b56d96d4b4"
+      },
+      {
+        "uuid": "8ee58b9b-03ba-4d8c-84fe-2db251e6f999",
+        "mime": "font/woff2",
+        "bytes": 12940,
+        "sha256": "4866787fc952dbdbd591d6923d67bc21c2d894b93f34ab69d0cdf25d47bfb2df"
+      },
+      {
+        "uuid": "a8deaa35-f11d-48fc-816a-07591def1ccc",
+        "mime": "font/woff2",
+        "bytes": 5812,
+        "sha256": "5bb66d8319ba1602bb2eb67dce8d79c2b4687be8ce183a0574433e949b3c60ad"
+      },
+      {
+        "uuid": "ab23acf5-57ce-44df-a68e-5444d191ac2e",
+        "mime": "font/woff2",
+        "bytes": 7696,
+        "sha256": "d39b60889a94a527a7f73c7988a2d6efb6c081614aef683b0b386c02d74c2175"
+      },
+      {
+        "uuid": "f5f6cbbe-f175-4fba-88af-9be8714c138f",
+        "mime": "font/woff2",
+        "bytes": 14696,
+        "sha256": "1a189eb997c3e2ece68373e387afaec9e8617424186c4b1ab3cff7c54ba6223b"
+      },
+      {
+        "uuid": "86aa00b8-ed15-4405-b793-23868aab1689",
+        "mime": "font/woff2",
+        "bytes": 23128,
+        "sha256": "684ad5b531f81d43c1e8c7038262d5db7cdc1f68006e04d6c7769efa8d33c8cc"
+      },
+      {
+        "uuid": "454b7e05-257e-4e8e-bd5c-4fe899160f6b",
+        "mime": "font/woff2",
+        "bytes": 42848,
+        "sha256": "6010e7fd0dce5d527583951750728cbe3c895efbd16aa0f809ab8c824878c9d8"
+      },
+      {
+        "uuid": "8e31e1d6-bc03-42f4-8512-c85436627aa3",
+        "mime": "font/woff2",
+        "bytes": 1448,
+        "sha256": "1144843a05a0eaef92032c0406ee3f001804f2caddba9522e8a265e0a79d46ea"
+      },
+      {
+        "uuid": "de0292fe-4657-4591-bf9b-8f64dc736172",
+        "mime": "font/woff2",
+        "bytes": 6656,
+        "sha256": "1935fa1a3326fcd48e20abe864bb30ace43fe58bd572f354c24271ea66208e04"
+      },
+      {
+        "uuid": "d12a4dd6-ad01-4189-819e-040cec9deded",
+        "mime": "font/woff2",
+        "bytes": 19164,
+        "sha256": "9ed8dcb02e6c7246de4c120295fafa39a7bb73085f4951a4524a07dc911069f2"
+      },
+      {
+        "uuid": "46bc1e12-8b44-43e2-8064-b4c90490a7c1",
+        "mime": "font/woff2",
+        "bytes": 45296,
+        "sha256": "90aef64fea9794f232332e907d45810ab268d1a11721340025eba2a2cdb36d5c"
+      },
+      {
+        "uuid": "1e3da5af-5c22-4318-8f7c-a35aa474b738",
+        "mime": "font/woff2",
+        "bytes": 1456,
+        "sha256": "93ae908392a01f9af1f73e86e99f1665f899a5b58fe9e56517abd199e47dcd01"
+      },
+      {
+        "uuid": "7419ac0a-1fb3-4c15-8ae6-37cb3228da10",
+        "mime": "font/woff2",
+        "bytes": 6540,
+        "sha256": "ae5c1a58c18d253e20691f00e401319f01fc568d24d0e50165f276d1a99035b5"
+      },
+      {
+        "uuid": "121ea008-8b91-4a71-b2dd-a19bd18eec4b",
+        "mime": "font/woff2",
+        "bytes": 20088,
+        "sha256": "be6a3b2e37f3ad67aa822a55ce356d28c416331c97530a1ec076c2118240ca2d"
+      },
+      {
+        "uuid": "60176636-98bc-4b12-bbda-0738936db279",
+        "mime": "font/woff2",
+        "bytes": 45688,
+        "sha256": "16734a5adb27b0f363e566cbbeacec480da0dc0baa19c8f0053251c2e2bc0eac"
+      },
+      {
+        "uuid": "d6127f57-47b4-4bb1-b887-a1e46d7894ca",
+        "mime": "font/woff2",
+        "bytes": 1476,
+        "sha256": "95875e4fa8928fa68e01e53e0b2cdb0f6dbec1ac61d9af493bb05d2ed230f350"
+      },
+      {
+        "uuid": "de1d46fc-ff2a-45e2-9707-71c200f08099",
+        "mime": "font/woff2",
+        "bytes": 6680,
+        "sha256": "0f7c03bb523b8084a84c4b7d95a5c7b294b7318f88b2e51829d5fe7aaef0d0bb"
+      },
+      {
+        "uuid": "3ef97e56-3b2c-4b1a-a3b2-48d73e257b2a",
+        "mime": "font/woff2",
+        "bytes": 20500,
+        "sha256": "63f4757271e403f7baec0862f284ffaa4560ea6096ba9fe8bc6e585ca656e724"
+      },
+      {
+        "uuid": "911f9fca-bd16-4c80-bcd5-b33df760c201",
+        "mime": "font/woff2",
+        "bytes": 44280,
+        "sha256": "04c730b4292731ccedadd5bd80756124364ae4923895145d9cd7b1f28e443de1"
+      },
+      {
+        "uuid": "5ef21b59-b696-4106-ae49-220a650f9d8d",
+        "mime": "font/woff2",
+        "bytes": 1476,
+        "sha256": "0c4e072fcf4f07a388448ae321d51fd3915797371a7378270e5630c6d023ea6b"
+      },
+      {
+        "uuid": "adeb84ae-fca7-49ee-a3e6-c59a603c99cc",
+        "mime": "font/woff2",
+        "bytes": 6564,
+        "sha256": "ab0b9584271f492336d9eadcef96f99b0da07e8e7046220aea5084f1644a9c9d"
+      },
+      {
+        "uuid": "72bc9516-55d5-4b79-a3fc-cdd2e76fef10",
+        "mime": "font/woff2",
+        "bytes": 19504,
+        "sha256": "ae2d59f91ecf9f7ed279e4a1fc1a9da8170fb0ce5b9152917a8f759033f5777c"
+      }
+    ]
+  }
+]

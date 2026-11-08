@@ -1,0 +1,27 @@
+{
+  "at": "2026-11-08T18:55:13.922Z",
+  "snapshotConsistent": true,
+  "isolatedRestore": true,
+  "backupMs": 633.4685,
+  "restoreMs": 701.9866,
+  "totalMs": 1681.6909999999998,
+  "matched": {
+    "schema_migrations": 29,
+    "users": 251,
+    "merchants": 44,
+    "branches": 85,
+    "memberships": 39,
+    "loyalty_transactions": 161,
+    "ledger_entries": 161,
+    "reward_grants": 34,
+    "reward_redemptions": 34,
+    "outbox_events": 218,
+    "background_jobs": 218
+  },
+  "balanceDrift": 0,
+  "limitations": [
+    "Logical local backup/restore only; WAL/PITR and hosted disaster recovery are not proven.",
+    "Restored database never runs an API, worker or provider delivery.",
+    "Backup is retained privately in ignored .local/backups; credentials are not logged."
+  ]
+}

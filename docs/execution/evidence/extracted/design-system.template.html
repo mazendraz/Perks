@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html><head>
+
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="d6771c41-0bf2-448b-9166-a921e3399ee4"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<title>Design System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<style>/* cyrillic-ext */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("68552851-bd17-4ec5-be42-263d3c0d03f6") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("61259dd1-d1f1-4c1a-94b2-1d057c0629cd") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("ebf921d0-1243-4a35-9fcd-07e0ab6037df") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("41bbc7ea-c469-42ab-b69b-3312210c987c") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("bc19fe82-c61a-47d6-8c43-e560e824c758") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("68552851-bd17-4ec5-be42-263d3c0d03f6") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("61259dd1-d1f1-4c1a-94b2-1d057c0629cd") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("ebf921d0-1243-4a35-9fcd-07e0ab6037df") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("41bbc7ea-c469-42ab-b69b-3312210c987c") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("bc19fe82-c61a-47d6-8c43-e560e824c758") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("68552851-bd17-4ec5-be42-263d3c0d03f6") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("61259dd1-d1f1-4c1a-94b2-1d057c0629cd") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("ebf921d0-1243-4a35-9fcd-07e0ab6037df") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("41bbc7ea-c469-42ab-b69b-3312210c987c") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("bc19fe82-c61a-47d6-8c43-e560e824c758") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("68552851-bd17-4ec5-be42-263d3c0d03f6") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("61259dd1-d1f1-4c1a-94b2-1d057c0629cd") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("ebf921d0-1243-4a35-9fcd-07e0ab6037df") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("41bbc7ea-c469-42ab-b69b-3312210c987c") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("bc19fe82-c61a-47d6-8c43-e560e824c758") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("2824ed78-048c-485f-83e8-8220ae4264da") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("05b15132-5020-47c6-88ec-d367142418d8") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* symbols2 */
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("5d7f9e48-c0ba-4330-84ba-01d848b5320d") format('woff2');
+  unicode-range: U+2000-2001, U+2004-2008, U+200A, U+23B8-23BD, U+2500-259F;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("f26be191-0e50-49c6-90ec-f03d5d981231") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("bccec9bf-6c03-493d-8e77-36deb84933d0") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("f87cba51-3528-4fc5-af58-ec44a9b58392") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("2824ed78-048c-485f-83e8-8220ae4264da") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("05b15132-5020-47c6-88ec-d367142418d8") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* symbols2 */
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("5d7f9e48-c0ba-4330-84ba-01d848b5320d") format('woff2');
+  unicode-range: U+2000-2001, U+2004-2008, U+200A, U+23B8-23BD, U+2500-259F;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("f26be191-0e50-49c6-90ec-f03d5d981231") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("bccec9bf-6c03-493d-8e77-36deb84933d0") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("f87cba51-3528-4fc5-af58-ec44a9b58392") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("2824ed78-048c-485f-83e8-8220ae4264da") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* cyrillic */
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("05b15132-5020-47c6-88ec-d367142418d8") format('woff2');
+  unicode-range: U+0301, U+0400-045F, U+0490-0491, U+04B0-04B1, U+2116;
+}
+/* symbols2 */
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("5d7f9e48-c0ba-4330-84ba-01d848b5320d") format('woff2');
+  unicode-range: U+2000-2001, U+2004-2008, U+200A, U+23B8-23BD, U+2500-259F;
+}
+/* vietnamese */
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("f26be191-0e50-49c6-90ec-f03d5d981231") format('woff2');
+  unicode-range: U+0102-0103, U+0110-0111, U+0128-0129, U+0168-0169, U+01A0-01A1, U+01AF-01B0, U+0300-0301, U+0303-0304, U+0308-0309, U+0323, U+0329, U+1EA0-1EF9, U+20AB;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("bccec9bf-6c03-493d-8e77-36deb84933d0") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("f87cba51-3528-4fc5-af58-ec44a9b58392") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* arabic */
+@font-face {
+  font-family: 'IBM Plex Sans Arabic';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("00577461-dda2-4042-b923-831fa5256099") format('woff2');
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC, U+102E0-102FB, U+10E60-10E7E, U+10EC2-10EC7, U+10EC9-10EEE, U+10EF0-10EFF, U+1EE00-1EE03, U+1EE05-1EE1F, U+1EE21-1EE22, U+1EE24, U+1EE27, U+1EE29-1EE32, U+1EE34-1EE37, U+1EE39, U+1EE3B, U+1EE42, U+1EE47, U+1EE49, U+1EE4B, U+1EE4D-1EE4F, U+1EE51-1EE52, U+1EE54, U+1EE57, U+1EE59, U+1EE5B, U+1EE5D, U+1EE5F, U+1EE61-1EE62, U+1EE64, U+1EE67-1EE6A, U+1EE6C-1EE72, U+1EE74-1EE77, U+1EE79-1EE7C, U+1EE7E, U+1EE80-1EE89, U+1EE8B-1EE9B, U+1EEA1-1EEA3, U+1EEA5-1EEA9, U+1EEAB-1EEBB, U+1EEF0-1EEF1;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'IBM Plex Sans Arabic';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("a498a3f1-6770-4cd3-8d79-7bd87475a765") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'IBM Plex Sans Arabic';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("c91c8ee7-7272-4813-ab13-b541988657e4") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'IBM Plex Sans Arabic';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("cee650bb-eeee-47f6-af33-7a46761bd832") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* arabic */
+@font-face {
+  font-family: 'IBM Plex Sans Arabic';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("a2522cb9-d699-4195-986a-c1d750b1436b") format('woff2');
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC, U+102E0-102FB, U+10E60-10E7E, U+10EC2-10EC7, U+10EC9-10EEE, U+10EF0-10EFF, U+1EE00-1EE03, U+1EE05-1EE1F, U+1EE21-1EE22, U+1EE24, U+1EE27, U+1EE29-1EE32, U+1EE34-1EE37, U+1EE39, U+1EE3B, U+1EE42, U+1EE47, U+1EE49, U+1EE4B, U+1EE4D-1EE4F, U+1EE51-1EE52, U+1EE54, U+1EE57, U+1EE59, U+1EE5B, U+1EE5D, U+1EE5F, U+1EE61-1EE62, U+1EE64, U+1EE67-1EE6A, U+1EE6C-1EE72, U+1EE74-1EE77, U+1EE79-1EE7C, U+1EE7E, U+1EE80-1EE89, U+1EE8B-1EE9B, U+1EEA1-1EEA3, U+1EEA5-1EEA9, U+1EEAB-1EEBB, U+1EEF0-1EEF1;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'IBM Plex Sans Arabic';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("c7b6d3a3-fdef-4b31-bb5b-0029a3308c66") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'IBM Plex Sans Arabic';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("d73ba11d-5a03-4f79-baf4-4b08425578db") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'IBM Plex Sans Arabic';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("2de6b0bb-011d-4616-bd4e-d0e89c5175b7") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* arabic */
+@font-face {
+  font-family: 'IBM Plex Sans Arabic';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("6e1ef6d9-f71f-4043-bd84-82e1657e575f") format('woff2');
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC, U+102E0-102FB, U+10E60-10E7E, U+10EC2-10EC7, U+10EC9-10EEE, U+10EF0-10EFF, U+1EE00-1EE03, U+1EE05-1EE1F, U+1EE21-1EE22, U+1EE24, U+1EE27, U+1EE29-1EE32, U+1EE34-1EE37, U+1EE39, U+1EE3B, U+1EE42, U+1EE47, U+1EE49, U+1EE4B, U+1EE4D-1EE4F, U+1EE51-1EE52, U+1EE54, U+1EE57, U+1EE59, U+1EE5B, U+1EE5D, U+1EE5F, U+1EE61-1EE62, U+1EE64, U+1EE67-1EE6A, U+1EE6C-1EE72, U+1EE74-1EE77, U+1EE79-1EE7C, U+1EE7E, U+1EE80-1EE89, U+1EE8B-1EE9B, U+1EEA1-1EEA3, U+1EEA5-1EEA9, U+1EEAB-1EEBB, U+1EEF0-1EEF1;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'IBM Plex Sans Arabic';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("511ff237-1087-4ff9-916f-39ae8cb3954b") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'IBM Plex Sans Arabic';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("b56ca6ff-7ca8-40e8-aae5-da3fc06fec37") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'IBM Plex Sans Arabic';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("68438c65-0630-40cc-83f1-944a5eccc493") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* arabic */
+@font-face {
+  font-family: 'IBM Plex Sans Arabic';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("5a82e7e0-4afc-45db-8832-fcbde5c5e460") format('woff2');
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC, U+102E0-102FB, U+10E60-10E7E, U+10EC2-10EC7, U+10EC9-10EEE, U+10EF0-10EFF, U+1EE00-1EE03, U+1EE05-1EE1F, U+1EE21-1EE22, U+1EE24, U+1EE27, U+1EE29-1EE32, U+1EE34-1EE37, U+1EE39, U+1EE3B, U+1EE42, U+1EE47, U+1EE49, U+1EE4B, U+1EE4D-1EE4F, U+1EE51-1EE52, U+1EE54, U+1EE57, U+1EE59, U+1EE5B, U+1EE5D, U+1EE5F, U+1EE61-1EE62, U+1EE64, U+1EE67-1EE6A, U+1EE6C-1EE72, U+1EE74-1EE77, U+1EE79-1EE7C, U+1EE7E, U+1EE80-1EE89, U+1EE8B-1EE9B, U+1EEA1-1EEA3, U+1EEA5-1EEA9, U+1EEAB-1EEBB, U+1EEF0-1EEF1;
+}
+/* cyrillic-ext */
+@font-face {
+  font-family: 'IBM Plex Sans Arabic';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("a1fb29ac-a2cd-4b71-960b-817d7ac4dc99") format('woff2');
+  unicode-range: U+0460-052F, U+1C80-1C8A, U+20B4, U+2DE0-2DFF, U+A640-A69F, U+FE2E-FE2F;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'IBM Plex Sans Arabic';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("850a6967-0cb9-45f5-9a43-40502fc78823") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C4, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'IBM Plex Sans Arabic';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("8f1a3dec-40e2-4620-87e5-4815d35323d2") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+</style>
+<style>body{margin:0;background:#F6F6F3;color:#16181D;font-family:'Geist','IBM Plex Sans Arabic',system-ui,sans-serif;-webkit-font-smoothing:antialiased}a{color:#2B55CF;text-decoration:none}a:hover{color:#1C3E9E;text-decoration:underline}*:focus-visible{outline:2px solid #2B55CF;outline-offset:2px}@keyframes nqSpin{to{transform:rotate(360deg)}}@media (prefers-reduced-motion:reduce){*{animation:none!important}}</style>
+</helmet>
+<div dir="rtl" lang="ar" style="max-width:1160px; margin:0 auto; padding:32px 24px 64px; display:flex; flex-direction:column; gap:28px">
+  <header style="display:flex; justify-content:space-between; align-items:flex-end; gap:16px; flex-wrap:wrap">
+    <div><h1 style="margin:0; font-size:28px">نظام التصميم — Nuqta</h1><p style="margin:6px 0 0; color:#5A606C; font-size:14px; line-height:1.7; max-width:640px">مرجع التوكنز والمكونات المستخدمة في الواجهات الأربع. كل الواجهات بتستخدم نفس القيم inline، وهوية التاجر بتغير اللون الأساسي بس داخل الواجهات التابعة له.</p></div>
+    <a href="Nuqta%20-%20Demo%20Launcher.html" style="font-size:14px">← Demo Launcher</a>
+  </header>
+
+  <section style="display:flex; flex-direction:column; gap:12px">
+    <h2 style="margin:0; font-size:18px">الألوان</h2>
+    <div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:10px">
+      <div style="background:#fff; border:1px solid #E6E4DF; border-radius:12px; overflow:hidden"><div style="height:56px; background:#2B55CF"></div><div style="padding:8px 10px; font-size:12px"><div style="font-weight:600">Primary</div><bdi dir="ltr" style="font-family:'Geist Mono',monospace; color:#5A606C">#2B55CF</bdi></div></div>
+      <div style="background:#fff; border:1px solid #E6E4DF; border-radius:12px; overflow:hidden"><div style="height:56px; background:#16181D"></div><div style="padding:8px 10px; font-size:12px"><div style="font-weight:600">Ink</div><bdi dir="ltr" style="font-family:'Geist Mono',monospace; color:#5A606C">#16181D</bdi></div></div>
+      <div style="background:#fff; border:1px solid #E6E4DF; border-radius:12px; overflow:hidden"><div style="height:56px; background:#5A606C"></div><div style="padding:8px 10px; font-size:12px"><div style="font-weight:600">Muted</div><bdi dir="ltr" style="font-family:'Geist Mono',monospace; color:#5A606C">#5A606C</bdi></div></div>
+      <div style="background:#fff; border:1px solid #E6E4DF; border-radius:12px; overflow:hidden"><div style="height:56px; background:#F6F6F3; border-bottom:1px solid #E6E4DF"></div><div style="padding:8px 10px; font-size:12px"><div style="font-weight:600">Canvas</div><bdi dir="ltr" style="font-family:'Geist Mono',monospace; color:#5A606C">#F6F6F3</bdi></div></div>
+      <div style="background:#fff; border:1px solid #E6E4DF; border-radius:12px; overflow:hidden"><div style="height:56px; background:#E6E4DF"></div><div style="padding:8px 10px; font-size:12px"><div style="font-weight:600">Border</div><bdi dir="ltr" style="font-family:'Geist Mono',monospace; color:#5A606C">#E6E4DF</bdi></div></div>
+    </div>
+    <div style="display:flex; gap:8px; flex-wrap:wrap">
+      <span style="padding:4px 10px; border-radius:99px; background:#E6F4EC; color:#1E6B43; font-size:13px; font-weight:600">نجاح · جاهز</span>
+      <span style="padding:4px 10px; border-radius:99px; background:#FDF1DC; color:#7A4300; font-size:13px; font-weight:600">انتظار · Pending</span>
+      <span style="padding:4px 10px; border-radius:99px; background:#FCE9E7; color:#A12A20; font-size:13px; font-weight:600">خطأ · محتاج إجراء</span>
+      <span style="padding:4px 10px; border-radius:99px; background:#E8EEFC; color:#244BB5; font-size:13px; font-weight:600">معلومة · تجربة</span>
+      <span style="padding:4px 10px; border-radius:99px; background:#F1F0EC; color:#5A606C; font-size:13px; font-weight:600">محايد · منتهي</span>
+    </div>
+  </section>
+
+  <section style="display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:16px">
+    <div style="background:#fff; border:1px solid #E6E4DF; border-radius:14px; padding:18px; display:flex; flex-direction:column; gap:10px">
+      <h2 style="margin:0; font-size:18px">الخطوط</h2>
+      <div style="font-size:28px; font-weight:700">عنوان الصفحة 28/700</div>
+      <div style="font-size:18px; font-weight:600">عنوان قسم 18/600</div>
+      <div style="font-size:15px; line-height:1.7">نص أساسي 15 — IBM Plex Sans Arabic للعربي وGeist للإنجليزي والأرقام.</div>
+      <div style="font-size:13px; color:#5A606C">نص مساعد 13 · Muted</div>
+      <bdi dir="ltr" style="font-family:'Geist Mono',monospace; font-size:14px">TX-10421 · R-4100 · 1,250.00</bdi>
+    </div>
+    <div style="background:#fff; border:1px solid #E6E4DF; border-radius:14px; padding:18px; display:flex; flex-direction:column; gap:10px">
+      <h2 style="margin:0; font-size:18px">المسافات والحواف</h2>
+      <div style="display:flex; gap:8px; align-items:flex-end"><div style="width:4px; height:4px; background:#2B55CF"></div><div style="width:8px; height:8px; background:#2B55CF"></div><div style="width:12px; height:12px; background:#2B55CF"></div><div style="width:16px; height:16px; background:#2B55CF"></div><div style="width:24px; height:24px; background:#2B55CF"></div><div style="width:32px; height:32px; background:#2B55CF"></div></div>
+      <div style="font-size:13px; color:#5A606C">4 · 8 · 12 · 16 · 24 · 32</div>
+      <div style="display:flex; gap:10px"><div style="width:48px; height:48px; border:1px solid #D9D7D0; border-radius:8px"></div><div style="width:48px; height:48px; border:1px solid #D9D7D0; border-radius:10px"></div><div style="width:48px; height:48px; border:1px solid #D9D7D0; border-radius:14px"></div><div style="width:48px; height:48px; border:1px solid #D9D7D0; border-radius:18px"></div></div>
+      <div style="font-size:13px; color:#5A606C">8 تحكم صغير · 10 أزرار · 14 كروت · 18 كارت الولاء</div>
+    </div>
+  </section>
+
+  <section style="background:#fff; border:1px solid #E6E4DF; border-radius:14px; padding:18px; display:flex; flex-direction:column; gap:14px">
+    <h2 style="margin:0; font-size:18px">الأزرار والحقول</h2>
+    <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center">
+      <button style="min-height:40px; padding:0 16px; border:0; border-radius:10px; background:#2B55CF; color:#fff; font:inherit; font-weight:500; cursor:pointer">أساسي</button>
+      <button style="min-height:40px; padding:0 16px; border:1px solid #D9D7D0; border-radius:10px; background:#fff; font:inherit; cursor:pointer">ثانوي</button>
+      <button style="min-height:40px; padding:0 16px; border:0; border-radius:10px; background:#B42318; color:#fff; font:inherit; font-weight:500; cursor:pointer">إجراء خطِر</button>
+      <button disabled="{{ true }}" style="min-height:40px; padding:0 16px; border:0; border-radius:10px; background:#B9B7B0; color:#fff; font:inherit">معطّل</button>
+      <button style="min-height:60px; padding:0 24px; border:0; border-radius:16px; background:#6F3F22; color:#fff; font:inherit; font-weight:700; font-size:18px; cursor:pointer">زر كاشير 60px</button>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:14px">
+      <label style="display:flex; flex-direction:column; gap:6px; font-size:13px; font-weight:500">حقل عادي<input placeholder="اكتب هنا" style="min-height:40px; border:1px solid #D9D7D0; border-radius:10px; padding:0 12px; font:inherit"></label>
+      <div style="display:flex; flex-direction:column; gap:6px"><label style="display:flex; flex-direction:column; gap:6px; font-size:13px; font-weight:500">حقل فيه خطأ<input value="sara@" aria-invalid="true" dir="ltr" style="min-height:40px; border:1px solid #B42318; border-radius:10px; padding:0 12px; font:inherit"></label><div role="alert" style="color:#B42318; font-size:12px">اكتب بريد صحيح زي name@example.com</div></div>
+      <label style="display:flex; gap:10px; align-items:center; font-size:14px; min-height:44px"><input type="checkbox" role="switch" style="width:22px; height:22px">موافقة تسويق — مقفولة افتراضيًا</label>
+    </div>
+  </section>
+
+  <section style="display:grid; grid-template-columns:repeat(auto-fit,minmax(320px,1fr)); gap:16px">
+    <div style="background:#fff; border:1px solid #E6E4DF; border-radius:14px; padding:18px; display:flex; flex-direction:column; gap:10px">
+      <h2 style="margin:0; font-size:18px">التنبيهات والحالات</h2>
+      <div role="alert" style="background:#FCE9E7; color:#8F1F17; border-radius:10px; padding:10px 12px; font-size:14px">الإيصال مستخدم قبل كده.</div>
+      <div style="background:#FDF1DC; color:#7A4300; border-radius:10px; padding:10px 12px; font-size:14px">الأثر: 14 عميل هيشوفوا «البرنامج متوقف».</div>
+      <div style="background:#16181D; color:#fff; border-radius:12px; padding:12px 16px; font-size:14px; align-self:flex-start">Toast: اتحفظت التفضيلات</div>
+      <div style="display:flex; align-items:center; gap:10px; font-size:14px"><div style="width:22px; height:22px; border-radius:99px; border:3px solid #E4E3DE; border-top-color:#2B55CF; animation:nqSpin .8s linear infinite"></div>بنتأكد من نتيجة العملية…</div>
+      <div style="border:1px dashed #D9D7D0; border-radius:12px; padding:18px; text-align:center; color:#6B7180; font-size:14px">Empty state: مفيش طلبات مستنية دلوقتي.</div>
+    </div>
+    <div style="background:#fff; border:1px solid #E6E4DF; border-radius:14px; padding:18px; display:flex; flex-direction:column; gap:10px">
+      <h2 style="margin:0; font-size:18px">Timeline</h2>
+      <ol style="list-style:none; margin:0; padding:0">
+        <li style="display:flex; gap:12px"><div style="display:flex; flex-direction:column; align-items:center"><div style="width:12px; height:12px; border-radius:99px; background:#2B55CF; margin-top:4px"></div><div style="flex:1; width:2px; background:#ECEBE6; min-height:18px"></div></div><div style="padding-bottom:12px; font-size:14px">الطلب</div></li>
+        <li style="display:flex; gap:12px"><div style="display:flex; flex-direction:column; align-items:center"><div style="width:12px; height:12px; border-radius:99px; background:#1E7F4F; margin-top:4px"></div><div style="flex:1; width:2px; background:#ECEBE6; min-height:18px"></div></div><div style="padding-bottom:12px; font-size:14px">اتسجل</div></li>
+        <li style="display:flex; gap:12px"><div style="display:flex; flex-direction:column; align-items:center"><div style="width:12px; height:12px; border-radius:99px; background:#C2362B; margin-top:4px"></div></div><div style="font-size:14px">مزامنة المحفظة فشلت</div></li>
+      </ol>
+    </div>
+  </section>
+
+  <section style="display:flex; flex-direction:column; gap:12px">
+    <h2 style="margin:0; font-size:18px">كارت الولاء — 3 قوالب × هويتين</h2>
+    <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:16px">
+      <dc-import name="LoyaltyCard" merchant-name="بن وحكاية" initials="ب" program-name="قهوتك السادسة علينا" alias="سارة م." primary="#6F3F22" accent="#E2A85B" surface="#FBF5EE" template="classic" stamps="{{ 4 }}" threshold="{{ 5 }}" reward="أي مشروب ساخن مجانًا" hint-size="100%,200px"></dc-import>
+      <dc-import name="LoyaltyCard" merchant-name="صالون لمسة" initials="ل" program-name="زيارات لمسة" alias="سارة م." primary="#5E2750" accent="#E7A9C8" surface="#FBF4F8" template="minimal" stamps="{{ 2 }}" threshold="{{ 6 }}" reward="سشوار مجاني" badge="2 مكافأة" hint-size="100%,200px"></dc-import>
+      <dc-import name="LoyaltyCard" merchant-name="مكتبة سطور للكتب والقرطاسية والهدايا" initials="س" program-name="قارئ سطور" alias="نور الهدى إ." primary="#23466B" accent="#F2B84B" surface="#F3F6FA" template="bold" stamps="{{ 0 }}" threshold="{{ 8 }}" reward="خصم 100 جنيه" hint-size="100%,200px"></dc-import>
+    </div>
+  </section>
+
+  <section style="background:#fff; border:1px solid #E6E4DF; border-radius:14px; padding:18px; font-size:14px; line-height:1.9; color:#2D313A">
+    <h2 style="margin:0 0 8px; font-size:18px">قواعد</h2>
+    <ul style="margin:0; padding-inline-start:20px">
+      <li>RTL/LTR بـ<bdi dir="ltr">dir</bdi> على الجذر وخصائص منطقية (<bdi dir="ltr">inset-inline, padding-inline, margin-inline</bdi>). الأكواد والأرقام داخل <bdi dir="ltr">&lt;bdi dir="ltr"&gt;</bdi>.</li>
+      <li>الأرقام بالأرقام اللاتينية في العربي (<bdi dir="ltr">ar-EG-u-nu-latn</bdi>) عشان تتطابق مع الإيصالات والأكواد.</li>
+      <li>أهداف اللمس في الموبايل 44px على الأقل، وأزرار الكاشير الرئيسية 56–60px.</li>
+      <li>أي حذف/تعليق/إرسال/استبدال بيعرض الأثر قبل التأكيد، والإجراءات الحساسة بتطلب سبب.</li>
+      <li>الحركة: 150–250ms ease، وبتتلغي مع <bdi dir="ltr">prefers-reduced-motion</bdi>.</li>
+      <li>تباين نص الهوية: لوحة الهوية بتحذّر لو الأبيض على اللون الأساسي أقل من 4.5:1.</li>
+    </ul>
+  </section>
+</div>
+</x-dc>
+
+
+</body></html>

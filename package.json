@@ -1,0 +1,76 @@
+{
+  "name": "nuqta",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=24 <25"
+  },
+  "scripts": {
+    "dev": "node --import tsx tools/dev.ts",
+    "dev:web": "npm run dev -w @nuqta/web",
+    "dev:api": "tsx watch apps/api/src/main.ts",
+    "worker:dev": "tsx watch apps/worker/src/main.ts",
+    "build": "tsc -p tsconfig.server.json && npm run build -w @nuqta/web",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint apps packages db tools tests --no-warn-ignored",
+    "test": "tsx --test --test-concurrency=1 tests/unit/*.test.ts",
+    "test:integration": "tsx tools/run-integration.ts",
+    "test:e2e": "tsx tools/test-e2e.ts",
+    "env:check": "tsx tools/env-check.ts",
+    "db:up": "node tools/local-db.cjs up",
+    "db:down": "node tools/local-db.cjs down",
+    "db:migrate": "tsx db/migrate.ts",
+    "db:seed": "tsx db/seed.ts",
+    "db:backup": "node tools/local-db.cjs backup",
+    "start": "node --env-file=.env dist/apps/api/src/main.js",
+    "worker:start": "node --env-file=.env dist/apps/worker/src/main.js",
+    "verify:plan": "node tools/audit/verify-plan.cjs",
+    "test:restore": "tsx tools/test-restore.ts",
+    "local:admin-mfa": "tsx tools/local-admin-mfa.ts",
+    "verify:local": "tsx tools/verify-implementation.ts",
+    "format": "prettier --write \"apps/**/*.{ts,tsx,css,json}\" \"packages/**/*.{ts,tsx,json}\" \"db/*.ts\" \"tools/*.ts\" \"tests/**/*.ts\"",
+    "openapi:export": "tsx tools/export-openapi.ts",
+    "demo:setup": "tsx tools/manual-demo.ts setup",
+    "demo:start": "tsx tools/manual-demo.ts start",
+    "demo:status": "tsx tools/manual-demo.ts status",
+    "demo:clients": "tsx tools/manual-demo-clients.ts",
+    "test:manual-demo": "tsx tools/test-manual-demo.ts"
+  },
+  "dependencies": {
+    "@fastify/cookie": "11.1.5",
+    "@fastify/helmet": "13.2.0",
+    "@fastify/rate-limit": "11.2.2",
+    "@fastify/static": "10.1.10",
+    "@fastify/swagger": "9.9.3",
+    "@zxing/browser": "0.2.1",
+    "fastify": "5.12.8",
+    "jose": "6.2.15",
+    "pg": "8.23.1",
+    "qrcode": "1.5.4",
+    "sharp": "0.35.5",
+    "zod": "4.6.7"
+  },
+  "overrides": {
+    "minimatch": "^11.0.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "10.0.1",
+    "@types/node": "24.10.0",
+    "@types/pg": "8.23.1",
+    "@types/qrcode": "1.5.6",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@zxing/library": "0.23.0",
+    "eslint": "10.14.0",
+    "playwright": "1.62.1",
+    "prettier": "3.9.10",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.72.1"
+  }
+}

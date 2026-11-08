@@ -8,7 +8,7 @@ const required = ['PROJECT-AUDIT','SCREEN-TO-FEATURE-MAP','ARCHITECTURE','DATABA
 const errors = [], checks = [];
 const report = (name, ok, detail) => { checks.push({name,ok,detail}); if(!ok) errors.push(name+': '+detail); };
 for(const f of required) report('document:'+f,fs.existsSync(path.join(docs,f+'.md')),'required Markdown file');
-for(const f of [...required.map(n=>path.join(docs,n+'.md')),path.join(root,'README.md')]) {
+for(const f of [...required.map(n=>path.join(docs,n+'.md')),path.join(docs,'IMPLEMENTATION.md'),path.join(docs,'IMPLEMENTATION-LOG.md'),path.join(root,'README.md'),path.join(root,'LAUNCH-PLAN.md')]) {
   const content = fs.readFileSync(f,'utf8').replace(/```[\s\S]*?```/g,'');
   for(const m of content.matchAll(/\[[^\]]*\]\(([^)]+)\)/g)) {
     const href=m[1]; if(/^(https?:|#|codex:)/.test(href)) continue;

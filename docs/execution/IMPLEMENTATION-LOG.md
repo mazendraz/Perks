@@ -24,6 +24,14 @@
 
 # Implementation log
 
+## 2026-11-08 — L00: baseline وقرارات الإطلاق وCI
+
+تهيئة Git بأمر صريح من LAUNCH-PLAN،وفحص قائمة الملفات قبل commit:لا .env أو.local أومفاتيح خاصة ضمن التتبع. baseline ناجح بكل مراحل verify:local:14 unit و48 integration و53 browser checks وrestore؛بصمة 0060a07210418d78fbb15e4638db42b6b28ed22e0e17bb53e74af24ac5c81826. الملفات الستة الأصلية unchanged.
+
+تسجيل D29–D36،وحفظ القرارات السابقة المتعارضة في الأرقام باسم D29-LEGACY وD30-LEGACY. P11 قنوات مدفوعة/حملات OUT_OF_SCOPE،والـconsent الحالية محفوظة. المالك اختار استكمال المحلي دون حسابات/اختيارات استضافة حاليًا.
+
+CI يثبت Playwright Chromium،ويشغّل خادمين يملكهما runner على قاعدة nuqta_ci فقط،وينتظر readiness ثم الرحلة ويقفل عملياته فقط. بيانات واختبارات المتصفح الصناعية منفصلة عن تجربة مازن. لا remote؛لا ندّعي نجاح GitHub Actions على branch. نهاية L00 تُعتمد بنتيجة checks.json التالية،مع تحديث الجدول في LAUNCH-PLAN.
+
 ## 2026-11-07 — المسار الداخلي وأدلة القبول
 
 اتنفذ P01–P07 محليًا، وأجزاء البرامج من P08/P09، وفحوص مستقلة من P13. آخر suite قبل التحقق الجامع: 5 unit tests و31 integration tests. رحلة Edge المتصلة نجحت في حفظ واستكمال draft، تجهيز فرعين وكاشير مقيد بفرع، كارت وQR، lost-response recovery بعد reload، إصدار مكافأة واستبدالها بتأكيد صاحبها، طلب ختم مع استرجاع اعتماد ضاع رده، تقارير وتصدير وشرائح، قطعة QR واستبدالها، دعم وتتبع عملية.
@@ -53,3 +61,8 @@ P02: migration ثانيةللمسودات والتفعيلوالبرامجوال
 ## التحقق النهائي المثبت
 
 verify:local ناجح بكل مراحله: 5 unit،31 integration،20 browser checks،build/lint/typecheck،OpenAPI inventory،isolated restore،وفحص الخطة والأصول. sourceFingerprintBefore/After متطابقتان فيchecks.json. مصادقة التسجيل مرتبطة ببصمة النص،والـ31 اختبارات تشمل رفض شروط اتغيرت أثناء التسجيل ومنع مسارDB القديم غير المحمي. بوابات الإنتاج المعلقة كما هي فيSTATUS؛لا حساب خارجي أوإنفاق أونشر.
+
+
+### قبول L00
+
+verify:local النهائي passed على Chromium:14 unit،48 integration،53 browser checks،وكل مراحل build/lint/typecheck/OpenAPI/manual-demo/restore/verify:plan ناجحة. sourceFingerprint=0882fd165b2563d9d518743a768add0eafca2613b9ec3bf75e82d33e58496670،مطابقة قبل وبعد. مهام L00 الأربع DONE؛عدم وجود remote موثق حسب قبول L00-04.

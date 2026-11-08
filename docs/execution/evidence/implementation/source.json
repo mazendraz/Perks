@@ -1,13 +1,17 @@
 {
-  "fingerprint": "0060a07210418d78fbb15e4638db42b6b28ed22e0e17bb53e74af24ac5c81826",
+  "fingerprint": "0882fd165b2563d9d518743a768add0eafca2613b9ec3bf75e82d33e58496670",
   "files": [
     {
       "path": ".env.example",
       "sha256": "f9b6da6898a920d87b3dac6412655eb4fb54d93c94cdccb22d3be8f476335bd5"
     },
     {
+      "path": ".gitattributes",
+      "sha256": "029df443822ea757f9007414a69274f704736cf1c18f3baabf6e3a81f0b247b9"
+    },
+    {
       "path": ".github/workflows/checks.yml",
-      "sha256": "e91ca715dd94909f615190f71215e0418976c2e464ccc4c6bf8894d29320f30c"
+      "sha256": "172859636e88c43e1b9bde7e9a33f0f07a97c09ce75297b0630c07a9e44f019f"
     },
     {
       "path": ".gitignore",
@@ -491,7 +495,7 @@
     },
     {
       "path": "package.json",
-      "sha256": "4c9e4c8cba140754c70d1b4a065277630e9351b6370478c7fe1b239538b82659"
+      "sha256": "08073122090332dad963298d0c8766755bc4812aa7472db7e1c9baa8d5273b77"
     },
     {
       "path": "packages/contracts/package.json",
@@ -679,7 +683,11 @@
     },
     {
       "path": "tools/audit/verify-plan.cjs",
-      "sha256": "edeacf00d34d981343ed60076b7a84a1453f40c04c11604a052778b8c589fcdd"
+      "sha256": "418347e495f53cd456b1d2696526e8492c9f2afaa1bb262b3fc8e8a075732ccd"
+    },
+    {
+      "path": "tools/ci-e2e.ts",
+      "sha256": "922441801b49db4c165a761b7d78f72635aeeac04b2bc03f82387a3ebdfa4fe1"
     },
     {
       "path": "tools/dev.ts",
@@ -723,7 +731,7 @@
     },
     {
       "path": "tools/test-e2e.ts",
-      "sha256": "4432970350bb6cfcc0dda8d110e6dfa904acacdf441dbb001b05e01a59f3fa54"
+      "sha256": "7bfcf10883cf0ae939fac1f0e0c252bd80241c409a8624a75e53428c1756d1f0"
     },
     {
       "path": "tools/test-manual-demo.ts",
@@ -735,7 +743,7 @@
     },
     {
       "path": "tools/verify-implementation.ts",
-      "sha256": "8aa19d45df3c65c19a9307f6aad7485020f455fe4025d239db044b48e1e2ea5a"
+      "sha256": "f56c5ad847bf254ba50cf8828489ba6edf0bb410787c4f6d9f484d0a3edf651f"
     },
     {
       "path": "tsconfig.json",

@@ -21,6 +21,7 @@
     "test": "tsx --test --test-concurrency=1 tests/unit/*.test.ts",
     "test:integration": "tsx tools/run-integration.ts",
     "test:e2e": "tsx tools/test-e2e.ts",
+    "test:e2e:ci": "tsx tools/ci-e2e.ts",
     "env:check": "tsx tools/env-check.ts",
     "db:up": "node tools/local-db.cjs up",
     "db:down": "node tools/local-db.cjs down",

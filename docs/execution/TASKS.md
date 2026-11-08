@@ -86,10 +86,10 @@
 | P10-02 | BLOCKED_EXTERNAL / ENG | Apple signing/issuance/registration/update endpoints | P10-01,P09-01 |approved issuer path/cert first؛signed test pass+registration/update logs؛no keys browser |
 | P10-03 | BLOCKED_EXTERNAL / ENG | Google issuer/class/object/save/update | P10-01,P09-01 |test issuer access first؛stableIDs و retry-safe create؛publishing gate مستقل |
 | P10-04 | BLOCKED_EXTERNAL / QA+ENG | pass revision/outbox/retry/renewal +physical provider acceptance | P10-02,03 |wallet failure لايغير loyalty؛out-of-order no stale update؛device save/update evidence لكل provider |
-| P11-01 | IN_PROGRESS / ENG+OWNER | consent purposes/schema و channel eligibility/cost discovery | P00-03,P03-01 عند التنفيذ |Meta official docs verified وقت التنفيذ؛approved channels +optout contract؛no paid send |
-| P11-02 | PLANNED / ENG+QA | M011 intents/deliveries/budget reservations/reconciliation | P11-01,P09-01 |optout قبل dispatch suppress؛unknown outcome quarantine؛duplicate webhook لا duplicate bill/send |
-| P11-03 | PLANNED / ENG | campaign preview/schedule/report +server reachable audience | P11-02,P07-02 |timezone schedule صحيح؛budget cap atomic؛delivery≠accepted؛no fake opens |
-| P11-04 | BLOCKED_EXTERNAL / ENG+QA | opted-in Web Push و enabled message adapters | P11-02 |real test delivery evidence لكل enabled channel؛Safari/Android permission/revoke handling؛unready hidden |
+| P11-01 | OUT_OF_SCOPE / OWNER | قنوات التسويق المدفوعة وSMS خارج إطلاق L00–L09؛consent الحالية محفوظة | P00-03,P03-01 |D29 وD36 في DECISIONS؛SMTP للدعوات والاستعادة ضمن L02 فقط |
+| P11-02 | OUT_OF_SCOPE / OWNER | intents/deliveries/budget reservations للقنوات المدفوعة | P11-01,P09-01 |D29؛لا مزود SMS أو إرسال مدفوع |
+| P11-03 | OUT_OF_SCOPE / OWNER | الحملات والتسويق والإرسال الجماعي | P11-02,P07-02 |D29 وD36؛لا campaign dispatch في الإطلاق |
+| P11-04 | OUT_OF_SCOPE / OWNER | Web Push وmessage adapters التسويقية | P11-02 |D29 وD36؛SMTP التشغيلي فقط ضمن L02 |
 | P12-01 | IN_PROGRESS / ENG+OWNER | plan versions/subscription state machine و M012 schema | P02-05 |أسعار/ضرائب/limits/cancellation معتمدة؛manual paid invoice permission audited |
 | P12-02 | BLOCKED_EXTERNAL / ENG | payment provider sandbox checkout وربط billing UI | P12-01 |entity/provider approval؛server intent +signed callbacks؛redirect لا يثبت paid؛cost قبلال live |
 | P12-03 | BLOCKED_EXTERNAL / ENG+QA | durable webhook inbox/signature/idempotency/out-of-order reconciliation | P12-02 |sameevent100 مرة/ordering reversed→invoice/entitlement واحد؛retry recovers after outage |

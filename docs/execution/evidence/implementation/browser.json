@@ -1,5 +1,8 @@
 {
-  "at": "2026-11-08T18:55:10.845Z",
+  "at": "2026-11-08T19:03:05.982Z",
+  "browser": "chromium",
+  "browserVersion": "151.0.7922.34",
+  "appEnv": "development",
   "checks": [
     "Fresh browsers use their primary device language; an explicit language switch persists after reload",
     "Password eye control never overlaps the input and preserves its value in Arabic/English at desktop/mobile widths",
@@ -56,8 +59,8 @@
     "Expired authenticated session returns to sign-in without discarding server card state"
   ],
   "errors": [],
-  "merchantId": "64edfcf7-2dff-46d6-8db4-f2a710599077",
-  "membershipId": "aacf164a-1de4-48be-8d8e-0c318a4592ea",
+  "merchantId": "3f5b4e86-5a0c-42ec-8ab3-90b1bf4626c7",
+  "membershipId": "923fcf06-0c89-4257-94d5-b99b0adb641b",
   "metrics": {
     "registered": 1,
     "active": 1,

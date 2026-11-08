@@ -1,6 +1,6 @@
 {
-  "at": "2026-11-08T18:55:14.572Z",
-  "passed": 413,
+  "at": "2026-11-08T19:03:09.748Z",
+  "passed": 427,
   "failed": 0,
   "errors": [],
   "checks": [
@@ -365,6 +365,11 @@
       "detail": "local link target"
     },
     {
+      "name": "link:docs\\execution\\STATUS.md:../../LAUNCH-PLAN.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
       "name": "link:docs\\execution\\STATUS.md:PASSWORD-AND-DESIGN.md",
       "ok": true,
       "detail": "local link target"
@@ -450,6 +455,11 @@
       "detail": "local link target"
     },
     {
+      "name": "link:docs\\execution\\DECISIONS.md:../../LAUNCH-PLAN.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
       "name": "link:docs\\execution\\DECISIONS.md:INTEGRATIONS.md",
       "ok": true,
       "detail": "local link target"
@@ -531,6 +541,66 @@
     },
     {
       "name": "link:docs\\execution\\README.md:evidence/inventory.json",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\IMPLEMENTATION.md:PASSWORD-AND-DESIGN.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\IMPLEMENTATION.md:RUNBOOK.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\IMPLEMENTATION.md:evidence/implementation/checks.json",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\IMPLEMENTATION.md:evidence/implementation/source.json",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\IMPLEMENTATION.md:evidence/implementation/browser.json",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\IMPLEMENTATION.md:evidence/implementation/load.json",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\IMPLEMENTATION.md:evidence/implementation/restore.json",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\IMPLEMENTATION.md:STATUS.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\IMPLEMENTATION.md:TASKS.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\IMPLEMENTATION.md:ONBOARDING-AND-SUPPORT.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\IMPLEMENTATION.md:STAMP-DESIGN.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\IMPLEMENTATION.md:ACCOUNT-PREVIEW-AND-CONTACT.md",
       "ok": true,
       "detail": "local link target"
     },

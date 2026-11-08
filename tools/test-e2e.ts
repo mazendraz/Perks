@@ -8,17 +8,26 @@ import { readConfig } from '../apps/api/src/config.js';
 import { hashPassword } from '../apps/api/src/passwords.js';
 import { runOne } from '../apps/worker/src/runner.js';
 
-// Uses synthetic, uniquely named tenants in the dedicated local development DB.
+// Uses synthetic, uniquely named tenants in a dedicated local/CI DB.
 // No production URLs, remote providers or existing balances are changed.
 const c = readConfig();
-assert.equal(c.APP_ENV, 'development');
 assert.equal(c.AUTH_PROVIDER, 'local');
 const dbUrl = new URL(c.DATABASE_MIGRATOR_URL!);
 assert.equal(dbUrl.hostname, '127.0.0.1');
-assert.equal(dbUrl.pathname, '/nuqta_local');
+assert.ok(
+  (c.APP_ENV === 'development' && dbUrl.pathname === '/nuqta_local') ||
+    (c.APP_ENV === 'test' && dbUrl.pathname === '/nuqta_ci'),
+  'Browser tests only use the dedicated local development or ephemeral CI database.',
+);
 const db = new pg.Client({ connectionString: c.DATABASE_MIGRATOR_URL });
 const worker = new pg.Pool({ connectionString: c.WORKER_DATABASE_URL });
-const browser = await chromium.launch({ channel: 'msedge', headless: true });
+const browserName =
+  process.env.NUQTA_E2E_BROWSER || (process.platform === 'win32' ? 'msedge' : 'chromium');
+assert.ok(['msedge', 'chromium'].includes(browserName));
+const browser = await chromium.launch({
+  ...(browserName === 'msedge' ? { channel: 'msedge' } : {}),
+  headless: true,
+});
 const checks: string[] = [],
   errors: string[] = [];
 const stamp = Date.now().toString(36),
@@ -1378,6 +1387,9 @@ try {
     JSON.stringify(
       {
         at: new Date().toISOString(),
+        browser: browserName,
+        browserVersion: browser.version(),
+        appEnv: c.APP_ENV,
         checks,
         errors,
         merchantId: mid,

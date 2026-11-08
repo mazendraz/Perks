@@ -46,6 +46,7 @@ async function snapshot() {
     '.prettierrc.json',
     '.prettierignore',
     '.gitignore',
+    '.gitattributes',
     '.env.example',
   ])
     if (existsSync(file)) paths.push(file);
@@ -66,6 +67,7 @@ report.environment = {
   platform: process.platform,
   appEnv: c.APP_ENV,
   authProvider: c.AUTH_PROVIDER,
+  browser: process.env.NUQTA_E2E_BROWSER || (process.platform === 'win32' ? 'msedge' : 'chromium'),
 };
 await writeFile(
   'docs/execution/evidence/implementation/source.json',

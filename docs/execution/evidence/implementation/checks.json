@@ -1,61 +1,63 @@
 {
-  "at": "2026-11-08T20:27:46.377Z",
+  "at": "2026-11-08T21:08:25.075Z",
   "status": "passed",
   "steps": [
     {
       "command": "npm run typecheck",
       "exitCode": 0,
-      "durationMs": 4397.1772
+      "durationMs": 4584.5614
     },
     {
       "command": "npm run lint",
       "exitCode": 0,
-      "durationMs": 2466.6678999999995
+      "durationMs": 2519.5340000000006
     },
     {
       "command": "npm run test",
       "exitCode": 0,
-      "durationMs": 4101.141299999999,
-      "passedTests": 18
+      "durationMs": 4778.2011,
+      "passedTests": 20,
+      "skippedTests": 1
     },
     {
       "command": "npm run build",
       "exitCode": 0,
-      "durationMs": 3222.4066999999995
+      "durationMs": 3708.58
     },
     {
       "command": "npm run openapi:export",
       "exitCode": 0,
-      "durationMs": 1424.5566999999992
+      "durationMs": 1431.1239999999998
     },
     {
       "command": "npm run test:integration",
       "exitCode": 0,
-      "durationMs": 65352.42790000001,
-      "passedTests": 56
+      "durationMs": 70845.7507,
+      "passedTests": 58,
+      "skippedTests": 0
     },
     {
       "command": "npm run test:manual-demo",
       "exitCode": 0,
-      "durationMs": 6209.1158
+      "durationMs": 6167.797999999995
     },
     {
       "command": "npm run test:e2e",
       "exitCode": 0,
-      "durationMs": 75517.6628
+      "durationMs": 83901.65120000001
     },
     {
       "command": "npm run test:restore",
       "exitCode": 0,
-      "durationMs": 2006.8282999999938
+      "durationMs": 2609.8649999999907
     },
     {
       "command": "npm run verify:plan",
       "exitCode": 0,
-      "durationMs": 373.2057999999961
+      "durationMs": 445.96369999999297
     }
   ],
-  "sourceFingerprint": "524a46317dbb3d7f0d317a4cbc729708cf1d06a39b90b338323dcd7b9ed3e52a",
+  "sourceFingerprint": "a5d36028fe15a58bc6efcf53883555ba32dc92ae96694815f1933cc72fc3e8b6",
   "environment": {
     "node": "v24.19.0",
     "platform": "win32",
@@ -64,5 +66,5 @@
     "browser": "chromium"
   },
   "browserChecks": 55,
-  "sourceFingerprintAfter": "524a46317dbb3d7f0d317a4cbc729708cf1d06a39b90b338323dcd7b9ed3e52a"
+  "sourceFingerprintAfter": "a5d36028fe15a58bc6efcf53883555ba32dc92ae96694815f1933cc72fc3e8b6"
 }

@@ -156,7 +156,7 @@ export async function buildApp(overrides: Partial<Config> = {}) {
     try {
       const r = (
         await pools.pool.query(
-          "SELECT current_user AS role,rolsuper,rolbypassrls,(SELECT count(*)::int FROM schema_migrations WHERE name='009u_durable_auth_mail.sql') AS schema,EXISTS(SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relkind IN ('r','p') AND c.relowner=pg_roles.oid) AS owns_tables,current_setting('row_security') AS row_security FROM pg_roles WHERE rolname=current_user",
+          "SELECT current_user AS role,rolsuper,rolbypassrls,(SELECT count(*)::int FROM schema_migrations WHERE name='009v_file_store_exports.sql') AS schema,EXISTS(SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relkind IN ('r','p') AND c.relowner=pg_roles.oid) AS owns_tables,current_setting('row_security') AS row_security FROM pg_roles WHERE rolname=current_user",
         )
       ).rows[0];
       if (

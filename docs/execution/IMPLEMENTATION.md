@@ -1,6 +1,13 @@
 # التنفيذ الحالي — 2026-11-07
 
-## تحديث خطة الإطلاق — L01،2026-11-08
+## تحديث خطة الإطلاق — L03،2026-11-09
+
+### L03 — تخزين ذاتي،متحقق محليًا
+
+L03 DONE محليًا — 2026-11-09:FileStore بكتابة ذرية وkeys محدودة،وSTORAGE_ROOT إنتاجي خارج الكود،وتنظيف وصورPNG1024 بلاmetadata. ترحيل التطوير راجع51صورة ونقل39مسودة و18CSV بلا ملفات مفقودة؛تجربة مازن راجعت2صورة واحتفظت بالحسابات واللوجو المنشور. verify:local passed:20 unit و58 integration و55 browser؛اختبار symlink متخطى على Windows ويعمل على Linux CI. sourceFingerprint a5d36028fe15a58bc6efcf53883555ba32dc92ae96694815f1933cc72fc3e8b6 متطابق قبل وبعد. D37–D42 اتثبتوا حسب إضافات الخطة،والتنفيذ الوظيفي لهم في L06A/L06B.
+
+الصور المنشورة في STORAGE_ROOT/assets/{merchant}/{asset}.png،والمسودات تستخدم draft UUID في نفسnamespace،والتصدير exports/{merchant}/{lease}.csv. customer_export_artifacts تربط الملف بالتصدير بشكل immutable،بلا صلاحية قراءة خام للـruntime. التنزيل يعيد الصلاحيات وبصمة النطاق،والـcleanup يتشارك lock النشر ويحمي lease حيًا أورابطًا صالحًا. migration009v إضافية،ولا تعديل لأي migration مطبقة.
+
 
 ### L02 — بريد دائم،متحقق محليًا
 

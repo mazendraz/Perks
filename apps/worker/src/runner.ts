@@ -1,6 +1,5 @@
 import pg from 'pg';
-import { mkdir, writeFile } from 'node:fs/promises';
-import { resolve } from 'node:path';
+import { createFileStore } from '../../api/src/storage/file-store.js';
 import type { Config } from '../../api/src/config.js';
 import { unseal } from '../../api/src/outbox.js';
 import { tokenHash } from '../../api/src/crypto.js';
@@ -55,77 +54,63 @@ export async function runOne(pool: pg.Pool, c: Config): Promise<boolean> {
         });
       }
     } else if (claim.kind === 'customer_export') {
-      if (!['development', 'test'].includes(c.APP_ENV)) {
-        outcome = 'blocked';
-        error = 'OBJECT_STORAGE_NOT_CONFIGURED';
-      } else {
-        const ex = (
-          await pool.query('SELECT prepare_customer_export($1,$2) AS value', [
-            String(claim.payload.exportId),
-            claim.lease_id,
-          ])
-        ).rows[0].value;
-        if (!ex.existingStorageKey) {
-          const columns = [
-            'id',
-            'alias',
-            'contact_email',
-            'created_at',
-            'last_purchase_at',
-            'visits',
-            'net_stamps',
-            'segment',
-          ];
-          const cell = (v: unknown) =>
-            '"' +
-            String(v ?? '')
-              .replace(/^[=+@\-\t\r]/, "'$&")
-              .replaceAll('"', '""') +
-            '"';
-          const csv =
-            '\uFEFF' +
-            [
-              columns.join(','),
-              ...ex.rows.map((row: Record<string, unknown>) =>
-                columns.map((k) => cell(row[k])).join(','),
-              ),
-            ].join('\r\n');
-          const dir = resolve('.local/exports', claim.merchant_id);
-          await mkdir(dir, { recursive: true });
-          const d = await pool.connect();
-          try {
-            await d.query('BEGIN');
-            await d.query('SELECT pg_advisory_xact_lock(hashtextextended($1,0))', [
-              'export-file:' +
-                claim.merchant_id +
-                '/' +
-                ex.exportId +
-                '-' +
-                claim.lease_id +
-                '.csv',
-            ]);
-            await writeFile(resolve(dir, ex.exportId + '-' + claim.lease_id + '.csv'), csv, {
-              mode: 0o600,
-            });
-
-            await d.query("SELECT set_config('app.worker_tenant',$1,true)", [claim.merchant_id]);
-            await d.query(
-              "UPDATE customer_exports SET status='ready',storage_key=$1,row_count=$2 WHERE id=$3 AND status='queued' AND expires_at>clock_timestamp() AND EXISTS(SELECT 1 FROM background_jobs WHERE id=$4 AND lease_id=$5 AND status='running' AND lease_until>clock_timestamp())",
-              [
-                claim.merchant_id + '/' + ex.exportId + '-' + claim.lease_id + '.csv',
-                ex.rows.length,
-                ex.exportId,
-                claim.job_id,
-                claim.lease_id,
-              ],
+      const ex = (
+        await pool.query('SELECT prepare_customer_export($1,$2) AS value', [
+          String(claim.payload.exportId),
+          claim.lease_id,
+        ])
+      ).rows[0].value;
+      if (!ex.existingStorageKey) {
+        const columns = [
+          'id',
+          'alias',
+          'contact_email',
+          'created_at',
+          'last_purchase_at',
+          'visits',
+          'net_stamps',
+          'segment',
+        ];
+        const cell = (value: unknown) =>
+          '"' +
+          String(value ?? '')
+            .replace(/^[=+@\-\t\r]/, "'$&")
+            .replaceAll('"', '""') +
+          '"';
+        const csv =
+          '\uFEFF' +
+          [
+            columns.join(','),
+            ...ex.rows.map((row: Record<string, unknown>) =>
+              columns.map((key) => cell(row[key])).join(','),
+            ),
+          ].join('\r\n');
+        const key = claim.merchant_id + '/' + claim.lease_id + '.csv';
+        const db = await pool.connect();
+        try {
+          await db.query('BEGIN');
+          await db.query('SELECT pg_advisory_xact_lock(hashtextextended($1,0))', [
+            'export-file:' + key,
+          ]);
+          await createFileStore(c).put('exports/' + key, Buffer.from(csv), {
+            contentType: 'text/csv',
+          });
+          await db.query("SELECT set_config('app.worker_tenant',$1,true)", [claim.merchant_id]);
+          const published = await db.query(
+            "UPDATE customer_exports SET status='ready',storage_key=$1,row_count=$2 WHERE id=$3 AND status='queued' AND expires_at>clock_timestamp() AND EXISTS(SELECT 1 FROM background_jobs WHERE id=$4 AND lease_id=$5 AND status='running' AND lease_until>clock_timestamp()) RETURNING id",
+            [key, ex.rows.length, ex.exportId, claim.job_id, claim.lease_id],
+          );
+          if (published.rowCount)
+            await db.query(
+              'INSERT INTO customer_export_artifacts(storage_key,merchant_id,export_id,lease_id) VALUES($1,$2,$3,$4)',
+              [key, claim.merchant_id, ex.exportId, claim.lease_id],
             );
-            await d.query('COMMIT');
-          } catch (e) {
-            await d.query('ROLLBACK');
-            throw e;
-          } finally {
-            d.release();
-          }
+          await db.query('COMMIT');
+        } catch (error) {
+          await db.query('ROLLBACK');
+          throw error;
+        } finally {
+          db.release();
         }
       }
     } else if (claim.kind === 'domain_event') {

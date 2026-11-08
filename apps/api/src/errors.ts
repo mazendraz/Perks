@@ -3,8 +3,9 @@ export class AppError extends Error {
     public code: string,
     public status = 400,
     public retryable = false,
+    options?: ErrorOptions,
   ) {
-    super(code);
+    super(code, options);
   }
 }
 export function requireCondition(value: unknown, code: string, status = 400): asserts value {

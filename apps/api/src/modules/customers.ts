@@ -1,7 +1,6 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
-import { readFile } from 'node:fs/promises';
-import { resolve } from 'node:path';
+import { createFileStore } from '../storage/file-store.js';
 import type { Config } from '../config.js';
 import { authenticated } from '../auth.js';
 import { audit, transaction, type Pools } from '../db.js';
@@ -15,6 +14,7 @@ const filters = z.object({
   query: z.string().trim().max(80).optional(),
 });
 export function customersModule(app: FastifyInstance, pools: Pools, c: Config) {
+  const files = createFileStore(c);
   app.get('/api/v1/merchants/:m/customers', async (req) => {
     const actor = authenticated(req),
       { m } = z.object({ m: z.uuid() }).parse(req.params),
@@ -91,11 +91,6 @@ export function customersModule(app: FastifyInstance, pools: Pools, c: Config) {
       { m } = z.object({ m: z.uuid() }).parse(req.params),
       p = filters.strict().parse(req.body),
       key = idempotencyKey(req);
-    requireCondition(
-      ['development', 'test'].includes(c.APP_ENV),
-      'OBJECT_STORAGE_NOT_CONFIGURED',
-      503,
-    );
     return transaction(
       pools.pool,
       async (db) => {
@@ -170,6 +165,17 @@ export function customersModule(app: FastifyInstance, pools: Pools, c: Config) {
           'EXPORT_SCOPE_CHANGED',
           403,
         );
+        requireCondition(
+          (
+            await db.query('SELECT customer_export_storage_valid($1,$2,$3) AS valid', [
+              m,
+              id,
+              ex.storage_key,
+            ])
+          ).rows[0].valid,
+          'NOT_FOUND',
+          404,
+        );
         await audit(db, actor, 'customer.export.download', m, id);
         return ex;
       },
@@ -177,9 +183,9 @@ export function customersModule(app: FastifyInstance, pools: Pools, c: Config) {
     );
     requireCondition(
       typeof ex.storage_key === 'string' &&
-        ex.storage_key.startsWith(m + '/' + id + '-') &&
+        ex.storage_key.startsWith(m + '/') &&
         ex.storage_key.endsWith('.csv') &&
-        z.uuid().safeParse(ex.storage_key.slice(m.length + id.length + 2, -4)).success,
+        z.uuid().safeParse(ex.storage_key.slice(m.length + 1, -4)).success,
       'NOT_FOUND',
       404,
     );
@@ -187,7 +193,7 @@ export function customersModule(app: FastifyInstance, pools: Pools, c: Config) {
       .header('Content-Disposition', 'attachment; filename="nuqta-customers.csv"')
       .type('text/csv; charset=utf-8')
       .header('X-Content-Type-Options', 'nosniff')
-      .send(await readFile(resolve('.local/exports', ex.storage_key)));
+      .send(await files.get('exports/' + ex.storage_key));
   });
   app.get('/api/v1/merchants/:m/segments', async (req) => {
     const actor = authenticated(req),

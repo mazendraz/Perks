@@ -15,7 +15,13 @@ const file = 'docs/execution/evidence/implementation/checks.json';
 const report: {
   at: string;
   status: string;
-  steps: { command: string; exitCode: number; durationMs: number; passedTests?: number }[];
+  steps: {
+    command: string;
+    exitCode: number;
+    durationMs: number;
+    passedTests?: number;
+    skippedTests?: number;
+  }[];
   browserChecks?: number;
   sourceFingerprint?: string;
   sourceFingerprintAfter?: string;
@@ -112,11 +118,13 @@ for (const script of [
     timeout: script === 'test:integration' || script === 'test:e2e' ? 300000 : 180000,
   });
   const passed = /ℹ pass (\d+)/.exec(result.stdout || '');
+  const skipped = /ℹ skipped (\d+)/.exec(result.stdout || '');
   report.steps.push({
     command: 'npm run ' + script,
     exitCode: result.status ?? 1,
     durationMs: performance.now() - at,
     ...(passed ? { passedTests: Number(passed[1]) } : {}),
+    ...(skipped ? { skippedTests: Number(skipped[1]) } : {}),
   });
   console.log((result.status === 0 ? 'PASS ' : 'FAIL ') + script);
   if (result.status !== 0) {

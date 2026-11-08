@@ -88,7 +88,7 @@
 | L00-02 | تشغيل `npm run verify:local` على الحالة الحالية وحفظ النتيجة كـbaseline. | `checks.json` حالته `passed`. | DONE | verify:local passed؛14 unit و48 integration و53 browser checks +restore؛checks.json وبصمة السورس متطابقة. |
 | L00-03 | إضافة D29–D36 لـ`DECISIONS.md`، وتعليم مهام P11 الخاصة بالـSMS والقنوات المدفوعة `OUT_OF_SCOPE` بالإشارة لـD29. | الملفات اتحدثت والـlinks سليمة (`npm run verify:plan`). | DONE | DECISIONS D29–D36؛TASKS P11 OUT_OF_SCOPE؛verify:plan passed. |
 | L00-04 | الـCI (`.github/workflows/checks.yml`) يشغّل كمان `npm run test:e2e` بـPlaywright chromium. | الـworkflow بيعدّي على branch تجريبي، أو موثّق لو مفيش remote. | DONE | workflow يشغّل test:e2e:ci بـChromium؛Chromium نجح محليًا في verify:local. لا remote،فلا يوجد branch CI خارجي مثبت. |
-| L00-05 | إضافة D37–D42 (تجربة السكان وNFC والعميل من غير حساب) لـ`DECISIONS.md` بعد ما اتضافوا للخطة دي في 2026-11-08 21:30، وتحديث D13 بالإشارة لـD39. | الملفات اتحدثت و`npm run verify:plan` بيعدّي. | | |
+| L00-05 | إضافة D37–D42 (تجربة السكان وNFC والعميل من غير حساب) لـ`DECISIONS.md` بعد ما اتضافوا للخطة دي في 2026-11-08 21:30، وتحديث D13 بالإشارة لـD39. | الملفات اتحدثت و`npm run verify:plan` بيعدّي. | DONE | DECISIONS D37–D42 وD13 محدثة؛verify:plan passed ضمن قبول L03. |
 
 ### L01 — تسجيل الدخول في production
 
@@ -126,11 +126,11 @@
 
 | ID | المهمة | معيار القبول | الحالة | الدليل / المطلوب |
 |---|---|---|---|---|
-| L03-01 | `packages/domain` أو `apps/api/src/storage/` يبقى فيه interface `FileStore { put(key, bytes, {contentType}), get(key), delete(key), exists(key) }`، و`LocalDiskStore(root)` بيكتب atomic (tmp ثم rename) بصلاحيات 0600 للملفات و0700 للفولدرات. الـkeys بتتحقق: من غير `..` ولا مسارات absolute، وبالـformat `{merchantId}/{uuid}.png` أو `exports/{merchantId}/{uuid}.csv`. | unit tests لرفض path traversal وللكتابة الـatomic. | PLANNED | لم يبدأ القبول بعد؛التنفيذ حسب الترتيب. |
-| L03-02 | `STORAGE_ROOT` في config: في التطوير الافتراضي `.local`، وفي production إجباري يكون absolute وبرّه فولدر الكود (مثلًا `/var/lib/nuqta/files`). | config test. | PLANNED | لم يبدأ القبول بعد؛التنفيذ حسب الترتيب. |
-| L03-03 | استبدال كل `readFile/writeFile/resolve('.local/...')` في الـmodules والـworker بالـFileStore. | `grep -rn "'.local" apps/` مبيرجعش حاجة غير FileSinkMailer وتعريف الـdefault. وكل الـintegration tests بتعدّي. | PLANNED | لم يبدأ القبول بعد؛التنفيذ حسب الترتيب. |
-| L03-04 | الـworker مبقاش بيرجّع `OBJECT_STORAGE_NOT_CONFIGURED` في production. والـcleanup الخاص بالـexports بيشتغل على الـFileStore. | integration test بـ`APP_ENV=production`. | PLANNED | لم يبدأ القبول بعد؛التنفيذ حسب الترتيب. |
-| L03-05 | فحص الصور المرفوعة: `sharp` يعيد encode لـPNG، ويشيل الـmetadata، ويحدد الأبعاد بحد أقصى 1024px والحجم بحد أقصى 2MB. | لو الكود مش بيعمل كده لحد دلوقتي، ضيفه، ومعاه test لملف SVG أو ملف خبيث بامتداد png. | PLANNED | لم يبدأ القبول بعد؛التنفيذ حسب الترتيب. |
+| L03-01 | `packages/domain` أو `apps/api/src/storage/` يبقى فيه interface `FileStore { put(key, bytes, {contentType}), get(key), delete(key), exists(key) }`، و`LocalDiskStore(root)` بيكتب atomic (tmp ثم rename) بصلاحيات 0600 للملفات و0700 للفولدرات. الـkeys بتتحقق: من غير `..` ولا مسارات absolute، وبالـformat `{merchantId}/{uuid}.png` أو `exports/{merchantId}/{uuid}.csv`. | unit tests لرفض path traversal وللكتابة الـatomic. | DONE | file-store.test: traversal وatomic replace؛صلاحيات POSIX ورفض symlink في Linux CI؛اختبار symlink متخطى على Windows. |
+| L03-02 | `STORAGE_ROOT` في config: في التطوير الافتراضي `.local`، وفي production إجباري يكون absolute وبرّه فولدر الكود (مثلًا `/var/lib/nuqta/files`). | config test. | DONE | security.test: production يرفض المسار النسبي وداخل الكود. |
+| L03-03 | استبدال كل `readFile/writeFile/resolve('.local/...')` في الـmodules والـworker بالـFileStore. | `grep -rn "'.local" apps/` مبيرجعش حاجة غير FileSinkMailer وتعريف الـdefault. وكل الـintegration tests بتعدّي. | DONE | جميع modules والـworker خلف FileStore؛storage-migration.test؛58 integration و55 browser ناجحين. |
+| L03-04 | الـworker مبقاش بيرجّع `OBJECT_STORAGE_NOT_CONFIGURED` في production. والـcleanup الخاص بالـexports بيشتغل على الـFileStore. | integration test بـ`APP_ENV=production`. | DONE | file-store-production.test: رفع وتصدير وتنظيف APP_ENV=production؛حماية الملف عند إعادة lease. |
+| L03-05 | فحص الصور المرفوعة: `sharp` يعيد encode لـPNG، ويشيل الـmetadata، ويحدد الأبعاد بحد أقصى 1024px والحجم بحد أقصى 2MB. | لو الكود مش بيعمل كده لحد دلوقتي، ضيفه، ومعاه test لملف SVG أو ملف خبيث بامتداد png. | DONE | file-store.test وfile-store-production.test: رفض SVG/ملف مزيف،PNG1024 بلاmetadata وحد2MB. |
 
 ### L04 — التجهيز للنشر (Docker + Caddy + proxy)
 

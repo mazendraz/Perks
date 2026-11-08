@@ -2,8 +2,7 @@ import type { FastifyInstance } from 'fastify';
 import { randomBytes } from 'node:crypto';
 import { z } from 'zod';
 import QRCode from 'qrcode';
-import { readFile } from 'node:fs/promises';
-import { resolve } from 'node:path';
+import { createFileStore } from '../storage/file-store.js';
 import type { Config } from '../config.js';
 import { authenticated } from '../auth.js';
 import { audit, transaction, type Pools, type DB, type Actor } from '../db.js';
@@ -15,6 +14,7 @@ async function access(db: DB, actor: Actor, m: string, b: string, owner = false)
   else await merchantGrant(db, actor, m, owner ? ['owner'] : ['owner', 'manager', 'cashier'], b);
 }
 export function materialsModule(app: FastifyInstance, pools: Pools, c: Config) {
+  const files = createFileStore(c);
   app.get('/api/v1/public/placements/:code', async (req) => {
     const { code } = z.object({ code: z.string().min(20).max(80) }).parse(req.params),
       r = (await pools.pool.query('SELECT resolve_placement($1) AS value', [code])).rows[0]?.value;
@@ -31,7 +31,7 @@ export function materialsModule(app: FastifyInstance, pools: Pools, c: Config) {
     return reply
       .type('image/png')
       .header('X-Content-Type-Options', 'nosniff')
-      .send(await readFile(resolve('.local/assets', m, id + '.png')));
+      .send(await files.get(key));
   });
   app.get('/api/v1/merchants/:m/placements', async (req) => {
     const actor = authenticated(req),

@@ -1,12 +1,13 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
-import { mkdtemp, mkdir, writeFile, utimes, access, unlink, rmdir } from 'node:fs/promises';
+import { mkdtemp, mkdir, utimes, access, unlink, rmdir } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import pg from 'pg';
 import { readConfig } from '../../apps/api/src/config.js';
 import { seed, ids } from '../../db/seed.js';
 import { cleanupExports } from '../../apps/worker/src/export-cleanup.js';
+import { LocalDiskStore } from '../../apps/api/src/storage/file-store.js';
 
 test('retention removes only aged expired/revoked/orphan artifacts; ready files, recent writes and live leases survive', async () => {
   const c = readConfig(),
@@ -14,21 +15,25 @@ test('retention removes only aged expired/revoked/orphan artifacts; ready files,
     worker = new pg.Pool({ connectionString: c.WORKER_DATABASE_URL });
   await db.connect();
   const root = await mkdtemp(resolve('.local/cleanup-test-'));
+  const files = new LocalDiskStore(root);
+  await mkdir(resolve(root, 'exports'));
   const paths: string[] = [],
     dirs: string[] = [];
   try {
     await seed(db);
     for (const mid of [ids.merchantA, ids.merchantB]) {
-      const path = resolve(root, mid);
+      const path = resolve(root, 'exports', mid);
       await mkdir(path);
       dirs.push(path);
     }
     const make = async (mid: string, status: string | null, expired: boolean, old = true) => {
       const id = randomUUID(),
         lease = randomUUID(),
-        key = mid + '/' + id + '-' + lease + '.csv',
-        path = resolve(root, key);
-      await writeFile(path, 'synthetic fixture');
+        key = mid + '/' + lease + '.csv',
+        path = resolve(root, 'exports', key);
+      await files.put('exports/' + key, Buffer.from('synthetic fixture'), {
+        contentType: 'text/csv',
+      });
       paths.push(path);
       if (old) await utimes(path, new Date(0), new Date(Date.now() - 3 * 3600000));
       if (status)
@@ -56,7 +61,7 @@ test('retention removes only aged expired/revoked/orphan artifacts; ready files,
         [active.mid, outbox, active.lease],
       )
     ).rows[0].id;
-    const result = await cleanupExports(worker, root);
+    const result = await cleanupExports(worker, files);
     assert.equal(result.removed, 3);
     for (const ex of [expired, revoked, orphan]) await assert.rejects(access(ex.path));
     for (const ex of [fresh, ready, active]) await access(ex.path);
@@ -64,7 +69,7 @@ test('retention removes only aged expired/revoked/orphan artifacts; ready files,
       "UPDATE background_jobs SET lease_until=clock_timestamp()-interval '1 second' WHERE id=$1",
       [job],
     );
-    assert.equal((await cleanupExports(worker, root)).removed, 1);
+    assert.equal((await cleanupExports(worker, files)).removed, 1);
     await access(ready.path);
     // Publication and cleanup acquire the same lock; a file becoming ready while
     // cleanup waits is rechecked after lock acquisition and remains intact.
@@ -73,7 +78,7 @@ test('retention removes only aged expired/revoked/orphan artifacts; ready files,
     await db.query('SELECT pg_advisory_xact_lock(hashtextextended($1,0))', [
       'export-file:' + racing.key,
     ]);
-    const sweep = cleanupExports(worker, root);
+    const sweep = cleanupExports(worker, files);
     await db.query(
       "INSERT INTO customer_exports(id,merchant_id,requested_by,segment,status,storage_key) VALUES($1,$2,$3,'all','ready',$4)",
       [racing.id, racing.mid, ids.ownerA, racing.key],
@@ -92,6 +97,7 @@ test('retention removes only aged expired/revoked/orphan artifacts; ready files,
         if (e.code !== 'ENOENT') throw e;
       });
     for (const dir of dirs) await rmdir(dir);
+    await rmdir(resolve(root, 'exports'));
     await rmdir(root);
     await worker.end();
     await db.end();

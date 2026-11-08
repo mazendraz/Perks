@@ -2,6 +2,7 @@ import pg from 'pg';
 import { readConfig } from '../../api/src/config.js';
 import { runOne } from './runner.js';
 import { cleanupExports } from './export-cleanup.js';
+import { createFileStore } from '../../api/src/storage/file-store.js';
 const c = readConfig();
 if (!c.WORKER_DATABASE_URL) throw new Error('WORKER_DATABASE_URL is required.');
 const pool = new pg.Pool({
@@ -21,7 +22,7 @@ while (!closing) {
     if (Date.now() - lastSweep > 60000) {
       await pool.query('SELECT sweep_expired_rewards()');
       await pool.query('SELECT sweep_expired_requests()');
-      if (['development', 'test'].includes(c.APP_ENV)) await cleanupExports(pool);
+      await cleanupExports(pool, createFileStore(c));
       lastSweep = Date.now();
     }
     const worked = await runOne(pool, c);

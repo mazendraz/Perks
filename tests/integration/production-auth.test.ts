@@ -1,6 +1,8 @@
 import { before, after, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
+import { tmpdir } from 'node:os';
+import { resolve } from 'node:path';
 import pg from 'pg';
 import { readConfig } from '../../apps/api/src/config.js';
 import { buildApp } from '../../apps/api/src/server.js';
@@ -13,6 +15,7 @@ assert.match(new URL(c.DATABASE_MIGRATOR_URL!).pathname, /^\/nuqta_test_\d+$/);
 const origin = 'https://production.nuqta.test';
 const { app } = await buildApp({
   APP_ENV: 'production',
+  STORAGE_ROOT: resolve(tmpdir(), 'nuqta-production-auth-fixture'),
   AUTH_PROVIDER: 'password',
   COOKIE_SECURE: 'true',
   PUBLIC_APP_ORIGIN: origin,

@@ -11,6 +11,7 @@ import { readConfig, type Config } from '../apps/api/src/config.js';
 import { buildApp } from '../apps/api/src/server.js';
 import { runOne } from '../apps/worker/src/runner.js';
 import { cleanupExports } from '../apps/worker/src/export-cleanup.js';
+import { createFileStore } from '../apps/api/src/storage/file-store.js';
 
 export const workspace = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 export const manualRoot = resolve(workspace, '.local/manual-demo');
@@ -219,7 +220,7 @@ async function start() {
       if (Date.now() - sweep > 60000) {
         await worker.query('SELECT sweep_expired_rewards()');
         await worker.query('SELECT sweep_expired_requests()');
-        await cleanupExports(worker);
+        await cleanupExports(worker, createFileStore(c));
         sweep = Date.now();
       }
       if (!(await runOne(worker, c))) await new Promise((r) => setTimeout(r, 500));

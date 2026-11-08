@@ -1,8 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { randomUUID } from 'node:crypto';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
-import { resolve } from 'node:path';
-import sharp from 'sharp';
+import { createFileStore, type FileStore } from '../storage/file-store.js';
+import { sanitizeLogo } from '../storage/logo.js';
 import { z } from 'zod';
 import QRCode from 'qrcode';
 import { authenticated } from '../auth.js';
@@ -31,6 +30,7 @@ export async function publishDraftLogo(
   draftId: string,
   merchantId: string,
   assetId: string,
+  files: FileStore,
 ) {
   const logo = (
     await db.query(
@@ -39,11 +39,9 @@ export async function publishDraftLogo(
     )
   ).rows[0];
   requireCondition(logo, 'LOGO_NOT_FOUND', 422);
-  const bytes = await readFile(resolve('.local/draft-assets', actor.id, draftId, assetId + '.png'));
+  const bytes = await files.get(draftId + '/' + assetId + '.png');
   requireCondition(tokenHash(bytes.toString('base64')) === logo.sha256, 'UNSAFE_FILE', 422);
-  const dir = resolve('.local/assets', merchantId);
-  await mkdir(dir, { recursive: true });
-  await writeFile(resolve(dir, assetId + '.png'), bytes, { flag: 'wx', mode: 0o600 });
+  await files.put(merchantId + '/' + assetId + '.png', bytes, { contentType: 'image/png' });
   await db.query(
     "INSERT INTO assets(id,merchant_id,storage_key,mime,bytes,width,height,sha256,created_by) VALUES($1,$2,$3,'image/png',$4,$5,$6,$7,$8)",
     [
@@ -60,6 +58,7 @@ export async function publishDraftLogo(
   await db.query('UPDATE merchants SET logo_asset_id=$1 WHERE id=$2', [assetId, merchantId]);
 }
 export function onboardingModule(app: FastifyInstance, pools: Pools, c: Config) {
+  const files = createFileStore(c);
   app.get('/api/v1/platform/provisioning-drafts/:id/credentials', async (req) => {
     const actor = authenticated(req);
     platform(actor);
@@ -145,39 +144,15 @@ export function onboardingModule(app: FastifyInstance, pools: Pools, c: Config) 
         .strict()
         .parse(req.body);
       await transaction(pools.pool, (db) => editable(db, actor, id), actor);
-      requireCondition(
-        ['development', 'test'].includes(c.APP_ENV),
-        'OBJECT_STORAGE_NOT_CONFIGURED',
-        503,
-      );
-      const raw = Buffer.from(body.base64, 'base64');
-      requireCondition(raw.length <= 2_000_000, 'ASSET_TOO_LARGE', 422);
-      let output: Buffer, info: { width: number; height: number };
-      try {
-        const image = sharp(raw, { limitInputPixels: 16_000_000, failOn: 'warning' });
-        requireCondition(
-          ['png', 'jpeg', 'webp'].includes((await image.metadata()).format || ''),
-          'UNSAFE_FILE',
-          422,
-        );
-        const r = await image
-          .rotate()
-          .resize({ width: 1024, height: 1024, fit: 'inside', withoutEnlargement: true })
-          .png()
-          .toBuffer({ resolveWithObject: true });
-        output = r.data;
-        info = r.info;
-      } catch {
-        requireCondition(false, 'UNSAFE_FILE', 422);
-      }
+      const sanitized = await sanitizeLogo(body.base64),
+        output = sanitized.bytes,
+        info = sanitized;
       return transaction(
         pools.pool,
         async (db) => {
           await editable(db, actor, id);
-          const assetId = randomUUID(),
-            dir = resolve('.local/draft-assets', actor.id, id);
-          await mkdir(dir, { recursive: true });
-          await writeFile(resolve(dir, assetId + '.png'), output, { flag: 'wx', mode: 0o600 });
+          const assetId = randomUUID();
+          await files.put(id + '/' + assetId + '.png', output, { contentType: 'image/png' });
           await db.query(
             'INSERT INTO provisioning_logos(id,draft_id,created_by,bytes,width,height,sha256) VALUES($1,$2,$3,$4,$5,$6,$7)',
             [
@@ -219,7 +194,7 @@ export function onboardingModule(app: FastifyInstance, pools: Pools, c: Config) 
     return reply
       .type('image/png')
       .header('X-Content-Type-Options', 'nosniff')
-      .send(await readFile(resolve('.local/draft-assets', actor.id, id, asset + '.png')));
+      .send(await files.get(id + '/' + asset + '.png'));
   });
   app.get('/api/v1/platform/provisioning-drafts/:id/qr', async (req, reply) => {
     const actor = authenticated(req);
@@ -230,14 +205,12 @@ export function onboardingModule(app: FastifyInstance, pools: Pools, c: Config) 
       .string()
       .regex(/^[a-z0-9][a-z0-9-]{1,62}$/)
       .parse(draft.data.slug);
-    return reply
-      .type('image/png')
-      .send(
-        await QRCode.toBuffer(c.PUBLIC_APP_ORIGIN + '/join/' + slug, {
-          margin: 4,
-          width: 512,
-          errorCorrectionLevel: 'M',
-        }),
-      );
+    return reply.type('image/png').send(
+      await QRCode.toBuffer(c.PUBLIC_APP_ORIGIN + '/join/' + slug, {
+        margin: 4,
+        width: 512,
+        errorCorrectionLevel: 'M',
+      }),
+    );
   });
 }

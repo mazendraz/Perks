@@ -13,7 +13,13 @@
 | D33 | OWNER CONFIRMED | الملفات على ديسك السيرفر خارج الكود،خلف FileStore adapter. أي object storage مستقبلي adapter مستقل. |
 | D34 | OWNER CONFIRMED | إيميل SMTP خلف adapter عام؛مزود الإيميل والدومين لسه BLOCKED_OWNER. مفيش إرسال حقيقي بدون موافقة. |
 | D35 | OWNER CONFIRMED | اشتراك وتحصيل يدوي (InstaPay/فودافون كاش/تحويل)،والـentitlements من الإدارة. مفيش بوابة دفع أونلاين. الأسعار لسه غير معتمدة. |
-| D36 | OWNER CONFIRMED | Apple/Google Wallet بعد أول Pilot،خلف feature flag؛مش شرط إطلاق. NFC وحملات التسويق والإرسال الجماعي خارج الخطة. |
+| D36 | OWNER CONFIRMED | Apple/Google Wallet بعد أول Pilot،خلف feature flag؛مش شرط إطلاق. حملات التسويق والإرسال الجماعي خارج الخطة؛URL NFC tags داخل النطاق وفق D39. |
+| D37 | OWNER CONFIRMED / LAUNCH-PLAN | سكان QR أو URL NFC يفتح الكارت ويطلب ختم تلقائيًا؛الختم محتاج موافقة الكاشير. الكود الثابت وحده لا يثبت شراء،وتأكيد صرف المكافأة من العميل مستمر. |
+| D38 | OWNER CONFIRMED / LAUNCH-PLAN | العميل العائد لا يكتب ولا يضغط لأخذ ختم بعد السكان؛أي خطوة إضافية تحتاج تبرير. التنفيذ والقبول في L06A. |
+| D39 | OWNER CONFIRMED / LAUNCH-PLAN | URL NFC tags داخل النطاق بنفس مسار QR عبر /p/{code}?src=nfc. الكتابة بتطبيق خارجي؛لا NFC Wallet passes ولا هاردوير خاص. يستبدل استبعاد NFC السابق. |
+| D40 | OWNER CONFIRMED / LAUNCH-PLAN | العميل يسجل الاسم ورقم الموبايل والشروط فقط،بدون إيميل أو باسورد،مع credential جهاز طويلة العمر. L06B تستبدل مسار عميل L01/L02؛الإيميل والباسورد مستمران للفريق والمنصة. |
+| D41 | OWNER CONFIRMED / LAUNCH-PLAN | رقم العميل هوية وليس اعتماد دخول،ولا OTP. الرقم وحده لا يفتح الكارت؛جهاز مربوط أو رابط استرجاع مرسل لنفس الرقم فقط. |
+| D42 | OWNER CONFIRMED / LAUNCH-PLAN | استرجاع بطلب العميل عبر واتساب يدوي: موظف مخوّل ينشئ رابطًا أحاديًا ويفتح wa.me،ثم يراجع ويرسل بنفسه. لا WhatsApp API أو إرسال آلي. L06B تضيف الحدود والتدقيق. |
 
 المالك أكد إنه لسه ما اختارش سيرفر أو دومين أو SMTP أو مكان نسخة احتياطية خارج السيرفر؛التنفيذ المحلي مستمر،والبنود التابعة للاختيارات دي BLOCKED_OWNER. مفيش remote لـGit حاليًا،فنجاح workflow على خدمة CI خارجية لسه غير مثبت.
 
@@ -33,7 +39,7 @@
 | D10 | PROVISIONAL / Product owner | نشر program version جديدة يسري على العضويات الجديدة؛ العضوية الموجودة تفضل على version اللي انضمت لها لحد انتقال صريح محفوظ الحقوق. | لا نعيد احتساب الأرصدة القديمة بعتبة جديدة. انتقال جماعي خارج أول دورة، محتاج سياسة وتعويض واختبارات. إيقاف الكسب لا ينهي مكافأة سبق اكتسابها. |
 | D11 | ACCEPTED / Tech lead | العكس الآلي الكامل متاح فقط لآخر award بلا نشاط لاحق وبمكافآت لم تُستبدل؛ غير كده `needs_review`. | لا `Math.max(0, balance+delta)`؛ تعويض مرتبط بالعملية الأصلية، void grant غير المصروف وتعويض consumption. المكافأة المصروفة تحتاج قرار بشري موثّق. |
 | D12 | ACCEPTED / Tech lead | presentation QR opaque قصير العمر، مش اعتماد لصرف المكافأة. redemption يحتاج holder challenge مؤقت ومربوط بالعملية. | Wallet barcode لو static يبقى handle محدود يحتاج تحقق server والـholder؛ مفيش وعد بتدوير barcode كل 90 ثانية في كل Wallet. |
-| D13 | ACCEPTED / Tech lead | NFC الأول URL tag بس، منفصل تمامًا عن Apple NFC pass وGoogle Smart Tap. | كتابة وتحقق مادي وQR بديل وrevocation لكل placement. مفيش شراء هاردوير حاليًا. |
+| D13 | ACCEPTED / D39 | NFC الأول URL tag بس، منفصل تمامًا عن Apple NFC pass وGoogle Smart Tap؛داخل نطاق الإطلاق وفق D39. | كتابة بتطبيق خارجي وتحقق مادي وQR بديل وrevocation لكل placement. مفيش شراء هاردوير حاليًا. |
 | D14 | ACCEPTED / Tech lead | Wallet والرسائل optional بقدرات مستقلة لكل merchant/provider. | الويب كامل حتى لو Wallet معطل. badge ظاهر فقط بعد إثبات readiness؛ retry مش بيحوّل الحالة لـready من غير نتيجة مزود. |
 | D15 | ACCEPTED / Tech lead | كل paid delivery لها dedupe وbudget reservation؛ timeout ambiguous يروح reconciliation قبل resend. | لا ضمان exactly-once عبر مزود غير داعم. loyalty DB transaction تضمن أثرها الداخلي؛ التسليم الخارجي at-least-once مع معالجة الغموض. |
 | D16 | PROVISIONAL / Product owner | أول Pilot باشتراك يدوي موثق وentitlements يضبطها admin، بدون بوابة تحصيل. | مفيش تحصيل أوVAT أوproration مثبتين. commercial self-service يحتاج P12 كامل. |

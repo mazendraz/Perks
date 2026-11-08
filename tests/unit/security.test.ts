@@ -1,5 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { tmpdir } from 'node:os';
+import { resolve } from 'node:path';
 import {
   canonicalJson,
   keyedHash,
@@ -31,6 +33,7 @@ test('deployment fails closed with local authentication or insecure cookies', ()
     DATABASE_URL: 'postgresql://runtime@localhost/nuqta_test',
     AUTH_DATABASE_URL: 'postgresql://auth@localhost/nuqta_test',
     AUTH_PEPPER: 'test-pepper-at-least-thirty-two-characters',
+    STORAGE_ROOT: resolve(tmpdir(), 'nuqta-production-config-fixture'),
     MAIL_TRANSPORT: 'smtp' as const,
     SMTP_HOST: 'localhost',
     SMTP_PORT: 587,
@@ -62,6 +65,11 @@ test('deployment fails closed with local authentication or insecure cookies', ()
   };
   assert.throws(() => readConfig({ ...production, MAIL_TRANSPORT: 'file' }), /file mail sink/);
   assert.throws(() => readConfig({ ...production, SMTP_HOST: '' }), /SMTP_HOST/);
+  assert.throws(() => readConfig({ ...production, STORAGE_ROOT: '.local' }), /STORAGE_ROOT/);
+  assert.throws(
+    () => readConfig({ ...production, STORAGE_ROOT: resolve('private-files') }),
+    /outside/,
+  );
   assert.throws(
     () => readConfig({ ...production, SMTP_STARTTLS: 'false', SMTP_SECURE: 'false' }),
     /TLS/,

@@ -203,3 +203,11 @@ Deploy: backup/readiness →expand migration→compatible artifact→scoped heal
 SMTP له Message-ID ثابت وإيصال إرسال دائم لكل outbox ID. `sent` يمنع إرسال نفس الرسالة مجددًا؛`unknown` يوقف الإعادة التلقائية إذا انقطع رد قبول الرسالة أوفشل تثبيت النتيجة في DB بعد قبول SMTP. راجع مزود البريد/السجل قبل أي قرار؛لا تغير نفس idempotency key ولا تُحوّل unknown إلىنجاح من غير دليل. طلب استرجاع جديد من المستخدم intent جديد. أخطاء الاتصال المؤكدة قبل التسليم قابلة لإعادة المحاولة؛الرفض الدائم blocked. القوالب text/HTML بالعربي والإنجليزي،ولا يظهر توكن في subject أوlogs.
 
 فحص محلي بلا إرسال حقيقي:`npm run test:integration -- mail.test.ts` يستخدم SMTP وهميًا على127.0.0.1 مع TLS وشهادة مولدة في الذاكرة،ويختبر restart وreset وnotification وdedupe وunknown وعزل أدوار DB. الفحص الجامع `verify:local` يشغّل كل integration tests،مش الملف المختار فقط.
+
+## التخزين الذاتي — L03
+
+STORAGE_ROOT افتراضي .local للتطوير،وفي staging/production لازم مسار absolute خارج الكود مثل /var/lib/nuqta/files. المجلدات0700 والملفات0600 علىLinux؛شغّل API وWorker بنفس UID وصلاحية volume. LocalDiskStore يرفض traversal والمسارات غير المعتمدة والروابط الرمزية،ويكتب مؤقتًا ثم rename وfsync. صورPNG في assets،والـCSV الخاصة في exports،بلا static serving لمجلد التخزين.
+
+للترقية المحلية القديمة:أوقف الكاتب،نفّذ db:migrate ثم npm run storage:migrate-local من جذر البيئة. الأداة مقيدة بقاعدة Nuqta المحلية/اختبار علىloopback،وتراجع SHA للصور وتطابق CSV قبل تغيير pointer أوحذف النسخة القديمة. لو وجدت نسخة مختلفة تقف؛لا تمسح الملف المختلف. إعادة التشغيل آمنة بعد مراجعة السبب. demo:setup ليس مطلوبًا لتغيير كلمات المرور؛ترقية تجربة مازن استخدمت migrateManual ثم ترحيل الملفات من manualRoot،وحافظت على الحسابات واللوجو.
+
+تنظيفCSV الحالي محدود200ملف/2000entry ويحترم lease وروابط الساعة؛الاحتفاظ ساعتان مؤقتًا حتى سياسة24ساعة فيL09. اختبارLinux symlink فيCI،ومحليًاWindows متخطى بتسجيل صريح.

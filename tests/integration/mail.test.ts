@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import { mkdtemp, mkdir, writeFile, rm } from 'node:fs/promises';
 import { resolve, sep } from 'node:path';
+import { tmpdir } from 'node:os';
 import type { Socket } from 'node:net';
 import { SMTPServer } from 'smtp-server';
 import { generate } from 'selfsigned';
@@ -89,6 +90,7 @@ before(async () => {
   assert.ok(address && typeof address !== 'string');
   smtp = readConfig({
     APP_ENV: 'production',
+    STORAGE_ROOT: resolve(tmpdir(), 'nuqta-production-smtp-fixture'),
     AUTH_PROVIDER: 'password',
     COOKIE_SECURE: 'true',
     PUBLIC_APP_ORIGIN: origin,

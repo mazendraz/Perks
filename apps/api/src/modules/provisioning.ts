@@ -9,9 +9,8 @@ import {
 import { draftInput, draftActivationInput } from '../../../../packages/contracts/src/commands.js';
 import type { FastifyInstance } from 'fastify';
 import { randomUUID, randomBytes } from 'node:crypto';
-import { readFile, mkdir, writeFile } from 'node:fs/promises';
-import { resolve } from 'node:path';
-import sharp from 'sharp';
+import { createFileStore } from '../storage/file-store.js';
+import { sanitizeLogo } from '../storage/logo.js';
 import { z } from 'zod';
 import {
   provisioningInput,
@@ -90,6 +89,7 @@ async function createAccount(
   return account;
 }
 export function provisioningModule(app: FastifyInstance, pools: Pools, c: Config) {
+  const files = createFileStore(c);
   app.post(
     '/api/v1/platform/merchants/:m/accounts',
     { config: { rateLimit: { max: 15, timeWindow: '1 minute' } } },
@@ -299,7 +299,7 @@ export function provisioningModule(app: FastifyInstance, pools: Pools, c: Config
               );
             await db.query('UPDATE programs SET current_version_id=$1 WHERE id=$2', [v.id, p.id]);
             if (d.logoAssetId) {
-              await publishDraftLogo(db, actor, id, m.id, d.logoAssetId);
+              await publishDraftLogo(db, actor, id, m.id, d.logoAssetId, files);
               m.logo_asset_id = d.logoAssetId;
             }
             const invites = [],
@@ -784,28 +784,9 @@ export function provisioningModule(app: FastifyInstance, pools: Pools, c: Config
       },
       actor,
     );
-    requireCondition(
-      ['development', 'test'].includes(c.APP_ENV),
-      'OBJECT_STORAGE_NOT_CONFIGURED',
-      503,
-    );
-    const raw = Buffer.from(body.base64, 'base64');
-    requireCondition(raw.length <= 2_000_000, 'ASSET_TOO_LARGE', 422);
-    let output: Buffer, info: { width: number; height: number };
-    try {
-      const image = sharp(raw, { limitInputPixels: 16_000_000, failOn: 'warning' });
-      const meta = await image.metadata();
-      requireCondition(['png', 'jpeg', 'webp'].includes(meta.format || ''), 'UNSAFE_FILE', 422);
-      const r = await image
-        .rotate()
-        .resize({ width: 1024, height: 1024, fit: 'inside', withoutEnlargement: true })
-        .png()
-        .toBuffer({ resolveWithObject: true });
-      output = r.data;
-      info = r.info;
-    } catch {
-      requireCondition(false, 'UNSAFE_FILE', 422);
-    }
+    const sanitized = await sanitizeLogo(body.base64),
+      output = sanitized.bytes,
+      info = sanitized;
     return transaction(
       pools.pool,
       async (db) => {
@@ -825,9 +806,7 @@ export function provisioningModule(app: FastifyInstance, pools: Pools, c: Config
             );
           const id = randomUUID(),
             key = m + '/' + id + '.png';
-          const dir = resolve('.local/assets', m);
-          await mkdir(dir, { recursive: true });
-          await writeFile(resolve(dir, id + '.png'), output, { flag: 'wx', mode: 0o600 });
+          await files.put(key, output, { contentType: 'image/png' });
           const asset = (
             await db.query(
               'INSERT INTO assets(id,merchant_id,storage_key,mime,bytes,width,height,sha256,created_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING id,mime,width,height',
@@ -895,7 +874,7 @@ export function provisioningModule(app: FastifyInstance, pools: Pools, c: Config
     return reply
       .type('image/png')
       .header('X-Content-Type-Options', 'nosniff')
-      .send(await readFile(resolve('.local/assets', m, id + '.png')));
+      .send(await files.get(m + '/' + id + '.png'));
   });
   app.get('/api/v1/merchants/:m/programs', async (req) => {
     const actor = authenticated(req),

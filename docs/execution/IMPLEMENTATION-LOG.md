@@ -88,3 +88,7 @@ verify:local passed بكل المراحل:16 unit،52 integration،54 browser ch
 ### قبول L02 المحلي
 
 verify:local passed:18 unit و56 integration و55 browser checks وكل مراحل build/lint/typecheck/OpenAPI/manual-demo/restore/verify:plan. بصمة 524a46317dbb3d7f0d317a4cbc729708cf1d06a39b90b338323dcd7b9ed3e52a متطابقة قبل وبعد. إصلاح قراءة رقم العميل المتأخرة مع StrictMode وحماية أحدث رد لتفضيلات الموافقة،مع فحص متصفح يوقف GET قبل إتاحة الكتابة. حفظ دليل التحقق atomic مع retry لأخطاء FS المؤقتة،وحجب روابط reset في أخطاء الاختبارات. المحلات والحسابات اليدوية محفوظة؛لا إرسال حقيقي. L02-01..04 DONE و05 BLOCKED_OWNER؛L03 مستقل ويستكمل حسب قاعدة6.
+
+### قبول L03 — 2026-11-09
+
+L03 DONE محليًا — 2026-11-09:FileStore بكتابة ذرية وkeys محدودة،وSTORAGE_ROOT إنتاجي خارج الكود،وتنظيف وصورPNG1024 بلاmetadata. ترحيل التطوير راجع51صورة ونقل39مسودة و18CSV بلا ملفات مفقودة؛تجربة مازن راجعت2صورة واحتفظت بالحسابات واللوجو المنشور. verify:local passed:20 unit و58 integration و55 browser؛اختبار symlink متخطى على Windows ويعمل على Linux CI. sourceFingerprint a5d36028fe15a58bc6efcf53883555ba32dc92ae96694815f1933cc72fc3e8b6 متطابق قبل وبعد. D37–D42 اتثبتوا حسب إضافات الخطة،والتنفيذ الوظيفي لهم في L06A/L06B.

@@ -1,4 +1,5 @@
 import { existsSync } from 'node:fs';
+import { isAbsolute, relative, resolve, parse, sep } from 'node:path';
 import { z } from 'zod';
 if (existsSync('.env')) process.loadEnvFile('.env');
 const schema = z.object({
@@ -15,6 +16,7 @@ const schema = z.object({
   COOKIE_SECURE: z.enum(['true', 'false']).default('false'),
   MAIL_TRANSPORT: z.enum(['file', 'smtp']).default('file'),
   MAIL_FILE_ROOT: z.string().min(1).default('.local/mail'),
+  STORAGE_ROOT: z.string().min(1).default('.local'),
   SMTP_HOST: z.string().optional(),
   SMTP_PORT: z.coerce.number().int().min(1).max(65535).optional(),
   SMTP_USER: z.string().optional(),
@@ -58,6 +60,18 @@ export function readConfig(overrides: Partial<Config> = {}): Config {
       (deployed(c) || !['localhost', '127.0.0.1', '::1'].includes(c.SMTP_HOST))
     )
       throw new Error('SMTP requires TLS except for a loopback development/test server.');
+  }
+  if (deployed(c)) {
+    const root = resolve(c.STORAGE_ROOT),
+      pathFromCode = relative(process.cwd(), root);
+    if (
+      !isAbsolute(c.STORAGE_ROOT) ||
+      root === parse(root).root ||
+      !(pathFromCode === '..' || pathFromCode.startsWith('..' + sep) || isAbsolute(pathFromCode))
+    )
+      throw new Error(
+        'STORAGE_ROOT must be a dedicated absolute directory outside the application code.',
+      );
   }
   return c;
 }

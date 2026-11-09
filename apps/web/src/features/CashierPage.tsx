@@ -3,7 +3,7 @@ import { Icon } from '../../../../packages/ui/src/Icon.js';
 import { FieldErrors, fieldProps } from '../FieldErrors.js';
 import { CashierRequests } from './StampRequests.js';
 import { useEffect, useRef, useState, type FormEvent, type CSSProperties } from 'react';
-import { BrowserQRCodeReader, type IScannerControls } from '@zxing/browser';
+import type { IScannerControls } from '@zxing/browser';
 import type {
   AwardResult,
   Grant,
@@ -51,39 +51,77 @@ interface Recent {
   branch_id: string;
 }
 function CameraScanner({ lang, onRead }: { lang: Language; onRead: (value: string) => void }) {
+  const latest = useRef({ lang, onRead });
+  latest.current = { lang, onRead };
   const video = useRef<HTMLVideoElement>(null),
     [active, setActive] = useState(false),
     [error, setError] = useState('');
   useEffect(() => {
     if (!active || !video.current) return;
+    const element = video.current;
     let controls: IScannerControls | undefined,
+      stream: MediaStream | undefined,
       cancelled = false;
-    const reader = new BrowserQRCodeReader();
-    void reader
-      .decodeFromVideoDevice(undefined, video.current, (result, _error, control) => {
+    const stop = () => {
+      cancelled = true;
+      try {
+        controls?.stop();
+      } finally {
+        stream?.getTracks().forEach((track) => track.stop());
+        element.pause();
+        element.srcObject = null;
+      }
+    };
+    const hidden = () => {
+      if (document.hidden) {
+        stop();
+        setActive(false);
+      }
+    };
+    document.addEventListener('visibilitychange', hidden);
+    void (async () => {
+      const { BrowserQRCodeReader } = await import('@zxing/browser');
+      if (cancelled) return;
+      const reader = new BrowserQRCodeReader();
+      if (document.hidden) {
+        setActive(false);
+        return;
+      }
+      stream = await navigator.mediaDevices.getUserMedia({
+        audio: false,
+        video: { facingMode: { ideal: 'environment' } },
+      });
+      // Permission may resolve after the user hides the page; release it before decoding.
+      if (cancelled || document.hidden) {
+        stop();
+        return;
+      }
+      return reader.decodeFromStream(stream, element, (result) => {
         if (result && !cancelled) {
-          control.stop();
+          stop();
           setActive(false);
-          onRead(result.getText());
+          latest.current.onRead(result.getText());
         }
-      })
+      });
+    })()
       .then((c) => {
         controls = c;
-        if (cancelled) c.stop();
+        if (cancelled) c?.stop();
       })
       .catch(() => {
         if (!cancelled) {
           setError(
-            lang === 'ar'
-              ? 'الكاميرا مش متاحة. اسمح بالوصول أواكتب الكود يدويًا.'
+            latest.current.lang === 'ar'
+              ? 'الكاميرا مش متاحة. اسمح بالوصول أو اكتب الكود يدويًا.'
               : 'Camera unavailable. Allow access or enter the code manually.',
           );
+          stop();
           setActive(false);
         }
       });
     return () => {
-      cancelled = true;
-      controls?.stop();
+      document.removeEventListener('visibilitychange', hidden);
+      stop();
     };
   }, [active]);
   return (
@@ -94,7 +132,14 @@ function CameraScanner({ lang, onRead }: { lang: Language; onRead: (value: strin
           {error}
         </p>
       )}
-      <button className="primary full" type="button" onClick={() => setActive(!active)}>
+      <button
+        className="primary full"
+        type="button"
+        onClick={() => {
+          setError('');
+          setActive(!active);
+        }}
+      >
         {active
           ? lang === 'ar'
             ? 'اقفل الكاميرا'

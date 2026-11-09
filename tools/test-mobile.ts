@@ -1,0 +1,655 @@
+import {
+  chromium,
+  webkit,
+  devices,
+  type Page,
+  type BrowserContext,
+  type Browser,
+} from 'playwright';
+import assert from 'node:assert/strict';
+import { randomUUID, randomBytes, createHash } from 'node:crypto';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
+import pg from 'pg';
+import { createServer, type AddressInfo } from 'node:net';
+import fastifyStatic from '@fastify/static';
+import { readConfig } from '../apps/api/src/config.js';
+import { buildApp } from '../apps/api/src/server.js';
+import { hashPassword } from '../apps/api/src/passwords.js';
+const c = readConfig(),
+  database = new URL(c.DATABASE_MIGRATOR_URL!);
+assert.ok(['development', 'test'].includes(c.APP_ENV));
+assert.equal(c.AUTH_PROVIDER, 'local');
+assert.equal(database.hostname, '127.0.0.1');
+assert.ok(['/nuqta_local', '/nuqta_ci'].includes(database.pathname));
+for (const value of [c.DATABASE_URL, c.AUTH_DATABASE_URL]) {
+  const url = new URL(value);
+  assert.equal(url.hostname, database.hostname);
+  assert.equal(url.pathname, database.pathname);
+}
+const reservation = createServer();
+await new Promise<void>((ready, reject) => {
+  reservation.once('error', reject);
+  reservation.listen(0, '127.0.0.1', ready);
+});
+const port = (reservation.address() as AddressInfo).port;
+await new Promise<void>((ready, reject) =>
+  reservation.close((error) => (error ? reject(error) : ready())),
+);
+const origin = 'http://127.0.0.1:' + port,
+  stamp = Date.now(),
+  password = 'Mobile-' + randomBytes(18).toString('hex');
+const db = new pg.Client({ connectionString: c.DATABASE_MIGRATOR_URL });
+const { app } = await buildApp({
+  APP_ENV: 'test',
+  HOST: '127.0.0.1',
+  PORT: port,
+  PUBLIC_APP_ORIGIN: origin,
+  LOG_LEVEL: 'silent',
+});
+const directory = 'docs/execution/evidence/implementation',
+  browsers: Browser[] = [];
+const report: {
+  at: string;
+  status: string;
+  build?: string;
+  indexSha256?: string;
+  checks: string[];
+  projects: string[];
+  installabilityErrors?: unknown[];
+  reason?: string;
+} = { at: new Date().toISOString(), status: 'running', checks: [], projects: [] };
+let phase = 'setup',
+  workerGeneration = 0;
+const pass = (message: string) => {
+  report.checks.push(message);
+  console.log('PASS ' + message);
+};
+const errorStatusCounts: Record<string, number> = {};
+app.addHook('onResponse', async (_req, reply) => {
+  if (reply.statusCode >= 400)
+    errorStatusCounts[String(reply.statusCode)] =
+      (errorStatusCounts[String(reply.statusCode)] ?? 0) + 1;
+});
+app.get('/sw.js', { config: { rateLimit: false } }, async (_req, reply) => {
+  let source = await readFile(resolve('apps/web/dist/sw.js'), 'utf8');
+  if (workerGeneration)
+    source = source.replace(
+      /const VERSION = "([^"]+)";/,
+      (_match, version: string) =>
+        'const VERSION = ' + JSON.stringify(version + '-test-' + workerGeneration) + ';',
+    );
+  return reply.type('application/javascript').header('Cache-Control', 'no-cache').send(source);
+});
+// Production serves public files in Caddy, outside the API limiter. Only this
+// fixture's explicit static routes opt out; actual API limits stay intact.
+await app.register(fastifyStatic, { root: resolve('apps/web/dist'), serve: false });
+app.get('/*', { config: { rateLimit: false } }, (req, reply) => {
+  const path = new URL(req.url, origin).pathname;
+  if (/^\/(api|health|internal)(\/|$)/.test(path))
+    return reply.code(404).send({ error: { code: 'NOT_FOUND' } });
+  return reply.sendFile(/\.[a-z0-9]+$/i.test(path) ? path.slice(1) : 'index.html');
+});
+async function checkLayout(page: Page, label: string) {
+  await page.evaluate(() => document.fonts.ready);
+  assert.ok(
+    await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1),
+    label + ' horizontal overflow',
+  );
+  const small = await page
+    .locator('button:visible:not(:disabled),a.primary:visible,a.secondary:visible')
+    .evaluateAll((elements) =>
+      elements
+        .filter((el) => {
+          const r = el.getBoundingClientRect();
+          return r.width < 43.5 || r.height < 43.5;
+        })
+        .map((el) => el.tagName + ':' + el.className),
+    );
+  assert.deepEqual(small, [], label + ' touch targets');
+}
+async function login(page: Page, email: string) {
+  await page.goto(origin + '/login', { waitUntil: 'domcontentloaded' });
+  await page.getByLabel('Email', { exact: true }).fill(email);
+  await page.getByLabel('Password', { exact: true }).fill(password);
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+}
+async function watch(context: BrowserContext) {
+  await context.addInitScript(() => {
+    const state = window as unknown as { policyViolations: string[] };
+    state.policyViolations = [];
+    document.addEventListener('securitypolicyviolation', (event) =>
+      state.policyViolations.push(event.effectiveDirective),
+    );
+    Object.defineProperty(crypto, 'randomUUID', { value: undefined, configurable: true });
+    Object.defineProperty(HTMLElement.prototype, 'showPopover', {
+      value: undefined,
+      configurable: true,
+    });
+    Object.defineProperty(window, 'ResizeObserver', { value: undefined, configurable: true });
+  });
+}
+try {
+  await mkdir(directory, { recursive: true });
+  await db.connect();
+  report.build = JSON.parse(await readFile('apps/web/dist/shell-build.json', 'utf8')).version;
+  report.indexSha256 = createHash('sha256')
+    .update(await readFile('apps/web/dist/index.html'))
+    .digest('hex');
+  await app.listen({ port, host: '127.0.0.1' });
+  const adminEmail = 'mobile-admin-' + stamp + '@nuqta.test';
+  await db.query(
+    "INSERT INTO users(email,display_name,global_role,password_hash,password_version) VALUES($1,'Synthetic mobile admin','platform_admin',$2,1)",
+    [adminEmail, await hashPassword(password, c.AUTH_PEPPER)],
+  );
+  const signed = await app.inject({
+    method: 'POST',
+    url: '/api/v1/auth/login',
+    headers: { origin },
+    payload: { email: adminEmail, password },
+  });
+  assert.equal(signed.statusCode, 200);
+  const headers = {
+    origin,
+    cookie: signed.cookies.map((item) => item.name + '=' + item.value).join('; '),
+    'x-csrf-token': signed.json().csrfToken,
+  };
+  const slug = 'mobile-' + stamp,
+    ownerEmail = 'mobile-owner-' + stamp + '@nuqta.test',
+    cashierEmail = 'mobile-cashier-' + stamp + '@nuqta.test';
+  const data = {
+    name: 'Mobile QA Coffee',
+    slug,
+    contactEmail: ownerEmail,
+    timezone: 'Africa/Cairo',
+    primaryColor: '#204C41',
+    accentColor: '#D4AD68',
+    surfaceColor: '#F9F5EA',
+    template: 'espresso',
+    logoStyle: 'plain',
+    logoSize: 60,
+    stampShape: 'seal',
+    stampIcon: 'coffee',
+    stampStyle: 'outline',
+    terms: 'Synthetic mobile enrollment terms.',
+    program: {
+      name: 'Visits',
+      threshold: 5,
+      maxPerTx: 3,
+      rewardTitle: 'Free coffee',
+      rewardTerms: 'One coffee within thirty days.',
+      validityDays: 30,
+      endsAt: null,
+    },
+    branches: [{ name: 'Mobile branch', address: 'Synthetic only' }],
+    staff: [
+      { email: ownerEmail, role: 'owner', branchIndexes: [0], maxQty: 3, accessMode: 'password' },
+      {
+        email: cashierEmail,
+        role: 'cashier',
+        branchIndexes: [0],
+        maxQty: 2,
+        accessMode: 'password',
+      },
+    ],
+    plan: 'growth',
+  };
+  const created = await app.inject({
+    method: 'POST',
+    url: '/api/v1/platform/provisioning-drafts',
+    headers: { ...headers, 'idempotency-key': randomUUID() },
+    payload: { data },
+  });
+  assert.equal(created.statusCode, 200);
+  const draft = created.json().draft,
+    base = '/api/v1/platform/provisioning-drafts/' + draft.id;
+  assert.equal(
+    (
+      await app.inject({
+        method: 'POST',
+        url: base + '/credentials',
+        headers,
+        payload: {
+          revision: draft.revision,
+          accounts: data.staff.map((staff) => ({ email: staff.email, password })),
+        },
+      })
+    ).statusCode,
+    200,
+  );
+  const activated = await app.inject({
+    method: 'POST',
+    url: base + '/activate',
+    headers: { ...headers, 'idempotency-key': randomUUID() },
+    payload: { draftRevision: draft.revision },
+  });
+  assert.equal(activated.statusCode, 200);
+  const fixture = activated.json(),
+    branch = fixture.branches[0].id;
+  for (const project of [
+    { name: 'chromium-pixel5', type: chromium, device: 'Pixel 5' },
+    { name: 'webkit-iphone12', type: webkit, device: 'iPhone 12' },
+  ]) {
+    phase = project.name;
+    report.projects.push(project.name);
+    const browser = await project.type.launch({ headless: true });
+    browsers.push(browser);
+    const customer = await browser.newContext({
+      ...devices[project.device],
+      locale: 'en-US',
+      baseURL: origin,
+    });
+    const cashier = await browser.newContext({
+      ...devices[project.device],
+      locale: 'en-US',
+      baseURL: origin,
+    });
+    await watch(customer);
+    await watch(cashier);
+    const page = await customer.newPage(),
+      cp = await cashier.newPage(),
+      errors: string[] = [];
+    for (const target of [page, cp]) target.on('pageerror', (error) => errors.push(error.message));
+    await page.goto(origin + '/join/' + slug + '?b=' + branch + '&src=qr', {
+      waitUntil: 'domcontentloaded',
+    });
+    try {
+      await page
+        .getByRole('button', { name: 'Sign in and join', exact: true })
+        .click({ timeout: 10000 });
+    } catch (error) {
+      console.log(
+        'Initial shell diagnostics ' +
+          JSON.stringify(
+            await page.evaluate(() => ({
+              ua: navigator.userAgent,
+              ready: document.documentElement.dataset.nuqtaReady,
+              root: document.getElementById('root')?.textContent?.slice(0, 200),
+              violations: (window as unknown as { policyViolations: string[] }).policyViolations,
+            })),
+          ) +
+          ' errors=' +
+          JSON.stringify(errors),
+      );
+      throw error;
+    }
+    await page.getByRole('button', { name: 'Create customer account', exact: true }).click();
+    await page.getByLabel('Your name', { exact: true }).fill('Mobile QA ' + project.name);
+    await page
+      .getByLabel('Email', { exact: true })
+      .fill(project.name + '-' + stamp + '@nuqta.test');
+    await page.getByLabel('Password', { exact: true }).fill(password);
+    await page.getByRole('button', { name: 'Create account', exact: true }).click();
+    await page.getByLabel('Name on your card', { exact: true }).fill('Mobile QA');
+    await page.getByLabel('I accept the program and reward terms', { exact: true }).check();
+    await page.getByRole('button', { name: 'Create my card', exact: true }).click();
+    await page.getByRole('progressbar', { name: 'Stamp progress', exact: true }).waitFor();
+    await checkLayout(page, project.name + ' customer');
+    await page.screenshot({
+      path: directory + '/mobile-' + project.name + '-customer-en.png',
+      fullPage: true,
+    });
+    pass(
+      project.name +
+        ': real customer registration and card through the legacy build with UUID/Popover/ResizeObserver absent',
+    );
+    await page.getByRole('button', { name: 'Show my code', exact: true }).click();
+    const token = (await page.locator('.qr-panel code').textContent())!.trim();
+    await login(cp, cashierEmail);
+    await cp.locator('[data-portal="cashier"]').waitFor();
+    await cp.getByRole('button', { name: 'Scan card', exact: true }).click();
+    await cp.getByLabel('Or enter the customer card code', { exact: true }).fill(token);
+    await cp.getByRole('button', { name: 'Read code', exact: true }).click();
+    await cp.getByRole('button', { name: 'Add stamps', exact: true }).click();
+    await cp
+      .getByLabel('Receipt number', { exact: true })
+      .fill('MOBILE-' + stamp + '-' + project.name);
+    await cp.getByRole('button', { name: 'Review award', exact: true }).click();
+    await cp.getByRole('button', { name: 'Confirm stamps', exact: true }).click();
+    await cp.getByText('Saved balance: 1', { exact: true }).waitFor();
+    await page.waitForFunction(
+      () => document.querySelector('[role="progressbar"]')?.getAttribute('aria-valuenow') === '1',
+    );
+    await checkLayout(cp, project.name + ' cashier');
+    await cp.screenshot({
+      path: directory + '/mobile-' + project.name + '-cashier-en.png',
+      fullPage: true,
+    });
+    pass(
+      project.name +
+        ': cashier manual QR input commits one stamp and updates the actual customer balance',
+    );
+    if (project.type === chromium) {
+      await cp.evaluate('window.__name = function(value) { return value; }');
+      await cp.evaluate(() => {
+        const state = {
+          hidden: false,
+          deferred: false,
+          opened: 0,
+          stopped: 0,
+          constraints: {} as MediaStreamConstraints,
+          resolve: undefined as undefined | (() => void),
+        };
+        Object.defineProperty(document, 'hidden', { configurable: true, get: () => state.hidden });
+        navigator.mediaDevices.getUserMedia = async (constraints) => {
+          state.opened++;
+          state.constraints = constraints!;
+          const canvas = document.createElement('canvas');
+          canvas.width = canvas.height = 64;
+          const draw = () => canvas.getContext('2d')!.fillRect(0, 0, 64, 64);
+          const timer = window.setInterval(draw, 50);
+          draw();
+          const stream = canvas.captureStream(10);
+          for (const track of stream.getTracks()) {
+            const stop = track.stop.bind(track);
+            track.stop = () => {
+              state.stopped++;
+              window.clearInterval(timer);
+              stop();
+            };
+          }
+          if (state.deferred)
+            await new Promise<void>((resolve) => {
+              state.resolve = resolve;
+            });
+          return stream;
+        };
+        (window as unknown as { cameraTest: typeof state }).cameraTest = state;
+      });
+      await cp.getByRole('button', { name: 'Next customer', exact: true }).click();
+      await cp.getByRole('button', { name: 'Open camera', exact: true }).click();
+      await cp.waitForFunction(() => !!document.querySelector('video')?.srcObject);
+      assert.deepEqual(
+        await cp.evaluate(
+          () =>
+            (window as unknown as { cameraTest: { constraints: unknown } }).cameraTest.constraints,
+        ),
+        { audio: false, video: { facingMode: { ideal: 'environment' } } },
+      );
+      assert.equal(
+        await cp.locator('video').evaluate((v: HTMLVideoElement) => v.muted && v.playsInline),
+        true,
+      );
+      await cp.evaluate(() => {
+        (window as unknown as { cameraTest: { hidden: boolean } }).cameraTest.hidden = true;
+        document.dispatchEvent(new Event('visibilitychange'));
+      });
+      await cp.waitForFunction(
+        () =>
+          (window as unknown as { cameraTest: { stopped: number } }).cameraTest.stopped > 0 &&
+          !document.querySelector('video'),
+      );
+      await cp.evaluate(() => {
+        const state = (
+          window as unknown as {
+            cameraTest: { hidden: boolean; deferred: boolean; stopped: number };
+          }
+        ).cameraTest;
+        state.hidden = false;
+        state.deferred = true;
+        state.stopped = 0;
+        document.dispatchEvent(new Event('visibilitychange'));
+      });
+      await cp.getByRole('button', { name: 'Open camera', exact: true }).click();
+      await cp.waitForFunction(
+        () => (window as unknown as { cameraTest: { opened: number } }).cameraTest.opened === 2,
+      );
+      await cp.evaluate(() => {
+        const state = (
+          window as unknown as { cameraTest: { hidden: boolean; resolve: () => void } }
+        ).cameraTest;
+        state.hidden = true;
+        document.dispatchEvent(new Event('visibilitychange'));
+        state.resolve();
+      });
+      await cp.waitForFunction(
+        () =>
+          (window as unknown as { cameraTest: { stopped: number } }).cameraTest.stopped > 0 &&
+          !document.querySelector('video'),
+      );
+      await cp.evaluate(() => {
+        (window as unknown as { cameraTest: { hidden: boolean } }).cameraTest.hidden = false;
+        document.dispatchEvent(new Event('visibilitychange'));
+      });
+      assert.equal(await cp.locator('video').count(), 0);
+      pass(
+        'Camera synthetic stream: rear-camera constraint, muted/playsInline, tracks stopped on hide and after late permission; no auto-resume',
+      );
+    }
+    const owner = await browser.newContext({
+      ...devices[project.device],
+      locale: 'en-US',
+      baseURL: origin,
+    });
+    await watch(owner);
+    const op = await owner.newPage();
+    op.on('pageerror', (error) => errors.push(error.message));
+    await login(op, ownerEmail);
+    await op.locator('[data-portal="merchant"]').waitFor();
+    const period = op.getByRole('combobox', { name: 'Period', exact: true });
+    await period.click();
+    await op.getByRole('option', { name: 'Last 7 days', exact: true }).click();
+    assert.equal(await period.getAttribute('data-value'), '7');
+    await op
+      .getByRole('navigation', { name: 'Business sections', exact: true })
+      .getByRole('button', { name: 'Business', exact: true })
+      .click();
+    await op.getByRole('button', { name: 'Team', exact: true }).click();
+    await op.getByRole('button', { name: 'Add staff account', exact: true }).click();
+    const dialog = op.getByRole('dialog', { name: 'Add staff account', exact: true });
+    await dialog.waitFor();
+    await dialog.getByRole('combobox', { name: 'Role', exact: true }).click();
+    await op.getByRole('option', { name: 'Manager', exact: true }).click();
+    assert.equal(
+      await dialog.getByRole('combobox', { name: 'Role', exact: true }).getAttribute('data-value'),
+      'manager',
+    );
+    await dialog.getByRole('combobox', { name: 'Role', exact: true }).press('Escape');
+    await dialog.waitFor({ state: 'hidden' });
+    pass(
+      project.name +
+        ': fallback portaled select responds to touch and remains usable in a keyboard-managed modal without native Popover or ResizeObserver',
+    );
+    for (const target of [page, cp, op])
+      assert.deepEqual(
+        await target.evaluate(
+          () => (window as unknown as { policyViolations: string[] }).policyViolations,
+        ),
+        [],
+      );
+    assert.deepEqual(errors, []);
+    await owner.close();
+    pass(project.name + ': no CSP violations or page errors with production-built scripts');
+    for (const target of [page, cp]) {
+      await target.getByRole('button', { name: 'العربية', exact: true }).click();
+      await checkLayout(target, project.name + ' Arabic');
+    }
+    await page.screenshot({
+      path: directory + '/mobile-' + project.name + '-customer-ar.png',
+      fullPage: true,
+    });
+    await cp.screenshot({
+      path: directory + '/mobile-' + project.name + '-cashier-ar.png',
+      fullPage: true,
+    });
+    if (project.type === chromium) {
+      await page.getByRole('button', { name: 'English', exact: true }).click();
+      await page.waitForFunction(() => !!navigator.serviceWorker.controller);
+      const apiResponse = await page.evaluate(async () => {
+        const r = await fetch('/api/v1/me/memberships', {
+          headers: { 'x-nuqta-workspace': 'customer' },
+        });
+        return { status: r.status, cache: r.headers.get('cache-control') };
+      });
+      assert.equal(apiResponse.status, 200);
+      assert.equal(apiResponse.cache, 'no-store');
+      const cdp = await customer.newCDPSession(page);
+      await cdp.send('Page.enable');
+      report.installabilityErrors = (
+        await cdp.send('Page.getInstallabilityErrors')
+      ).installabilityErrors;
+      assert.deepEqual(report.installabilityErrors, []);
+      pass(
+        'Chromium: browser installability checks return no errors (current replacement for retired Lighthouse PWA audit)',
+      );
+      const cached = await page.evaluate(async () => {
+        const all: string[] = [];
+        for (const key of await caches.keys())
+          for (const request of await (await caches.open(key)).keys()) all.push(request.url);
+        return all;
+      });
+      assert.ok(cached.length > 0);
+      assert.ok(
+        cached.every((url) => {
+          const value = new URL(url);
+          return !value.search && !/^\/(api|health|internal)(\/|$)/.test(value.pathname);
+        }),
+      );
+      await customer.setOffline(true);
+      assert.equal(
+        await page.evaluate(() =>
+          fetch('/api/v1/me/memberships', { headers: { 'x-nuqta-workspace': 'customer' } }).then(
+            () => true,
+            () => false,
+          ),
+        ),
+        false,
+      );
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      try {
+        await page
+          .getByText('You’re offline. Reconnect to continue.', { exact: true })
+          .waitFor({ timeout: 10000 });
+      } catch (error) {
+        console.log(
+          'Offline late diagnostics ' +
+            JSON.stringify(
+              await page.evaluate(() => ({
+                online: navigator.onLine,
+                ready: document.documentElement.dataset.nuqtaReady,
+                rootEmpty: !document.getElementById('root')?.textContent,
+                violations: (window as unknown as { policyViolations: string[] }).policyViolations,
+              })),
+            ) +
+            ' errors=' +
+            JSON.stringify(errors),
+        );
+        throw error;
+      }
+      await customer.setOffline(false);
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      await page.getByRole('progressbar', { name: 'Stamp progress', exact: true }).waitFor();
+      pass(
+        'PWA: offline shell opens while API responses remain network-only and absent from CacheStorage',
+      );
+      workerGeneration++;
+      await page.evaluate(async () => {
+        await (await navigator.serviceWorker.getRegistration())!.update();
+      });
+      await page.getByRole('button', { name: 'Update now', exact: true }).waitFor();
+      await Promise.all([
+        page.waitForEvent('load'),
+        page.getByRole('button', { name: 'Update now', exact: true }).click(),
+      ]);
+      await page.getByRole('progressbar', { name: 'Stamp progress', exact: true }).waitFor();
+      assert.equal(await page.getByRole('button', { name: 'Update now', exact: true }).count(), 0);
+      pass(
+        'PWA: a waiting update activates and reloads after the user taps Update now, preserving the authenticated card',
+      );
+    }
+    await customer.close();
+    await cashier.close();
+  }
+  const browser = browsers[0]!;
+  for (const name of ['iPhone SE', 'Pixel 5', 'Galaxy S8']) {
+    phase = 'layout-' + name;
+    const engine = name === 'iPhone SE' ? browsers[1]! : browser;
+    const context = await engine.newContext({
+      ...devices[name],
+      locale: 'en-US',
+      baseURL: origin,
+      // Playwright's historical SE/S8 descriptors ship unsupported iOS10/Android7 UAs.
+      // Keep their small viewports, with supported OS UAs; this is layout emulation.
+      userAgent:
+        name === 'iPhone SE'
+          ? 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.6 Mobile/15E148 Safari/604.1'
+          : name === 'Galaxy S8'
+            ? 'Mozilla/5.0 (Linux; Android 8.0.0; SM-G950F) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/12.0 Chrome/80.0.3987.162 Mobile Safari/537.36'
+            : devices[name]!.userAgent,
+    });
+    const page = await context.newPage();
+    await page.goto(origin + '/login');
+    for (const lang of ['en', 'ar']) {
+      if (lang === 'ar') await page.getByRole('button', { name: 'العربية', exact: true }).click();
+      await page
+        .getByLabel(lang === 'ar' ? 'البريد الإلكتروني' : 'Email', { exact: true })
+        .waitFor();
+      await checkLayout(page, name + ' ' + lang);
+      await page.screenshot({
+        path:
+          directory +
+          '/mobile-' +
+          name.toLowerCase().replaceAll(' ', '-') +
+          '-login-' +
+          lang +
+          '.png',
+        fullPage: true,
+      });
+    }
+    await context.close();
+    pass(
+      name + ': Arabic/English responsive login, no horizontal overflow and 44px button targets',
+    );
+  }
+  phase = 'unsupported';
+  const unsupported = await browser.newContext({
+      userAgent:
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 12_5 like Mac OS X) AppleWebKit/605.1.15 Version/12.0 Mobile/15E148 Safari/604.1',
+      locale: 'ar-EG',
+    }),
+    old = await unsupported.newPage();
+  await old.goto(origin + '/login');
+  await old.getByText('حدّث المتصفح أو افتح من Chrome.', { exact: true }).waitFor();
+  assert.equal(await old.locator('input[type=email]').count(), 0);
+  await unsupported.close();
+  pass('Unsupported iOS UA receives the Arabic update-browser screen without opening the app');
+  phase = 'inline-csp';
+  const unsafe = await browser.newContext(),
+    up = await unsafe.newPage();
+  await up.goto(origin + '/login');
+  await up.locator('input[type=email]').waitFor();
+  const blocked = await up.evaluate(
+    () =>
+      new Promise<boolean>((resolveResult) => {
+        document.addEventListener(
+          'securitypolicyviolation',
+          () => resolveResult(!(window as unknown as { untrustedRan?: boolean }).untrustedRan),
+          { once: true },
+        );
+        const s = document.createElement('script');
+        s.textContent = 'window.untrustedRan=true';
+        document.body.appendChild(s);
+      }),
+  );
+  assert.equal(blocked, true);
+  await unsafe.close();
+  pass('CSP still rejects an unapproved inline script');
+  assert.equal(errorStatusCounts['429'] ?? 0, 0, 'mobile journeys must not hit rate limits');
+  report.status = 'passed';
+} catch (error) {
+  report.status = 'failed';
+  report.reason =
+    phase +
+    ': ' +
+    String(error)
+      .replaceAll(password, '[credential]')
+      .replace(/NQP:[a-f0-9]+/g, '[presentation]');
+  console.error('HTTP error counts ' + JSON.stringify(errorStatusCounts));
+  console.error(report.reason);
+  process.exitCode = 1;
+} finally {
+  await Promise.allSettled(browsers.map((browser) => browser.close()));
+  await app.close();
+  await db.end();
+  await writeFile(directory + '/mobile.json', JSON.stringify(report, null, 2) + '\n');
+}

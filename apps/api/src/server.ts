@@ -3,6 +3,7 @@ import { ownerPreviewModule } from './modules/owner-preview.js';
 import { platformTeamModule } from './modules/platform-team.js';
 import { accountManagementModule } from './modules/account-management.js';
 import { contractDocumentation, activationDataSchema } from './openapi.js';
+import { scriptSources } from '../../../packages/domain/src/browser-policy.js';
 import Fastify from 'fastify';
 import cookie from '@fastify/cookie';
 import rateLimit from '@fastify/rate-limit';
@@ -69,11 +70,13 @@ export async function buildApp(overrides: Partial<Config> = {}) {
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        scriptSrc: ["'self'"],
+        scriptSrc: scriptSources,
         styleSrc: ["'self'", "'unsafe-inline'"],
         imgSrc: ["'self'", 'data:'],
         connectSrc: ["'self'"],
         frameAncestors: ["'none'"],
+        // Safari upgrades loopback HTTP too; local QA uses HTTP, production requires HTTPS.
+        upgradeInsecureRequests: ['development', 'test'].includes(c.APP_ENV) ? null : [],
       },
     },
   });
@@ -84,6 +87,15 @@ export async function buildApp(overrides: Partial<Config> = {}) {
     keyGenerator: (req) =>
       req.actor ? 'user:' + (req.actor.preview?.adminId || req.actor.id) : 'ip:' + req.ip,
     skipOnError: false,
+  });
+  app.addHook('onSend', async (req, reply, payload) => {
+    if (
+      (req.url.startsWith('/api/') &&
+        req.routeOptions.url !== '/api/v1/public/merchants/:m/logos/:id') ||
+      req.url.startsWith('/health/')
+    )
+      reply.header('Cache-Control', 'no-store');
+    return payload;
   });
   await app.register(swagger, {
     transform: contractDocumentation,

@@ -1,0 +1,30 @@
+{
+  "at": "2026-11-09T02:07:07.885Z",
+  "status": "passed",
+  "checks": [
+    "chromium-pixel5: real customer registration and card through the legacy build with UUID/Popover/ResizeObserver absent",
+    "chromium-pixel5: cashier manual QR input commits one stamp and updates the actual customer balance",
+    "Camera synthetic stream: rear-camera constraint, muted/playsInline, tracks stopped on hide and after late permission; no auto-resume",
+    "chromium-pixel5: fallback portaled select responds to touch and remains usable in a keyboard-managed modal without native Popover or ResizeObserver",
+    "chromium-pixel5: no CSP violations or page errors with production-built scripts",
+    "Chromium: browser installability checks return no errors (current replacement for retired Lighthouse PWA audit)",
+    "PWA: offline shell opens while API responses remain network-only and absent from CacheStorage",
+    "PWA: a waiting update activates and reloads after the user taps Update now, preserving the authenticated card",
+    "webkit-iphone12: real customer registration and card through the legacy build with UUID/Popover/ResizeObserver absent",
+    "webkit-iphone12: cashier manual QR input commits one stamp and updates the actual customer balance",
+    "webkit-iphone12: fallback portaled select responds to touch and remains usable in a keyboard-managed modal without native Popover or ResizeObserver",
+    "webkit-iphone12: no CSP violations or page errors with production-built scripts",
+    "iPhone SE: Arabic/English responsive login, no horizontal overflow and 44px button targets",
+    "Pixel 5: Arabic/English responsive login, no horizontal overflow and 44px button targets",
+    "Galaxy S8: Arabic/English responsive login, no horizontal overflow and 44px button targets",
+    "Unsupported iOS UA receives the Arabic update-browser screen without opening the app",
+    "CSP still rejects an unapproved inline script"
+  ],
+  "projects": [
+    "chromium-pixel5",
+    "webkit-iphone12"
+  ],
+  "build": "e2644fc2fa935611c4b7",
+  "indexSha256": "4a4a63d9f12385826263ceedaf6bfbb8bff20b271591c791af83953d5fe16627",
+  "installabilityErrors": []
+}

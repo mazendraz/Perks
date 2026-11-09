@@ -1,0 +1,28 @@
+[hidden] {
+  display: none !important;
+}
+.browser-fallback {
+  min-height: 100vh;
+  box-sizing: border-box;
+  display: grid;
+  place-content: center;
+  gap: 20px;
+  padding: 28px;
+  background: #f5f5f0;
+  color: #172e2a;
+  font:
+    500 18px/1.8 system-ui,
+    sans-serif;
+  text-align: center;
+}
+.browser-fallback img {
+  margin: auto;
+  border-radius: 22px;
+}
+.browser-fallback a {
+  color: #224e43;
+  padding: 12px 20px;
+  border: 1px solid #dce1d8;
+  border-radius: 14px;
+  text-decoration: none;
+}

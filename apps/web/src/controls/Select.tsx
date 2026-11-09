@@ -12,7 +12,7 @@ import {
   type AriaAttributes,
 } from 'react';
 import { Icon } from '../../../../packages/ui/src/Icon.js';
-import { ControlPopup } from './ControlPopup.js';
+import { ControlPopup, isControlPopupTarget } from './ControlPopup.js';
 import { ControlLocale } from './locale.js';
 
 type Choice = { value: string; label: string; disabled: boolean };
@@ -91,7 +91,11 @@ export function Select({
       data-control
       data-open={open}
       onBlur={(e) => {
-        if (!e.currentTarget.contains(e.relatedTarget)) setOpen(false);
+        if (
+          !e.currentTarget.contains(e.relatedTarget) &&
+          !isControlPopupTarget(id, e.relatedTarget)
+        )
+          setOpen(false);
       }}
     >
       <button

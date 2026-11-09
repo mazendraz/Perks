@@ -36,7 +36,7 @@ jobs:
       - run: npm run test:integration
       - run: npm run build
       - run: npm run test:deploy-scripts
-      - run: npx playwright install --with-deps chromium
+      - run: npx playwright install --with-deps chromium webkit
       - run: npm run test:e2e:ci
         timeout-minutes: 10
       - uses: actions/upload-artifact@v4
@@ -45,6 +45,7 @@ jobs:
           name: browser-evidence
           path: |
             docs/execution/evidence/implementation/browser.json
+            docs/execution/evidence/implementation/mobile.json
             docs/execution/evidence/implementation/*-ar.png
             docs/execution/evidence/implementation/*-en.png
   deployment:

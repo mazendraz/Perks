@@ -44,7 +44,8 @@
     "test:manual-demo": "tsx tools/test-manual-demo.ts",
     "test:deploy": "tsx tools/test-deploy.ts",
     "test:deploy-scripts": "tsx tools/test-deploy-scripts.ts",
-    "test:backup": "tsx tools/test-backup.ts"
+    "test:backup": "tsx tools/test-backup.ts",
+    "test:e2e:mobile": "tsx tools/test-mobile.ts"
   },
   "dependencies": {
     "@fastify/cookie": "11.1.5",

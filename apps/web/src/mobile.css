@@ -1,0 +1,84 @@
+/* Touch targets and phone insets; visual switch tracks keep their existing proportions. */
+.topbar {
+  padding-top: calc(16px + env(safe-area-inset-top, 0px));
+  padding-left: calc(20px + env(safe-area-inset-left, 0px));
+  padding-right: calc(20px + env(safe-area-inset-right, 0px));
+}
+.workspace-content,
+.public-page {
+  padding-bottom: calc(32px + env(safe-area-inset-bottom, 0px));
+}
+.pwa-status {
+  position: fixed;
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  inset-inline: 16px;
+  margin-inline: auto;
+  z-index: 12000;
+  max-width: 590px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 18px;
+  border: 1px solid #d8dfd2;
+  border-radius: 18px;
+  background: #fcfdf9;
+  color: #172e2a;
+  box-shadow: 0 12px 45px #17362a22;
+  font-size: 14px;
+}
+.pwa-status button {
+  white-space: nowrap;
+}
+@media (max-width: 760px) {
+  #root button,
+  .nq-popup button,
+  .primary,
+  .secondary,
+  #root [role='option'],
+  .nq-popup [role='option'] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  #root a[href],
+  .nq-popup a[href] {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    max-width: 100%;
+  }
+  input:not([type='checkbox']):not([type='radio']),
+  textarea,
+  select {
+    font-size: 16px;
+  }
+  label {
+    min-height: 44px;
+  }
+  .nq-color-swatches {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+  .nq-color-slider input[type='range'] {
+    min-height: 44px;
+  }
+  .topbar {
+    padding-left: calc(16px + env(safe-area-inset-left, 0px));
+    padding-right: calc(16px + env(safe-area-inset-right, 0px));
+  }
+  .pwa-status {
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 12px 16px;
+  }
+}
+@supports not (background: color-mix(in srgb, red, blue)) {
+  .stamp-symbol-empty {
+    fill: none;
+    stroke: currentColor;
+  }
+  button:focus,
+  a:focus {
+    outline: 2px solid #6a8a63;
+    outline-offset: 3px;
+  }
+}

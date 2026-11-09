@@ -1,70 +1,76 @@
 {
-  "at": "2026-11-09T00:36:21.484Z",
+  "at": "2026-11-09T02:03:43.360Z",
   "status": "passed",
   "steps": [
     {
       "command": "npm run typecheck",
       "exitCode": 0,
-      "durationMs": 5586.5705
+      "durationMs": 5145.3532
     },
     {
       "command": "npm run lint",
       "exitCode": 0,
-      "durationMs": 3047.4964
+      "durationMs": 3065.250500000001
     },
     {
       "command": "npm run test",
       "exitCode": 0,
-      "durationMs": 6156.362999999999,
-      "passedTests": 23,
+      "durationMs": 5602.4553,
+      "passedTests": 24,
       "skippedTests": 1
     },
     {
       "command": "npm run build",
       "exitCode": 0,
-      "durationMs": 3957.652000000002
+      "durationMs": 13877.747200000002
     },
     {
       "command": "npm run openapi:export",
       "exitCode": 0,
-      "durationMs": 1775.9460999999974
+      "durationMs": 1659.8653000000013
     },
     {
       "command": "npm run test:integration",
       "exitCode": 0,
-      "durationMs": 83620.39229999999,
-      "passedTests": 61,
+      "durationMs": 81803.71280000001,
+      "passedTests": 62,
       "skippedTests": 0
     },
     {
       "command": "npm run test:manual-demo",
       "exitCode": 0,
-      "durationMs": 7507.3273000000045
+      "durationMs": 7556.191899999991
     },
     {
       "command": "npm run test:e2e",
       "exitCode": 0,
-      "durationMs": 86167.03130000002
+      "durationMs": 83972.26040000001
+    },
+    {
+      "command": "npm run test:e2e:mobile",
+      "exitCode": 0,
+      "durationMs": 24843.695299999992
     },
     {
       "command": "npm run test:restore",
       "exitCode": 0,
-      "durationMs": 2457.2658999999985
+      "durationMs": 2357.4986999999965
     },
     {
       "command": "npm run verify:plan",
       "exitCode": 0,
-      "durationMs": 422.6967000000004
+      "durationMs": 429.5329999999958
     }
   ],
-  "sourceFingerprint": "23557e12c5e049e8b38c9fa04a6d8e1c23993a73f89b856b4e731c4d1ece0b4e",
+  "sourceFingerprint": "4e2737abb49cd95cb32a3c11665ff186e271bdabfef733ff3a026d2c74cf21b1",
   "environment": {
     "node": "v24.19.0",
     "platform": "win32",
     "appEnv": "development",
     "authProvider": "local",
-    "browser": "chromium"
+    "browser": "msedge"
   },
   "browserChecks": 55,
-  "sourceFingerprintAfter": "23557e12c5e049e8b38c9fa04a6d8e1c23993a73f89b856b4e731c4d1ece0b4e"
+  "mobileChecks": 17,
+  "sourceFingerprintAfter": "4e2737abb49cd95cb32a3c11665ff186e271bdabfef733ff3a026d2c74cf21b1"
 }

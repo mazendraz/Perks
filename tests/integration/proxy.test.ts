@@ -83,3 +83,18 @@ test('readiness rejects swapped runtime/auth connections', async () => {
     }
   }
 });
+
+test('session and health responses cannot persist in a browser HTTP cache', async () => {
+  const { app } = await buildApp({ APP_ENV: 'test', LOG_LEVEL: 'silent' });
+  try {
+    const session = await app.inject({ url: '/api/v1/session' });
+    assert.equal(session.statusCode, 401);
+    assert.equal(session.headers['cache-control'], 'no-store');
+    assert.ok(
+      !String(session.headers['content-security-policy']).includes('upgrade-insecure-requests'),
+    );
+    assert.equal((await app.inject({ url: '/health/ready' })).headers['cache-control'], 'no-store');
+  } finally {
+    await app.close();
+  }
+});

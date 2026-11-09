@@ -1,6 +1,6 @@
 import { useId, useRef, useState, useEffect, useContext } from 'react';
 import { ControlLocale } from './locale.js';
-import { ControlPopup } from './ControlPopup.js';
+import { ControlPopup, isControlPopupTarget } from './ControlPopup.js';
 import { hexToHsv, hsvToHex } from './color.js';
 export function ColorPicker({
   label,
@@ -32,7 +32,11 @@ export function ColorPicker({
       data-control
       data-open={open}
       onBlur={(e) => {
-        if (!e.currentTarget.contains(e.relatedTarget)) setOpen(false);
+        if (
+          !e.currentTarget.contains(e.relatedTarget) &&
+          !isControlPopupTarget(button.current?.id, e.relatedTarget)
+        )
+          setOpen(false);
       }}
       onKeyDown={(e) => {
         if (e.key === 'Escape' && open) {

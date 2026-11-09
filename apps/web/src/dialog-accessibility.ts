@@ -5,13 +5,31 @@ export function useDialogAccessibility() {
       restore: HTMLElement | null = null,
       lastOutside = document.activeElement as HTMLElement | null,
       overflow = '';
+    const ownedPopups = () =>
+      Array.from(document.querySelectorAll<HTMLElement>('[data-popup-owner]')).filter((popup) => {
+        const owner = document.getElementById(popup.dataset.popupOwner || '');
+        return !!owner && !!dialog?.contains(owner);
+      });
+    const within = (target: Node | null) =>
+      !!target &&
+      (!!dialog?.contains(target) || ownedPopups().some((popup) => popup.contains(target)));
     const focusable = () =>
       dialog
         ? Array.from(
             dialog.querySelectorAll<HTMLElement>(
               'button:not(:disabled),a[href],input:not(:disabled),select:not(:disabled),textarea:not(:disabled),[tabindex="0"]',
             ),
-          ).filter((e) => e.getClientRects().length > 0)
+          )
+            .concat(
+              ownedPopups().flatMap((popup) =>
+                Array.from(
+                  popup.querySelectorAll<HTMLElement>(
+                    'button:not(:disabled),input:not(:disabled),a[href],[tabindex="0"]',
+                  ),
+                ),
+              ),
+            )
+            .filter((e, index, list) => list.indexOf(e) === index && e.getClientRects().length > 0)
         : [];
     const focusFirst = () => {
       const target = focusable()[0] || dialog;
@@ -24,12 +42,17 @@ export function useDialogAccessibility() {
       const target = event.target as HTMLElement;
       if (!dialog) {
         if (!target.closest('[role="dialog"]')) lastOutside = target;
-      } else if (!dialog.contains(target)) focusFirst();
+      } else if (!within(target)) focusFirst();
     };
     const key = (event: KeyboardEvent) => {
       if (!dialog) return;
       if (event.key === 'Escape') {
         if ((event.target as HTMLElement).closest('[data-control][data-open="true"]')) return;
+        if (
+          (event.target as HTMLElement).closest('[data-popup-owner]') &&
+          within(event.target as Node)
+        )
+          return;
         const close = dialog.querySelector<HTMLButtonElement>(
           'button[data-dialog-close]:not(:disabled)',
         );

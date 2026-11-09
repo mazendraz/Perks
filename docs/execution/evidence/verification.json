@@ -1,6 +1,6 @@
 {
-  "at": "2026-11-09T00:42:34.343Z",
-  "passed": 433,
+  "at": "2026-11-09T02:07:33.690Z",
+  "passed": 435,
   "failed": 0,
   "errors": [],
   "checks": [
@@ -385,6 +385,11 @@
       "detail": "local link target"
     },
     {
+      "name": "link:docs\\execution\\STATUS.md:MOBILE-PWA.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
       "name": "link:docs\\execution\\STATUS.md:PASSWORD-AND-DESIGN.md",
       "ok": true,
       "detail": "local link target"
@@ -556,6 +561,11 @@
     },
     {
       "name": "link:docs\\execution\\README.md:evidence/inventory.json",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\IMPLEMENTATION.md:MOBILE-PWA.md",
       "ok": true,
       "detail": "local link target"
     },

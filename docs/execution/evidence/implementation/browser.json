@@ -1,7 +1,7 @@
 {
-  "at": "2026-11-09T00:39:38.509Z",
-  "browser": "chromium",
-  "browserVersion": "151.0.7922.34",
+  "at": "2026-11-09T02:07:05.435Z",
+  "browser": "msedge",
+  "browserVersion": "157.0.4341.42",
   "appEnv": "development",
   "checks": [
     "Fresh browsers use their primary device language; an explicit language switch persists after reload",
@@ -61,8 +61,8 @@
     "Forgot password dispatches through the durable worker mailbox; the real recovery link opens the reset screen and the new password restores existing customer cards"
   ],
   "errors": [],
-  "merchantId": "119552b9-dcd6-4ec0-a8d5-01605ace1ed1",
-  "membershipId": "77a23f06-a986-4830-b407-3e86fa60c341",
+  "merchantId": "3d47adbe-419e-45f7-aac7-fef5f00fba79",
+  "membershipId": "88006f51-b280-4065-b7ee-23a4f7087e42",
   "metrics": {
     "registered": 1,
     "active": 1,

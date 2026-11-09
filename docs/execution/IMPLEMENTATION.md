@@ -1,6 +1,10 @@
 # التنفيذ الحالي — 2026-11-07
 
-## تحديث خطة الإطلاق — L05،2026-11-09
+## تحديث خطة الإطلاق — L06،2026-11-09
+
+### L06 — الموبايل والـPWA
+
+التنفيذ واختبار الموبايل موثقان في [MOBILE-PWA](MOBILE-PWA.md). 17 فحصًا نجحوا على Chromium وWebKit مع legacy bundle وسياسة script self/hash؛لا script unsafe-inline أوunsafe-eval. Shell فقط في Service Worker، وAPI network-only مع no-store، وتحديث بخطوة من المستخدم. بدائل UUID وPopover وResizeObserver، وsafe areas وأهداف لمس44px. كاميرا صناعية تثبت stop عند hide وحتى وصول الإذن المتأخر؛الهاردوير الحقيقي والأنظمة القديمة الفعلية في L08، ولا remote لإثبات CI. verify:local passed: 24 unit و62 integration و55 desktop و17 mobile،مع skip واحد لـsymlink على Windows؛بصمة 4e2737abb49cd95cb32a3c11665ff186e271bdabfef733ff3a026d2c74cf21b1 متطابقة قبل وبعد.
 
 ### L05 — باك أب واستعادة متحققان محليًا
 

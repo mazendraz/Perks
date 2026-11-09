@@ -135,6 +135,10 @@ export function EnrollmentCodes({ merchantId, lang }: { merchantId: string; lang
                     type="button"
                     className="text-button"
                     onClick={() => {
+                      if (!navigator.clipboard?.writeText) {
+                        setError(ar ? 'انسخ الرابط من تحت.' : 'Select the link below to copy it.');
+                        return;
+                      }
                       void navigator.clipboard
                         .writeText(p.qrUrl)
                         .then(() => setCopied(p.id))

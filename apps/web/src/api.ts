@@ -1,5 +1,6 @@
 import type { ApiFailure } from '../../../packages/contracts/src/index.js';
 import { portalForPath, type Portal } from './portals.js';
+import { setNetworkUnavailable } from './network.js';
 let csrf = '';
 let ownerPreview: { merchantId: string; staffId: string } | null = null;
 export function setOwnerPreview(value: typeof ownerPreview) {
@@ -68,8 +69,10 @@ export async function api<T>(
       body: options.body === undefined ? undefined : JSON.stringify(options.body),
     });
   } catch {
+    setNetworkUnavailable(true);
     throw new ApiError('NETWORK_UNCERTAIN', 0);
   }
+  setNetworkUnavailable(false);
   if (response.status === 204) return undefined as T;
   const body = (await response.json()) as T & ApiFailure;
   if (response.status === 403 && body.error?.code === 'MFA_REQUIRED')

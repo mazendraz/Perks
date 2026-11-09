@@ -2,6 +2,8 @@ import { Select } from './controls/Select.js';
 import { ControlLocale } from './controls/locale.js';
 import { portalForPath, defaultPortal, portalInfo, type Portal } from './portals.js';
 import { initialLanguage } from './locale.js';
+import { PwaStatus } from './pwa.js';
+import { networkUnavailable } from './network.js';
 import { Icon } from '../../../packages/ui/src/Icon.js';
 import { Login, ResetPassword, PasswordSettings } from './features/Auth.js';
 import { PlatformMfa } from './features/PlatformMfa.js';
@@ -30,6 +32,11 @@ const PlatformTeam = lazy(() =>
 import { CustomerPage, EnrollmentPage, InvitePage } from './features/CustomerPage.js';
 export function App() {
   useDialogAccessibility();
+  useEffect(() => {
+    document.documentElement.dataset.nuqtaReady = 'true';
+    const fallback = document.getElementById('browser-fallback');
+    if (fallback) fallback.hidden = true;
+  }, []);
   const route = useRoute(),
     [lang, setLang] = useState<Language>(initialLanguage);
   const portal = portalForPath(route);
@@ -60,7 +67,11 @@ export function App() {
       void refresh();
     };
     window.addEventListener('nuqta:mfa-required', verify);
-    return () => window.removeEventListener('nuqta:mfa-required', verify);
+    window.addEventListener('online', verify);
+    return () => {
+      window.removeEventListener('nuqta:mfa-required', verify);
+      window.removeEventListener('online', verify);
+    };
   }, [refresh]);
   useEffect(() => {
     if (route.endsWith('/login') && route !== '/login') {
@@ -74,6 +85,7 @@ export function App() {
       !loading &&
       sessionPortal === portal &&
       !session &&
+      !networkUnavailable() &&
       /^\/(platform|merchant|cashier|customer)(\/|$)/.test(route) &&
       !route.endsWith('/login')
     )
@@ -115,6 +127,7 @@ export function App() {
     );
   return (
     <ControlLocale.Provider value={lang}>
+      <PwaStatus lang={lang} />
       <a className="skip-link" href="#main">
         {ar ? 'روح للمحتوى' : 'Skip to content'}
       </a>
@@ -122,7 +135,7 @@ export function App() {
         <button
           className="wordmark"
           onClick={() => navigate(portal ? '/' + portal : '/')}
-          aria-label="Nuqta home"
+          aria-label={ar ? 'الرئيسية - نقطة' : 'Nuqta home'}
         >
           <span className="nuqta-symbol">
             <svg viewBox="0 0 40 40" aria-hidden="true">

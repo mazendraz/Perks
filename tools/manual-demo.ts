@@ -200,7 +200,12 @@ async function start() {
   const { app } = await buildApp(c);
   await app.register(fastifyStatic, { root: assets, wildcard: true });
   app.setNotFoundHandler((req, reply) => {
-    if (req.url.startsWith('/api/') || req.url.startsWith('/health/'))
+    if (
+      req.url.startsWith('/api/') ||
+      req.url.startsWith('/health/') ||
+      req.url.startsWith('/assets/') ||
+      /[.](?:js|css|png|svg|webmanifest|ttf|woff2?)(?:\?|$)/.test(req.url)
+    )
       return reply.code(404).send({ error: { code: 'NOT_FOUND' } });
     return reply.sendFile('index.html');
   });

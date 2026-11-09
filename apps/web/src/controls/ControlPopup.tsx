@@ -6,6 +6,15 @@ import {
   type RefObject,
   type HTMLAttributes,
 } from 'react';
+import { createPortal } from 'react-dom';
+
+export function isControlPopupTarget(owner: string | undefined, target: EventTarget | null) {
+  return (
+    !!owner &&
+    target instanceof Element &&
+    target.closest<HTMLElement>('[data-popup-owner]')?.dataset.popupOwner === owner
+  );
+}
 
 export function ControlPopup({
   anchor,
@@ -20,6 +29,7 @@ export function ControlPopup({
   minWidth?: number;
 }) {
   const ref = useRef<HTMLDivElement>(null);
+  const nativePopover = typeof HTMLElement.prototype.showPopover === 'function';
   const [position, setPosition] = useState({ left: 0, top: 0, width: minWidth, maxHeight: 320 });
   const close = useRef(onClose);
   close.current = onClose;
@@ -50,12 +60,12 @@ export function ControlPopup({
       });
     };
     place();
-    const resize = new ResizeObserver(place);
-    resize.observe(trigger);
+    const resize = typeof ResizeObserver === 'function' ? new ResizeObserver(place) : null;
+    resize?.observe(trigger);
     window.addEventListener('resize', place);
     window.addEventListener('scroll', place, true);
     return () => {
-      resize.disconnect();
+      resize?.disconnect();
       window.removeEventListener('resize', place);
       window.removeEventListener('scroll', place, true);
     };
@@ -77,11 +87,12 @@ export function ControlPopup({
       window.removeEventListener('nuqta:open-control', other);
     };
   }, [anchor]);
-  return (
+  const content = (
     <div
       {...props}
       ref={ref}
-      popover="manual"
+      popover={nativePopover ? 'manual' : undefined}
+      data-popup-owner={anchor.current?.id}
       className={'nq-popup ' + className}
       style={position}
       onKeyDown={(e) => {
@@ -96,4 +107,5 @@ export function ControlPopup({
       {children}
     </div>
   );
+  return nativePopover ? content : createPortal(content, document.body);
 }

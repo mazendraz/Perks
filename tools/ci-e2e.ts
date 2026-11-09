@@ -74,6 +74,17 @@ try {
     test.once('exit', (code) => resolve(code ?? 1));
     test.once('error', () => resolve(1));
   });
+  if (!process.exitCode) {
+    const mobile = spawn(process.execPath, ['--import', 'tsx', 'tools/test-mobile.ts'], {
+      stdio: 'inherit',
+      windowsHide: true,
+    });
+    children.push(mobile);
+    process.exitCode = await new Promise<number>((resolve) => {
+      mobile.once('exit', (code) => resolve(code ?? 1));
+      mobile.once('error', () => resolve(1));
+    });
+  }
 } finally {
   await stop();
 }

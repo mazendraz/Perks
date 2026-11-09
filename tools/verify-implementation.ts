@@ -23,6 +23,7 @@ const report: {
     skippedTests?: number;
   }[];
   browserChecks?: number;
+  mobileChecks?: number;
   sourceFingerprint?: string;
   sourceFingerprintAfter?: string;
   environment?: Record<string, string>;
@@ -36,7 +37,7 @@ async function snapshot() {
       const path = join(dir, entry.name);
       if (entry.isDirectory()) await walk(path);
       else if (
-        /\.(?:ts|tsx|js|mjs|cjs|css|html|json|sql|ya?ml|svg|ttf|woff2?|otf|sh|conf|py)$/.test(
+        /\.(?:ts|tsx|js|mjs|cjs|css|html|json|webmanifest|png|sql|ya?ml|svg|ttf|woff2?|otf|sh|conf|py)$/.test(
           entry.name,
         ) ||
         ['Caddyfile', 'Dockerfile'].includes(entry.name)
@@ -111,6 +112,7 @@ for (const script of [
   'test:integration',
   'test:manual-demo',
   'test:e2e',
+  'test:e2e:mobile',
   'test:restore',
   'verify:plan',
 ]) {
@@ -120,7 +122,7 @@ for (const script of [
     encoding: 'utf8',
     windowsHide: true,
     maxBuffer: 10 * 1024 * 1024,
-    timeout: script === 'test:integration' || script === 'test:e2e' ? 300000 : 180000,
+    timeout: ['test:integration', 'test:e2e', 'test:e2e:mobile'].includes(script) ? 300000 : 180000,
   });
   const passed = /ℹ pass (\d+)/.exec(result.stdout || '');
   const skipped = /ℹ skipped (\d+)/.exec(result.stdout || '');
@@ -151,6 +153,11 @@ if (!process.exitCode) {
   report.browserChecks = JSON.parse(
     await readFile('docs/execution/evidence/implementation/browser.json', 'utf8'),
   ).checks.length;
+  const mobile = JSON.parse(
+    await readFile('docs/execution/evidence/implementation/mobile.json', 'utf8'),
+  );
+  assert.equal(mobile.status, 'passed');
+  report.mobileChecks = mobile.checks.length;
   report.sourceFingerprintAfter = (await snapshot()).fingerprint;
   if (report.sourceFingerprintAfter !== report.sourceFingerprint) {
     report.status = 'source_changed_during_verification';

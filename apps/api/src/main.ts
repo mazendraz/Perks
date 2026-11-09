@@ -5,9 +5,14 @@ import { resolve } from 'node:path';
 const { app, config } = await buildApp();
 const assets = resolve('apps/web/dist');
 if (existsSync(assets)) {
-  await app.register(fastifyStatic, { root: assets, wildcard: false });
+  await app.register(fastifyStatic, { root: assets });
   app.setNotFoundHandler((req, reply) => {
-    if (req.url.startsWith('/api/') || req.url.startsWith('/health/'))
+    if (
+      req.url.startsWith('/api/') ||
+      req.url.startsWith('/health/') ||
+      req.url.startsWith('/assets/') ||
+      /[.](?:js|css|png|svg|webmanifest|ttf|woff2?)(?:\?|$)/.test(req.url)
+    )
       return reply.code(404).send({ error: { code: 'NOT_FOUND' } });
     return reply.sendFile('index.html');
   });

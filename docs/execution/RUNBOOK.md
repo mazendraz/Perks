@@ -215,3 +215,9 @@ STORAGE_ROOT افتراضي .local للتطوير،وفي staging/production ل�
 ## النشر المحلي وحدود L04
 
 راجع [deploy/README](../../deploy/README.md) للأسرار والأدوار والشبكات وCaddy والتحديث والرجوع. `test:deploy-scripts` متحقق علىWSL Ubuntu؛`test:deploy` تحقق منconfig فقط ثمسجلتعطلDockerDesktop عندdockerInference. لاfactoryreset أوحذفWSL/volumes. إعادة فحص stack تحتاج Linux Docker engine سليمة أوCI علىremote. لا تعتبر ملفconfig دليلHTTPS أوimage size. السيرفر والدومين وSMTP لمتُختار؛نستكملمستقلL05وL06حسبقاعدة6.
+
+## pgBackRest وPITR وrestic — L05
+
+الشرح والأوامر في [BACKUP-README](../../deploy/BACKUP-README.md). الفحص المحلي القابل للإعادة `npm run test:backup` يستخدم clone صناعية وUnix socket خاصة،ويختبرfull/diff/PITR وSHA-256 وصفرdrift وPNG roundtrip ومفاتيحغلط. بيئةمازن ليستمصدرالنسخ ولاهدفالاستعادة. توقيتاتالتمرينبدقةثانيةعلىfixtureصغيرة،مشRTOللسيرفر.
+
+أضيفتخدماتdatabase_backup وfiles_backup وrestore_drill المعزولةفيCompose؛runtimeمتوقفبسببDocker. راقبstatusfiles،و26ساعةللـDBbackup و30دقيقةللـWAL،والـmonitorنفسه5دقائق. التنبيهالخارجيقيدL07؛النسخةالثانيةوالـpepper/keyescrowبحاجةلاختيارالمالك. لاstartلـAPI/Workerعلىنسخةمستعادةفيمجردdrill،ولاتعيدرسائلماضيةتلقائيًا بعدPITR.

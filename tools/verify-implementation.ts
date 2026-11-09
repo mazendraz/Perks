@@ -36,10 +36,10 @@ async function snapshot() {
       const path = join(dir, entry.name);
       if (entry.isDirectory()) await walk(path);
       else if (
-        /\.(?:ts|tsx|js|mjs|cjs|css|html|json|sql|ya?ml|svg|ttf|woff2?|otf|sh|conf)$/.test(
+        /\.(?:ts|tsx|js|mjs|cjs|css|html|json|sql|ya?ml|svg|ttf|woff2?|otf|sh|conf|py)$/.test(
           entry.name,
         ) ||
-        entry.name === 'Caddyfile'
+        ['Caddyfile', 'Dockerfile'].includes(entry.name)
       )
         paths.push(path.replaceAll('\\', '/'));
     }

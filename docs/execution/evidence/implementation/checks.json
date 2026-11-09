@@ -1,63 +1,63 @@
 {
-  "at": "2026-11-08T23:57:12.431Z",
+  "at": "2026-11-09T00:36:21.484Z",
   "status": "passed",
   "steps": [
     {
       "command": "npm run typecheck",
       "exitCode": 0,
-      "durationMs": 25244.7934
+      "durationMs": 5586.5705
     },
     {
       "command": "npm run lint",
       "exitCode": 0,
-      "durationMs": 10496.3551
+      "durationMs": 3047.4964
     },
     {
       "command": "npm run test",
       "exitCode": 0,
-      "durationMs": 9715.7411,
-      "passedTests": 22,
+      "durationMs": 6156.362999999999,
+      "passedTests": 23,
       "skippedTests": 1
     },
     {
       "command": "npm run build",
       "exitCode": 0,
-      "durationMs": 10583.052600000003
+      "durationMs": 3957.652000000002
     },
     {
       "command": "npm run openapi:export",
       "exitCode": 0,
-      "durationMs": 2889.9591
+      "durationMs": 1775.9460999999974
     },
     {
       "command": "npm run test:integration",
       "exitCode": 0,
-      "durationMs": 161966.2232,
+      "durationMs": 83620.39229999999,
       "passedTests": 61,
       "skippedTests": 0
     },
     {
       "command": "npm run test:manual-demo",
       "exitCode": 0,
-      "durationMs": 13858.352600000013
+      "durationMs": 7507.3273000000045
     },
     {
       "command": "npm run test:e2e",
       "exitCode": 0,
-      "durationMs": 128763.68270000003
+      "durationMs": 86167.03130000002
     },
     {
       "command": "npm run test:restore",
       "exitCode": 0,
-      "durationMs": 2180.825200000021
+      "durationMs": 2457.2658999999985
     },
     {
       "command": "npm run verify:plan",
       "exitCode": 0,
-      "durationMs": 361.8732000000309
+      "durationMs": 422.6967000000004
     }
   ],
-  "sourceFingerprint": "02bf772bd3ab456353eb2c0de78bf0382be73e67a88e6820c2ef4e504e7884cf",
+  "sourceFingerprint": "23557e12c5e049e8b38c9fa04a6d8e1c23993a73f89b856b4e731c4d1ece0b4e",
   "environment": {
     "node": "v24.19.0",
     "platform": "win32",
@@ -66,5 +66,5 @@
     "browser": "chromium"
   },
   "browserChecks": 55,
-  "sourceFingerprintAfter": "02bf772bd3ab456353eb2c0de78bf0382be73e67a88e6820c2ef4e504e7884cf"
+  "sourceFingerprintAfter": "23557e12c5e049e8b38c9fa04a6d8e1c23993a73f89b856b4e731c4d1ece0b4e"
 }

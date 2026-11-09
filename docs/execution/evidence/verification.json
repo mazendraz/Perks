@@ -1,6 +1,6 @@
 {
-  "at": "2026-11-09T00:03:18.598Z",
-  "passed": 429,
+  "at": "2026-11-09T00:42:34.343Z",
+  "passed": 433,
   "failed": 0,
   "errors": [],
   "checks": [
@@ -370,6 +370,16 @@
       "detail": "local link target"
     },
     {
+      "name": "link:docs\\execution\\RUNBOOK.md:../../deploy/README.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\RUNBOOK.md:../../deploy/BACKUP-README.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
       "name": "link:docs\\execution\\STATUS.md:../../LAUNCH-PLAN.md",
       "ok": true,
       "detail": "local link target"
@@ -546,6 +556,16 @@
     },
     {
       "name": "link:docs\\execution\\README.md:evidence/inventory.json",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\IMPLEMENTATION.md:../../deploy/BACKUP-README.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\IMPLEMENTATION.md:../../deploy/README.md",
       "ok": true,
       "detail": "local link target"
     },

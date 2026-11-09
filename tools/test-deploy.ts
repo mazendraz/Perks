@@ -18,6 +18,7 @@ const values: Record<string, string> = {
   HTTPS_BIND: '127.0.0.1:56443',
   NUQTA_IMAGE: 'nuqta-smoke-app:' + stamp,
   NUQTA_WEB_IMAGE: 'nuqta-smoke-web:' + stamp,
+  NUQTA_POSTGRES_IMAGE: 'nuqta-smoke-postgres:' + stamp,
   SMTP_HOST: 'unused.invalid',
   SMTP_PORT: '587',
   SMTP_USER: 'synthetic-only',
@@ -31,6 +32,8 @@ for (const key of [
   'NUQTA_RUNTIME_DB_PASSWORD',
   'NUQTA_AUTH_DB_PASSWORD',
   'NUQTA_WORKER_DB_PASSWORD',
+  'PGBACKREST_REPO1_CIPHER_PASS',
+  'RESTIC_PASSWORD',
 ])
   values[key] = randomBytes(32).toString('hex');
 const envFile = resolve(directory, 'smoke.env');
@@ -69,6 +72,12 @@ for (const path of [
   'apps/api/src/config.ts',
   'apps/api/src/server.ts',
   'db/migrate.ts',
+  'deploy/postgres/Dockerfile',
+  'deploy/postgres/postgresql.conf',
+  'deploy/postgres/pgbackrest.conf',
+  'deploy/backup/db-loop.py',
+  'deploy/backup/files.sh',
+  'deploy/backup/files-loop.sh',
 ])
   report.source[path] = createHash('sha256')
     .update(await readFile(path))

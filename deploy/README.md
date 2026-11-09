@@ -44,3 +44,7 @@ Reports are generated in `docs/execution/evidence/implementation/`. A blocked Do
 Host hardening, DNS, public certificate, external DB-port isolation and an independent operator walkthrough remain BLOCKED_OWNER until a host is chosen. Local smoke success would not approve launch.
 
 References: [Fastify trustProxy](https://fastify.dev/docs/latest/Reference/Server/#trustproxy), [Caddy reverse_proxy](https://caddyserver.com/docs/caddyfile/directives/reverse_proxy), [PostgreSQL role attributes](https://www.postgresql.org/docs/17/role-attributes.html).
+
+## L05 additions
+
+See [BACKUP-README](BACKUP-README.md) for WAL, encrypted pgBackRest/restic, schedules and isolated recovery. First installation now also requires PGBACKREST_REPO1_CIPHER_PASS and RESTIC_PASSWORD (generated automatically). Same-host backup volumes do not replace the pending off-host repository. The backup image creates the FileStore mount directory with UID1000 too, so whichever service initializes the shared volume first uses compatible ownership.

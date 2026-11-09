@@ -1,6 +1,13 @@
 # التنفيذ الحالي — 2026-11-07
 
-## تحديث خطة الإطلاق — L04،2026-11-09
+## تحديث خطة الإطلاق — L05،2026-11-09
+
+### L05 — باك أب واستعادة متحققان محليًا
+
+L05 LOCAL_VERIFIED / BLOCKED_OWNER — 2026-11-09: اتنفذ تمرين فعلي على Linux مع PostgreSQL17 وpgBackRest وrestic، على clone صناعية من nuqta_local ومن غير API أوWorker. full وdiff وPITR قبل شراء تجريبي رجعوا counts وmigrations وSHA-256 للـLedger والمعاملات والأرصدة مطابقة، وبصفر balance drift. اللوجو رجع بنفس البايتات، والمفاتيح الغلط اترفضت. scheduler أول full وWAL check اتجربوا، وSQL migrations كلها اشتغلت بمالك محدود؛كلمات مرور bootstrap غائبة عن logs حتى مع forced statement logging. إعدادات Compose والتشفير والجدولة والمراقبة جاهزة، لكن image/container runtime ونسخة خارج الجهاز والتنبيه الحقيقي لسه غير متحققين. verify:local passed:23 unit و61 integration و55 browser؛اختبار symlink واحد متخطى على Windows. البصمة 23557e12c5e049e8b38c9fa04a6d8e1c23993a73f89b856b4e731c4d1ece0b4e متطابقة قبل وبعد.
+
+تشغيل وحدود التمرين في [BACKUP-README](../../deploy/BACKUP-README.md). file/database repositories الحالية named volumes علىنفسالجهاز،مشoff-host. مفاتيحالتشفيروالـpepperمحتاجةحفظمستقلعندالمشغل؛النسخلا تشململفالبيئةتلقائيًا. جدولالاحتفاظpgBackRest2full/7diff؛restic بلاprune تلقائيحتىاعتمادالسياسة. فحصالبصمةيشملPythonوDockerfileالمتداخل.
+
 
 ### L04 — تجهيز التشغيل
 

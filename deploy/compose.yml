@@ -31,8 +31,12 @@ x-environment: &environment
   SMTP_STARTTLS: 'true'
 services:
   postgres:
-    image: postgres:17-alpine
+    image: ${NUQTA_POSTGRES_IMAGE:-nuqta-postgres:local}
+    build: { context: .., dockerfile: deploy/postgres/Dockerfile }
     restart: unless-stopped
+    stop_grace_period: 1m
+    shm_size: 256m
+    command: [postgres, -c, config_file=/etc/nuqta/postgresql.conf]
     environment:
       POSTGRES_PASSWORD: ${NUQTA_POSTGRES_DB_PASSWORD:?Required}
       POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
@@ -40,15 +44,83 @@ services:
       NUQTA_RUNTIME_DB_PASSWORD: ${NUQTA_RUNTIME_DB_PASSWORD:?Required}
       NUQTA_AUTH_DB_PASSWORD: ${NUQTA_AUTH_DB_PASSWORD:?Required}
       NUQTA_WORKER_DB_PASSWORD: ${NUQTA_WORKER_DB_PASSWORD:?Required}
+      PGBACKREST_REPO1_CIPHER_PASS: ${PGBACKREST_REPO1_CIPHER_PASS:?Private backup key required}
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./postgres/init-roles.sh:/docker-entrypoint-initdb.d/10-nuqta-roles.sh:ro
+      - postgres_socket:/var/run/postgresql
+      - database_repository:/var/lib/pgbackrest
     networks: [database]
     healthcheck:
       test: [CMD-SHELL, 'pg_isready -h 127.0.0.1 -U postgres -d nuqta']
       interval: 10s
       timeout: 5s
       retries: 10
+    logging: *logging
+  database_backup:
+    image: ${NUQTA_POSTGRES_IMAGE:-nuqta-postgres:local}
+    build: { context: .., dockerfile: deploy/postgres/Dockerfile }
+    restart: unless-stopped
+    user: '999:999'
+    read_only: true
+    tmpfs: ['/tmp:rw,noexec,nosuid,size=128m']
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    entrypoint: [python3, /opt/nuqta-backup/db-loop.py]
+    environment:
+      PGBACKREST_REPO1_CIPHER_PASS: ${PGBACKREST_REPO1_CIPHER_PASS:?Private backup key required}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data:ro
+      - postgres_socket:/var/run/postgresql
+      - database_repository:/var/lib/pgbackrest
+      - database_backup_state:/var/lib/nuqta-backup-state
+    networks: [database]
+    depends_on: { postgres: { condition: service_healthy } }
+    healthcheck:
+      test:
+        [
+          CMD,
+          python3,
+          -c,
+          "import json,time;v=json.load(open('/var/lib/nuqta-backup-state/status.json'));assert v['healthy'] and time.time()*1000-v['checkedAt']<300000",
+        ]
+      interval: 60s
+      timeout: 5s
+      start_period: 5m
+      retries: 3
+    logging: *logging
+  files_backup:
+    image: ${NUQTA_POSTGRES_IMAGE:-nuqta-postgres:local}
+    build: { context: .., dockerfile: deploy/postgres/Dockerfile }
+    restart: unless-stopped
+    user: '1000:1000'
+    read_only: true
+    tmpfs: ['/tmp:rw,noexec,nosuid,size=64m']
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    entrypoint: [sh, /opt/nuqta-backup/files-loop.sh]
+    environment:
+      STORAGE_ROOT: /var/lib/nuqta/files
+      RESTIC_REPOSITORY: /var/lib/restic
+      RESTIC_PASSWORD: ${RESTIC_PASSWORD:?Private file backup key required}
+      NUQTA_FILE_BACKUP_STATE: /var/lib/nuqta-file-backup-state/status.json
+    volumes:
+      - files:/var/lib/nuqta/files:ro
+      - files_repository:/var/lib/restic
+      - files_backup_state:/var/lib/nuqta-file-backup-state
+    network_mode: none
+    healthcheck:
+      test:
+        [
+          CMD,
+          python3,
+          -c,
+          "import json,time;v=json.load(open('/var/lib/nuqta-file-backup-state/status.json'));assert v['healthy'] and time.time()*1000-v['lastBackupAt']<93600000",
+        ]
+      interval: 60s
+      timeout: 5s
+      start_period: 5m
+      retries: 3
     logging: *logging
   migrate:
     <<: *app
@@ -61,6 +133,30 @@ services:
     networks: [database]
     depends_on: { postgres: { condition: service_healthy } }
     healthcheck: { disable: true }
+  restore_drill:
+    profiles: [manual-drill]
+    image: ${NUQTA_POSTGRES_IMAGE:-nuqta-postgres:local}
+    build: { context: .., dockerfile: deploy/postgres/Dockerfile }
+    restart: 'no'
+    user: '999:999'
+    read_only: true
+    tmpfs: ['/tmp:rw,noexec,nosuid,size=128m']
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    entrypoint: [sh, /opt/nuqta-backup/restore-drill.sh]
+    environment:
+      PGBACKREST_REPO1_CIPHER_PASS: ${PGBACKREST_REPO1_CIPHER_PASS:?Private backup key required}
+      NUQTA_RESTORE_ROOT: /var/lib/nuqta-restore
+      NUQTA_RESTORE_EXPECTED: /drill-input/expected.json
+      NUQTA_RESTORE_REPORT: /var/lib/nuqta-restore/report.json
+      NUQTA_RESTORE_SET: ${NUQTA_RESTORE_SET:-}
+      NUQTA_RESTORE_TARGET_TIME: ${NUQTA_RESTORE_TARGET_TIME:-}
+    volumes:
+      - database_repository:/var/lib/pgbackrest:ro
+      - /var/lib/nuqta-restore
+    network_mode: none
+    healthcheck: { disable: true }
+    logging: *logging
   api:
     <<: *app
     restart: unless-stopped
@@ -143,3 +239,8 @@ volumes:
   files: {}
   caddy_data: {}
   caddy_config: {}
+  postgres_socket: {}
+  database_repository: {}
+  database_backup_state: {}
+  files_repository: {}
+  files_backup_state: {}

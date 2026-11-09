@@ -2,6 +2,10 @@
 set -eu
 # Only PostgreSQL's bootstrap process receives these passwords. Never echo SQL.
 psql --no-psqlrc --username "$POSTGRES_USER" --dbname postgres -v ON_ERROR_STOP=1 <<'SQL'
+-- Role passwords are SQL literals during bootstrap; suppress slow/error statement text in this session.
+SET log_min_duration_statement=-1;
+SET log_statement='none';
+SET log_min_error_statement='panic';
 \getenv migrator_password NUQTA_MIGRATOR_DB_PASSWORD
 \getenv runtime_password NUQTA_RUNTIME_DB_PASSWORD
 \getenv auth_password NUQTA_AUTH_DB_PASSWORD

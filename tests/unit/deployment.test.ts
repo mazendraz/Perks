@@ -11,6 +11,8 @@ const configuration = () => ({
   NUQTA_RUNTIME_DB_PASSWORD: '4'.repeat(64),
   NUQTA_AUTH_DB_PASSWORD: '5'.repeat(64),
   NUQTA_WORKER_DB_PASSWORD: '6'.repeat(64),
+  PGBACKREST_REPO1_CIPHER_PASS: '7'.repeat(64),
+  RESTIC_PASSWORD: '8'.repeat(64),
   SMTP_HOST: 'smtp.nuqta.test',
   SMTP_PORT: '587',
   SMTP_USER: 'synthetic-user',

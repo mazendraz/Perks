@@ -11,7 +11,11 @@ const linuxRoot =
     : root;
 const script = `set -eu
 repo="$1"
-for script in init-secrets.sh harden-host.sh postgres/init-roles.sh; do sh -n "$repo/deploy/$script"; done
+for script in init-secrets.sh harden-host.sh postgres/init-roles.sh restore-drill.sh backup/files.sh backup/files-loop.sh; do sh -n "$repo/deploy/$script"; done
+python3 - "$repo" <<'PY'
+import ast,pathlib,sys
+for script in pathlib.Path(sys.argv[1],'deploy','backup').glob('*.py'): ast.parse(script.read_text())
+PY
 fixture=$(mktemp -d /tmp/nuqta-secret-test.XXXXXXXX)
 case "$fixture" in /tmp/nuqta-secret-test.*) ;; *) exit 1;; esac
 cp "$repo/deploy/init-secrets.sh" "$fixture/init-secrets.sh"
@@ -20,8 +24,8 @@ test "$(stat -c %a "$fixture/.env.production")" = 600
 cp "$fixture/.env.production" "$fixture/original"
 if sh "$fixture/init-secrets.sh" >/dev/null 2>&1; then exit 1; fi
 cmp "$fixture/.env.production" "$fixture/original"
-test "$(awk -F= '/^(AUTH_PEPPER|NUQTA_.*PASSWORD)=/ {print $2}' "$fixture/original" | sort -u | wc -l)" = 6
-test "$(awk -F= '/^(AUTH_PEPPER|NUQTA_.*PASSWORD)=/ && length($2)==64 {n++} END {print n}' "$fixture/original")" = 6
+test "$(awk -F= '/^(AUTH_PEPPER|NUQTA_.*PASSWORD|PGBACKREST_REPO1_CIPHER_PASS|RESTIC_PASSWORD)=/ {print $2}' "$fixture/original" | sort -u | wc -l)" = 8
+test "$(awk -F= '/^(AUTH_PEPPER|NUQTA_.*PASSWORD|PGBACKREST_REPO1_CIPHER_PASS|RESTIC_PASSWORD)=/ && length($2)==64 {n++} END {print n}' "$fixture/original")" = 8
 rm -- "$fixture/init-secrets.sh" "$fixture/.env.production" "$fixture/original"
 rmdir -- "$fixture"
 `;
@@ -37,6 +41,11 @@ for (const path of [
   'deploy/harden-host.sh',
   'deploy/postgres/init-roles.sh',
   'tools/test-deploy-scripts.ts',
+  'deploy/restore-drill.sh',
+  'deploy/backup/db-loop.py',
+  'deploy/backup/verify-restore.py',
+  'deploy/backup/files.sh',
+  'deploy/backup/files-loop.sh',
 ])
   source[path] = createHash('sha256')
     .update(await readFile(path))
@@ -49,7 +58,7 @@ const report = {
     result.status === 0
       ? [
           'Shell syntax',
-          'Generated secrets are 0600 and six distinct 64-character values',
+          'Generated secrets are 0600 and eight distinct 64-character values',
           'Existing configuration is byte-identical after refused overwrite',
         ]
       : [],

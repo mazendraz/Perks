@@ -21,6 +21,8 @@ export function productionEnvironment(values: NodeJS.ProcessEnv) {
     'NUQTA_RUNTIME_DB_PASSWORD',
     'NUQTA_AUTH_DB_PASSWORD',
     'NUQTA_WORKER_DB_PASSWORD',
+    'PGBACKREST_REPO1_CIPHER_PASS',
+    'RESTIC_PASSWORD',
   ];
   const secrets = names.map((name) => values[name]);
   if (

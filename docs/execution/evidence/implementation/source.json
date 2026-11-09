@@ -1,5 +1,5 @@
 {
-  "fingerprint": "02bf772bd3ab456353eb2c0de78bf0382be73e67a88e6820c2ef4e504e7884cf",
+  "fingerprint": "23557e12c5e049e8b38c9fa04a6d8e1c23993a73f89b856b4e731c4d1ece0b4e",
   "files": [
     {
       "path": ".dockerignore",
@@ -550,8 +550,28 @@
       "sha256": "6d72f1980e1953931e913d06a02e3cb73f8bbe1eab5f8ff55eadbab7165842a3"
     },
     {
+      "path": "deploy/backup/db-loop.py",
+      "sha256": "4eab305af11e584155d29df22d5be07262b295c56a8d0bec455c4d81288b5416"
+    },
+    {
+      "path": "deploy/backup/files-loop.sh",
+      "sha256": "9dc95670070b9434a7d4dcd8ebc01027cf82519c70979dd095b4a11c9ee0a377"
+    },
+    {
+      "path": "deploy/backup/files.sh",
+      "sha256": "55f6cf870df6b42e73b74911a391fc5a74eecbde15561a585fb8f1f35651a763"
+    },
+    {
+      "path": "deploy/backup/fingerprint.sql",
+      "sha256": "7cd685f8bd93e3ee5eb74b31fa7d32234607545c73334c98a69811ff163d1129"
+    },
+    {
+      "path": "deploy/backup/verify-restore.py",
+      "sha256": "f87b8b80f191594c9e98b59853d4bd8f030f1633a592ceaa72312ffeaa039522"
+    },
+    {
       "path": "deploy/compose.yml",
-      "sha256": "5a2121c72f932411aadc2ee2dff396d8322aecc8f53312d7ecd1621a479107f0"
+      "sha256": "8fc41cdf1cb25fd8d0e9cf60b9df59aac0e62fc1314271576edd3d47bf148424"
     },
     {
       "path": "deploy/harden-host.sh",
@@ -559,11 +579,27 @@
     },
     {
       "path": "deploy/init-secrets.sh",
-      "sha256": "1f3384a2276bd3165edc953602db6b1039a26ca22f87061c0b4196eb619c4410"
+      "sha256": "58eaf308f3d49195c0955f608ce7906c41b81afb58933a5b6e200c3c2c65a5a3"
+    },
+    {
+      "path": "deploy/postgres/Dockerfile",
+      "sha256": "e66a0e4f6b48834f1357cc3cbf077535d11c128cde58946bdac5af26a9443f81"
     },
     {
       "path": "deploy/postgres/init-roles.sh",
-      "sha256": "e49fefdfad7cea8fe977abc4f966dab9311ee4c88d7f95f11bf35c334824c220"
+      "sha256": "7b8a000be0546a983edddbb96e00c84f4b85b2bda6f75a4b99a74dbd60597b89"
+    },
+    {
+      "path": "deploy/postgres/pgbackrest.conf",
+      "sha256": "2b3ba3ebc0c3f92eb4545bd2fdf8a346d63a316bf145aee5238c94da86934e55"
+    },
+    {
+      "path": "deploy/postgres/postgresql.conf",
+      "sha256": "f278783d819f025177f4ddb32193f148ad1ff48b91b8e82c8bcfc9f7c4c75d6e"
+    },
+    {
+      "path": "deploy/restore-drill.sh",
+      "sha256": "b05ef0a7daea9b9cc6cf28a308800adf26b3baf58f4b37971be9649ffdc24afa"
     },
     {
       "path": "eslint.config.js",
@@ -575,7 +611,7 @@
     },
     {
       "path": "package.json",
-      "sha256": "bc3c9e1bc3c7fd8e5d446055ccf3cdae181471dfc4524b52aad5fed8cfda7a4f"
+      "sha256": "75cf7e124f283777bd9b97cc2f9b19c42c684744f60d64da477e99362893dbaf"
     },
     {
       "path": "packages/contracts/package.json",
@@ -614,6 +650,10 @@
       "sha256": "c44efe95f721710f1cf8f00a7851b447a0d5ce74f870a70656650edc7ce9e2b8"
     },
     {
+      "path": "packages/domain/src/backup.ts",
+      "sha256": "8de8201a604a3ff5fe2c99503de2e40aea36ce2159642a9a66b039facd9cf550"
+    },
+    {
       "path": "packages/domain/src/loyalty.ts",
       "sha256": "c933510e328d924426a02ec8faa9157e84f3b3a7e406d2369223a6cf7b451534"
     },
@@ -636,6 +676,14 @@
     {
       "path": "packages/ui/src/StampSymbol.tsx",
       "sha256": "574e38ee7773fc20009bbdb98dfe73d509dbbabaf0a503125b07c06ed4719507"
+    },
+    {
+      "path": "tests/fixtures/backup-mutation.sql",
+      "sha256": "d3d18fb7f725ff7d8529a1fd0bb0aed4ffc5ca7da4e579f30e6152ae1101874d"
+    },
+    {
+      "path": "tests/fixtures/backup-native.sh",
+      "sha256": "c659ec80368dcb7e588d86a99470a567872aef64f9ab79165a127c20223ce998"
     },
     {
       "path": "tests/fixtures/mail-templates.json",
@@ -742,6 +790,10 @@
       "sha256": "666ca746fcbc5940813af1b07bb93ac005f03d3976cbb753d6ef8a506e969065"
     },
     {
+      "path": "tests/unit/backup.test.ts",
+      "sha256": "cf1452fafe8dba75c45fb551ae60cfdc9e0d3846fe748dcd2a67242a7ede2732"
+    },
+    {
       "path": "tests/unit/color.test.ts",
       "sha256": "2215d898153de988d24f274244e1d4c8bb396e929c733f045048ee7c5c56ce4a"
     },
@@ -755,7 +807,7 @@
     },
     {
       "path": "tests/unit/deployment.test.ts",
-      "sha256": "5b838f72382fb532619ef20272be790b32337d508d029dd067f7439d91cf2e1d"
+      "sha256": "6dbc5fed3ebc0142b6015ed9070bfe9974c503a009888f6e70c51c9317b6683a"
     },
     {
       "path": "tests/unit/file-store.test.ts",
@@ -811,7 +863,7 @@
     },
     {
       "path": "tools/env-check.ts",
-      "sha256": "8e35b4fd43d611f3b4a2976a0a63ac3413b176ed46be82f776b2a32b2561f94d"
+      "sha256": "f859dc75459c86da553653e3c6c8c3d7c13f5a9ab9978dd42c6295569bd018ce"
     },
     {
       "path": "tools/export-openapi.ts",
@@ -850,12 +902,16 @@
       "sha256": "c831dd8208a385fa16a84505379c4af4266ae78508ab3720f99a9c56c581e184"
     },
     {
+      "path": "tools/test-backup.ts",
+      "sha256": "d3803ab25070be5a30e168c4b1afdd67725f40bef8d6d896ae4b8702ac34ac79"
+    },
+    {
       "path": "tools/test-deploy-scripts.ts",
-      "sha256": "e6fb0a413119064a5c1667d144e893ddbfa408c06f31b1f098dfed9e4f6e8c2c"
+      "sha256": "490cf3d72b78751443de34131c0f959fd26091b3292c7cafccb07bd47fd335c2"
     },
     {
       "path": "tools/test-deploy.ts",
-      "sha256": "857de15f59dcaeb0d06608045bdeb498763151fac53a7fca1ff98de8d247b19f"
+      "sha256": "fdbf6ccb38dc58f712736579f59b88cba79d5a6904df7e6351615e4b84d844ce"
     },
     {
       "path": "tools/test-e2e.ts",
@@ -871,7 +927,7 @@
     },
     {
       "path": "tools/verify-implementation.ts",
-      "sha256": "b7466d2462fcad35d01af4f6d423692fbfb9bbd792cbbee35d6aa248846b0fb2"
+      "sha256": "2039ddc03aff3eb5999616126dac237961c95cf2db3d4b12d62038d3a9aad92d"
     },
     {
       "path": "tsconfig.json",

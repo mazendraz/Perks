@@ -1,7 +1,9 @@
 import { StampFrame, StampSymbol } from './StampSymbol.js';
 import { CardArtwork } from './CardArtwork.js';
 import { templateCategory } from '../../contracts/src/branding.js';
-import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useId, type CSSProperties } from 'react';
+import { StampInk } from './StampInk.js';
+import { useCardMotion } from './useCardMotion.js';
 import { Icon } from './Icon.js';
 import type { CardData } from '../../contracts/src/index.js';
 export function cardInk(color: string) {
@@ -14,72 +16,27 @@ export function cardInk(color: string) {
     ? '#132a26'
     : '#ffffff';
 }
-export function LoyaltyCard({ card, lang = 'ar' }: { card: CardData; lang?: 'ar' | 'en' }) {
+export function LoyaltyCard({
+  card,
+  lang = 'ar',
+  waiting = false,
+  reveal = false,
+  experience = card.stamp_ink !== undefined,
+}: {
+  card: CardData;
+  lang?: 'ar' | 'en';
+  waiting?: boolean;
+  reveal?: boolean;
+  experience?: boolean;
+}) {
   const threshold = Math.max(
       2,
       Math.min(50, Number.isFinite(card.threshold) ? Math.floor(card.threshold) : 5),
     ),
     balance = Math.max(0, Math.min(card.display_balance ?? card.balance, threshold));
-  const previous = useRef({
-    id: card.id,
-    balance,
-    rawBalance: card.balance,
-    revision: card.revision,
-    cycle: card.cycle_number ?? 1,
-    rewards: card.pending_rewards ?? 0,
-  });
-  const [motion, setMotion] = useState<{ kind: string; from: number; message: string } | null>(
-    null,
-  );
-  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  useEffect(() => () => clearTimeout(timer.current), []);
-  useEffect(() => {
-    const prev = previous.current,
-      cycle = card.cycle_number ?? 1,
-      rewards = card.pending_rewards ?? 0;
-    previous.current = {
-      id: card.id,
-      balance,
-      rawBalance: card.balance,
-      revision: card.revision,
-      cycle,
-      rewards,
-    };
-    if (prev.id !== card.id) {
-      clearTimeout(timer.current);
-      setMotion(null);
-      return;
-    }
-    if (prev.revision === card.revision) return;
-    const renewed = cycle > prev.cycle,
-      earned = rewards > prev.rewards;
-    if (!renewed && !earned && balance <= prev.balance && card.balance <= prev.rawBalance) return;
-    clearTimeout(timer.current);
-    setMotion({
-      kind: renewed ? 'cycle-renew' : earned ? 'reward-earned' : 'stamp-added',
-      from: renewed ? 0 : prev.balance,
-      message: renewed
-        ? lang === 'ar'
-          ? 'المكافأة اتصرفت. كارت جديد بدأ!'
-          : 'Reward redeemed. A new card has started!'
-        : earned
-          ? lang === 'ar'
-            ? 'كملت الأختام! مكافأتك جاهزة.'
-            : 'Card complete! Your reward is ready.'
-          : lang === 'ar'
-            ? 'اتضافت أختام جديدة لكارتك.'
-            : 'New stamps added to your card.',
-    });
-    timer.current = setTimeout(() => setMotion(null), 1600);
-  }, [
-    card.id,
-    card.revision,
-    card.cycle_number,
-    card.pending_rewards,
-    card.balance,
-    balance,
-    lang,
-  ]);
+  const motion = useCardMotion(card, balance, threshold, experience, waiting, reveal),
+    displayBalance = motion.visualBalance;
+  const grainId = 'nq-grain-' + useId().replace(/[^a-zA-Z0-9_-]/g, '');
   const ar = lang === 'ar',
     category = templateCategory(card.template);
   const edition =
@@ -106,160 +63,215 @@ export function LoyaltyCard({ card, lang = 'ar' }: { card: CardData; lang?: 'ar'
     '--card-ink': cardInk(card.primary_color),
     '--accent-ink': cardInk(card.accent_color),
     '--surface-ink': cardInk(card.surface_color),
-    '--progress': (balance / threshold) * 100 + '%',
+    '--progress-factor': displayBalance / threshold,
   } as CSSProperties;
   return (
-    <article
-      className={
-        'loyalty-card ' +
-        card.template +
-        ' logo-' +
-        (card.logo_style || 'framed') +
-        (card.logo_asset_id || card.logo_url ? ' has-logo' : '') +
-        ' stamp-shape-' +
-        (card.stamp_shape || 'circle') +
-        ' stamp-style-' +
-        (card.stamp_style || 'solid') +
-        (motion ? ' ' + motion.kind : '')
-      }
-      data-stamp-icon={card.stamp_icon || 'check'}
+    <div
+      className={'loyalty-card-shell' + (experience || card.pending_rewards ? ' live-card' : '')}
       style={style}
-      aria-label={card.merchant_name}
     >
-      <CardArtwork template={card.template} />
-      <div className="card-overline">
-        <span>{edition}</span>
-        <span className="card-contactless" aria-hidden="true">
-          )))
-        </span>
-      </div>
-      <div className="card-heading">
-        <span className="brand-mark">
-          {card.logo_asset_id || card.logo_url ? (
-            <img
-              src={
-                card.logo_url ||
-                '/api/v1/public/merchants/' + card.merchant_id + '/logos/' + card.logo_asset_id
-              }
-              alt=""
-            />
-          ) : (
-            card.merchant_name.slice(0, 1)
-          )}
-        </span>
-        <div>
-          <strong>{card.merchant_name}</strong>
-          <small>{card.program_name}</small>
-        </div>
-        <span className="card-monogram" aria-hidden="true">
-          {category === 'general' ? (
-            <Icon name="spark" size={25} />
-          ) : (
-            <StampSymbol
-              symbol={
-                category === 'cafe' ? 'coffee' : category === 'restaurant' ? 'utensils' : 'scissors'
-              }
-              className="edition-symbol"
-            />
-          )}
-        </span>
-      </div>
-      <div className="card-member-line">
-        <div>
-          <span className="card-member-label">{ar ? 'باسم' : 'MEMBER'}</span>
-          <div className="card-alias">{card.alias}</div>
-        </div>
-        {card.cycle_number !== undefined && (
-          <div className="card-cycle">
-            {ar ? 'كارت رقم ' : 'Card '}
-            {card.cycle_number}
+      <svg width="0" height="0" className="nq-ink-definitions" aria-hidden="true">
+        <defs>
+          <pattern id={grainId} width="6" height="6" patternUnits="userSpaceOnUse">
+            <circle cx="1" cy="1" r=".7" fill="#fff" />
+            <circle cx="4" cy="3.5" r=".5" fill="#fff" />
+            <circle cx="2.5" cy="5" r=".4" fill="#000" />
+          </pattern>
+        </defs>
+      </svg>
+      {!!card.pending_rewards && (
+        <div
+          className="nq-reward-banner"
+          ref={motion.banner}
+          style={{ opacity: motion.bannerReady ? 1 : 0 }}
+        >
+          <Icon name="gift" size={34} />
+          <div>
+            <strong>{ar ? 'مكافأتك جاهزة!' : 'Your reward is ready!'}</strong>
+            <small>
+              {card.reward_title}
+              {card.pending_rewards > 1 ? ' · ' + card.pending_rewards : ''}
+            </small>
           </div>
-        )}
-      </div>
-      <div
-        className="stamp-dots"
-        style={{ gridTemplateColumns: 'repeat(' + Math.min(threshold, 6) + ',minmax(0,1fr))' }}
-        aria-hidden="true"
+        </div>
+      )}
+      <article
+        ref={motion.article}
+        className={
+          'loyalty-card nq-motion-card ' +
+          card.template +
+          ' logo-' +
+          (card.logo_style || 'framed') +
+          (card.logo_asset_id || card.logo_url ? ' has-logo' : '') +
+          ' stamp-shape-' +
+          (card.stamp_shape || 'circle') +
+          ' stamp-style-' +
+          (card.stamp_style || 'solid') +
+          (motion.kind ? ' ' + motion.kind : '')
+        }
+        data-stamp-icon={card.stamp_icon || 'check'}
+        data-card-id={card.id}
+        data-card-revision={card.revision}
+        data-card-motion={motion.kind || undefined}
+        style={style}
+        aria-label={card.merchant_name}
       >
-        {Array.from({ length: threshold }, (_, i) => (
-          <span
-            className={
-              (i < balance ? 'filled' : '') +
-              (motion && i >= motion.from && i < balance ? ' stamp-land' : '')
-            }
-            style={
-              {
-                '--stamp-delay': Math.min(5, Math.max(0, i - (motion?.from ?? 0))) * 65 + 'ms',
-              } as CSSProperties
-            }
-            key={i}
-          >
-            <StampFrame shape={card.stamp_shape} />
-            {i < balance ? (
-              <StampSymbol symbol={card.stamp_icon} />
-            ) : i === threshold - 1 ? (
-              <Icon name="gift" size={20} />
+        <CardArtwork template={card.template} />
+        <div className="card-overline">
+          <span>{edition}</span>
+          <span className="card-contactless" aria-hidden="true">
+            )))
+          </span>
+        </div>
+        <div className="card-heading">
+          <span className="brand-mark">
+            {card.logo_asset_id || card.logo_url ? (
+              <img
+                src={
+                  card.logo_url ||
+                  '/api/v1/public/merchants/' + card.merchant_id + '/logos/' + card.logo_asset_id
+                }
+                alt=""
+              />
             ) : (
-              <span className="stamp-number">{String(i + 1).padStart(2, '0')}</span>
+              card.merchant_name.slice(0, 1)
             )}
           </span>
-        ))}
-      </div>
-      <div className="card-progress-line">
+          <div>
+            <strong>{card.merchant_name}</strong>
+            <small>{card.program_name}</small>
+          </div>
+          <span className="card-monogram" aria-hidden="true">
+            {category === 'general' ? (
+              <Icon name="spark" size={25} />
+            ) : (
+              <StampSymbol
+                symbol={
+                  category === 'cafe'
+                    ? 'coffee'
+                    : category === 'restaurant'
+                      ? 'utensils'
+                      : 'scissors'
+                }
+                className="edition-symbol"
+              />
+            )}
+          </span>
+        </div>
+        <div className="card-member-line">
+          <div>
+            <span className="card-member-label">{ar ? 'باسم' : 'MEMBER'}</span>
+            <div className="card-alias">{card.alias}</div>
+          </div>
+          {card.cycle_number !== undefined && (
+            <div className="card-cycle">
+              {ar ? 'كارت رقم ' : 'Card '}
+              {card.cycle_number}
+            </div>
+          )}
+        </div>
         <div
-          role="progressbar"
-          aria-label={ar ? 'رصيد الأختام' : 'Stamp progress'}
-          aria-valuemin={0}
-          aria-valuemax={threshold}
-          aria-valuenow={balance}
-          className="card-progress"
+          className="stamp-dots"
+          style={{
+            gridTemplateColumns:
+              'repeat(' +
+              (threshold >= 7 && threshold <= 10
+                ? Math.ceil(threshold / 2)
+                : Math.min(threshold, 6)) +
+              ',minmax(0,1fr))',
+          }}
+          aria-hidden="true"
         >
-          <b>{balance}</b> {ar ? 'من' : 'of'} {threshold}
+          {Array.from({ length: threshold }, (_, i) => (
+            <span className={i < displayBalance ? 'filled' : ''} data-stamp-index={i} key={i}>
+              <StampFrame shape={card.stamp_shape} />
+              <span className="nq-ink-layer">
+                <StampInk
+                  seed={
+                    card.stamp_ink?.[i]
+                      ? card.stamp_ink[i]!.ledgerId + ':' + card.stamp_ink[i]!.ordinal
+                      : card.id + ':' + (card.cycle_number ?? 1) + ':' + i
+                  }
+                  shape={card.stamp_shape}
+                  symbol={card.stamp_icon}
+                  style={card.stamp_style}
+                  grainId={grainId}
+                />
+              </span>
+              <span className="nq-ghost">
+                <StampFrame shape={card.stamp_shape} />
+              </span>
+              {i < displayBalance ? null : i === threshold - 1 ? (
+                <Icon name="gift" size={20} />
+              ) : (
+                <span className="stamp-number">{String(i + 1).padStart(2, '0')}</span>
+              )}
+            </span>
+          ))}
         </div>
-        <span>
-          {balance === threshold
+        <div className="card-progress-line">
+          <div
+            role="progressbar"
+            aria-label={ar ? 'رصيد الأختام' : 'Stamp progress'}
+            aria-valuemin={0}
+            aria-valuemax={threshold}
+            aria-valuenow={displayBalance}
+            className="card-progress"
+          >
+            <b>{displayBalance}</b> {ar ? 'من' : 'of'} {threshold}
+          </div>
+          <span>
+            {displayBalance === threshold
+              ? ar
+                ? 'مكافأتك جاهزة'
+                : 'READY TO REDEEM'
+              : ar
+                ? 'كل زيارة بتقرّبك'
+                : 'ONE VISIT CLOSER'}
+          </span>
+        </div>
+        <div className="card-progress-track" aria-hidden="true">
+          <span ref={motion.progress} />
+        </div>
+        <div className="card-reward-line">
+          <div>
+            <small>{ar ? 'المكافأة اللي جاية' : 'YOUR NEXT REWARD'}</small>
+            <strong className="card-reward">{card.reward_title}</strong>
+          </div>
+          <span className="card-nuqta">
+            NUQTA <i>●</i>
+          </span>
+        </div>
+        {!!card.pending_rewards && card.balance > 0 && (
+          <small className="carry-stamps">
+            {ar
+              ? card.balance + ' أختام محفوظة للكارت التالي'
+              : card.balance + ' stamps saved for your next card'}
+          </small>
+        )}
+        <span className="sr-only" role="status" aria-live="polite">
+          {motion.kind === 'cycle-renew'
             ? ar
-              ? 'مكافأتك جاهزة'
-              : 'READY TO REDEEM'
-            : ar
-              ? 'كل زيارة بتقرّبك'
-              : 'ONE VISIT CLOSER'}
+              ? 'المكافأة اتصرفت. كارت جديد بدأ!'
+              : 'Reward redeemed. A new card has started!'
+            : motion.kind === 'reward-earned'
+              ? ar
+                ? 'كملت الأختام! مكافأتك جاهزة.'
+                : 'Card complete! Your reward is ready.'
+              : motion.kind === 'stamp-added'
+                ? ar
+                  ? 'اتضافت أختام جديدة لكارتك.'
+                  : 'New stamps added to your card.'
+                : ''}
         </span>
-      </div>
-      <div className="card-progress-track" aria-hidden="true">
-        <span />
-      </div>
-      <div className="card-reward-line">
-        <div>
-          <small>{ar ? 'المكافأة اللي جاية' : 'YOUR NEXT REWARD'}</small>
-          <strong className="card-reward">{card.reward_title}</strong>
-        </div>
-        <span className="card-nuqta">
-          NUQTA <i>●</i>
-        </span>
-      </div>
-      {!!card.pending_rewards && (
-        <div className="reward-ready">
-          <Icon name="spark" size={17} />
-          {ar ? 'مكافأتك جاهزة للصرف عند الكاشير' : 'Your reward is ready at the cashier'}
-          {card.pending_rewards > 1 && <b>{card.pending_rewards}</b>}
-        </div>
+        <div className="nq-stamp-fx" ref={motion.layer} aria-hidden="true" />
+      </article>
+      {experience && waiting && (
+        <p className="nq-stamp-wait" role="status">
+          <span aria-hidden="true" />
+          {ar ? 'الكاشير هيأكد ختمك…' : 'The cashier will confirm your stamp…'}
+        </p>
       )}
-      {!!card.pending_rewards && card.balance > 0 && (
-        <small className="carry-stamps">
-          {ar
-            ? card.balance + ' أختام محفوظة للكارت التالي'
-            : card.balance + ' stamps saved for your next card'}
-        </small>
-      )}
-      <span className="sr-only" role="status" aria-live="polite">
-        {motion?.message || ''}
-      </span>
-      {motion && (
-        <div className="card-moment" aria-hidden="true">
-          {motion.message}
-        </div>
-      )}
-    </article>
+    </div>
   );
 }

@@ -494,10 +494,7 @@ figure {
     color 200ms ease,
     border-color 200ms ease;
 }
-.stamp-dots .stamp-land {
-  animation: nuqta-stamp 560ms cubic-bezier(0.18, 0.8, 0.25, 1) both;
-  animation-delay: var(--stamp-delay, 0ms);
-}
+
 .reward-ready {
   display: flex;
   align-items: center;
@@ -518,28 +515,7 @@ figure {
 .reward-earned .reward-ready > span {
   animation: nuqta-spark 900ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
 }
-.reward-earned {
-  animation: nuqta-reward 1000ms ease-out;
-}
-.cycle-renew {
-  animation: nuqta-renew 700ms cubic-bezier(0.2, 0.75, 0.2, 1) both;
-}
-.card-moment {
-  position: absolute;
-  z-index: 2;
-  inset-inline: 12px;
-  inset-block-end: 12px;
-  padding: 12px 16px;
-  border-radius: 16px;
-  background: var(--surface);
-  color: var(--brand);
-  box-shadow: 0 6px 30px #0002;
-  text-align: center;
-  font-size: 14px;
-  font-weight: 700;
-  pointer-events: none;
-  animation: nuqta-moment 1600ms ease both;
-}
+
 .sr-only {
   position: absolute;
   width: 1px;
@@ -593,73 +569,7 @@ button[aria-busy='true'] {
     box-shadow: 0 8px 24px #0000000d;
   }
 }
-@keyframes nuqta-stamp {
-  0% {
-    transform: scale(1.45) rotate(-12deg);
-    opacity: 0;
-  }
-  42% {
-    transform: scale(0.9) rotate(3deg);
-    opacity: 1;
-  }
-  70% {
-    transform: scale(1.06) rotate(-1deg);
-  }
-  100% {
-    transform: scale(1) rotate(0);
-  }
-}
-@keyframes nuqta-spark {
-  0% {
-    transform: scale(0.6) rotate(-45deg);
-    opacity: 0;
-  }
-  55% {
-    transform: scale(1.3) rotate(15deg);
-    opacity: 1;
-  }
-  100% {
-    transform: scale(1) rotate(0);
-  }
-}
-@keyframes nuqta-reward {
-  0%,
-  100% {
-    filter: brightness(1);
-  }
-  40% {
-    filter: brightness(1.08);
-  }
-}
-@keyframes nuqta-renew {
-  0% {
-    transform: perspective(1000px) rotateY(-8deg) translateY(10px);
-    opacity: 0.6;
-  }
-  65% {
-    transform: perspective(1000px) rotateY(2deg) translateY(-2px);
-    opacity: 1;
-  }
-  100% {
-    transform: none;
-    opacity: 1;
-  }
-}
-@keyframes nuqta-moment {
-  0% {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  15%,
-  75% {
-    opacity: 1;
-    transform: none;
-  }
-  100% {
-    opacity: 0;
-    transform: translateY(-4px);
-  }
-}
+
 @keyframes nuqta-dialog {
   from {
     opacity: 0;
@@ -689,9 +599,6 @@ button[aria-busy='true'] {
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .card-moment {
-    display: none;
-  }
   *,
   *::before,
   *::after {
@@ -705,23 +612,7 @@ button[aria-busy='true'] {
   height: 58%;
   display: block;
 }
-.stamp-land .stamp-check path {
-  stroke-dasharray: 24;
-  stroke-dashoffset: 24;
-  animation: nuqta-check 250ms ease-out forwards;
-  animation-delay: calc(var(--stamp-delay, 0ms) + 170ms);
-}
-.stamp-land::after {
-  content: '';
-  position: absolute;
-  inset: -5px;
-  border: 2px solid var(--accent);
-  border-radius: inherit;
-  pointer-events: none;
-  opacity: 0;
-  animation: nuqta-ring 650ms ease-out both;
-  animation-delay: var(--stamp-delay, 0ms);
-}
+
 .stamp-added .carry-stamps {
   animation: nuqta-feedback 300ms ease-out;
 }
@@ -749,33 +640,13 @@ button[aria-busy='true']::after {
   border-radius: 50%;
   animation: nuqta-spin 800ms linear infinite;
 }
-@keyframes nuqta-check {
-  to {
-    stroke-dashoffset: 0;
-  }
-}
-@keyframes nuqta-ring {
-  0% {
-    opacity: 0.7;
-    transform: scale(0.8);
-  }
-  100% {
-    opacity: 0;
-    transform: scale(1.25);
-  }
-}
+
 @keyframes nuqta-spin {
   to {
     transform: rotate(360deg);
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .stamp-land .stamp-check path {
-    stroke-dashoffset: 0;
-  }
-  .stamp-land::after {
-    display: none;
-  }
 }
 /* Platform MFA keeps secrets in the current screen only. */
 .platform-mfa {
@@ -803,4 +674,297 @@ button[aria-busy='true']::after {
 .platform-mfa details code {
   overflow-wrap: anywhere;
   user-select: all;
+}
+.request-queue > .section-heading {
+  flex-wrap: wrap;
+}
+.request-scanner,
+.request-card {
+  margin-block: 16px;
+  padding: 18px;
+  border: 1px solid #dbe2d3;
+  border-radius: 16px;
+  background: #fcfdf9;
+  min-width: 0;
+}
+.request-card h3 {
+  margin: 0;
+}
+.request-match {
+  font-size: 24px;
+  letter-spacing: 0.12em;
+  color: #204c41;
+}
+.request-quantity {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+  margin-block: 14px;
+}
+.request-quantity output {
+  font-size: 24px;
+  font-variant-numeric: tabular-nums;
+}
+.request-card details {
+  margin-top: 16px;
+}
+.request-card summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  color: #725443;
+}
+.loyalty-card-shell {
+  position: relative;
+  min-width: 0;
+  width: 100%;
+}
+.loyalty-card-shell.live-card {
+  padding-top: 64px;
+}
+.nq-ink-definitions {
+  position: absolute;
+  pointer-events: none;
+}
+.nq-reward-banner {
+  position: absolute;
+  inset-inline: 6px;
+  top: 0;
+  min-height: 54px;
+  padding: 10px 14px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface);
+  color: var(--surface-ink);
+  box-shadow: 0 10px 30px #0003;
+  pointer-events: none;
+  z-index: 5;
+}
+.nq-reward-banner small {
+  display: block;
+  font-weight: 400;
+}
+.nq-reward-banner > svg {
+  color: var(--accent);
+  flex: none;
+}
+.nq-motion-card .filled > .stamp-frame {
+  opacity: 0;
+}
+.nq-motion-card .nq-ink-layer,
+.nq-motion-card .nq-ghost {
+  position: absolute;
+  inset: -2px;
+  opacity: 0;
+  transform-origin: 50% 50%;
+  pointer-events: none;
+}
+.nq-motion-card .filled > .nq-ink-layer {
+  opacity: 1;
+}
+.loyalty-card.nq-motion-card .stamp-dots > span {
+  width: min(100%, 56px);
+  justify-self: center;
+  transform: none;
+}
+.nq-stamp-ink {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.nq-ink-symbol {
+  width: 28px;
+  height: 28px;
+  display: block;
+}
+.loyalty-card.nq-motion-card .stamp-dots > span > .stamp-frame {
+  fill: none;
+  stroke: currentColor;
+  stroke-opacity: 0.25;
+  stroke-dasharray: 3 3;
+}
+.loyalty-card.nq-motion-card .nq-ghost > .stamp-frame {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2;
+  stroke-dasharray: none;
+  opacity: 1;
+}
+.loyalty-card.nq-motion-card .card-progress-track > span {
+  width: 100%;
+  transform: scaleX(var(--progress-factor, 0));
+  transform-origin: left;
+  transition: none;
+}
+[dir='rtl'] .loyalty-card.nq-motion-card .card-progress-track > span {
+  transform-origin: right;
+}
+.nq-stamp-fx {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 4;
+}
+.nq-stamp-tool {
+  position: absolute;
+  width: 74px;
+  height: 96px;
+  margin: -82px 0 0 -37px;
+  color: var(--accent);
+  opacity: 0;
+  will-change: transform, opacity;
+}
+.nq-stamp-shadow {
+  position: absolute;
+  width: 62px;
+  height: 62px;
+  margin: -31px 0 0 -31px;
+  border-radius: 50%;
+  background: radial-gradient(#0006, transparent 70%);
+  opacity: 0;
+}
+.nq-stamp-ring {
+  position: absolute;
+  opacity: 0;
+}
+.loyalty-card.nq-motion-card .nq-stamp-ring > .stamp-frame {
+  position: static;
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 1.6;
+}
+.nq-ink-dot {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  margin: -3px 0 0 -3px;
+  border-radius: 50%;
+  background: var(--accent);
+  opacity: 0;
+}
+.nq-confetti {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.nq-stamp-wait {
+  margin: 12px 0 0;
+  text-align: center;
+  color: #71806c;
+  font-weight: 500;
+}
+.nq-stamp-wait > span {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-inline-end: 8px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: nq-wait-blink 1s infinite;
+}
+@keyframes nq-wait-blink {
+  50% {
+    opacity: 0.25;
+  }
+}
+.customer-code-backdrop {
+  padding: 0;
+  background: #fff;
+}
+.customer-code-dialog.dialog {
+  width: 100%;
+  max-width: 560px;
+  max-height: 100%;
+  min-height: 100%;
+  margin: auto;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: #fff;
+  color: #172e2a;
+  padding: calc(20px + env(safe-area-inset-top, 0px)) calc(20px + env(safe-area-inset-right, 0px))
+    calc(20px + env(safe-area-inset-bottom, 0px)) calc(20px + env(safe-area-inset-left, 0px));
+  animation: none;
+}
+.customer-code-dialog.qr-panel img {
+  display: block;
+  width: min(100%, 420px);
+  max-width: 100%;
+  margin: 20px auto;
+  image-rendering: pixelated;
+}
+.customer-code-dialog code {
+  overflow-wrap: anywhere;
+  word-break: break-all;
+  font-size: 11px;
+}
+.install-card-offer {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 18px;
+  margin-top: 20px;
+  border: 1px solid #dce2d3;
+  border-radius: 16px;
+  background: #f4f6ee;
+  color: #204c41;
+}
+.install-card-offer > svg {
+  flex: none;
+  margin-top: 4px;
+}
+.install-card-offer p {
+  margin: 7px 0 12px;
+  font-size: 13px;
+}
+.install-card-offer .text-button {
+  margin-inline-start: 12px;
+}
+.install-card-link {
+  margin-top: 14px;
+}
+.install-card-guide figure {
+  margin: 20px 0;
+}
+.install-card-guide figure svg {
+  display: block;
+  width: 100%;
+  max-height: 125px;
+  margin-bottom: 12px;
+}
+.install-card-guide figcaption {
+  font-size: 14px;
+  line-height: 1.8;
+}
+.experience-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin: 20px 0;
+}
+.experience-metrics dt {
+  font-size: 13px;
+  color: #74816d;
+}
+.experience-metrics dd {
+  margin: 10px 0 0;
+  font-size: 26px;
+  font-variant-numeric: tabular-nums;
+  color: #204c41;
+}
+@media (max-width: 600px) {
+  .experience-metrics {
+    grid-template-columns: 1fr;
+  }
+  .experience-metrics > div {
+    padding-bottom: 14px;
+    border-bottom: 1px solid #e2e7db;
+  }
 }

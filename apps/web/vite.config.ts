@@ -1,7 +1,11 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import legacy, { cspHashes } from '@vitejs/plugin-legacy';
-import { legacyScriptHashes, scriptSources } from '../../packages/domain/src/browser-policy.js';
+import {
+  legacyScriptHashes,
+  scriptSources,
+  legacyTargets,
+} from '../../packages/domain/src/browser-policy.js';
 import assert from 'node:assert/strict';
 import { webShellPlugin } from '../../tools/web-shell-plugin.js';
 import { readFileSync } from 'node:fs';
@@ -20,7 +24,7 @@ export default defineConfig({
   plugins: [
     react(),
     legacy({
-      targets: ['iOS >= 13', 'Safari >= 13', 'Chrome >= 80', 'Android >= 8', 'Samsung >= 12'],
+      targets: legacyTargets,
       renderModernChunks: false,
     }),
     webShellPlugin(),

@@ -4,6 +4,8 @@ import { platformTeamModule } from './modules/platform-team.js';
 import { accountManagementModule } from './modules/account-management.js';
 import { contractDocumentation, activationDataSchema } from './openapi.js';
 import { scriptSources } from '../../../packages/domain/src/browser-policy.js';
+import { liveEventsModule } from './live-events.js';
+import { experienceModule } from './modules/experience.js';
 import Fastify from 'fastify';
 import cookie from '@fastify/cookie';
 import rateLimit from '@fastify/rate-limit';
@@ -159,6 +161,8 @@ export async function buildApp(overrides: Partial<Config> = {}) {
   rewardsModule(app, pools, c);
   reportingModule(app, pools);
   requestsModule(app, pools, c);
+  liveEventsModule(app, pools, c);
+  experienceModule(app, pools);
   customersModule(app, pools, c);
   materialsModule(app, pools, c);
   platformModule(app, pools, c);
@@ -192,7 +196,7 @@ export async function buildApp(overrides: Partial<Config> = {}) {
       if (
         (
           await pools.pool.query(
-            "SELECT count(*)::int AS count FROM schema_migrations WHERE name='009v_file_store_exports.sql'",
+            "SELECT count(*)::int AS count FROM schema_migrations WHERE name='010a_customer_experience.sql'",
           )
         ).rows[0].count !== 1
       )

@@ -91,6 +91,8 @@ export async function api<T>(
   return body;
 }
 const arErrors: Record<string, string> = {
+  CUSTOMER_QR_REQUIRED: 'امسح كود العميل من موبايله الأول، وبعدها اعتمد الطلب.',
+  REQUEST_DAILY_LIMIT: 'وصلت لحد طلبات الأختام النهارده. ارجع بكرة أو راجع فريق المحل.',
   ADMIN_EMAIL_IN_USE: 'الإيميل ده مستخدم بالفعل. اختار إيميل مستقل لحساب الإدارة.',
   ADMIN_SELF_MANAGEMENT: 'إعدادات حسابك الحالي من «حسابي». ماينفعش توقف نفسك من الفريق.',
   LAST_PLATFORM_ADMIN: 'لازم يفضل فيه سوبر أدمن نشط واحد على الأقل.',
@@ -160,6 +162,11 @@ const arErrors: Record<string, string> = {
   INTERNAL_ERROR: 'حصل خطأ. استخدم مرجع الطلب مع الدعم.',
 };
 const enErrors: Record<string, string> = {
+  CUSTOMER_QR_REQUIRED: 'Scan the customer code from their phone before approving the request.',
+  REQUEST_DAILY_LIMIT:
+    'You have reached today’s stamp request limit. Scan again tomorrow or ask the shop team.',
+  PLACEMENT_UNAVAILABLE: 'This shop code is unavailable. Ask the branch team for the current code.',
+  PLACEMENT_REVOKED: 'This shop code was replaced. Ask the branch team for the current code.',
   PASSWORD_LENGTH: 'Choose a password with 10 to 128 characters.',
   PASSWORD_TOO_COMMON: 'This password is commonly used. Choose a different, memorable phrase.',
   INVALID_MFA_CODE: 'This verification code is incorrect, expired or already used.',

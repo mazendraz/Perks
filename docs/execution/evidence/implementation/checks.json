@@ -1,68 +1,73 @@
 {
-  "at": "2026-11-09T02:03:43.360Z",
+  "at": "2026-11-09T11:36:46.747Z",
   "status": "passed",
   "steps": [
     {
       "command": "npm run typecheck",
       "exitCode": 0,
-      "durationMs": 5145.3532
+      "durationMs": 4932.1103
     },
     {
       "command": "npm run lint",
       "exitCode": 0,
-      "durationMs": 3065.250500000001
+      "durationMs": 2690.1723999999995
     },
     {
       "command": "npm run test",
       "exitCode": 0,
-      "durationMs": 5602.4553,
+      "durationMs": 4910.7372000000005,
       "passedTests": 24,
       "skippedTests": 1
     },
     {
       "command": "npm run build",
       "exitCode": 0,
-      "durationMs": 13877.747200000002
+      "durationMs": 12740.3764
     },
     {
       "command": "npm run openapi:export",
       "exitCode": 0,
-      "durationMs": 1659.8653000000013
+      "durationMs": 1392.036500000002
     },
     {
       "command": "npm run test:integration",
       "exitCode": 0,
-      "durationMs": 81803.71280000001,
-      "passedTests": 62,
+      "durationMs": 99488.35070000001,
+      "passedTests": 68,
       "skippedTests": 0
     },
     {
       "command": "npm run test:manual-demo",
       "exitCode": 0,
-      "durationMs": 7556.191899999991
+      "durationMs": 6078.022299999982
     },
     {
       "command": "npm run test:e2e",
       "exitCode": 0,
-      "durationMs": 83972.26040000001
+      "durationMs": 71415.3186
     },
     {
       "command": "npm run test:e2e:mobile",
       "exitCode": 0,
-      "durationMs": 24843.695299999992
+      "durationMs": 48625.0502
+    },
+    {
+      "command": "npm run test:animation",
+      "exitCode": 0,
+      "durationMs": 31744.212900000013
     },
     {
       "command": "npm run test:restore",
       "exitCode": 0,
-      "durationMs": 2357.4986999999965
+      "durationMs": 2678.8314000000246
     },
     {
       "command": "npm run verify:plan",
       "exitCode": 0,
-      "durationMs": 429.5329999999958
+      "durationMs": 415.5027000000118
     }
   ],
-  "sourceFingerprint": "4e2737abb49cd95cb32a3c11665ff186e271bdabfef733ff3a026d2c74cf21b1",
+  "sourceFingerprint": "52003f977d6cf404e17fca45d8c91313ce5006c4bd7e41f92417bd0de6ec1bdb",
   "environment": {
     "node": "v24.19.0",
     "platform": "win32",
@@ -71,6 +76,7 @@
     "browser": "msedge"
   },
   "browserChecks": 55,
-  "mobileChecks": 17,
-  "sourceFingerprintAfter": "4e2737abb49cd95cb32a3c11665ff186e271bdabfef733ff3a026d2c74cf21b1"
+  "mobileChecks": 31,
+  "animationChecks": 5,
+  "sourceFingerprintAfter": "52003f977d6cf404e17fca45d8c91313ce5006c4bd7e41f92417bd0de6ec1bdb"
 }

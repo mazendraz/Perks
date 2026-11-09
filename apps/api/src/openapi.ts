@@ -29,6 +29,7 @@ import {
   redemptionDecisionInput,
   redemptionOutput,
   requestDecisionInput,
+  stampRequestInput,
   preferenceInput,
   failureOutput,
   draftOutput,
@@ -39,6 +40,7 @@ import {
   preferenceOutput,
 } from '../../../packages/contracts/src/commands.js';
 import { provisioningInput } from '../../../packages/contracts/src/provisioning.js';
+import { experienceInput } from './modules/experience.js';
 
 type Contract = {
   body?: z.ZodType;
@@ -48,6 +50,12 @@ type Contract = {
   responseStatus?: number;
 };
 const contracts: Record<string, Contract> = {
+  'POST /api/v1/me/experience': { body: experienceInput, key: true },
+  'POST /api/v1/me/stamp-requests': { body: stampRequestInput, key: true },
+  'PATCH /api/v1/merchants/:m/stamp-request-settings': {
+    body: z.object({ dailyLimit: z.number().int().min(1).max(100) }).strict(),
+    revision: true,
+  },
   'POST /api/v1/platform/admins': { body: platformAdminInput, key: true },
   'POST /api/v1/platform/admins/:id/security': { body: platformAdminCommand, key: true },
   'POST /api/v1/merchants/:m/assets': {

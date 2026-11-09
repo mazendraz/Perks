@@ -2,7 +2,18 @@ import { PhoneInput } from '../controls/PhoneInput.js';
 import { CustomerContact } from './CustomerOutreach.js';
 import { FieldErrors, fieldProps } from '../FieldErrors.js';
 import { CustomerRequests } from './StampRequests.js';
-import { useEffect, useState, useRef, type FormEvent, type CSSProperties } from 'react';
+import { useLiveRefresh } from '../live-events.js';
+import { CustomerCode } from './CustomerCode.js';
+import { InstallCard } from './InstallCard.js';
+import { useCardExperience } from '../useCardExperience.js';
+import {
+  useEffect,
+  useLayoutEffect,
+  useState,
+  useRef,
+  type FormEvent,
+  type CSSProperties,
+} from 'react';
 import type {
   Language,
   Session,
@@ -78,23 +89,30 @@ export function EnrollmentPage({
     try {
       const query = new URLSearchParams(location.search),
         branchId = query.get('b');
-      const result = await api<{ membershipId: string }>('/me/memberships', {
-        method: 'POST',
-        key: crypto.randomUUID(),
-        body: {
-          merchantId: info.merchant.id,
-          programId: chosen.id,
-          programVersionId: chosen.versionId,
-          alias,
-          acceptedTerms: terms,
-          acceptedTermsHash: chosen.termsHash,
-          source: query.get('src') === 'nfc' ? 'nfc' : query.get('src') === 'qr' ? 'qr' : 'link',
-          branchId: info.branches.some((b) => b.id === branchId) ? branchId : null,
-          contactPhone: contactPhone || undefined,
-          consents: { email: false, sms: false, whatsapp },
+      const result = await api<{ membershipId: string; alreadyMember: boolean }>(
+        '/me/memberships',
+        {
+          method: 'POST',
+          key: crypto.randomUUID(),
+          body: {
+            merchantId: info.merchant.id,
+            programId: chosen.id,
+            programVersionId: chosen.versionId,
+            alias,
+            acceptedTerms: terms,
+            acceptedTermsHash: chosen.termsHash,
+            source: query.get('src') === 'nfc' ? 'nfc' : query.get('src') === 'qr' ? 'qr' : 'link',
+            branchId: info.branches.some((b) => b.id === branchId) ? branchId : null,
+            contactPhone: contactPhone || undefined,
+            consents: { email: false, sms: false, whatsapp },
+          },
         },
-      });
-      navigate('/customer/' + result.membershipId);
+      );
+      const context = new URLSearchParams(location.search);
+      if (!result.alreadyMember) context.set('new', '1');
+      navigate(
+        '/customer/' + result.membershipId + (context.toString() ? '?' + context.toString() : ''),
+      );
     } catch (e) {
       setValidation(e instanceof ApiError ? e : null);
       setError(errorText(e, lang));
@@ -311,59 +329,95 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
     [busy, setBusy] = useState(false),
     [tab, setTab] = useState<'card' | 'history' | 'preferences'>('card'),
     [preferences, setPreferences] = useState<{ channel: string; granted: boolean }[]>([]);
+  const [waiting, setWaiting] = useState(false);
   const preferenceGeneration = useRef(0);
+  const qrEpoch = useRef(0);
+  const loadGeneration = useRef(0);
   const [loadingPreferences, setLoadingPreferences] = useState(false);
   const load = async () => {
+    const generation = ++loadGeneration.current;
     try {
       const list = await api<{ cards: SavedCard[] }>('/me/memberships');
-      setCards(list.cards);
       const h = await api<{ challenges: HolderChallenge[] }>('/me/redemption-challenges');
-      setChallenges(h.challenges);
+      let details: { rewards: Reward[]; activity: typeof activity } | undefined;
       if (membershipId) {
         const [r, a] = await Promise.all([
           api<{ rewards: Reward[] }>('/me/memberships/' + membershipId + '/rewards'),
           api<{ activity: typeof activity }>('/me/memberships/' + membershipId + '/activity'),
         ]);
-        setRewards(r.rewards);
-        setActivity(a.activity);
+        details = { rewards: r.rewards, activity: a.activity };
+      }
+      if (generation !== loadGeneration.current) return;
+      setCards(list.cards);
+      setChallenges(h.challenges);
+      if (details) {
+        setRewards(details.rewards);
+        setActivity(details.activity);
       }
       setError('');
       setLoaded(true);
     } catch (e) {
+      if (generation !== loadGeneration.current) return;
       setError(errorText(e, lang));
       setLoaded(true);
     }
   };
+  useLiveRefresh('/me/events', load);
   useEffect(() => {
     setQr(null);
+    qrEpoch.current++;
+    setWaiting(false);
     setTab('card');
     preferenceGeneration.current++;
     setPreferences([]);
     setLoadingPreferences(false);
     void load();
-    const iv = setInterval(() => {
-      if (!document.hidden) void load();
-    }, 4000);
-    return () => clearInterval(iv);
+    return () => {
+      loadGeneration.current++;
+    };
   }, [membershipId]);
   const card = cards.find((x) => x.id === membershipId);
+  useCardExperience(card?.id);
   const showQr = async () => {
     if (!card) return;
+    const epoch = ++qrEpoch.current;
     setBusy(true);
     try {
-      setQr(
-        await api('/me/memberships/' + card.id + '/presentation-tokens', {
+      const code = await api<{ token: string; qrDataUrl: string; expiresAt: string }>(
+        '/me/memberships/' + card.id + '/presentation-tokens',
+        {
           method: 'POST',
           key: crypto.randomUUID(),
           body: {},
-        }),
+        },
       );
+      if (epoch === qrEpoch.current) setQr(code);
+      setError('');
     } catch (e) {
       setError(errorText(e, lang));
     } finally {
       setBusy(false);
     }
   };
+  const lastRevision = useRef<{ id: string; revision: number } | null>(null);
+  useLayoutEffect(() => {
+    if (!card) return;
+    const previous = lastRevision.current;
+    if (previous?.id === card.id && card.revision > previous.revision) {
+      qrEpoch.current++;
+      setQr(null);
+    }
+    lastRevision.current = { id: card.id, revision: card.revision };
+  }, [card?.id, card?.revision]);
+  useEffect(() => {
+    if (waiting && card && new URLSearchParams(location.search).has('code')) void showQr();
+  }, [waiting, card?.id]);
+  useEffect(() => {
+    if (challenges.some((ch) => ch.status === 'awaiting_holder')) {
+      qrEpoch.current++;
+      setQr(null);
+    }
+  }, [challenges]);
   const decide = async (ch: HolderChallenge, approve: boolean) => {
     setBusy(true);
     try {
@@ -451,7 +505,7 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
           </div>
         </section>
       )}
-      {error && (
+      {error && !qr && (
         <div className="notice error" role="alert">
           {error}
         </div>
@@ -498,7 +552,13 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
           </button>
           <div className="membership-layout">
             <aside className="membership-aside">
-              <LoyaltyCard card={card} lang={lang} />
+              <LoyaltyCard
+                card={card}
+                lang={lang}
+                waiting={waiting}
+                reveal={new URLSearchParams(location.search).get('new') === '1'}
+              />
+              <InstallCard card={card} lang={lang} qrOpen={!!qr} />
               <div className="tabbar">
                 <button className={tab === 'card' ? 'active' : ''} onClick={() => setTab('card')}>
                   {ar ? 'الكارت' : 'Card'}
@@ -541,30 +601,17 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
                     </button>
                   </div>
                   {qr && (
-                    <section className="qr-panel">
-                      <h2>{ar ? 'الكود الشخصي' : 'Personal QR'}</h2>
-                      <img
-                        src={qr.qrDataUrl}
-                        alt={ar ? 'QR العضوية للكاشير' : 'Membership QR for the cashier'}
-                      />
-                      <code>{qr.token}</code>
-                      <small className="muted">
-                        {ar ? 'صالح لحد ' : 'Valid until '}
-                        {new Date(qr.expiresAt).toLocaleTimeString(lang, {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                          second: '2-digit',
-                        })}
-                      </small>
-                      <button
-                        className="text-button"
-                        onClick={() => void showQr()}
-                        disabled={busy}
-                        aria-busy={busy}
-                      >
-                        {ar ? 'جدّد الكود' : 'Refresh code'}
-                      </button>
-                    </section>
+                    <CustomerCode
+                      qr={qr}
+                      lang={lang}
+                      busy={busy}
+                      error={error}
+                      onRefresh={showQr}
+                      onClose={() => {
+                        qrEpoch.current++;
+                        setQr(null);
+                      }}
+                    />
                   )}
                   <section className="panel">
                     <h2>{ar ? 'مكافآتك' : 'Your rewards'}</h2>
@@ -606,7 +653,7 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
                       </p>
                     )}
                   </section>
-                  <CustomerRequests card={card} lang={lang} />
+                  <CustomerRequests card={card} lang={lang} onPending={setWaiting} />
                   <section className="panel">
                     <h2>Wallet</h2>
                     <p className="muted">

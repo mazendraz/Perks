@@ -1,6 +1,10 @@
 # التنفيذ الحالي — 2026-11-07
 
-## تحديث خطة الإطلاق — L06،2026-11-09
+## تحديث خطة الإطلاق — L06A،2026-11-09
+
+### L06A — تحقق محلي مع بوابات معلقة
+
+L06A LOCAL_CHECKPOINT / IN_PROGRESS — 2026-11-09: تنفيذ السكان التلقائي للعميل المسجل،SSE،حدود الطلب،QR proof وواجهة اعتماد inline،حركة v2 وحفظ الكارت وقياسات التجربة متحقق محليًا. verify:local passed:24 unit و68 integration و55 desktop و31 mobile و5 animation checks تشمل24فريم مقارنة؛skip واحد لـsymlink علىWindows. Pixel5/CPU4x:maxFrame=16.8ms وصفرframes>32. بصمة 52003f977d6cf404e17fca45d8c91313ce5006c4bd7e41f92417bd0de6ec1bdb متطابقة قبل وبعد. تجربة مازن على4180 محدثة حتى010a مع تطابق الحسابات واللوجو وready200. أول شاشة بالاسم والرقم واستعادة الجلسة تعتمد صراحةً علىL06B،فلم تُغلق A01/A12؛الفيديو الحقيقي وموافقة المالك والتثبيت وNFC وstaging تظل BLOCKED_OWNER. التفاصيل في [STAMP-EXPERIENCE](STAMP-EXPERIENCE.md).
 
 ### L06 — الموبايل والـPWA
 

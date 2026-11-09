@@ -25,6 +25,8 @@ import { PurchaseTrend, type TrendData } from './PurchaseTrend.js';
 import { Branches } from './Branches.js';
 import { Support } from './Support.js';
 import { Materials } from './Materials.js';
+import { RequestSettings } from './RequestSettings.js';
+import { ExperienceStats } from './ExperienceStats.js';
 import { Customers } from './Customers.js';
 import { useEffect, useState, type FormEvent, type CSSProperties } from 'react';
 import type { Grant, Language, CardData } from '../../../../packages/contracts/src/index.js';
@@ -668,10 +670,20 @@ export function MerchantPage({ grant, lang }: { grant: Grant; lang: Language }) 
         </>
       )}
       {tab === 'support' && <Support lang={lang} merchantId={grant.merchant_id} />}
+      {tab === 'overview' && (
+        <ExperienceStats merchantId={grant.merchant_id} branch={branch} days={days} lang={lang} />
+      )}
       {tab === 'materials' && <Materials grant={grant} lang={lang} />}
       {tab === 'customers' && <Customers grant={grant} lang={lang} />}
       {tab === 'programs' && (
         <>
+          {grant.role === 'owner' && (
+            <RequestSettings
+              merchantId={grant.merchant_id}
+              lang={lang}
+              onSaved={() => void load()}
+            />
+          )}
           <div className="section-heading">
             <h2>{ar ? 'برامج الولاء' : 'Loyalty programs'}</h2>
             {grant.role === 'owner' && (

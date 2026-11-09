@@ -37,6 +37,13 @@ export const awardInput = z
   })
   .strict();
 export type AwardInput = z.infer<typeof awardInput>;
+export const stampRequestInput = z
+  .object({
+    membershipId: z.uuid(),
+    branchId: z.uuid(),
+    placementCode: z.string().min(20).max(80).optional(),
+  })
+  .strict();
 export const draftInput = z
   .object({
     data: z.record(z.string(), z.unknown()).superRefine((value, ctx) => {
@@ -71,7 +78,7 @@ export const requestDecisionInput = z.discriminatedUnion('approve', [
     .object({
       approve: z.literal(true),
       code: z.string().regex(/^\d{6}$/),
-      award: awardInput.omit({ presentationContext: true }),
+      award: awardInput,
     })
     .strict(),
   z.object({ approve: z.literal(false), reason: z.string().trim().min(4).max(500) }).strict(),

@@ -97,7 +97,8 @@ export function rewardsModule(app: FastifyInstance, pools: Pools, c: Config) {
               )
             ).rows[0];
             requireCondition(proof, 'TOKEN_INVALID_OR_EXPIRED', 410);
-            if (proof.purpose === 'cashier_lookup')
+            requireCondition(proof.purpose !== 'cashier_lookup', 'CUSTOMER_QR_REQUIRED', 403);
+            if (proof.purpose === 'cashier_scan')
               requireCondition(
                 proof.created_by === actor.id &&
                   proof.session_id === actor.sessionId &&
@@ -105,6 +106,12 @@ export function rewardsModule(app: FastifyInstance, pools: Pools, c: Config) {
                 'TOKEN_INVALID',
                 403,
               );
+            requireCondition(
+              (await db.query('SELECT valid_customer_presentation($1) AS valid', [proof.id]))
+                .rows[0].valid,
+              'TOKEN_INVALID_OR_EXPIRED',
+              410,
+            );
             await db.query(
               "UPDATE redemption_challenges SET status='expired' WHERE reward_id=$1 AND status IN ('awaiting_holder','confirmed') AND expires_at<=clock_timestamp()",
               [r],

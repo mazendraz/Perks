@@ -28,6 +28,7 @@ export interface Session {
   grants: Grant[];
 }
 export interface CardData {
+  stamp_ink?: { ledgerId: string; ordinal: number }[];
   logo_asset_id?: string | null;
   logo_url?: string;
   logo_style?: LogoStyle;

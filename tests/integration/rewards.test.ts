@@ -359,6 +359,11 @@ test('completed card stays full until redemption; renewal is exactly once and ca
     assert.equal(before.display_balance, 5);
     assert.equal(before.cycle_number, 1);
     assert.equal(before.pending_rewards, 1);
+    assert.equal(before.stamp_ink.length, 5);
+    const repeated = (
+      await app.inject({ url: '/api/v1/me/memberships/' + m.id, headers: m.headers })
+    ).json().card;
+    assert.deepEqual(repeated.stamp_ink, before.stamp_ink);
     const ch = await start(m, earned.rewardGrants[0].id);
     await app.inject({
       method: 'POST',
@@ -389,6 +394,15 @@ test('completed card stays full until redemption; renewal is exactly once and ca
     assert.equal(after.balance, surplus);
     assert.equal(after.display_balance, surplus);
     assert.equal(after.pending_rewards, 0);
+    assert.equal(after.stamp_ink.length, surplus);
+    if (surplus) {
+      const earn = (
+        await db.query("SELECT id FROM ledger_entries WHERE transaction_id=$1 AND type='earn'", [
+          earned.transactionId,
+        ])
+      ).rows[0].id;
+      assert.deepEqual(after.stamp_ink, [{ ledgerId: earn, ordinal: 3 }]);
+    }
     assert.ok(after.cycle_renewed_at);
     assert.equal(
       Number(

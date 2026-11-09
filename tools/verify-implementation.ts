@@ -24,6 +24,7 @@ const report: {
   }[];
   browserChecks?: number;
   mobileChecks?: number;
+  animationChecks?: number;
   sourceFingerprint?: string;
   sourceFingerprintAfter?: string;
   environment?: Record<string, string>;
@@ -113,6 +114,7 @@ for (const script of [
   'test:manual-demo',
   'test:e2e',
   'test:e2e:mobile',
+  'test:animation',
   'test:restore',
   'verify:plan',
 ]) {
@@ -158,6 +160,11 @@ if (!process.exitCode) {
   );
   assert.equal(mobile.status, 'passed');
   report.mobileChecks = mobile.checks.length;
+  const animation = JSON.parse(
+    await readFile('docs/execution/evidence/animation/animation.json', 'utf8'),
+  );
+  assert.equal(animation.status, 'passed');
+  report.animationChecks = animation.checks.length;
   report.sourceFingerprintAfter = (await snapshot()).fingerprint;
   if (report.sourceFingerprintAfter !== report.sourceFingerprint) {
     report.status = 'source_changed_during_verification';

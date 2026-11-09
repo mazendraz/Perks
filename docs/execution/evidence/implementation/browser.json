@@ -1,5 +1,5 @@
 {
-  "at": "2026-11-09T02:07:05.435Z",
+  "at": "2026-11-09T11:40:09.984Z",
   "browser": "msedge",
   "browserVersion": "157.0.4341.42",
   "appEnv": "development",
@@ -42,8 +42,8 @@
     "Merchant creates a second program and explicitly stops/resumes earning from the UI",
     "Platform operation reference traces committed transaction and related audit/jobs",
     "Merchant B cannot read merchant A reports",
-    "Branch request UI matches the customer code; a lost approval response recovers one additional purchase",
-    "Unknown request decision after reload restores its immutable command and completes once with a re-entered code",
+    "Inline branch queue requires a customer QR scan and receipt, approves in one tap without a confirmation dialog, and recovers a lost response once",
+    "Unknown request decision after reload restores its immutable command without stored QR credentials and completes once after a fresh customer scan",
     "Customer detail dialog traps keyboard focus, closes on Escape and restores the trigger",
     "Saved segment and private worker-generated CSV are usable from the merchant UI",
     "A consented customer WhatsApp draft uses the stored number and stays a reviewable draft without sending",
@@ -61,8 +61,8 @@
     "Forgot password dispatches through the durable worker mailbox; the real recovery link opens the reset screen and the new password restores existing customer cards"
   ],
   "errors": [],
-  "merchantId": "3d47adbe-419e-45f7-aac7-fef5f00fba79",
-  "membershipId": "88006f51-b280-4065-b7ee-23a4f7087e42",
+  "merchantId": "48a8269d-e6d2-4549-8255-5c6c1b2309ab",
+  "membershipId": "628a02cd-0243-4371-820c-45fac9e44fd8",
   "metrics": {
     "registered": 1,
     "active": 1,

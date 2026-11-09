@@ -6,7 +6,7 @@ import type { Config } from '../config.js';
 import { type Pools, transaction, audit } from '../db.js';
 import { authenticated } from '../auth.js';
 import { idempotencyKey, operation } from '../operations.js';
-import { keyedHash, tokenHash } from '../crypto.js';
+import { keyedHash, tokenHash, opaqueToken } from '../crypto.js';
 import { requireCondition } from '../errors.js';
 import { merchantGrant } from '../policy.js';
 export function readPresentationToken(value: string) {
@@ -87,7 +87,7 @@ export function enrollmentModule(app: FastifyInstance, pools: Pools, c: Config) 
       async (db) => ({
         cards: (
           await db.query(
-            "SELECT card || jsonb_build_object('logo_asset_id',b.logo_asset_id) AS card FROM my_cards() card LEFT JOIN public_merchant_brands b ON b.id=(card->>'merchant_id')::uuid",
+              "SELECT card || jsonb_build_object('logo_asset_id',b.logo_asset_id,'stamp_ink',customer_stamp_artwork((card->>'id')::uuid)) AS card FROM my_cards() card LEFT JOIN public_merchant_brands b ON b.id=(card->>'merchant_id')::uuid",
           )
         ).rows.map((r) => r.card),
       }),
@@ -102,7 +102,7 @@ export function enrollmentModule(app: FastifyInstance, pools: Pools, c: Config) 
       async (db) => {
         const card = (
           await db.query(
-            "SELECT card || jsonb_build_object('logo_asset_id',b.logo_asset_id) AS card FROM my_cards() card LEFT JOIN public_merchant_brands b ON b.id=(card->>'merchant_id')::uuid WHERE card->>'id'=$1",
+              "SELECT card || jsonb_build_object('logo_asset_id',b.logo_asset_id,'stamp_ink',customer_stamp_artwork((card->>'id')::uuid)) AS card FROM my_cards() card LEFT JOIN public_merchant_brands b ON b.id=(card->>'merchant_id')::uuid WHERE card->>'id'=$1",
             [id],
           )
         ).rows[0]?.card;
@@ -173,13 +173,14 @@ export function enrollmentModule(app: FastifyInstance, pools: Pools, c: Config) 
         );
         const r = (
           await db.query(
-            'SELECT t.id,t.expires_at,t.purpose,t.created_by,t.session_id,t.branch_id,m.id AS membership_id,m.status,m.program_version_id,p.alias,a.balance,a.revision,v.threshold,v.reward_title,v.max_per_tx FROM presentation_tokens t JOIN memberships m ON m.id=t.membership_id AND m.merchant_id=t.merchant_id JOIN tenant_customer_profiles p ON p.id=m.profile_id JOIN loyalty_accounts a ON a.membership_id=m.id JOIN program_versions v ON v.id=m.program_version_id WHERE t.token_hash=$1 AND t.merchant_id=$2 AND t.expires_at>clock_timestamp()',
+            'SELECT t.id,t.source_presentation_id,t.expires_at,t.purpose,t.created_by,t.session_id,t.branch_id,m.id AS membership_id,m.status,m.program_version_id,p.alias,a.balance,a.revision,v.threshold,v.reward_title,v.max_per_tx FROM presentation_tokens t JOIN memberships m ON m.id=t.membership_id AND m.merchant_id=t.merchant_id JOIN tenant_customer_profiles p ON p.id=m.profile_id JOIN loyalty_accounts a ON a.membership_id=m.id JOIN program_versions v ON v.id=m.program_version_id WHERE t.token_hash=$1 AND t.merchant_id=$2 AND t.expires_at>clock_timestamp()',
             [tokenHash(token), body.merchantId],
           )
         ).rows[0];
         requireCondition(r, 'TOKEN_INVALID_OR_EXPIRED', 410);
         requireCondition(r.status === 'active', 'MEMBERSHIP_DISABLED', 403);
-        if (r.purpose === 'cashier_lookup')
+        requireCondition(r.purpose !== 'cashier_lookup', 'CUSTOMER_QR_REQUIRED', 403);
+        if (r.purpose === 'cashier_scan')
           requireCondition(
             r.created_by === actor.id &&
               r.session_id === actor.sessionId &&
@@ -187,6 +188,25 @@ export function enrollmentModule(app: FastifyInstance, pools: Pools, c: Config) 
             'TOKEN_INVALID',
             403,
           );
+        requireCondition(
+          (await db.query('SELECT valid_customer_presentation($1) AS valid', [r.id])).rows[0].valid,
+          'TOKEN_INVALID_OR_EXPIRED',
+          410,
+        );
+        const proof = keyedHash('cashier-scan:' + opaqueToken(), c.AUTH_PEPPER);
+        await db.query(
+          "INSERT INTO presentation_tokens(merchant_id,membership_id,created_by,purpose,token_hash,session_id,branch_id,expires_at,source_presentation_id) VALUES($1,$2,$3,'cashier_scan',$4,$5,$6,$7,$8)",
+          [
+            body.merchantId,
+            r.membership_id,
+            actor.id,
+            tokenHash(proof),
+            actor.sessionId,
+            body.branchId,
+            r.expires_at,
+            r.source_presentation_id || r.id,
+          ],
+        );
         await audit(db, actor, 'membership.scan', body.merchantId, r.membership_id, {
           branchId: body.branchId,
         });
@@ -207,7 +227,7 @@ export function enrollmentModule(app: FastifyInstance, pools: Pools, c: Config) 
             maxPerTx: r.max_per_tx,
           },
           rewards,
-          presentationContext: body.token,
+          presentationContext: 'NQP:' + proof,
           expiresAt: r.expires_at,
         };
       },

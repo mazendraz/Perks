@@ -1,6 +1,6 @@
 {
-  "at": "2026-11-09T02:07:33.690Z",
-  "passed": 435,
+  "at": "2026-11-09T11:42:33.056Z",
+  "passed": 438,
   "failed": 0,
   "errors": [],
   "checks": [
@@ -390,6 +390,11 @@
       "detail": "local link target"
     },
     {
+      "name": "link:docs\\execution\\STATUS.md:STAMP-EXPERIENCE.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
       "name": "link:docs\\execution\\STATUS.md:PASSWORD-AND-DESIGN.md",
       "ok": true,
       "detail": "local link target"
@@ -565,6 +570,11 @@
       "detail": "local link target"
     },
     {
+      "name": "link:docs\\execution\\IMPLEMENTATION.md:STAMP-EXPERIENCE.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
       "name": "link:docs\\execution\\IMPLEMENTATION.md:MOBILE-PWA.md",
       "ok": true,
       "detail": "local link target"
@@ -641,6 +651,11 @@
     },
     {
       "name": "link:docs\\execution\\IMPLEMENTATION.md:ACCOUNT-PREVIEW-AND-CONTACT.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\IMPLEMENTATION-LOG.md:STAMP-EXPERIENCE.md",
       "ok": true,
       "detail": "local link target"
     },

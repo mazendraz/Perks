@@ -58,6 +58,16 @@ export async function award(
     actor,
     { scope: 'stamp.award:' + merchantId, key, payload: canonical, merchantId },
     async (operationId) => {
+      // Match request-decision lock order before taking the loyalty account lock.
+      const matchingRequest =
+        source === 'scan'
+          ? (
+              await db.query(
+                "SELECT id,expires_at FROM stamp_requests WHERE merchant_id=$1 AND membership_id=$2 AND branch_id=$3 AND status='pending' AND expires_at>clock_timestamp() FOR UPDATE",
+                [merchantId, p.membershipId, p.branchId],
+              )
+            ).rows[0]
+          : undefined;
       const account = (
         await db.query(
           'SELECT a.*,m.program_id,m.status AS membership_status,p.status AS program_status,v.threshold,v.max_per_tx,v.reward_title,v.reward_terms,v.validity_days,v.starts_at,v.ends_at FROM loyalty_accounts a JOIN memberships m ON m.id=a.membership_id AND m.merchant_id=a.merchant_id JOIN programs p ON p.id=m.program_id JOIN program_versions v ON v.id=a.program_version_id WHERE a.membership_id=$1 AND a.merchant_id=$2 FOR UPDATE OF a FOR SHARE OF m,p',
@@ -99,7 +109,7 @@ export async function award(
         'PROGRAM_BRANCH_UNAUTHORIZED',
         403,
       );
-      if (source === 'scan') {
+      {
         const tok = readPresentationToken(p.presentationContext);
         requireCondition(/^[a-f0-9]{64}$/.test(tok), 'TOKEN_INVALID', 422);
         const proof = (
@@ -109,7 +119,13 @@ export async function award(
           )
         ).rows[0];
         requireCondition(proof, 'TOKEN_INVALID_OR_EXPIRED', 410);
-        if (proof.purpose === 'cashier_lookup')
+        requireCondition(
+          proof.purpose !== 'cashier_lookup' &&
+            (source !== 'request' || proof.purpose === 'cashier_scan'),
+          'CUSTOMER_QR_REQUIRED',
+          403,
+        );
+        if (proof.purpose === 'cashier_scan')
           requireCondition(
             proof.created_by === actor.id &&
               proof.session_id === actor.sessionId &&
@@ -117,6 +133,12 @@ export async function award(
             'TOKEN_INVALID',
             403,
           );
+        requireCondition(
+          (await db.query('SELECT valid_customer_presentation($1) AS valid', [proof.id])).rows[0]
+            .valid,
+          'TOKEN_INVALID_OR_EXPIRED',
+          410,
+        );
       }
       const merchant = (await db.query('SELECT timezone FROM merchants WHERE id=$1', [merchantId]))
         .rows[0];
@@ -206,7 +228,9 @@ export async function award(
           [calculated.balanceAfter, p.membershipId],
         )
       ).rows[0];
-      if (source === 'request') {
+      const fulfilledRequestId =
+        requestId || (matchingRequest?.expires_at > clock ? matchingRequest.id : undefined);
+      if (fulfilledRequestId) {
         await db.query(
           "UPDATE stamp_requests SET status='approved',decided_by=$1,decided_at=clock_timestamp(),transaction_id=$2,result=$3 WHERE id=$4",
           [
@@ -218,12 +242,12 @@ export async function award(
               quantity: p.quantity,
               balanceAfter: calculated.balanceAfter,
             },
-            requestId,
+            fulfilledRequestId,
           ],
         );
         await db.query(
           "INSERT INTO stamp_request_events(merchant_id,request_id,actor_id,action) VALUES($1,$2,$3,'approved')",
-          [merchantId, requestId, actor.id],
+          [merchantId, fulfilledRequestId, actor.id],
         );
       }
       await audit(db, actor, 'loyalty.award', merchantId, txId, {

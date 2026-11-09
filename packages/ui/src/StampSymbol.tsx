@@ -12,6 +12,18 @@ const paths: Record<StampIcon, string> = {
   crown: 'm3 6 5 4 4-7 4 7 5-4-2 12H5ZM5 22h14',
   flame: 'M13 2c1 6-5 6-4 11 2-1 4-3 4-5 7 6 7 10 3 13a7 7 0 0 1-11-5c0-6 5-8 8-14Z',
 };
+export function StampPath({ symbol = 'check' }: { symbol?: StampIcon }) {
+  return (
+    <path
+      d={paths[symbol] || paths.check}
+      stroke="currentColor"
+      strokeWidth={symbol === 'check' ? 2.6 : 1.7}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      fill="none"
+    />
+  );
+}
 export function StampSymbol({
   symbol = 'check',
   className = 'stamp-check',
@@ -21,13 +33,7 @@ export function StampSymbol({
 }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" aria-hidden="true">
-      <path
-        d={paths[symbol] || paths.check}
-        stroke="currentColor"
-        strokeWidth={symbol === 'check' ? 2.6 : 1.7}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      <StampPath symbol={symbol} />
     </svg>
   );
 }

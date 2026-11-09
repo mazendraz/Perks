@@ -6,6 +6,13 @@ export const legacyScriptHashes = [
   'w36slEqa9euNKxfvkw+LLGsDIr++3rsZXpZxtmRh8Aw=',
   '+5XkZFazzJo8n0iOP4ti/cLCMUudTf//Mzkb7xNPXIc=',
 ];
+export const legacyTargets = [
+  'iOS >= 13',
+  'Safari >= 13',
+  'Chrome >= 80',
+  'Android >= 8',
+  'Samsung >= 12',
+];
 export const scriptSources = [
   "'self'",
   ...legacyScriptHashes.map((hash) => "'sha256-" + hash + "'"),

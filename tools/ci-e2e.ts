@@ -85,6 +85,17 @@ try {
       mobile.once('error', () => resolve(1));
     });
   }
+  if (!process.exitCode) {
+    const animation = spawn(process.execPath, ['--import', 'tsx', 'tools/test-stamp-motion.ts'], {
+      stdio: 'inherit',
+      windowsHide: true,
+    });
+    children.push(animation);
+    process.exitCode = await new Promise<number>((resolve) => {
+      animation.once('exit', (code) => resolve(code ?? 1));
+      animation.once('error', () => resolve(1));
+    });
+  }
 } finally {
   await stop();
 }

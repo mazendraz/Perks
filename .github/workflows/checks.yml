@@ -46,6 +46,7 @@ jobs:
           path: |
             docs/execution/evidence/implementation/browser.json
             docs/execution/evidence/implementation/mobile.json
+            docs/execution/evidence/animation/
             docs/execution/evidence/implementation/*-ar.png
             docs/execution/evidence/implementation/*-en.png
   deployment:

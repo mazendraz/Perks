@@ -115,6 +115,7 @@ async function login(page: Page, email: string) {
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
 }
 async function watch(context: BrowserContext) {
+  await context.addInitScript('window.__name = function(value) { return value; }');
   await context.addInitScript(() => {
     const state = window as unknown as { policyViolations: string[] };
     state.policyViolations = [];
@@ -226,6 +227,13 @@ try {
   assert.equal(activated.statusCode, 200);
   const fixture = activated.json(),
     branch = fixture.branches[0].id;
+  const placement = (
+    await db.query(
+      "SELECT public_code FROM placements WHERE branch_id=$1 AND resolve_placement(public_code)->>'status'='active' ORDER BY created_at LIMIT 1",
+      [branch],
+    )
+  ).rows[0];
+  assert.ok(placement, 'provisioned branch must have its generated active QR');
   for (const project of [
     { name: 'chromium-pixel5', type: chromium, device: 'Pixel 5' },
     { name: 'webkit-iphone12', type: webkit, device: 'iPhone 12' },
@@ -238,6 +246,9 @@ try {
       ...devices[project.device],
       locale: 'en-US',
       baseURL: origin,
+      // WebKit routes bypass requests controlled by a service worker. Isolate
+      // its network-fault fixture; Chromium below exercises the actual SW.
+      serviceWorkers: project.type === webkit ? 'block' : 'allow',
     });
     const cashier = await browser.newContext({
       ...devices[project.device],
@@ -284,6 +295,14 @@ try {
     await page.getByLabel('I accept the program and reward terms', { exact: true }).check();
     await page.getByRole('button', { name: 'Create my card', exact: true }).click();
     await page.getByRole('progressbar', { name: 'Stamp progress', exact: true }).waitFor();
+    await page.waitForFunction(
+      () =>
+        !document
+          .getAnimations()
+          .some(
+            (animation) => animation.id === 'nuqta-first-card' && animation.playState === 'running',
+          ),
+    );
     await checkLayout(page, project.name + ' customer');
     await page.screenshot({
       path: directory + '/mobile-' + project.name + '-customer-en.png',
@@ -293,7 +312,161 @@ try {
       project.name +
         ': real customer registration and card through the legacy build with UUID/Popover/ResizeObserver absent',
     );
+    if (project.type === webkit) {
+      const guide = page.getByRole('dialog', { name: 'Save your card', exact: true });
+      await guide.waitFor();
+      assert.equal(await guide.getByRole('img').count(), 2);
+      await guide.getByRole('button', { name: 'Got it', exact: true }).click();
+    } else {
+      await page.evaluate(() => {
+        const state = { calls: 0 };
+        (window as unknown as { installTest: typeof state }).installTest = state;
+        const event = new Event('beforeinstallprompt', { cancelable: true });
+        Object.defineProperty(event, 'prompt', {
+          value: async () => {
+            state.calls++;
+          },
+        });
+        Object.defineProperty(event, 'userChoice', {
+          value: Promise.resolve({ outcome: 'dismissed' }),
+        });
+        window.dispatchEvent(event);
+      });
+      await page.getByRole('button', { name: 'Save to home screen', exact: true }).click();
+      assert.equal(
+        await page.evaluate(
+          () => (window as unknown as { installTest: { calls: number } }).installTest.calls,
+        ),
+        1,
+      );
+    }
+    pass(
+      project.name +
+        ': first home-screen offer uses the native prompt or the two-step Safari illustration',
+    );
+    const memberId = new URL(page.url()).pathname.split('/').at(-1)!;
+    let lostRequest = false,
+      interruptedBeforeCommit = false;
+    const autoKeys: string[] = [];
+    const interruptRequest = async (route: import('playwright').Route) => {
+      if (route.request().method() === 'POST') {
+        autoKeys.push(route.request().headers()['idempotency-key']!);
+        if (!interruptedBeforeCommit) {
+          interruptedBeforeCommit = true;
+          await route.abort('failed');
+          return;
+        }
+        if (!lostRequest) {
+          lostRequest = true;
+          const saved = await route.fetch();
+          assert.equal(saved.status(), 200);
+          await route.abort('failed');
+          return;
+        }
+      }
+      await route.continue();
+    };
+    await page.route('**/api/v1/me/stamp-requests', interruptRequest);
+    await page.addInitScript(() => {
+      (window as unknown as { placementClicks: number }).placementClicks = 0;
+      document.addEventListener('click', () => {
+        (window as unknown as { placementClicks: number }).placementClicks++;
+      });
+    });
+    for (let scan = 0; scan < 5; scan++) {
+      await page.goto(origin + '/p/' + placement.public_code + '?src=qr', {
+        waitUntil: 'domcontentloaded',
+      });
+      await page.waitForURL('**/customer/' + memberId + '?**');
+      if (scan === 0) {
+        try {
+          await page
+            .getByText('You’re offline. We’ll send the request when you reconnect.', {
+              exact: true,
+            })
+            .waitFor({ timeout: 6000 });
+        } catch (error) {
+          console.log(
+            JSON.stringify({
+              interruptionDiagnostics: project.name,
+              attempts: autoKeys.length,
+              beforeCommit: interruptedBeforeCommit,
+              afterCommit: lostRequest,
+              alerts: await page.getByRole('alert').allTextContents(),
+              qrOpen: await page.getByRole('dialog', { name: 'Personal QR', exact: true }).count(),
+            }),
+          );
+          throw error;
+        }
+      }
+      await page.locator('.match-code').waitFor();
+      await page.waitForFunction(() => !new URLSearchParams(location.search).has('auto'));
+      assert.equal(
+        await page.evaluate(
+          () => (window as unknown as { placementClicks: number }).placementClicks,
+        ),
+        0,
+      );
+    }
+    await page.unroute('**/api/v1/me/stamp-requests', interruptRequest);
+    assert.equal(lostRequest, true);
+    assert.ok(autoKeys.length >= 3);
+    assert.equal(autoKeys[0], autoKeys[1]);
+    assert.equal(autoKeys[1], autoKeys[2]);
+    assert.equal(
+      (
+        await db.query('SELECT count(*)::int AS n FROM stamp_requests WHERE membership_id=$1', [
+          memberId,
+        ])
+      ).rows[0].n,
+      1,
+    );
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.locator('.match-code').waitFor();
+    assert.equal(
+      (
+        await db.query('SELECT count(*)::int AS n FROM stamp_requests WHERE membership_id=$1', [
+          memberId,
+        ])
+      ).rows[0].n,
+      1,
+    );
+    await page.getByRole('button', { name: 'Close code', exact: true }).click();
+    await page.getByRole('button', { name: 'Cancel request', exact: true }).click();
+    await page.getByRole('button', { name: 'Request stamp', exact: true }).waitFor();
+    pass(
+      project.name +
+        ': five placement scans open the existing card with zero customer taps, create one request, and reload creates none',
+    );
+    pass(
+      project.name +
+        ': interruption before commit and a lost committed response retry the same request key without a duplicate',
+    );
+    let firstToken = '';
+    await page.route(
+      '**/presentation-tokens',
+      async (route) => {
+        const response = await route.fetch(),
+          value = await response.json();
+        firstToken = value.token;
+        await route.fulfill({
+          response,
+          json: { ...value, expiresAt: new Date(Date.now() + 21000).toISOString() },
+        });
+      },
+      { times: 1 },
+    );
     await page.getByRole('button', { name: 'Show my code', exact: true }).click();
+    await page.locator('.qr-panel code').waitFor();
+    assert.notEqual(firstToken, '');
+    await page.waitForFunction((old) => {
+      const code = document.querySelector('.qr-panel code')?.textContent;
+      return !!code && code !== old;
+    }, firstToken);
+    pass(
+      project.name +
+        ': a shortened display-expiry fixture refreshes the QR automatically before expiration',
+    );
     const token = (await page.locator('.qr-panel code').textContent())!.trim();
     await login(cp, cashierEmail);
     await cp.locator('[data-portal="cashier"]').waitFor();
@@ -305,10 +478,73 @@ try {
       .getByLabel('Receipt number', { exact: true })
       .fill('MOBILE-' + stamp + '-' + project.name);
     await cp.getByRole('button', { name: 'Review award', exact: true }).click();
+    const stampStarted = Date.now();
     await cp.getByRole('button', { name: 'Confirm stamps', exact: true }).click();
     await cp.getByText('Saved balance: 1', { exact: true }).waitFor();
     await page.waitForFunction(
       () => document.querySelector('[role="progressbar"]')?.getAttribute('aria-valuenow') === '1',
+    );
+    assert.ok(
+      Date.now() - stampStarted < 1000,
+      'first committed stamp must be visible in under one second locally',
+    );
+    await page
+      .getByRole('dialog', { name: 'Personal QR', exact: true })
+      .waitFor({ state: 'hidden' });
+    if (project.type === webkit) {
+      const guide = page.getByRole('dialog', { name: 'Save your card', exact: true });
+      await guide.waitFor();
+      await guide.getByRole('button', { name: 'Got it', exact: true }).click();
+    } else await page.getByRole('button', { name: 'Not now', exact: true }).click();
+    const angles = await page.locator('.filled .nq-stamp-ink').evaluateAll((elements) =>
+      elements.map((el) => ({
+        seed: el.getAttribute('data-ink-seed'),
+        angle: el.getAttribute('data-ink-angle'),
+      })),
+    );
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.getByRole('progressbar', { name: 'Stamp progress', exact: true }).waitFor();
+    assert.equal(await page.getByRole('button', { name: 'Not now', exact: true }).count(), 0);
+    assert.equal(
+      await page.getByRole('dialog', { name: 'Save your card', exact: true }).count(),
+      0,
+    );
+    assert.deepEqual(
+      await page.locator('.filled .nq-stamp-ink').evaluateAll((elements) =>
+        elements.map((el) => ({
+          seed: el.getAttribute('data-ink-seed'),
+          angle: el.getAttribute('data-ink-angle'),
+        })),
+      ),
+      angles,
+    );
+    pass(
+      project.name +
+        ': QR closes on the committed stamp, ink angles survive reload, and home-screen offers stop after the second dismissal',
+    );
+    const standalone = await browser.newContext({
+      ...devices[project.device],
+      locale: 'en-US',
+      storageState: { cookies: (await customer.storageState()).cookies, origins: [] },
+    });
+    await watch(standalone);
+    await standalone.addInitScript(() => {
+      const original = window.matchMedia.bind(window);
+      window.matchMedia = (query) => {
+        const result = original(query);
+        if (query === '(display-mode: standalone)')
+          Object.defineProperty(result, 'matches', { value: true });
+        return result;
+      };
+    });
+    const installedPage = await standalone.newPage();
+    await installedPage.goto(origin + '/customer/' + memberId);
+    await installedPage.getByRole('progressbar', { name: 'Stamp progress', exact: true }).waitFor();
+    assert.equal(await installedPage.locator('.install-card-offer,.install-card-guide').count(), 0);
+    await standalone.close();
+    pass(
+      project.name +
+        ': a standalone app suppresses installation offers even without stored offer history',
     );
     await checkLayout(cp, project.name + ' cashier');
     await cp.screenshot({
@@ -557,6 +793,39 @@ try {
         'PWA: a waiting update activates and reloads after the user taps Update now, preserving the authenticated card',
       );
     }
+    if (project.type === webkit)
+      await page.getByRole('button', { name: 'English', exact: true }).click();
+    const placementState = (
+      await db.query('SELECT status FROM placements WHERE public_code=$1', [placement.public_code])
+    ).rows[0].status;
+    try {
+      await db.query("UPDATE branches SET status='disabled' WHERE id=$1", [branch]);
+      await page.goto(origin + '/p/' + placement.public_code + '?src=nfc');
+      await page.getByRole('alert').filter({ hasText: 'This shop code is unavailable.' }).waitFor();
+      assert.ok(
+        !/[A-Z]{3,}_|[a-f0-9]{8}-[a-f0-9]{4}-/.test(await page.getByRole('alert').innerText()),
+      );
+      await db.query("UPDATE branches SET status='active' WHERE id=$1", [branch]);
+      await db.query("UPDATE placements SET status='revoked' WHERE public_code=$1", [
+        placement.public_code,
+      ]);
+      await page.reload({ waitUntil: 'domcontentloaded' });
+      await page.getByRole('alert').filter({ hasText: 'This shop code was replaced.' }).waitFor();
+      assert.ok(
+        !/[A-Z]{3,}_|[a-f0-9]{8}-[a-f0-9]{4}-/.test(await page.getByRole('alert').innerText()),
+      );
+      assert.equal(await page.locator('.match-code').count(), 0);
+    } finally {
+      await db.query("UPDATE branches SET status='active' WHERE id=$1", [branch]);
+      await db.query('UPDATE placements SET status=$2 WHERE public_code=$1', [
+        placement.public_code,
+        placementState,
+      ]);
+    }
+    pass(
+      project.name +
+        ': paused branches and revoked NFC placements show plain guidance without technical codes or creating a request',
+    );
     await customer.close();
     await cashier.close();
   }

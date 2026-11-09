@@ -1,8 +1,8 @@
 import { portalAssetUrl } from '../portals.js';
 import { Select } from '../controls/Select.js';
 import { useEffect, useState, type FormEvent } from 'react';
-import type { Grant, Language } from '../../../../packages/contracts/src/index.js';
-import { api, errorText } from '../api.js';
+import type { Grant, Language, SavedCard } from '../../../../packages/contracts/src/index.js';
+import { api, errorText, ApiError } from '../api.js';
 import { navigate } from '../useRoute.js';
 interface Placement {
   id: string;
@@ -26,9 +26,65 @@ export function PlacementPage({ code, lang }: { code: string; lang: Language }) 
     } | null>(null),
     [error, setError] = useState('');
   useEffect(() => {
-    void api<NonNullable<typeof data>>('/public/placements/' + encodeURIComponent(code))
-      .then(setData)
-      .catch((e) => setError(errorText(e, lang)));
+    let alive = true,
+      retry = false,
+      busy = false;
+    const startedAt = Date.now();
+    const load = async () => {
+      const placement = await api<NonNullable<typeof data>>(
+        '/public/placements/' + encodeURIComponent(code),
+      );
+      if (!alive) return;
+      setData(placement);
+      const query = new URLSearchParams({
+        b: placement.branchId,
+        src: new URLSearchParams(location.search).get('src') === 'nfc' ? 'nfc' : 'qr',
+        code,
+        auto: '1',
+        at: String(startedAt),
+      });
+      let cards: SavedCard[] = [];
+      try {
+        cards = (await api<{ cards: SavedCard[] }>('/me/memberships', { workspace: 'customer' }))
+          .cards;
+      } catch (error) {
+        if (!(error instanceof ApiError) || ![401, 403].includes(error.status)) throw error;
+      }
+      if (!alive) return;
+      const existing = cards.find(
+        (card) => card.merchant_slug === placement.slug && card.status === 'active',
+      );
+      navigate((existing ? '/customer/' + existing.id : '/join/' + placement.slug) + '?' + query);
+    };
+    const attempt = () => {
+      if (!alive || busy) return;
+      busy = true;
+      void load()
+        .catch((error) => {
+          if (!alive) return;
+          retry = error instanceof ApiError && error.status === 0;
+          setError(
+            retry
+              ? ar
+                ? 'مفيش نت، هنفتح كارتك أول ما يرجع.'
+                : 'You’re offline. Your card will open when you reconnect.'
+              : errorText(error, lang).split(' · ')[0]!,
+          );
+        })
+        .finally(() => {
+          busy = false;
+        });
+    };
+    attempt();
+    window.addEventListener('online', attempt);
+    const timer = window.setInterval(() => {
+      if (retry && navigator.onLine) attempt();
+    }, 3000);
+    return () => {
+      alive = false;
+      window.removeEventListener('online', attempt);
+      window.clearInterval(timer);
+    };
   }, [code]);
   return (
     <main id="main" className="join-page">
@@ -41,26 +97,7 @@ export function PlacementPage({ code, lang }: { code: string; lang: Language }) 
           <>
             <h1>{data.merchantName}</h1>
             <p>{data.branchName}</p>
-            <p className="muted">
-              {ar
-                ? 'الرابط ده بيفتح كارت الولاء. الأختام محتاجة شراء واعتماد من الكاشير.'
-                : 'This link opens loyalty enrollment. Stamps require a purchase and cashier approval.'}
-            </p>
-            <button
-              className="primary full"
-              onClick={() =>
-                navigate(
-                  '/join/' +
-                    data.slug +
-                    '?b=' +
-                    data.branchId +
-                    '&src=' +
-                    (new URLSearchParams(location.search).get('src') === 'nfc' ? 'nfc' : 'qr'),
-                )
-              }
-            >
-              {ar ? 'افتح كارت الولاء' : 'Open loyalty card'}
-            </button>
+            <p role="status">{ar ? 'بنفتح كارتك…' : 'Opening your card…'}</p>
           </>
         ) : (
           <p role="status">{ar ? 'بنفتح الفرع…' : 'Loading branch…'}</p>

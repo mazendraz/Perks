@@ -15,7 +15,8 @@ let cu: Awaited<ReturnType<typeof login>>,
   ca: typeof cu,
   foreign: typeof cu,
   ms: string,
-  token: string;
+  token: string,
+  proof: string;
 before(async () => {
   await db.connect();
   await seed(db);
@@ -46,6 +47,14 @@ before(async () => {
     payload: {},
   });
   token = qr.json().token;
+  const resolved = await app.inject({
+    method: 'POST',
+    url: '/api/v1/cashier/scans/resolve',
+    headers: ca,
+    payload: { merchantId: ids.merchantA, branchId: ids.branchA, token },
+  });
+  assert.equal(resolved.statusCode, 200);
+  proof = resolved.json().presentationContext;
 });
 after(async () => {
   await app.close();
@@ -65,6 +74,7 @@ const body = (r: { code: string }, receipt: string) => ({
   approve: true,
   code: r.code,
   award: {
+    presentationContext: proof,
     branchId: ids.branchA,
     membershipId: ms,
     quantity: 2,
@@ -135,6 +145,14 @@ test('requests require holder/branch authority; matching attempts persist and on
   const all = await Promise.all(Array.from({ length: 8 }, () => create()));
   assert.equal(new Set(all.map((x) => x.id)).size, 1);
   const r = all[0];
+  const unscanned = body(r, 'REQ-UNSCANNED');
+  unscanned.award.presentationContext = token;
+  assert.equal((await decide(r.id, unscanned)).statusCode, 403);
+  const anotherSession = await login(app, 'cashier@bunn.test');
+  assert.equal(
+    (await decide(r.id, body(r, 'REQ-OTHER-SESSION'), randomUUID(), anotherSession)).statusCode,
+    403,
+  );
   assert.equal((await decide(r.id, body(r, 'REQ-1'), randomUUID(), foreign)).statusCode, 404);
   assert.equal(
     (await decide(r.id, { ...body(r, 'REQ-1'), code: r.code === '000000' ? '000001' : '000000' }))

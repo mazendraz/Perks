@@ -688,10 +688,11 @@ try {
   await up.getByRole('button', { name: 'Create my card', exact: true }).click();
   await up.waitForURL('**/customer/*');
   ok('Server field validation reaches the enrollment field with an accessible focus link');
-  const membership = up.url().split('/').at(-1)!;
+  const membership = new URL(up.url()).pathname.split('/').at(-1)!;
   await up.getByRole('button', { name: 'Show my code', exact: true }).click();
   await up.locator('.qr-panel code').waitFor();
   let token = (await up.locator('.qr-panel code').textContent())!;
+  await up.getByRole('button', { name: 'Close code', exact: true }).click();
   assert.match(token, /^NQP:/);
   ok('Verified customer enrolls and receives a persisted branded card and real QR');
   const shared = await context();
@@ -921,6 +922,9 @@ try {
   await cp.getByRole('button', { name: 'Confirm stamps', exact: true }).click();
   await cp.getByText('Saved balance: 0', { exact: true }).waitFor();
   await up.getByText('Available', { exact: true }).waitFor();
+  await up.waitForFunction(
+    () => document.querySelector('[role=progressbar]')?.getAttribute('aria-valuenow') === '5',
+  );
   assert.equal(await up.locator('.stamp-dots .filled').count(), 5);
   await up.waitForFunction(() =>
     (window as unknown as { motionEvents: string[] }).motionEvents?.some((x) =>
@@ -1052,10 +1056,19 @@ try {
   assert.equal(queueProof.status(), 200);
   assert.equal((await queueProof.json()).requests.length, 1);
   await navigateTo(cp, '/cashier');
-  await cp.getByRole('button', { name: 'Review request', exact: true }).click();
-  await cp.getByLabel('Customer matching code', { exact: true }).fill(requestCode);
+  assert.equal((await queueProof.json()).requests[0].code, requestCode);
+  async function scanRequestCard() {
+    if (await up.getByRole('dialog', { name: 'Personal QR', exact: true }).count())
+      await up.getByRole('button', { name: 'Close code', exact: true }).click();
+    await up.getByRole('button', { name: 'Show my code', exact: true }).click();
+    const fresh = (await up.locator('.qr-panel code').textContent())!.trim();
+    await cp.getByLabel('Or enter the request customer QR code', { exact: true }).fill(fresh);
+    await cp.getByRole('button', { name: 'Read request code', exact: true }).click();
+    await cp.getByText('Customer code scanned.', { exact: true }).waitFor();
+  }
+  await scanRequestCard();
   await cp.getByLabel('Request receipt number', { exact: true }).fill('BROWSER-' + stamp + '-3');
-  await cp.getByLabel('Stamp quantity', { exact: true }).fill('2');
+  await cp.getByRole('button', { name: 'More stamps', exact: true }).click();
   let decisionResolved!: () => void, decisionRejected!: (error: Error) => void;
   const committedDecision = new Promise<void>((resolve, reject) => {
     decisionResolved = resolve;
@@ -1076,11 +1089,11 @@ try {
     },
     { times: 1 },
   );
-  await cp.getByRole('button', { name: 'Approve stamp request', exact: true }).click();
+  await cp.getByRole('button', { name: 'Stamp request', exact: true }).click();
   await committedDecision;
   await reloadPage(cp);
   await cp.getByRole('button', { name: 'Check the same decision', exact: true }).click();
-  await cp.getByRole('dialog').waitFor({ state: 'detached' });
+  await cp.getByRole('status').filter({ hasText: 'Transaction saved:' }).waitFor();
   await reloadPage(up);
   await up.getByRole('status').filter({ hasText: 'Request approved' }).waitFor();
   const afterRequests = (await (await call(owner, '/merchants/' + mid + '/overview')).json())
@@ -1088,17 +1101,16 @@ try {
   assert.equal(afterRequests.stamps, 7);
   assert.equal(afterRequests.visits, 3);
   ok(
-    'Branch request UI matches the customer code; a lost approval response recovers one additional purchase',
+    'Inline branch queue requires a customer QR scan and receipt, approves in one tap without a confirmation dialog, and recovers a lost response once',
   );
   // A second request never reaches the server on the first attempt.
   await up.getByRole('button', { name: 'Request stamp', exact: true }).click();
   await up.locator('.match-code').waitFor();
-  const resumedCode = (await up.locator('.match-code').textContent())!;
-  await cp.getByRole('button', { name: 'Review request', exact: true }).click();
-  await cp.getByLabel('Customer matching code', { exact: true }).fill(resumedCode);
+  await cp.getByRole('button', { name: 'Stamp request', exact: true }).waitFor();
+  await scanRequestCard();
   await cp.getByLabel('Request receipt number', { exact: true }).fill('BROWSER-' + stamp + '-4');
   await cp.route('**/stamp-requests/*/decision', (route) => route.abort('failed'), { times: 1 });
-  await cp.getByRole('button', { name: 'Approve stamp request', exact: true }).click();
+  await cp.getByRole('button', { name: 'Stamp request', exact: true }).click();
   await cp
     .getByText('NETWORK UNCERTAIN', { exact: false })
     .first()
@@ -1112,17 +1124,22 @@ try {
   );
   assert.ok(savedDecision?.body?.award);
   assert.equal('code' in savedDecision.body, false);
+  assert.equal('presentationContext' in savedDecision.body.award, false);
+  assert.equal('code' in savedDecision.request, false);
   await reloadPage(cp);
   await cp.getByRole('button', { name: 'Check the same decision', exact: true }).click();
-  await cp.getByRole('dialog').waitFor();
+  await cp.getByRole('button', { name: 'Stamp request', exact: true }).waitFor();
   assert.equal(
     await cp.getByLabel('Request receipt number', { exact: true }).inputValue(),
     'BROWSER-' + stamp + '-4',
   );
-  assert.equal(await cp.getByLabel('Customer matching code', { exact: true }).inputValue(), '');
-  await cp.getByLabel('Customer matching code', { exact: true }).fill(resumedCode);
-  await cp.getByRole('button', { name: 'Approve stamp request', exact: true }).click();
-  await cp.getByRole('dialog').waitFor({ state: 'detached' });
+  assert.equal(
+    await cp.getByRole('button', { name: 'Stamp request', exact: true }).isDisabled(),
+    true,
+  );
+  await scanRequestCard();
+  await cp.getByRole('button', { name: 'Stamp request', exact: true }).click();
+  await cp.getByRole('status').filter({ hasText: 'Transaction saved:' }).waitFor();
   assert.equal(
     (
       await db.query(
@@ -1133,7 +1150,7 @@ try {
     4,
   );
   ok(
-    'Unknown request decision after reload restores its immutable command and completes once with a re-entered code',
+    'Unknown request decision after reload restores its immutable command without stored QR credentials and completes once after a fresh customer scan',
   );
   await merchantTab(op, 'Customers and segments');
   await op.getByRole('button', { name: 'Browser Customer', exact: true }).click();
@@ -1256,7 +1273,7 @@ try {
   const anonymous = await context(),
     pp = await anonymous.newPage();
   await navigateTo(pp, qrUrl);
-  await pp.getByRole('button', { name: 'Open loyalty card', exact: true }).click();
+  await pp.waitForURL('**/join/**');
   await pp.getByRole('heading', { name: 'Browser Cafe ' + stamp, exact: true }).waitFor();
   await piece.getByRole('button', { name: 'Replace piece', exact: true }).click();
   await op

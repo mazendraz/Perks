@@ -1,4 +1,7 @@
-import { requestDecisionInput } from '../../../../packages/contracts/src/commands.js';
+import {
+  requestDecisionInput,
+  stampRequestInput,
+} from '../../../../packages/contracts/src/commands.js';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import type { Config } from '../config.js';
@@ -6,7 +9,7 @@ import { authenticated } from '../auth.js';
 import { audit, transaction, type Pools, type DB, type Actor } from '../db.js';
 import { keyedHash, tokenHash, safeEqual } from '../crypto.js';
 import { requireCondition } from '../errors.js';
-import { idempotencyKey, operation } from '../operations.js';
+import { idempotencyKey, operation, expectedRevision } from '../operations.js';
 import { merchantGrant } from '../policy.js';
 import { award } from './loyalty.js';
 function code(nonce: string, c: Config) {
@@ -21,9 +24,52 @@ async function event(db: DB, actor: Actor, mid: string, id: string, action: stri
   );
 }
 export function requestsModule(app: FastifyInstance, pools: Pools, c: Config) {
+  app.get('/api/v1/merchants/:m/stamp-request-settings', async (req) => {
+    const actor = authenticated(req),
+      { m } = z.object({ m: z.uuid() }).parse(req.params);
+    return transaction(
+      pools.pool,
+      async (db) => {
+        await merchantGrant(db, actor, m, ['owner']);
+        const row = (
+          await db.query(
+            'SELECT stamp_request_daily_limit AS "dailyLimit",revision FROM merchants WHERE id=$1',
+            [m],
+          )
+        ).rows[0];
+        return row;
+      },
+      actor,
+    );
+  });
+  app.patch('/api/v1/merchants/:m/stamp-request-settings', async (req) => {
+    const actor = authenticated(req),
+      { m } = z.object({ m: z.uuid() }).parse(req.params),
+      p = z
+        .object({ dailyLimit: z.number().int().min(1).max(100) })
+        .strict()
+        .parse(req.body),
+      revision = expectedRevision(req);
+    return transaction(
+      pools.pool,
+      async (db) => {
+        await merchantGrant(db, actor, m, ['owner'], undefined, true);
+        const row = (
+          await db.query(
+            'UPDATE merchants SET stamp_request_daily_limit=$2,revision=revision+1 WHERE id=$1 AND revision=$3 RETURNING stamp_request_daily_limit AS "dailyLimit",revision',
+            [m, p.dailyLimit, revision],
+          )
+        ).rows[0];
+        requireCondition(row, 'REVISION_CONFLICT', 409);
+        await audit(db, actor, 'request.limit.update', m, m, { dailyLimit: p.dailyLimit });
+        return row;
+      },
+      actor,
+    );
+  });
   app.post('/api/v1/me/stamp-requests', async (req) => {
     const actor = authenticated(req),
-      p = z.object({ membershipId: z.uuid(), branchId: z.uuid() }).strict().parse(req.body),
+      p = stampRequestInput.parse(req.body),
       key = idempotencyKey(req);
     const r = await transaction(
       pools.pool,
@@ -36,6 +82,27 @@ export function requestsModule(app: FastifyInstance, pools: Pools, c: Config) {
         ).rows[0];
         requireCondition(ms, 'NOT_FOUND', 404);
         await db.query('SELECT customer_merchant_guard($1)', [ms.merchant_id]);
+        if (p.placementCode) {
+          const placement = (
+            await db.query('SELECT resolve_placement($1) AS value', [p.placementCode])
+          ).rows[0]?.value;
+          requireCondition(
+            placement && placement.status === 'active',
+            'PLACEMENT_UNAVAILABLE',
+            410,
+          );
+          requireCondition(
+            placement.branchId === p.branchId &&
+              (
+                await db.query('SELECT 1 FROM public_merchant_brands WHERE id=$1 AND slug=$2', [
+                  ms.merchant_id,
+                  placement.slug,
+                ])
+              ).rowCount,
+            'REQUEST_CONTEXT_MISMATCH',
+            422,
+          );
+        }
         requireCondition(
           (
             await db.query(
@@ -73,6 +140,25 @@ export function requestsModule(app: FastifyInstance, pools: Pools, c: Config) {
                 status: 'pending',
               };
             }
+            await db.query('SELECT pg_advisory_xact_lock(hashtextextended($1,0))', [
+              'request-day:' + ms.merchant_id + ':' + actor.id,
+            ]);
+            const policy = (
+              await db.query('SELECT customer_request_policy($1) AS value', [p.membershipId])
+            ).rows[0].value;
+            const count = (
+              await db.query(
+                'SELECT count(*)::int AS n FROM stamp_requests WHERE merchant_id=$1 AND user_id=$2 AND created_at>=$3 AND created_at<$4',
+                [ms.merchant_id, actor.id, policy.dayStart, policy.dayEnd],
+              )
+            ).rows[0].n;
+            if (count >= policy.limit) {
+              await audit(db, actor, 'request.daily_limit', ms.merchant_id, p.membershipId, {
+                branchId: p.branchId,
+                limit: policy.limit,
+              });
+              return { limited: true };
+            }
             const nonce = crypto.randomUUID(),
               match = code(nonce, c),
               r = (
@@ -91,6 +177,7 @@ export function requestsModule(app: FastifyInstance, pools: Pools, c: Config) {
       },
       actor,
     );
+    requireCondition(!('limited' in r), 'REQUEST_DAILY_LIMIT', 429);
     return { ...r, nonce: undefined, code: code(r.nonce, c) };
   });
   app.get('/api/v1/me/stamp-requests', async (req) => {
@@ -154,10 +241,10 @@ export function requestsModule(app: FastifyInstance, pools: Pools, c: Config) {
         return {
           requests: (
             await db.query(
-              "SELECT r.id,r.membership_id,r.branch_id,r.expires_at,r.created_at,r.failed_matches,cp.alias,v.max_per_tx,v.threshold,a.balance FROM stamp_requests r JOIN memberships ms ON ms.id=r.membership_id JOIN tenant_customer_profiles cp ON cp.id=ms.profile_id JOIN program_versions v ON v.id=ms.program_version_id JOIN loyalty_accounts a ON a.membership_id=ms.id WHERE r.merchant_id=$1 AND r.branch_id=$2 AND r.status='pending' AND r.expires_at>clock_timestamp() AND r.failed_matches<5 ORDER BY r.created_at",
+              "SELECT r.id,r.membership_id,r.branch_id,r.expires_at,r.created_at,r.failed_matches,r.code_nonce,cp.alias,v.max_per_tx,v.threshold,a.balance FROM stamp_requests r JOIN memberships ms ON ms.id=r.membership_id JOIN tenant_customer_profiles cp ON cp.id=ms.profile_id JOIN program_versions v ON v.id=ms.program_version_id JOIN loyalty_accounts a ON a.membership_id=ms.id WHERE r.merchant_id=$1 AND r.branch_id=$2 AND r.status='pending' AND r.expires_at>clock_timestamp() AND r.failed_matches<5 ORDER BY r.created_at",
               [m, branchId],
             )
-          ).rows,
+          ).rows.map((row) => ({ ...row, code_nonce: undefined, code: code(row.code_nonce, c) })),
         };
       },
       actor,
@@ -208,7 +295,7 @@ export function requestsModule(app: FastifyInstance, pools: Pools, c: Config) {
               return { matchFailed: true };
             }
           }
-          return award(db, actor, m, key, { ...p.award, presentationContext: '' }, 'request', id);
+          return award(db, actor, m, key, p.award, 'request', id);
         }
         return operation(
           db,

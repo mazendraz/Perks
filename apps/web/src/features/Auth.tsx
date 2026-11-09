@@ -4,7 +4,6 @@ import { LoyaltyCard } from '../../../../packages/ui/src/LoyaltyCard.js';
 import { Icon } from '../../../../packages/ui/src/Icon.js';
 import { api, errorText, setCsrf } from '../api.js';
 import { portalInfo, type Portal } from '../portals.js';
-import { navigate } from '../useRoute.js';
 
 const sample: CardData = {
   id: 'login-preview',
@@ -28,21 +27,16 @@ export function Login({
   onSuccess,
   invited = false,
   portal,
-  allowRegistration = false,
 }: {
   lang: Language;
   onSuccess: (portal?: Portal) => Promise<void>;
   invited?: boolean;
   portal?: Portal;
-  allowRegistration?: boolean;
 }) {
-  const ar = lang === 'ar';
-  const [mode, setMode] = useState<'login' | 'register' | 'reset'>(
-    invited && allowRegistration ? 'register' : 'login',
-  );
-  const [email, setEmail] = useState(''),
+  const ar = lang === 'ar',
+    [mode, setMode] = useState<'login' | 'reset'>('login'),
+    [email, setEmail] = useState(''),
     [password, setPassword] = useState(''),
-    [name, setName] = useState(''),
     [visible, setVisible] = useState(false),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(''),
@@ -51,13 +45,15 @@ export function Login({
     [mails, setMails] = useState<Mail[] | null>(null);
   useEffect(() => {
     void api<{ localMailAvailable: boolean }>('/auth/config')
-      .then((c) =>
-        setLocal(c.localMailAvailable && new URLSearchParams(location.search).get('dev') === '1'),
+      .then((config) =>
+        setLocal(
+          config.localMailAvailable && new URLSearchParams(location.search).get('dev') === '1',
+        ),
       )
       .catch(() => {});
   }, []);
-  const submit = async (e: FormEvent) => {
-    e.preventDefault();
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
     setBusy(true);
     setError('');
     try {
@@ -65,29 +61,21 @@ export function Login({
         await api('/auth/password/reset-request', { method: 'POST', body: { email } });
         setSent(true);
       } else {
-        const result = await api<{ csrfToken: string; portal?: Portal }>(
-          '/auth/' + (mode === 'register' ? 'register' : 'login'),
-          {
-            method: 'POST',
-            body: {
-              email,
-              password,
-              ...(mode === 'register' && name ? { displayName: name } : {}),
-            },
-          },
-        );
+        const result = await api<{ csrfToken: string; portal?: Portal }>('/auth/login', {
+          method: 'POST',
+          body: { email, password },
+        });
         setCsrf(result.csrfToken);
         setPassword('');
         await onSuccess(result.portal);
       }
-    } catch (e) {
-      setError(errorText(e, lang));
+    } catch (error) {
+      setError(errorText(error, lang));
     } finally {
       setBusy(false);
     }
   };
   const switchMode = (next: typeof mode) => {
-    if (next === 'register' && !allowRegistration) return;
     setMode(next);
     setError('');
     setSent(false);
@@ -157,6 +145,7 @@ export function Login({
           <span>MADE FOR YOUR EVERYDAY.</span>
         </div>
       </section>
+
       <section className="auth-form-side">
         <div className="auth-form-wrap">
           <span className="eyebrow">
@@ -171,43 +160,24 @@ export function Login({
                   : 'WELCOME TO NUQTA'}
           </span>
           <h2>
-            {mode === 'register'
+            {mode === 'reset'
               ? ar
-                ? 'حسابك بيبدأ هنا.'
-                : 'Make yourself at home.'
-              : mode === 'reset'
-                ? ar
-                  ? 'نرجّعك لحسابك.'
-                  : 'Back to your account.'
-                : ar
-                  ? 'حلو إنك رجعت.'
-                  : 'Good to have you back.'}
+                ? 'نرجّعك لحسابك.'
+                : 'Back to your account.'
+              : ar
+                ? 'حلو إنك رجعت.'
+                : 'Good to have you back.'}
           </h2>
           <p className="auth-description">
-            {mode === 'register'
+            {mode === 'reset'
               ? ar
-                ? 'اختار باسورد لحسابك مرة واحدة، وبعدها ادخل بيه في أي وقت.'
-                : 'Choose your password once. Sign in with it whenever you need.'
-              : mode === 'reset'
-                ? ar
-                  ? 'اكتب بريدك وهنبعت لك رابط تعيين باسورد جديد.'
-                  : 'Enter your email for a link to choose a new password.'
-                : ar
-                  ? 'ادخل بإيميلك وباسوردك. هنفتح لك مساحة حسابك تلقائيًا.'
-                  : 'Sign in with your email and password. Your account opens the right workspace automatically.'}
+                ? 'اكتب بريدك وهنبعت لك رابط تعيين باسورد جديد.'
+                : 'Enter your email for a link to choose a new password.'
+              : ar
+                ? 'ادخل بإيميلك وباسوردك. هنفتح لك مساحة حسابك تلقائيًا.'
+                : 'Sign in with your email and password. Your account opens the right workspace automatically.'}
           </p>
-          <form onSubmit={(e) => void submit(e)}>
-            {mode === 'register' && (
-              <label>
-                {ar ? 'اسمك' : 'Your name'}
-                <input
-                  autoComplete="name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  maxLength={60}
-                />
-              </label>
-            )}
+          <form onSubmit={(event) => void submit(event)}>
             <label>
               {ar ? 'البريد الإلكتروني' : 'Email'}
               <input
@@ -216,11 +186,11 @@ export function Login({
                 autoComplete="username"
                 dir="ltr"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(event) => setEmail(event.target.value)}
                 placeholder="you@company.com"
               />
             </label>
-            {mode !== 'reset' && (
+            {mode === 'login' && (
               <label>
                 {ar ? 'كلمة المرور' : 'Password'}
                 <div className="password-control">
@@ -228,11 +198,10 @@ export function Login({
                     aria-label={ar ? 'كلمة المرور' : 'Password'}
                     required
                     type={visible ? 'text' : 'password'}
-                    autoComplete={mode === 'register' ? 'new-password' : 'current-password'}
-                    minLength={mode === 'register' ? 10 : 1}
+                    autoComplete="current-password"
                     maxLength={128}
                     value={password}
-                    onChange={(e) => setPassword(e.target.value)}
+                    onChange={(event) => setPassword(event.target.value)}
                     dir="ltr"
                   />
                   <button
@@ -252,13 +221,6 @@ export function Login({
                     <Icon name={visible ? 'eyeOff' : 'eye'} size={19} />
                   </button>
                 </div>
-                {mode === 'register' && (
-                  <small className="muted">
-                    {ar
-                      ? '١٠ حروف على الأقل. جملة سهلة تفتكرها اختيار كويس.'
-                      : 'At least 10 characters. A memorable phrase works well.'}
-                  </small>
-                )}
               </label>
             )}
             {error && (
@@ -269,7 +231,7 @@ export function Login({
             {sent && (
               <p role="status" className="notice success">
                 {ar
-                  ? 'لو البريد مسجل، هنبعتلك رابط استعادة الحساب.'
+                  ? 'لو البريد مسجل،هنبعتلك رابط استعادة الحساب.'
                   : 'If the account exists, a recovery link is on its way.'}
               </p>
             )}
@@ -278,56 +240,30 @@ export function Login({
                 ? ar
                   ? 'لحظة…'
                   : 'Please wait…'
-                : mode === 'register'
+                : mode === 'reset'
                   ? ar
-                    ? 'إنشاء حساب'
-                    : 'Create account'
-                  : mode === 'reset'
-                    ? ar
-                      ? 'ابعت رابط الاستعادة'
-                      : 'Send recovery link'
-                    : ar
-                      ? 'دخول'
-                      : 'Sign in'}
+                    ? 'ابعت رابط الاستعادة'
+                    : 'Send recovery link'
+                  : ar
+                    ? 'دخول'
+                    : 'Sign in'}
               <span aria-hidden="true">{ar ? '←' : '→'}</span>
             </button>
           </form>
           <div className="auth-switch">
-            {mode === 'login' ? (
-              <>
-                <button className="text-button" onClick={() => switchMode('reset')}>
-                  {ar ? 'نسيت كلمة المرور؟' : 'Forgot password?'}
-                </button>
-                {allowRegistration && (
-                  <p>
-                    {ar ? 'أول مرة هنا؟' : 'New here?'}{' '}
-                    <button className="text-button" onClick={() => switchMode('register')}>
-                      {invited
-                        ? ar
-                          ? 'إنشاء حساب للدعوة'
-                          : 'Create account for this invitation'
-                        : ar
-                          ? 'حساب عميل جديد'
-                          : 'Create customer account'}
-                    </button>
-                  </p>
-                )}
-              </>
-            ) : (
-              <button className="text-button" onClick={() => switchMode('login')}>
-                {ar ? 'عندك حساب؟ سجّل دخول' : 'Already have an account? Sign in'}
-              </button>
-            )}
-          </div>
-          {portal && (
             <button
-              type="button"
-              className="text-button portal-change"
-              onClick={() => navigate('/portals')}
+              className="text-button"
+              onClick={() => switchMode(mode === 'login' ? 'reset' : 'login')}
             >
-              {ar ? 'اختيار بوابة مختلفة' : 'Choose a different portal'}
+              {mode === 'login'
+                ? ar
+                  ? 'نسيت كلمة المرور؟'
+                  : 'Forgot password?'
+                : ar
+                  ? 'عندك حساب؟ سجّل دخول'
+                  : 'Already have an account? Sign in'}
             </button>
-          )}
+          </div>
           {local && (
             <details className="local-inbox">
               <summary>
@@ -371,10 +307,11 @@ export function Login({
               )}
             </details>
           )}
+
           <div className="auth-trust">
-            <span aria-hidden="true">◇</span>
+            <Icon name="shield" size={18} />
             {ar
-              ? 'مساحتك، فريقك، وعملاؤك. كل واحد بصلاحيته.'
+              ? 'مساحتك،فريقك،وعملاؤك. كل واحد بصلاحيته.'
               : 'Your workspace. The right access for everyone.'}
           </div>
         </div>

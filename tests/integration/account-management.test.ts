@@ -287,7 +287,7 @@ test('preview reports missing setup; customer and owner WhatsApp drafts require 
     .json()
     .customers.find((c: { alias: string }) => c.alias === 'WhatsApp customer');
   assert.ok(client.phonePresent && client.whatsappConsent);
-  assert.equal(client.contactPhone, '+201098765432');
+  assert.equal(client.contactPhone, '+201••••••432');
   const draft = await app.inject({
     method: 'POST',
     url: '/api/v1/merchants/' + mid + '/customer-outreach/' + client.id + '/whatsapp',

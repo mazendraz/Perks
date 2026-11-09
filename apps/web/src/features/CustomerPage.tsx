@@ -1,4 +1,5 @@
 import { PhoneInput } from '../controls/PhoneInput.js';
+import { Select } from '../controls/Select.js';
 import { CustomerContact } from './CustomerOutreach.js';
 import { FieldErrors, fieldProps } from '../FieldErrors.js';
 import { CustomerRequests } from './StampRequests.js';
@@ -21,7 +22,7 @@ import type {
   Reward,
 } from '../../../../packages/contracts/src/index.js';
 import { LoyaltyCard } from '../../../../packages/ui/src/LoyaltyCard.js';
-import { api, errorText, ApiError } from '../api.js';
+import { api, errorText, ApiError, setCsrf } from '../api.js';
 import { navigate } from '../useRoute.js';
 interface HolderChallenge {
   id: string;
@@ -38,16 +39,15 @@ export function EnrollmentPage({
   slug,
   lang,
   session,
-  onNeedLogin,
+  refresh,
 }: {
   slug: string;
   lang: Language;
   session: Session | null;
-  onNeedLogin: () => void;
+  refresh: () => Promise<void>;
 }) {
-  const ar = lang === 'ar';
-  const [contactPhone, setContactPhone] = useState(''),
-    [whatsapp, setWhatsapp] = useState(false);
+  const ar = lang === 'ar',
+    deviceBound = !!session?.user.deviceBound;
   const [info, setInfo] = useState<{
       merchant: { id: string; name: string; terms: string; primary_color: string; status: string };
       branches: { id: string; name: string }[];
@@ -62,71 +62,144 @@ export function EnrollmentPage({
       }[];
     } | null>(null),
     [program, setProgram] = useState(''),
-    [alias, setAlias] = useState(''),
+    [alias, setAlias] = useState(session?.user.displayName || ''),
+    [phone, setPhone] = useState(''),
     [terms, setTerms] = useState(false),
     [busy, setBusy] = useState(false),
-    [error, setError] = useState('');
+    [prepared, setPrepared] = useState(deviceBound),
+    [error, setError] = useState(''),
+    [validation, setValidation] = useState<ApiError | null>(null);
   useEffect(() => {
+    let alive = true;
     void api<NonNullable<typeof info>>('/public/merchants/' + encodeURIComponent(slug))
-      .then((r) => {
-        setInfo(r);
-        setProgram(r.programs[0]?.id || '');
+      .then((value) => {
+        if (!alive) return;
+        setInfo(value);
+        setProgram(value.programs[0]?.id || '');
       })
-      .catch((e) => setError(errorText(e, lang)));
-  }, [slug]);
-  const [validation, setValidation] = useState<ApiError | null>(null);
-  const join = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!session) {
-      onNeedLogin();
-      return;
-    }
-    if (!info) return;
+      .catch((error) => {
+        if (alive) setError(errorText(error, lang).split(' · ')[0]!);
+      });
+    if (!deviceBound)
+      void api<{ csrfToken: string }>('/customer/bootstrap')
+        .then((value) => {
+          if (!alive) return;
+          if (!session) setCsrf(value.csrfToken);
+          setPrepared(true);
+        })
+        .catch((error) => {
+          if (alive) setError(errorText(error, lang));
+        });
+    return () => {
+      alive = false;
+    };
+  }, [slug, session?.user.id, deviceBound]);
+  const openCard = async (result: { membershipId: string; alreadyMember?: boolean }) => {
+    await refresh();
+    const context = new URLSearchParams(location.search);
+    if (!result.alreadyMember) context.set('new', '1');
+    navigate(
+      '/customer/' + result.membershipId + (context.toString() ? '?' + context.toString() : ''),
+    );
+  };
+  const join = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!info || !prepared) return;
     const chosen = info.programs.find((p) => p.id === program);
     if (!chosen) return;
     setBusy(true);
     setError('');
+    setValidation(null);
+    const query = new URLSearchParams(location.search),
+      requestedBranch = query.get('b'),
+      branchId =
+        info.branches.find((b) => b.id === requestedBranch)?.id ||
+        (!requestedBranch ? info.branches[0]?.id : undefined);
+    if (!branchId) {
+      setError(
+        ar
+          ? 'الفرع مش متاح دلوقتي. اعمل سكان للكود الحالي.'
+          : 'This branch is unavailable. Scan its current code.',
+      );
+      setBusy(false);
+      return;
+    }
     try {
-      const query = new URLSearchParams(location.search),
-        branchId = query.get('b');
-      const result = await api<{ membershipId: string; alreadyMember: boolean }>(
-        '/me/memberships',
-        {
-          method: 'POST',
-          key: crypto.randomUUID(),
-          body: {
-            merchantId: info.merchant.id,
-            programId: chosen.id,
-            programVersionId: chosen.versionId,
-            alias,
-            acceptedTerms: terms,
-            acceptedTermsHash: chosen.termsHash,
-            source: query.get('src') === 'nfc' ? 'nfc' : query.get('src') === 'qr' ? 'qr' : 'link',
-            branchId: info.branches.some((b) => b.id === branchId) ? branchId : null,
-            contactPhone: contactPhone || undefined,
-            consents: { email: false, sms: false, whatsapp },
+      const common = {
+        merchantId: info.merchant.id,
+        programId: chosen.id,
+        programVersionId: chosen.versionId,
+        branchId,
+        acceptedTerms: terms,
+        acceptedTermsHash: chosen.termsHash,
+        source: query.get('src') === 'nfc' ? 'nfc' : query.get('src') === 'qr' ? 'qr' : 'link',
+      };
+      if (deviceBound) {
+        const result = await api<{ membershipId: string; alreadyMember: boolean }>(
+          '/me/memberships',
+          {
+            method: 'POST',
+            key: crypto.randomUUID(),
+            body: {
+              ...common,
+              alias: session?.user.displayName || alias || (ar ? 'عميل' : 'Customer'),
+            },
           },
-        },
-      );
-      const context = new URLSearchParams(location.search);
-      if (!result.alreadyMember) context.set('new', '1');
-      navigate(
-        '/customer/' + result.membershipId + (context.toString() ? '?' + context.toString() : ''),
-      );
-    } catch (e) {
-      setValidation(e instanceof ApiError ? e : null);
-      setError(errorText(e, lang));
-      if (e instanceof ApiError && ['TERMS_CHANGED', 'PROGRAM_VERSION_CHANGED'].includes(e.code)) {
+        );
+        await openCard(result);
+      } else {
+        const result = await api<{
+          membershipId: string;
+          alreadyMember: boolean;
+          csrfToken: string;
+        }>('/customer/register', {
+          method: 'POST',
+          body: {
+            ...common,
+            displayName: alias,
+            phone,
+            placementCode: query.get('code') || undefined,
+          },
+        });
+        setCsrf(result.csrfToken);
+        await openCard(result);
+      }
+    } catch (error) {
+      // The device cookie exists before registration, so a lost committed reply
+      // can recover the card without storing a bearer token or re-entering a number.
+      if (error instanceof ApiError && error.status === 0) {
+        try {
+          const restored = await api<Session>('/session', { workspace: 'customer' });
+          setCsrf(restored.csrfToken);
+          const cards = await api<{ cards: SavedCard[] }>('/me/memberships', {
+            workspace: 'customer',
+          });
+          const card = cards.cards.find(
+            (card) => card.merchant_id === info.merchant.id && card.program_id === chosen.id,
+          );
+          if (card) {
+            await openCard({ membershipId: card.id });
+            return;
+          }
+        } catch {
+          /* Keep the form and original network error for a deliberate retry. */
+        }
+      }
+      setValidation(error instanceof ApiError ? error : null);
+      setError(errorText(error, lang).split(' · ')[0]!);
+      if (
+        error instanceof ApiError &&
+        ['TERMS_CHANGED', 'PROGRAM_VERSION_CHANGED'].includes(error.code)
+      ) {
         setTerms(false);
         try {
-          const fresh = await api<NonNullable<typeof info>>(
+          const value = await api<NonNullable<typeof info>>(
             '/public/merchants/' + encodeURIComponent(slug),
           );
-          setInfo(fresh);
-          if (!fresh.programs.some((p) => p.id === program))
-            setProgram(fresh.programs[0]?.id || '');
+          setInfo(value);
+          setProgram(value.programs[0]?.id || '');
         } catch {
-          /* Keep the failed consent visible; never accept a new version implicitly. */
+          /* Consent remains unchecked. */
         }
       }
     } finally {
@@ -139,11 +212,6 @@ export function EnrollmentPage({
       className="join-page"
       style={{ '--brand': info?.merchant.primary_color || '#2b55cf' } as CSSProperties}
     >
-      {error && (
-        <div className="notice error" role="alert">
-          {error}
-        </div>
-      )}
       {info ? (
         <>
           <div className="join-brand">
@@ -153,114 +221,115 @@ export function EnrollmentPage({
               {ar ? 'كل زيارة بتقرّبك لمكافأة.' : 'Every visit brings you closer to a reward.'}
             </p>
           </div>
-          <form className="panel" onSubmit={(e) => void join(e)}>
+          <form className="panel customer-first-visit" onSubmit={(event) => void join(event)}>
             <FieldErrors error={validation} lang={lang} />
-            {info.programs.length ? (
-              info.programs.map((p) => (
-                <label className="join-program" key={p.id}>
-                  <span className="checkbox-label">
-                    <input
-                      type="radio"
-                      name="program"
-                      checked={program === p.id}
-                      onChange={() => setProgram(p.id)}
-                    />
-                    <strong>{p.name}</strong>
-                  </span>
-                  <span>
-                    {p.threshold} {ar ? 'أختام →' : 'stamps →'} {p.rewardTitle}
-                  </span>
-                  <small className="muted">{p.rewardTerms}</small>
-                </label>
-              ))
-            ) : (
-              <p>
-                {ar ? 'مفيش برنامج متاح للتسجيل دلوقتي.' : 'No program is open for enrollment.'}
+            {error && (
+              <p className="notice error" role="alert">
+                {error}
               </p>
             )}
-            <details>
-              <summary>{ar ? 'شروط البرنامج' : 'Program terms'}</summary>
-              <p>{info.merchant.terms}</p>
-            </details>
-            {session ? (
+            {info.programs.length > 1 && (
+              <label>
+                {ar ? 'اختار كارتك' : 'Choose your card'}
+                <Select
+                  value={program}
+                  onChange={(event) => {
+                    setProgram(event.target.value);
+                    setTerms(false);
+                  }}
+                >
+                  {info.programs.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </Select>
+              </label>
+            )}
+            {info.programs.find((p) => p.id === program) && (
+              <div className="join-program">
+                <strong>{info.programs.find((p) => p.id === program)!.rewardTitle}</strong>
+                <span>
+                  {info.programs.find((p) => p.id === program)!.threshold}{' '}
+                  {ar ? 'أختام للمكافأة' : 'stamps to your reward'}
+                </span>
+              </div>
+            )}
+            {!deviceBound && (
               <>
                 <label>
-                  {ar ? 'الاسم اللي يظهر على كارتك' : 'Name on your card'}
+                  {ar ? 'اسمك' : 'Your name'}
                   <input
                     required
-                    minLength={1}
+                    autoComplete="name"
                     maxLength={60}
-                    {...fieldProps(validation, 'alias')}
+                    {...fieldProps(validation, 'displayName')}
                     value={alias}
-                    onChange={(e) => setAlias(e.target.value)}
-                    autoComplete="nickname"
+                    onChange={(event) => setAlias(event.target.value)}
                   />
-                </label>
-                <label className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    required
-                    {...fieldProps(validation, 'acceptedTerms')}
-                    checked={terms}
-                    onChange={(e) => setTerms(e.target.checked)}
-                  />
-                  {ar
-                    ? 'موافق على شروط البرنامج والمكافأة'
-                    : 'I accept the program and reward terms'}
                 </label>
                 <label>
-                  {ar ? 'رقم واتساب (اختياري)' : 'WhatsApp number (optional)'}
+                  {ar ? 'رقم موبايلك' : 'Mobile number'}
                   <PhoneInput
                     lang={lang}
-                    aria-label={ar ? 'رقم واتساب (اختياري)' : 'WhatsApp number (optional)'}
-                    value={contactPhone}
-                    onChange={(e) => setContactPhone(e.target.value)}
+                    aria-label={ar ? 'رقم موبايلك' : 'Mobile number'}
+                    required
+                    {...fieldProps(validation, 'phone')}
+                    value={phone}
+                    onChange={(event) => setPhone(event.target.value)}
                   />
                 </label>
-                <label className="checkbox-label">
-                  <input
-                    type="checkbox"
-                    checked={whatsapp}
-                    onChange={(e) => setWhatsapp(e.target.checked)}
-                  />
-                  {ar
-                    ? 'أوافق على رسائل المحل على واتساب (اختياري)'
-                    : 'I agree to WhatsApp messages from this business (optional)'}
-                </label>
-                <p className="muted">
-                  {ar
-                    ? 'التسجيل مش موافقة على رسائل تسويقية. تقدر تختار القنوات من تفضيلاتك بعدين.'
-                    : 'Enrollment does not opt you into marketing. You can choose channels in preferences later.'}
-                </p>
               </>
-            ) : (
-              <p className="muted">
-                {ar
-                  ? 'هنتحقق من بريدك قبل إنشاء الكارت.'
-                  : 'We verify your email before creating your card.'}
-              </p>
             )}
-            <button className="primary full" disabled={busy || !program}>
+            <details>
+              <summary>{ar ? 'الشروط والخصوصية' : 'Terms and privacy'}</summary>
+              <p>{info.merchant.terms}</p>
+              <p>{info.programs.find((p) => p.id === program)?.rewardTerms}</p>
+              <p>
+                {ar
+                  ? 'بنحفظ اسمك ورقمك للكارت واسترجاعه بطلبك،وبنربطه بالجهاز ده. التسجيل مش موافقة على التسويق.'
+                  : 'Your name and number are used for your card and recovery you request. The card is linked to this device. Registration does not opt you into marketing.'}
+              </p>
+            </details>
+            <label className="checkbox-label">
+              <input
+                required
+                type="checkbox"
+                {...fieldProps(validation, 'acceptedTerms')}
+                checked={terms}
+                onChange={(event) => setTerms(event.target.checked)}
+              />
+              {ar
+                ? 'موافق على شروط البرنامج والمكافأة والخصوصية'
+                : 'I accept the program, reward and privacy terms'}
+            </label>
+            <button className="primary full" disabled={busy || !prepared || !program}>
               {busy
                 ? ar
                   ? 'بنجهّز كارتك…'
                   : 'Preparing your card…'
-                : session
-                  ? ar
-                    ? 'اعمل الكارت'
-                    : 'Create my card'
-                  : ar
-                    ? 'سجّل وانضم'
-                    : 'Sign in and join'}
+                : ar
+                  ? 'افتح الكارت'
+                  : 'Open my card'}
             </button>
+            <p className="muted">
+              {ar
+                ? 'كارتك هيفضل على الجهاز ده. لو غيّرت الموبايل،اطلب من الكاشير يرجعهولك على واتساب.'
+                : 'Your card stays on this device. If you change phones, ask the cashier to restore it on WhatsApp.'}
+            </p>
           </form>
         </>
+      ) : error ? (
+        <p className="notice error" role="alert">
+          {error}
+        </p>
       ) : (
-        !error && <p role="status">{ar ? 'بنفتح النشاط…' : 'Loading business…'}</p>
+        <p role="status">{ar ? 'بنفتح النشاط…' : 'Loading business…'}</p>
       )}
     </main>
   );
 }
+
 export function InvitePage({
   token,
   lang,

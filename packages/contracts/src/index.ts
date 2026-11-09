@@ -19,7 +19,9 @@ export interface Grant {
 export interface Session {
   user: {
     id: string;
-    email: string;
+    email: string | null;
+    displayName?: string;
+    deviceBound?: boolean;
     role: 'platform_admin' | 'platform_support' | 'customer';
     mfaVerified: boolean;
     mfaRequired?: boolean;

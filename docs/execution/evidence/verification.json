@@ -1,6 +1,6 @@
 {
-  "at": "2026-11-09T11:42:33.056Z",
-  "passed": 438,
+  "at": "2026-11-09T16:28:27.351Z",
+  "passed": 444,
   "failed": 0,
   "errors": [],
   "checks": [
@@ -380,6 +380,16 @@
       "detail": "local link target"
     },
     {
+      "name": "link:docs\\execution\\STATUS.md:CUSTOMER-IDENTITY.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\STATUS.md:STAMP-EXPERIENCE.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
       "name": "link:docs\\execution\\STATUS.md:../../LAUNCH-PLAN.md",
       "ok": true,
       "detail": "local link target"
@@ -570,6 +580,16 @@
       "detail": "local link target"
     },
     {
+      "name": "link:docs\\execution\\IMPLEMENTATION.md:CUSTOMER-IDENTITY.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\IMPLEMENTATION.md:STAMP-EXPERIENCE.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
       "name": "link:docs\\execution\\IMPLEMENTATION.md:STAMP-EXPERIENCE.md",
       "ok": true,
       "detail": "local link target"
@@ -651,6 +671,16 @@
     },
     {
       "name": "link:docs\\execution\\IMPLEMENTATION.md:ACCOUNT-PREVIEW-AND-CONTACT.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\IMPLEMENTATION-LOG.md:STAMP-EXPERIENCE.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\IMPLEMENTATION-LOG.md:CUSTOMER-IDENTITY.md",
       "ok": true,
       "detail": "local link target"
     },

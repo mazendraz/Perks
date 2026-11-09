@@ -2,6 +2,7 @@ import { Select } from '../controls/Select.js';
 import { Icon } from '../../../../packages/ui/src/Icon.js';
 import { FieldErrors, fieldProps } from '../FieldErrors.js';
 import { CashierRequests } from './StampRequests.js';
+import { TeamCustomerRecovery } from './CustomerRecovery.js';
 import { useEffect, useState, type FormEvent, type CSSProperties } from 'react';
 import { CameraScanner } from './CameraScanner.js';
 import type {
@@ -439,6 +440,12 @@ export function CashierPage({ grant, lang }: { grant: Grant; lang: Language }) {
             branch={branch}
             lang={lang}
             onCommitted={() => void refreshRecent()}
+          />
+          <TeamCustomerRecovery
+            key={grant.id + ':' + branch}
+            grant={grant}
+            branchId={branch}
+            lang={lang}
           />
           <section className="panel">
             <h2>{ar ? 'آخر العمليات' : 'Recent transactions'}</h2>

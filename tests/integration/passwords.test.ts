@@ -1,3 +1,4 @@
+import { createPasswordUser } from '../helpers.js';
 import { before, after, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
@@ -32,16 +33,19 @@ const headers = (r: {
   cookie: r.cookies.map((x) => x.name + '=' + x.value).join('; '),
   'x-csrf-token': r.json().csrfToken,
 });
-async function register() {
+async function register(addStaff = true) {
   const email = 'pw-' + randomUUID() + '@nuqta.test';
-  const r = await app.inject({
-    method: 'POST',
-    url: '/api/v1/auth/register',
-    headers: origin,
-    payload: { email, password },
-  });
-  assert.equal(r.statusCode, 200, r.body);
-  return { email, headers: headers(r) };
+  await createPasswordUser(db, email, password, addStaff ? 'owner' : 'none');
+  const r = addStaff
+    ? await app.inject({
+        method: 'POST',
+        url: '/api/v1/auth/login',
+        headers: origin,
+        payload: { email, password },
+      })
+    : null;
+  if (r) assert.equal(r.statusCode, 200, r.body);
+  return { email, headers: r ? headers(r) : { ...origin, cookie: '', 'x-csrf-token': '' } };
 }
 const addresses = new Map<string, string>();
 const login = (email: string, pw = password) => {
@@ -55,7 +59,7 @@ const login = (email: string, pw = password) => {
   });
 };
 
-test('platform admin, owner, cashier and customer sign in with passwords; grants stay distinct and no MFA prompt is required', async () => {
+test('platform admin, owner and cashier use passwords; customers require a device and grants stay distinct', async () => {
   const mid = (
     await db.query(
       "INSERT INTO merchants(name,slug) VALUES('Password role fixture',$1) RETURNING id",
@@ -69,7 +73,7 @@ test('platform admin, owner, cashier and customer sign in with passwords; grants
     )
   ).rows[0].id;
   for (const role of ['platform_admin', 'owner', 'cashier', 'customer']) {
-    const actor = await register(),
+    const actor = await register(false),
       id = (await db.query('SELECT id FROM users WHERE email=$1', [actor.email])).rows[0].id;
     if (role === 'platform_admin')
       await db.query("UPDATE users SET global_role='platform_admin' WHERE id=$1", [id]);
@@ -86,6 +90,11 @@ test('platform admin, owner, cashier and customer sign in with passwords; grants
       );
     }
     const signed = await login(actor.email);
+    if (role === 'customer') {
+      assert.equal(signed.statusCode, 410);
+      assert.equal(signed.json().error.code, 'CUSTOMER_DEVICE_REQUIRED');
+      continue;
+    }
     assert.equal(signed.statusCode, 200);
     const h = headers(signed);
     const session = (await app.inject({ url: '/api/v1/session', headers: h })).json();
@@ -109,14 +118,14 @@ test('signup cannot set roles or take over an existing account; password users c
     headers: origin,
     payload: { email: 'role-' + randomUUID() + '@nuqta.test', password, role: 'platform_admin' },
   });
-  assert.equal(bad.statusCode, 422);
+  assert.equal(bad.statusCode, 403);
   const again = await app.inject({
     method: 'POST',
     url: '/api/v1/auth/register',
     headers: origin,
     payload: { email: actor.email, password: 'Different long password' },
   });
-  assert.equal(again.statusCode, 409);
+  assert.equal(again.statusCode, 403);
   assert.equal((await login(actor.email)).statusCode, 200);
   const otp = await app.inject({
     method: 'POST',

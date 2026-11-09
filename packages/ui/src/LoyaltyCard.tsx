@@ -1,11 +1,48 @@
 import { StampFrame, StampSymbol } from './StampSymbol.js';
 import { CardArtwork } from './CardArtwork.js';
 import { templateCategory } from '../../contracts/src/branding.js';
-import { useId, type CSSProperties } from 'react';
+import { memo, useId, type CSSProperties } from 'react';
 import { StampInk } from './StampInk.js';
 import { useCardMotion } from './useCardMotion.js';
 import { Icon } from './Icon.js';
 import type { CardData } from '../../contracts/src/index.js';
+const StableArtwork = memo(CardArtwork);
+const StampSlot = memo(function StampSlot({
+  index,
+  filled,
+  last,
+  seed,
+  shape,
+  symbol,
+  inkStyle,
+  grainId,
+}: {
+  index: number;
+  filled: boolean;
+  last: boolean;
+  seed: string;
+  shape: CardData['stamp_shape'];
+  symbol: CardData['stamp_icon'];
+  inkStyle: CardData['stamp_style'];
+  grainId: string;
+}) {
+  return (
+    <span className={filled ? 'filled' : ''} data-stamp-index={index}>
+      <StampFrame shape={shape} />
+      <span className="nq-ink-layer">
+        <StampInk seed={seed} shape={shape} symbol={symbol} style={inkStyle} grainId={grainId} />
+      </span>
+      <span className="nq-ghost">
+        <StampFrame shape={shape} />
+      </span>
+      {filled ? null : last ? (
+        <Icon name="gift" size={20} />
+      ) : (
+        <span className="stamp-number">{String(index + 1).padStart(2, '0')}</span>
+      )}
+    </span>
+  );
+});
 export function cardInk(color: string) {
   const rgb = /^#([a-f0-9]{6})$/i.exec(color)?.[1];
   if (!rgb) return '#ffffff';
@@ -63,7 +100,6 @@ export function LoyaltyCard({
     '--card-ink': cardInk(card.primary_color),
     '--accent-ink': cardInk(card.accent_color),
     '--surface-ink': cardInk(card.surface_color),
-    '--progress-factor': displayBalance / threshold,
   } as CSSProperties;
   return (
     <div
@@ -99,6 +135,7 @@ export function LoyaltyCard({
         ref={motion.article}
         className={
           'loyalty-card nq-motion-card ' +
+          (experience ? 'is-experience ' : '') +
           card.template +
           ' logo-' +
           (card.logo_style || 'framed') +
@@ -106,8 +143,7 @@ export function LoyaltyCard({
           ' stamp-shape-' +
           (card.stamp_shape || 'circle') +
           ' stamp-style-' +
-          (card.stamp_style || 'solid') +
-          (motion.kind ? ' ' + motion.kind : '')
+          (card.stamp_style || 'solid')
         }
         data-stamp-icon={card.stamp_icon || 'check'}
         data-card-id={card.id}
@@ -116,7 +152,7 @@ export function LoyaltyCard({
         style={style}
         aria-label={card.merchant_name}
       >
-        <CardArtwork template={card.template} />
+        <StableArtwork template={card.template} />
         <div className="card-overline">
           <span>{edition}</span>
           <span className="card-contactless" aria-hidden="true">
@@ -183,30 +219,21 @@ export function LoyaltyCard({
           aria-hidden="true"
         >
           {Array.from({ length: threshold }, (_, i) => (
-            <span className={i < displayBalance ? 'filled' : ''} data-stamp-index={i} key={i}>
-              <StampFrame shape={card.stamp_shape} />
-              <span className="nq-ink-layer">
-                <StampInk
-                  seed={
-                    card.stamp_ink?.[i]
-                      ? card.stamp_ink[i]!.ledgerId + ':' + card.stamp_ink[i]!.ordinal
-                      : card.id + ':' + (card.cycle_number ?? 1) + ':' + i
-                  }
-                  shape={card.stamp_shape}
-                  symbol={card.stamp_icon}
-                  style={card.stamp_style}
-                  grainId={grainId}
-                />
-              </span>
-              <span className="nq-ghost">
-                <StampFrame shape={card.stamp_shape} />
-              </span>
-              {i < displayBalance ? null : i === threshold - 1 ? (
-                <Icon name="gift" size={20} />
-              ) : (
-                <span className="stamp-number">{String(i + 1).padStart(2, '0')}</span>
-              )}
-            </span>
+            <StampSlot
+              key={i}
+              index={i}
+              filled={i < displayBalance}
+              last={i === threshold - 1}
+              seed={
+                card.stamp_ink?.[i]
+                  ? card.stamp_ink[i]!.ledgerId + ':' + card.stamp_ink[i]!.ordinal
+                  : card.id + ':' + (card.cycle_number ?? 1) + ':' + i
+              }
+              shape={card.stamp_shape}
+              symbol={card.stamp_icon}
+              inkStyle={card.stamp_style}
+              grainId={grainId}
+            />
           ))}
         </div>
         <div className="card-progress-line">
@@ -231,7 +258,10 @@ export function LoyaltyCard({
           </span>
         </div>
         <div className="card-progress-track" aria-hidden="true">
-          <span ref={motion.progress} />
+          <span
+            ref={motion.progress}
+            style={{ '--progress-factor': displayBalance / threshold } as CSSProperties}
+          />
         </div>
         <div className="card-reward-line">
           <div>

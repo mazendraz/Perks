@@ -14,6 +14,7 @@ export function portalCookies(c: Config, portal?: Portal) {
   };
 }
 export async function portalAllowed(pools: Pools, actor: Actor, portal: Portal, legacy = false) {
+  if (actor.authMethod === 'device' && portal !== 'customer') return false;
   if (portal === 'platform') return ['platform_admin', 'platform_support'].includes(actor.role);
   if (portal === 'customer') {
     if (actor.role !== 'customer') return false;

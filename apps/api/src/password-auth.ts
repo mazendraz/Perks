@@ -2,7 +2,6 @@ import type { FastifyInstance, FastifyReply } from 'fastify';
 import { passwordEnabled, type Config } from './config.js';
 import { transaction, type Pools } from './db.js';
 import { authenticated } from './auth.js';
-import { requestPortal } from './portal-auth.js';
 import { requireCondition } from './errors.js';
 import { keyedHash, opaqueToken, tokenHash } from './crypto.js';
 import { setTimeout } from 'node:timers/promises';
@@ -10,7 +9,6 @@ import { hashPassword, verifyPassword } from './passwords.js';
 import { seal } from './outbox.js';
 import {
   loginInput,
-  registerInput,
   changePasswordInput,
   resetRequestInput,
   resetPasswordInput,
@@ -93,31 +91,19 @@ export function passwordAuth(app: FastifyInstance, pools: Pools, c: Config, issu
       if (result.delayMs) await setTimeout(result.delayMs);
       const user = result.user;
       requireCondition(user, 'INVALID_CREDENTIALS', 401);
+      const primary = (
+        await pools.authPool.query('SELECT password_session_portal($1) AS portal', [user.id])
+      ).rows[0].portal;
+      requireCondition(primary !== 'customer', 'CUSTOMER_DEVICE_REQUIRED', 410);
       return issue(reply, user.id, user.password_version);
     },
   );
   app.post(
     '/api/v1/auth/register',
     { config: { rateLimit: { max: 10, timeWindow: '10 minutes' } } },
-    async (req, reply) => {
+    async () => {
       enabled();
-      const p = registerInput.parse(req.body),
-        portal = requestPortal(req.headers['x-nuqta-workspace']);
-      requireCondition(!portal || portal === 'customer', 'REGISTRATION_CLOSED', 403);
-      const hash = await hashPassword(p.password, c.AUTH_PEPPER);
-      const user = (
-        await pools.authPool.query(
-          'INSERT INTO users(email,display_name,password_hash,password_version,preferred_locale) VALUES($1,$2,$3,1,$4) ON CONFLICT(email) DO NOTHING RETURNING id,password_version',
-          [
-            p.email,
-            p.displayName || p.email.split('@')[0],
-            hash,
-            req.headers['x-nuqta-language'] === 'en' ? 'en' : 'ar',
-          ],
-        )
-      ).rows[0];
-      requireCondition(user, 'ACCOUNT_UNAVAILABLE', 409);
-      return issue(reply, user.id, user.password_version);
+      requireCondition(false, 'REGISTRATION_CLOSED', 403);
     },
   );
   app.post(
@@ -128,6 +114,12 @@ export function passwordAuth(app: FastifyInstance, pools: Pools, c: Config, issu
       const actor = authenticated(req),
         p = changePasswordInput.parse(req.body),
         hash = await hashPassword(p.password, c.AUTH_PEPPER);
+      requireCondition(
+        (await pools.authPool.query('SELECT password_session_portal($1) AS portal', [actor.id]))
+          .rows[0].portal !== 'customer',
+        'CUSTOMER_DEVICE_REQUIRED',
+        410,
+      );
       if (actor.mfaRequired)
         requireCondition(
           actor.mfaAt && Date.now() - actor.mfaAt.getTime() < 900000,
@@ -175,7 +167,7 @@ export function passwordAuth(app: FastifyInstance, pools: Pools, c: Config, issu
       await transaction(pools.authPool, async (db) => {
         const u = (
           await db.query(
-            "SELECT id,password_version,preferred_locale FROM users WHERE email=$1 AND status='active' FOR SHARE",
+            "SELECT id,password_version,preferred_locale FROM users WHERE email=$1 AND status='active' AND password_session_portal(id)<>'customer' FOR SHARE",
             [p.email],
           )
         ).rows[0];
@@ -213,7 +205,7 @@ export function passwordAuth(app: FastifyInstance, pools: Pools, c: Config, issu
       await transaction(pools.authPool, async (db) => {
         const row = (
           await db.query(
-            "SELECT t.id,t.user_id,u.email FROM password_reset_tokens t JOIN users u ON u.id=t.user_id WHERE t.token_hash=$1 AND t.used_at IS NULL AND t.expires_at>clock_timestamp() AND t.credential_version=u.password_version AND u.status='active' FOR UPDATE OF u,t",
+            "SELECT t.id,t.user_id,u.email FROM password_reset_tokens t JOIN users u ON u.id=t.user_id WHERE t.token_hash=$1 AND t.used_at IS NULL AND t.expires_at>clock_timestamp() AND t.credential_version=u.password_version AND u.status='active' AND password_session_portal(u.id)<>'customer' FOR UPDATE OF u,t",
             [tokenHash(p.token)],
           )
         ).rows[0];

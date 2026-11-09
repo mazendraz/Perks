@@ -4,6 +4,7 @@ import { saveLogo } from '../controls/save-logo.js';
 import { FileUpload } from '../controls/FileUpload.js';
 import { Select } from '../controls/Select.js';
 import { CustomerOutreach } from './CustomerOutreach.js';
+import { TeamCustomerRecovery, RecoveryPolicy } from './CustomerRecovery.js';
 import { AccountSecurity } from './AccountSecurity.js';
 import {
   ColorField,
@@ -674,7 +675,12 @@ export function MerchantPage({ grant, lang }: { grant: Grant; lang: Language }) 
         <ExperienceStats merchantId={grant.merchant_id} branch={branch} days={days} lang={lang} />
       )}
       {tab === 'materials' && <Materials grant={grant} lang={lang} />}
-      {tab === 'customers' && <Customers grant={grant} lang={lang} />}
+      {tab === 'customers' && (
+        <>
+          <TeamCustomerRecovery key={grant.id} grant={grant} lang={lang} />
+          <Customers grant={grant} lang={lang} />
+        </>
+      )}
       {tab === 'programs' && (
         <>
           {grant.role === 'owner' && (
@@ -771,6 +777,9 @@ export function MerchantPage({ grant, lang }: { grant: Grant; lang: Language }) 
       {tab === 'branches' && <Branches grant={grant} lang={lang} />}
       {tab === 'team' && (
         <section className="panel">
+          {grant.role === 'owner' && (
+            <RecoveryPolicy key={grant.merchant_id} merchantId={grant.merchant_id} lang={lang} />
+          )}
           <div className="section-heading">
             <h2>{ar ? 'الفريق والصلاحيات' : 'Staff and permissions'}</h2>
             <button

@@ -24,6 +24,8 @@
 
 ## إعادة الفحص
 
+اكتمالreveal يستخدم حدثfinish بدلAnimation.finished؛بيانات [Mozilla BCD](https://github.com/mdn/browser-compat-data/blob/main/api/Animation.json) توضح إنPromise دي بدأت فيChrome84،بينما هدفنا يشمل80. mobile suite تسحب الخاصية فعلًا وتختبر اكتمال الحركة من غيرها،مع الحفاظ على720ms.
+
 - `npm run test:integration`: تشمل live-events وrequests وrequest-limits وrewards للعزل والتزامن والإلغاء والرجوع والفائض وثبات الرسم.
 - `npm run test:e2e`: رحلة الكاشير inline،فقد الرد بعد الحفظ،reload ثم scan جديد عند عدم الحفظ،وتأكيد الصرف والكارت التالي.
 - `npm run test:e2e:mobile`: legacy build وCSP الفعلي على Chromium/Pixel5 وWebKit/iPhone12؛خمس سكانات بلا ضغطات وطلب واحد،قطع قبل/بعد الحفظ،تجديد QR،ثبات الرسم والتثبيت وحدوده،والفرع المقفول وNFC الملغي. fixture WebKit تمنع Service Worker لتتاح محاكاة أعطال الشبكة؛اختبار shell offline وCacheStorage والتحديث الفعلي يعمل على Chromium. هذا قيد أداة الاعتراض [الموثق في Playwright](https://playwright.dev/docs/api/class-browsercontext#browser-context-route)،ولا تعديل به لسلوك التطبيق.
@@ -31,3 +33,23 @@
 - `npm run verify:local`:القبول الجامع وبصمة السورس. تقرير failed أوsource_changed لا يُحسب قبولًا.
 
 كل الاختبارات تستخدم بيانات صناعية منفصلة عن قاعدة تجربة مازن. `standalone/` والأدلة الأصلية لا تُحرَّر يدويًا،والأدلة الجديدة مولدة من الأدوات. تعليمات التشغيل المادي في [PILOT-RUNBOOK](PILOT-RUNBOOK.md).
+
+## قياس الأداء في checkpoint L06B
+
+الاختبار المعزز لا يكتفي بعدّ الفريمات: يشترط ظهور3أدوات متداخلة فعلًا ووصول الرصيد من2إلى5. القراءات السابقة في سجلA تاريخية ولا تعتمد هذا الشرط الجديد. يتم القياس في عملية متصفح جديدة بعد إغلاق صفحات الصور،على bundle إنتاجية بنفس legacy targets وCSP،ويحفظ runId لمنع احتساب تقرير قديم.
+
+هناك جولتان بنفس ضغطCPU4x: قياس بدون profiler ثم قياس معChrome trace؛**كلتاهما** تشترطان صفر فريمات فوق32ms. تقرير`pixel5-cpu4x-performance.json` يحفظ النظام وإصدارNode والمتصفح والـGPU والرصيد وعدد الأدوات ونتائج الجولتين. الصور تبقى24زوجًا بجوار المرجع؛نجاح العدادات لا يعني مقارنة pixel-by-pixel لتصميمين مختلفي الاتجاه.
+
+المقارنة المحلية علىWindows رصدت تجاوزات حتى في control مستقل خارجNuqta. القياس المؤهل حاليًا يعمل علىLinux المحلية،بنفسChromium151 وNode24.19.0،وهو نفس نظامCI المستهدف. هذا لا يعتمد أداءWindows تحتthrottle ولا يحل محل فيديو موبايل حقيقي. اختيارLinux صريح في`.local/motion-linux-runtime.json`؛لا fallback تلقائي ولا تخطي لحد الأداء عند الفشل. نفس الاختبار يعمل native علىLinux CI.
+
+على جهازWindows مجهز بـWSL Ubuntu،يمكن تجهيز runner اختياري من جذر المشروع بالأمر التالي؛`--with-deps` يثبت مكتبات المتصفح داخلUbuntu ويحتاجroot. ملفاتNode والمتصفح والإعداد تبقى داخل.local،ولا توجد حسابات أوبيانات عملاء في التجهيز:
+
+```powershell
+$nodeVersion = node -p 'process.version'
+wsl.exe -d Ubuntu -u root -- bash '/mnt/f/Nuqta Demo Build Complete/tools/setup-motion-linux.sh' $nodeVersion --with-deps
+npm run test:animation
+```
+
+غيّر مسار المشروع واسم التوزيعة لو مختلفين. Node archive تُراجعSHA-256 مقابل ملفNode الرسمي،وإصدارLinux لازم يطابق المضيف. runner يرصدsoftware/GPU كما هو ولا يدّعي جهازPixel حقيقيًا. خلفية سبب`--enable-gpu` فيWindows موثقة في [Chromium headless GPU](https://chromium.googlesource.com/chromium/src.git/+/main/docs/gpu/using-gpu-hardware-in-headless-chrome.md)؛القياس المحلي علىLinux ما زال يرصدsoftware rendering صراحةً.
+
+تحسينات التنفيذ أبقت توقيتاتv2: الحبر والرسوم الثابتة لا تعيدrender مع كل عداد،ومتغيرالتقدم محصور في شريطه،وانتقالcolor القديم ملغى،وتُنشأ مؤثرات كل ختم مع بداية350ms الخاصة به فيfragment منفصل قبل إدخالها مرة واحدة. الأداة والظل لهماWAAPI track واحد لكل منهما مع نفسoffsets/easings،والإلغاء ينظف المؤثرات والمؤقتات.

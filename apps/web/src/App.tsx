@@ -10,6 +10,7 @@ import { PlatformMfa } from './features/PlatformMfa.js';
 import { useDialogAccessibility } from './dialog-accessibility.js';
 import { Operations } from './features/Operations.js';
 import { PlacementPage } from './features/Materials.js';
+import { CustomerDeviceHelp, CustomerRecoveryPage } from './features/CustomerRecovery.js';
 import { useCallback, useEffect, useState, lazy, Suspense, type ReactNode } from 'react';
 import type { Session, Language } from '../../../packages/contracts/src/index.js';
 import { api, ApiError, errorText, setCsrf } from './api.js';
@@ -41,7 +42,6 @@ export function App() {
     [lang, setLang] = useState<Language>(initialLanguage);
   const portal = portalForPath(route);
   const [sessionPortal, setSessionPortal] = useState<Portal | undefined>(portal);
-  const [joinLogin, setJoinLogin] = useState(false);
   const [session, setSession] = useState<Session | null>(null),
     [loading, setLoading] = useState(true),
     [notice, setNotice] = useState('');
@@ -53,7 +53,9 @@ export function App() {
     } catch (e) {
       if (!(e instanceof ApiError) || e.status !== 401) setNotice(errorText(e, lang));
       setSession(null);
-      setCsrf('');
+      // A customer without a session may already have the anonymous bootstrap
+      // CSRF token. A language refresh must not erase it before registration.
+      if (portal !== 'customer') setCsrf('');
     } finally {
       setSessionPortal(portal);
       setLoading(false);
@@ -68,13 +70,19 @@ export function App() {
     };
     window.addEventListener('nuqta:mfa-required', verify);
     window.addEventListener('online', verify);
+    window.addEventListener('nuqta:customer-session-restored', verify);
     return () => {
       window.removeEventListener('nuqta:mfa-required', verify);
       window.removeEventListener('online', verify);
+      window.removeEventListener('nuqta:customer-session-restored', verify);
     };
   }, [refresh]);
   useEffect(() => {
-    if (route.endsWith('/login') && route !== '/login') {
+    if (route === '/customer/login' && session && sessionPortal === portal) {
+      navigate('/customer');
+      return;
+    }
+    if (route.endsWith('/login') && route !== '/login' && route !== '/customer/login') {
       history.replaceState({}, '', '/login');
       window.dispatchEvent(new PopStateEvent('popstate'));
     } else if ((route === '/' || route === '/portals') && session && sessionPortal === portal)
@@ -86,7 +94,7 @@ export function App() {
       sessionPortal === portal &&
       !session &&
       !networkUnavailable() &&
-      /^\/(platform|merchant|cashier|customer)(\/|$)/.test(route) &&
+      /^\/(platform|merchant|cashier)(\/|$)/.test(route) &&
       !route.endsWith('/login')
     )
       navigate('/login');
@@ -96,14 +104,18 @@ export function App() {
       setSession(null);
       setCsrf('');
       setNotice(
-        lang === 'ar'
-          ? 'الجلسة انتهت. سجّل دخولك تاني لمتابعة العملية بأمان.'
-          : 'Your session expired. Sign in again to safely continue.',
+        portal === 'customer'
+          ? lang === 'ar'
+            ? 'الكارت مش مربوط بالجهاز ده. اطلب من الكاشير يرجعهولك على واتساب.'
+            : 'Your card is not linked to this device. Ask the cashier to restore it on WhatsApp.'
+          : lang === 'ar'
+            ? 'الجلسة انتهت. سجّل دخولك تاني لمتابعة العملية بأمان.'
+            : 'Your session expired. Sign in again to safely continue.',
       );
     };
     window.addEventListener('nuqta:session-expired', expired);
     return () => window.removeEventListener('nuqta:session-expired', expired);
-  }, [lang]);
+  }, [lang, portal]);
   useEffect(() => {
     document.documentElement.lang = lang;
     document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
@@ -114,7 +126,7 @@ export function App() {
       await api('/auth/logout', { method: 'POST' });
       setSession(null);
       setCsrf('');
-      navigate('/login');
+      navigate(portal === 'customer' ? '/customer/login' : '/login');
     } catch (e) {
       setNotice(errorText(e, lang));
     }
@@ -170,7 +182,7 @@ export function App() {
           </button>
           {session && route !== '/' && route !== '/portals' && route !== '/login' && (
             <>
-              <bdi className="signed-in">{session.user.email}</bdi>
+              <bdi className="signed-in">{session.user.email || session.user.displayName}</bdi>
               <button className="secondary small" onClick={() => void logout()}>
                 {ar ? 'خروج' : 'Sign out'}
               </button>
@@ -190,12 +202,21 @@ export function App() {
         <ResetPassword token={route.split('/')[2] || ''} lang={lang} />
       ) : route.startsWith('/p/') ? (
         <PlacementPage code={route.split('/')[2] || ''} lang={lang} />
-      ) : route.startsWith('/join/') && !joinLogin ? (
+      ) : route.startsWith('/r/') ? (
+        <CustomerRecoveryPage
+          token={route.split('/')[2] || ''}
+          lang={lang}
+          session={session}
+          refresh={refresh}
+        />
+      ) : portal === 'customer' && !session && route.startsWith('/customer') ? (
+        <CustomerDeviceHelp lang={lang} />
+      ) : route.startsWith('/join/') ? (
         <EnrollmentPage
           slug={route.split('/')[2] || ''}
           lang={lang}
           session={session}
-          onNeedLogin={() => setJoinLogin(true)}
+          refresh={refresh}
         />
       ) : !session || route === '/login' || route === '/' || route === '/portals' ? (
         <Login
@@ -207,14 +228,12 @@ export function App() {
                 : 'login'
           }
           invited={route.startsWith('/invite/')}
-          allowRegistration={route.startsWith('/join/') || route.startsWith('/invite/')}
           lang={lang}
           onSuccess={async (signedPortal) => {
             const next = await api<Session>('/session', { workspace: signedPortal || 'shared' });
             setCsrf(next.csrfToken);
             setSession(next);
             setSessionPortal(portal);
-            setJoinLogin(false);
             setNotice('');
             if (!route.startsWith('/join/') && !route.startsWith('/invite/'))
               navigate('/' + defaultPortal(next));
@@ -316,9 +335,17 @@ function Workspace({
           </div>
         </div>
         <p className="muted">
-          <bdi>{session.user.email}</bdi>
+          <bdi>{session.user.email || session.user.displayName}</bdi>
         </p>
-        <PasswordSettings lang={lang} refresh={refresh} />
+        {portal === 'customer' ? (
+          <p className="panel">
+            {ar
+              ? 'كارتك مربوط بالجهاز ده. لو غيرت الموبايل،اطلب من الكاشير يرجعهولك على واتساب. مش محتاج باسورد.'
+              : 'Your card is linked to this device. If you change phones, ask the cashier to restore it on WhatsApp. You do not need a password.'}
+          </p>
+        ) : (
+          <PasswordSettings lang={lang} refresh={refresh} />
+        )}
       </>
     );
   else if (portal === 'platform' && platformAccess) {

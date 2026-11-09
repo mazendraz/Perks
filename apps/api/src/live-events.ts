@@ -83,7 +83,7 @@ export function liveEventsModule(app: FastifyInstance, pools: Pools, c: Config) 
   async function sessionActive(actor: Actor) {
     return !!(
       await pools.authPool.query(
-        "SELECT 1 FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.id=$1 AND s.user_id=$2 AND u.global_role=$3 AND u.status='active' AND s.revoked_at IS NULL AND s.expires_at>clock_timestamp() AND s.credential_version=u.password_version AND (s.auth_method<>'password' OR s.created_at+CASE WHEN password_session_portal(u.id)='platform' THEN interval '12 hours' WHEN password_session_portal(u.id) IN ('merchant','cashier') THEN interval '7 days' ELSE interval '365 days' END>clock_timestamp())",
+        "SELECT 1 FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.id=$1 AND s.user_id=$2 AND u.global_role=$3 AND u.status='active' AND s.revoked_at IS NULL AND s.expires_at>clock_timestamp() AND s.credential_version=u.password_version AND (s.auth_method<>'device' OR customer_device_active(s.customer_device_id,s.user_id)) AND (s.auth_method<>'password' OR s.created_at+CASE WHEN password_session_portal(u.id)='platform' THEN interval '12 hours' WHEN password_session_portal(u.id) IN ('merchant','cashier') THEN interval '7 days' ELSE interval '30 days' END>clock_timestamp())",
         [actor.sessionId, actor.id, actor.role],
       )
     ).rowCount;

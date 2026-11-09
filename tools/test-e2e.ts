@@ -7,8 +7,9 @@ import assert from 'node:assert/strict';
 import { readConfig } from '../apps/api/src/config.js';
 import { hashPassword } from '../apps/api/src/passwords.js';
 import { openMfa } from '../apps/api/src/mfa.js';
-import { totp } from '../apps/api/src/crypto.js';
+import { totp, tokenHash } from '../apps/api/src/crypto.js';
 import { runOne } from '../apps/worker/src/runner.js';
+import { buildApp } from '../apps/api/src/server.js';
 
 // Uses synthetic, uniquely named tenants in a dedicated local/CI DB.
 // No production URLs, remote providers or existing balances are changed.
@@ -35,6 +36,15 @@ const checks: string[] = [],
 const stamp = Date.now().toString(36),
   origin = c.PUBLIC_APP_ORIGIN;
 const testPassword = 'Qa-' + randomBytes(14).toString('hex');
+// A controlled proxy-facing replica exercises registration on the actual HTTP
+// API with a unique client IP. Persistent 5/hour guards are never reset or
+// bypassed merely because this browser suite is run repeatedly.
+const { app: registrationApp } = await buildApp({
+  APP_ENV: 'test',
+  LOG_LEVEL: 'silent',
+  TRUSTED_PROXIES: '127.0.0.1/32',
+});
+const registrationOrigin = await registrationApp.listen({ port: 0, host: '127.0.0.1' });
 const email = (role: string) => `${role}-${stamp}@nuqta.test`;
 const evidence = 'docs/execution/evidence/implementation';
 const ok = (name: string) => {
@@ -92,16 +102,10 @@ async function login(
   passwordValue = testPassword,
 ) {
   await navigateTo(page, route === '/' ? '/login' : route);
-  if (!existing && route.startsWith('/join/')) {
-    await page.getByRole('button', { name: 'Sign in and join', exact: true }).click();
-    await page.getByRole('button', { name: 'Create customer account', exact: true }).click();
-  } else if (!existing && !route.startsWith('/invite/'))
-    throw new Error('Customer registration must start from a business join link.');
+  assert.ok(existing, 'Password login is only for existing team or platform accounts.');
   await page.getByLabel('Email', { exact: true }).fill(address);
   await page.getByLabel('Password', { exact: true }).fill(passwordValue);
-  await page
-    .getByRole('button', { name: existing ? 'Sign in' : 'Create account', exact: true })
-    .click();
+  await page.getByRole('button', { name: 'Sign in', exact: true }).click();
   await page.getByRole('button', { name: 'Sign out', exact: true }).waitFor();
 }
 async function call(x: BrowserContext, path: string, body?: unknown, key?: string) {
@@ -672,29 +676,47 @@ try {
   const customer = await context(),
     up = await customer.newPage();
   up.on('pageerror', (e) => errors.push(e.name));
-  await login(up, email('customer'), '/join/qa-' + stamp + '?b=' + branch + '&src=qr');
+  const customerPhone = '+2010' + String(randomBytes(4).readUInt32BE()).padStart(10, '0').slice(-8);
   await navigateTo(up, '/join/qa-' + stamp + '?b=' + branch + '&src=qr');
-  await up.getByLabel('Name on your card', { exact: true }).fill('   ');
-  await up.getByLabel('WhatsApp number (optional)', { exact: true }).fill('+15555550101');
-  await up
-    .getByLabel('I agree to WhatsApp messages from this business (optional)', { exact: true })
-    .check();
-  await up.getByLabel('I accept the program and reward terms', { exact: true }).check();
-  await up.getByRole('button', { name: 'Create my card', exact: true }).click();
-  await up.locator('input[name="alias"][aria-invalid="true"]').waitFor();
+  await up.getByLabel('Your name', { exact: true }).fill('   ');
+  await up.getByLabel('Mobile number', { exact: true }).fill(customerPhone);
+  await up.getByLabel('I accept the program, reward and privacy terms', { exact: true }).check();
+  await up.getByRole('button', { name: 'Open my card', exact: true }).click();
+  await up.locator('input[name="displayName"][aria-invalid="true"]').waitFor();
   await up.locator('.field-errors button').first().click();
-  await up.waitForFunction(() => document.activeElement?.getAttribute('name') === 'alias');
-  await up.getByLabel('Name on your card', { exact: true }).fill('Browser Customer');
-  await up.getByRole('button', { name: 'Create my card', exact: true }).click();
+  await up.waitForFunction(() => document.activeElement?.getAttribute('name') === 'displayName');
+  await up.getByLabel('Your name', { exact: true }).fill('Browser Customer');
+  await up.route(
+    '**/api/v1/customer/register',
+    async (route) => {
+      const response = await route.fetch({
+        url: registrationOrigin + '/api/v1/customer/register',
+        headers: {
+          ...route.request().headers(),
+          'x-forwarded-for':
+            '2001:db8:' + randomBytes(12).toString('hex').match(/.{4}/g)!.join(':'),
+        },
+      });
+      assert.equal(response.status(), 200);
+      await route.abort('failed');
+    },
+    { times: 1 },
+  );
+  await up.getByRole('button', { name: 'Open my card', exact: true }).click();
   await up.waitForURL('**/customer/*');
-  ok('Server field validation reaches the enrollment field with an accessible focus link');
+  ok(
+    'Name/phone/terms registration preserves accessible validation and recovers a lost committed response without a password or duplicate identity',
+  );
   const membership = new URL(up.url()).pathname.split('/').at(-1)!;
   await up.getByRole('button', { name: 'Show my code', exact: true }).click();
   await up.locator('.qr-panel code').waitFor();
   let token = (await up.locator('.qr-panel code').textContent())!;
   await up.getByRole('button', { name: 'Close code', exact: true }).click();
   assert.match(token, /^NQP:/);
-  ok('Verified customer enrolls and receives a persisted branded card and real QR');
+  ok('Device-bound customer receives a persisted branded card and real QR without email/password');
+  const customerSession = await (
+    await customer.request.get('/api/v1/session', { headers: { 'x-nuqta-workspace': 'customer' } })
+  ).json();
   const shared = await context();
   const sharedPage = await shared.newPage();
   sharedPage.on('pageerror', (e) => errors.push(e.name));
@@ -702,8 +724,12 @@ try {
     ['platform', 'admin'],
     ['merchant', 'owner'],
     ['cashier', 'cashier'],
-    ['customer', 'customer'],
   ] as const;
+  await shared.addCookies(
+    (await customer.cookies()).filter((cookie) =>
+      /nq_device|nq_session_customer|nq_csrf_customer/.test(cookie.name),
+    ),
+  );
   for (const [portal, role] of portalRoles) {
     await login(
       sharedPage,
@@ -713,8 +739,7 @@ try {
     );
     await sharedPage.locator('[data-portal="' + portal + '"]').waitFor();
     assert.equal(await sharedPage.locator('[data-portal]').getAttribute('data-portal'), portal);
-    if (portal === 'cashier' || portal === 'customer')
-      assert.equal(await sharedPage.locator('.sidebar').count(), 0);
+    if (portal === 'cashier') assert.equal(await sharedPage.locator('.sidebar').count(), 0);
     if (portal === 'merchant')
       assert.equal(
         await sharedPage
@@ -747,9 +772,14 @@ try {
       ).user.email,
       email(role),
     );
+  const sharedCustomer = await (
+    await shared.request.get('/api/v1/session', { headers: { 'x-nuqta-workspace': 'customer' } })
+  ).json();
+  assert.equal(sharedCustomer.user.id, customerSession.user.id);
+  assert.equal(sharedCustomer.user.email, null);
   await shared.close();
   ok(
-    'One sign-in screen routes all four account roles automatically; their workspaces and sessions stay separate',
+    'One sign-in screen routes the three team/platform roles; their sessions stay separate from the device-bound customer',
   );
   assert.equal(await up.locator('.loyalty-card').getAttribute('data-stamp-icon'), 'star');
   assert.ok((await up.locator('.loyalty-card').getAttribute('class'))?.includes('logo-plain'));
@@ -870,8 +900,12 @@ try {
     new MutationObserver((changes) => {
       for (const change of changes)
         if (change.target instanceof Element && change.target.matches('.loyalty-card'))
-          events.push(change.target.className);
-    }).observe(document.body, { subtree: true, attributes: true, attributeFilter: ['class'] });
+          events.push(change.target.getAttribute('data-card-motion') || '');
+    }).observe(document.body, {
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['data-card-motion'],
+    });
   });
   await scan();
   await prepare('BROWSER-' + stamp + '-1', 3);
@@ -955,8 +989,12 @@ try {
     new MutationObserver((changes) => {
       for (const change of changes)
         if (change.target instanceof Element && change.target.matches('.loyalty-card'))
-          events.push(change.target.className);
-    }).observe(document.body, { subtree: true, attributes: true, attributeFilter: ['class'] });
+          events.push(change.target.getAttribute('data-card-motion') || '');
+    }).observe(document.body, {
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['data-card-motion'],
+    });
   });
   await up.getByRole('button', { name: 'Yes, I am redeeming', exact: true }).click();
   await cp.getByRole('button', { name: 'Complete redemption', exact: true }).click();
@@ -1184,6 +1222,24 @@ try {
   assert.equal(csv.status(), 200);
   assert.ok((await csv.text()).includes('Browser Customer'));
   ok('Saved segment and private worker-generated CSV are usable from the merchant UI');
+  await up.getByRole('button', { name: 'Preferences', exact: true }).click();
+  await up.locator('input[type=tel]').fill('+15555550101');
+  await up.getByRole('button', { name: 'Save number', exact: true }).click();
+  await up.getByRole('status').filter({ hasText: 'Number saved.' }).waitFor();
+  await Promise.all([
+    up.waitForResponse(
+      (response) =>
+        response.url().endsWith('/preferences') && response.request().method() === 'PATCH',
+    ),
+    up.getByLabel('WhatsApp', { exact: true }).click(),
+  ]);
+  await up.waitForFunction(
+    () =>
+      Array.from(document.querySelectorAll('label'))
+        .find((label) => label.textContent?.trim() === 'WhatsApp')
+        ?.querySelector('input')?.checked === true,
+  );
+  await up.getByRole('button', { name: 'Card', exact: true }).click();
   await merchantTab(op, 'WhatsApp contact');
   const contactRow = op.locator('tr').filter({ hasText: 'Browser Customer' });
   await contactRow.getByRole('button', { name: 'WhatsApp message', exact: true }).click();
@@ -1462,42 +1518,111 @@ try {
   ok(
     'Platform MFA setup renders in Arabic/English, decodes its real QR, presents ten recovery codes and resumes with a one-use code; no secrets are written to evidence',
   );
-  const customerUser = (await (await customer.request.get('/api/v1/session')).json()).user.id;
   await db.query(
     "UPDATE sessions SET expires_at=clock_timestamp()-interval '1 second' WHERE user_id=$1",
-    [customerUser],
+    [customerSession.user.id],
   );
   await reloadPage(up);
-  await up.waitForURL('**/login');
-  await up.locator('input[type=email]').waitFor();
-  ok('Expired authenticated session returns to sign-in without discarding server card state');
-  await navigateTo(up, '/login?dev=1');
-  if ((await up.locator('html').getAttribute('lang')) === 'ar')
-    await up.getByRole('button', { name: 'English', exact: true }).click();
-  await up.getByRole('button', { name: 'Forgot password?', exact: true }).click();
-  await up.getByLabel('Email', { exact: true }).fill(email('customer'));
-  await up.getByRole('button', { name: 'Send recovery link', exact: true }).click();
-  await up.getByRole('status').filter({ hasText: 'If the account exists' }).waitFor();
+  await up.getByRole('progressbar', { name: 'Stamp progress', exact: true }).waitFor();
+  assert.ok(new URL(up.url()).pathname.startsWith('/customer/'));
+  assert.equal(await up.locator('input[type=email],input[type=password]').count(), 0);
+  ok(
+    'Expired customer sessions resume the same card automatically from the valid device credential',
+  );
+  if ((await op.locator('html').getAttribute('lang')) === 'ar')
+    await op.getByRole('button', { name: 'English', exact: true }).click();
+  await login(op, email('owner'), '/login', true, ownerNewPassword);
+  await merchantTab(op, 'Customers and segments');
+  await op.locator('.customer-recovery-tool summary').click();
+  await op.getByLabel('Full customer number', { exact: true }).fill(customerPhone);
+  await op.getByRole('button', { name: 'Find the card', exact: true }).click();
+  await op
+    .locator('.customer-recovery-tool .subpanel strong')
+    .filter({ hasText: 'Browser Customer' })
+    .waitFor();
+  await op.getByLabel('The customer asked to restore their card', { exact: true }).check();
+  await op.getByRole('button', { name: 'Prepare WhatsApp recovery', exact: true }).click();
+  const recoveryDraft = new URL(
+    (await op.getByRole('link', { name: 'Open WhatsApp', exact: true }).getAttribute('href'))!,
+  );
+  assert.equal(recoveryDraft.pathname, '/' + customerPhone.slice(1));
+  const recoveryToken = /\/r\/([a-f0-9]{64})/.exec(recoveryDraft.searchParams.get('text')!)![1]!;
+  const beforeRecovery = (
+    await db.query(
+      'SELECT balance,revision,cycle_number FROM loyalty_accounts WHERE membership_id=$1',
+      [membership],
+    )
+  ).rows[0];
+  const recoveredContext = await context(),
+    recoveredPage = await recoveredContext.newPage();
+  await navigateTo(recoveredPage, '/r/' + recoveryToken);
+  await recoveredPage.getByRole('button', { name: 'Open my card', exact: true }).waitFor();
+  assert.equal(
+    (
+      await db.query('SELECT used_at FROM customer_recoveries WHERE token_hash=$1', [
+        tokenHash(recoveryToken),
+      ])
+    ).rows[0].used_at,
+    null,
+  );
+  assert.equal(
+    await recoveredPage.getByLabel('Remove access from old devices', { exact: true }).isChecked(),
+    true,
+  );
+  await recoveredPage.getByRole('button', { name: 'Open my card', exact: true }).click();
+  await recoveredPage.getByRole('progressbar', { name: 'Stamp progress', exact: true }).waitFor();
+  assert.equal(new URL(recoveredPage.url()).pathname, '/customer/' + membership);
+  assert.deepEqual(
+    (
+      await db.query(
+        'SELECT balance,revision,cycle_number FROM loyalty_accounts WHERE membership_id=$1',
+        [membership],
+      )
+    ).rows[0],
+    beforeRecovery,
+  );
+  await reloadPage(up);
+  await up.getByRole('heading', { name: 'Your card is not on this device', exact: true }).waitFor();
+  assert.equal(await up.locator('input[type=email],input[type=password]').count(), 0);
+  await navigateTo(recoveredPage, '/r/' + recoveryToken);
+  await recoveredPage
+    .getByRole('alert')
+    .filter({ hasText: 'This link was used or expired.' })
+    .waitFor();
+  await recoveredContext.close();
+  ok(
+    'Owner prepares a requested manual WhatsApp recovery; GET leaves it unused, a new browser restores the same stamps once, and the old device loses access without a password screen',
+  );
+  const staffReset = await context(),
+    staffResetPage = await staffReset.newPage();
+  await navigateTo(staffResetPage, '/login?dev=1');
+  if ((await staffResetPage.locator('html').getAttribute('lang')) === 'ar')
+    await staffResetPage.getByRole('button', { name: 'English', exact: true }).click();
+  await staffResetPage.getByRole('button', { name: 'Forgot password?', exact: true }).click();
+  await staffResetPage.getByLabel('Email', { exact: true }).fill(email('owner'));
+  await staffResetPage.getByRole('button', { name: 'Send recovery link', exact: true }).click();
+  await staffResetPage.getByRole('status').filter({ hasText: 'If the account exists' }).waitFor();
   for (let i = 0; i < 200 && (await runOne(worker, c)); i++) {
     /* Local-only durable mailbox dispatch. */
   }
-  await up.locator('.local-inbox summary').click();
-  await up.getByRole('button', { name: 'Open local mailbox', exact: true }).click();
-  const resetEmail = up.locator('.mailbox > div').filter({ hasText: email('customer') });
+  await staffResetPage.locator('.local-inbox summary').click();
+  await staffResetPage.getByRole('button', { name: 'Open local mailbox', exact: true }).click();
+  const resetEmail = staffResetPage.locator('.mailbox > div').filter({ hasText: email('owner') });
   await resetEmail.getByRole('link', { name: 'Choose a new password', exact: true }).click();
   const recoveredPassword = 'Recovered-' + randomBytes(14).toString('hex');
-  await up.getByLabel('New password', { exact: true }).fill(recoveredPassword);
-  await up.getByLabel('Confirm password', { exact: true }).fill(recoveredPassword);
-  await up.getByRole('button', { name: 'Save password', exact: true }).click();
-  await up.getByRole('status').filter({ hasText: 'Password saved' }).waitFor();
-  await up.getByRole('button', { name: 'Sign in', exact: true }).click();
-  await up.locator('input[type=email]').waitFor();
-  await login(up, email('customer'), '/login', true, recoveredPassword);
-  await up.waitForURL('**/customer');
-  await up.locator('.loyalty-card').first().waitFor();
+  await staffResetPage.getByLabel('New password', { exact: true }).fill(recoveredPassword);
+  await staffResetPage.getByLabel('Confirm password', { exact: true }).fill(recoveredPassword);
+  await staffResetPage.getByRole('button', { name: 'Save password', exact: true }).click();
+  await staffResetPage.getByRole('status').filter({ hasText: 'Password saved' }).waitFor();
+  await staffResetPage.getByRole('button', { name: 'Sign in', exact: true }).click();
+  await staffResetPage.locator('input[type=email]').waitFor();
+  await login(staffResetPage, email('owner'), '/login', true, recoveredPassword);
+  await staffResetPage.waitForURL('**/merchant');
+  await staffResetPage.locator('[data-portal=merchant]').waitFor();
   ok(
-    'Forgot password dispatches through the durable worker mailbox; the real recovery link opens the reset screen and the new password restores existing customer cards',
+    'Forgot password dispatches through the durable worker mailbox; the real recovery link opens the reset screen and the new password restores the owner workspace',
   );
+  await staffReset.close();
   assert.deepEqual(errors, []);
   await writeFile(
     evidence + '/browser.json',
@@ -1535,13 +1660,17 @@ try {
   console.error(
     'Browser verification failed:',
     e instanceof Error
-      ? e.message.replace(/\/(invite|reset-password)\/[^\s]+/g, '/$1/[redacted]')
+      ? e.message.replace(
+          /\/(invite|reset-password|r|customer\/recoveries)\/[^\s]+/g,
+          '/$1/[redacted]',
+        )
       : 'Unknown',
   );
   if (e instanceof Error)
     console.error(e.stack?.split('\n').find((line) => line.includes('test-e2e.ts:')) || '');
   process.exitCode = 1;
 } finally {
+  await registrationApp.close();
   await browser.close();
   await worker.end();
   await db.end();

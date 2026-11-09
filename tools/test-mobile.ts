@@ -45,6 +45,9 @@ const { app } = await buildApp({
   HOST: '127.0.0.1',
   PORT: port,
   PUBLIC_APP_ORIGIN: origin,
+  // Controlled loopback proxy fixture supplies unique documentation-only
+  // client IPs, so persistent abuse guards remain real across repeated runs.
+  TRUSTED_PROXIES: '127.0.0.1/32',
   LOG_LEVEL: 'silent',
 });
 const directory = 'docs/execution/evidence/implementation',
@@ -128,6 +131,10 @@ async function watch(context: BrowserContext) {
       configurable: true,
     });
     Object.defineProperty(window, 'ResizeObserver', { value: undefined, configurable: true });
+    Object.defineProperty(Animation.prototype, 'finished', {
+      get: () => undefined,
+      configurable: true,
+    });
   });
 }
 try {
@@ -246,6 +253,9 @@ try {
       ...devices[project.device],
       locale: 'en-US',
       baseURL: origin,
+      extraHTTPHeaders: {
+        'x-forwarded-for': '2001:db8:' + randomBytes(12).toString('hex').match(/.{4}/g)!.join(':'),
+      },
       // WebKit routes bypass requests controlled by a service worker. Isolate
       // its network-fault fixture; Chromium below exercises the actual SW.
       serviceWorkers: project.type === webkit ? 'block' : 'allow',
@@ -261,39 +271,32 @@ try {
       cp = await cashier.newPage(),
       errors: string[] = [];
     for (const target of [page, cp]) target.on('pageerror', (error) => errors.push(error.message));
+    const firstVisitStarted = Date.now(),
+      customerPhone = '+2010' + String(randomBytes(4).readUInt32BE()).padStart(10, '0').slice(-8);
     await page.goto(origin + '/join/' + slug + '?b=' + branch + '&src=qr', {
       waitUntil: 'domcontentloaded',
     });
-    try {
-      await page
-        .getByRole('button', { name: 'Sign in and join', exact: true })
-        .click({ timeout: 10000 });
-    } catch (error) {
-      console.log(
-        'Initial shell diagnostics ' +
-          JSON.stringify(
-            await page.evaluate(() => ({
-              ua: navigator.userAgent,
-              ready: document.documentElement.dataset.nuqtaReady,
-              root: document.getElementById('root')?.textContent?.slice(0, 200),
-              violations: (window as unknown as { policyViolations: string[] }).policyViolations,
-            })),
-          ) +
-          ' errors=' +
-          JSON.stringify(errors),
-      );
-      throw error;
-    }
-    await page.getByRole('button', { name: 'Create customer account', exact: true }).click();
-    await page.getByLabel('Your name', { exact: true }).fill('Mobile QA ' + project.name);
+    await page.getByLabel('Your name', { exact: true }).waitFor();
+    await checkLayout(page, project.name + ' registration English');
+    await page.screenshot({
+      path: directory + '/mobile-' + project.name + '-register-en.png',
+      fullPage: true,
+    });
+    await page.getByRole('button', { name: 'العربية', exact: true }).click();
+    await page.getByLabel('رقم موبايلك', { exact: true }).waitFor();
+    await checkLayout(page, project.name + ' registration Arabic');
+    await page.screenshot({
+      path: directory + '/mobile-' + project.name + '-register-ar.png',
+      fullPage: true,
+    });
+    await page.getByRole('button', { name: 'English', exact: true }).click();
+    await page.getByLabel('Your name', { exact: true }).fill('Mobile QA');
+    await page.getByLabel('Mobile number', { exact: true }).fill(customerPhone);
+    assert.equal(await page.locator('form input[type=email],form input[type=password]').count(), 0);
     await page
-      .getByLabel('Email', { exact: true })
-      .fill(project.name + '-' + stamp + '@nuqta.test');
-    await page.getByLabel('Password', { exact: true }).fill(password);
-    await page.getByRole('button', { name: 'Create account', exact: true }).click();
-    await page.getByLabel('Name on your card', { exact: true }).fill('Mobile QA');
-    await page.getByLabel('I accept the program and reward terms', { exact: true }).check();
-    await page.getByRole('button', { name: 'Create my card', exact: true }).click();
+      .getByLabel('I accept the program, reward and privacy terms', { exact: true })
+      .check();
+    await page.getByRole('button', { name: 'Open my card', exact: true }).click();
     await page.getByRole('progressbar', { name: 'Stamp progress', exact: true }).waitFor();
     await page.waitForFunction(
       () =>
@@ -303,6 +306,10 @@ try {
             (animation) => animation.id === 'nuqta-first-card' && animation.playState === 'running',
           ),
     );
+    assert.ok(
+      Date.now() - firstVisitStarted < 30000,
+      'new customer reaches the card in under 30 seconds locally',
+    );
     await checkLayout(page, project.name + ' customer');
     await page.screenshot({
       path: directory + '/mobile-' + project.name + '-customer-en.png',
@@ -310,7 +317,73 @@ try {
     });
     pass(
       project.name +
-        ': real customer registration and card through the legacy build with UUID/Popover/ResizeObserver absent',
+        ': name/phone/terms registration survives Arabic/English switching, reaches the card within 30 seconds, and needs no email/password or UUID/Popover/ResizeObserver/Animation.finished',
+    );
+    const newcomer = await browser.newContext({
+      ...devices[project.device],
+      locale: 'en-US',
+      baseURL: origin,
+      extraHTTPHeaders: {
+        'x-forwarded-for': '2001:db8:' + randomBytes(12).toString('hex').match(/.{4}/g)!.join(':'),
+      },
+    });
+    await watch(newcomer);
+    await newcomer.addInitScript(() => {
+      const motions: Animation[] = [];
+      (window as unknown as { firstCardMotions: Animation[] }).firstCardMotions = motions;
+      const original = Element.prototype.animate;
+      Element.prototype.animate = function (frames, options) {
+        const result = original.call(this, frames, options);
+        motions.push(result);
+        return result;
+      };
+    });
+    const firstPage = await newcomer.newPage(),
+      firstPhone = '+2011' + String(randomBytes(4).readUInt32BE()).padStart(10, '0').slice(-8),
+      firstStarted = Date.now();
+    await firstPage.goto(origin + '/p/' + placement.public_code + '?src=nfc', {
+      waitUntil: 'domcontentloaded',
+    });
+    await firstPage.getByLabel('Your name', { exact: true }).fill('First NFC QA');
+    assert.equal(await firstPage.locator('form input').count(), 3);
+    await firstPage.getByLabel('Mobile number', { exact: true }).fill(firstPhone);
+    await firstPage
+      .getByLabel('I accept the program, reward and privacy terms', { exact: true })
+      .check();
+    await firstPage.getByRole('button', { name: 'Open my card', exact: true }).click();
+    await firstPage.getByRole('dialog', { name: 'Personal QR', exact: true }).waitFor();
+    assert.ok(Date.now() - firstStarted < 30000);
+    await firstPage.waitForFunction(() => !new URLSearchParams(location.search).has('auto'));
+    const firstMember = new URL(firstPage.url()).pathname.split('/').at(-1)!;
+    const placementContext = new URL(firstPage.url()).searchParams;
+    assert.equal(placementContext.get('b'), branch);
+    assert.equal(placementContext.get('code'), placement.public_code);
+    assert.equal(placementContext.get('src'), 'nfc');
+    const reveal = await firstPage.evaluate(
+      () =>
+        (window as unknown as { firstCardMotions: Animation[] }).firstCardMotions
+          .find((motion) => motion.id === 'nuqta-first-card')
+          ?.effect?.getTiming().duration,
+    );
+    assert.equal(reveal, 720);
+    assert.equal(
+      (
+        await db.query(
+          "SELECT count(*)::int AS n FROM stamp_requests WHERE membership_id=$1 AND status='pending'",
+          [firstMember],
+        )
+      ).rows[0].n,
+      1,
+    );
+    assert.equal(
+      (await db.query('SELECT balance FROM loyalty_accounts WHERE membership_id=$1', [firstMember]))
+        .rows[0].balance,
+      0,
+    );
+    await newcomer.close();
+    pass(
+      project.name +
+        ': first NFC scan needs only name/phone/terms/submit, preserves context, reveals the card in 720ms and requests one first stamp without granting it',
     );
     if (project.type === webkit) {
       const guide = page.getByRole('dialog', { name: 'Save your card', exact: true });
@@ -346,6 +419,7 @@ try {
     );
     const memberId = new URL(page.url()).pathname.split('/').at(-1)!;
     let lostRequest = false,
+      expiredDuringRequest = false,
       interruptedBeforeCommit = false;
     const autoKeys: string[] = [];
     const interruptRequest = async (route: import('playwright').Route) => {
@@ -354,6 +428,15 @@ try {
         if (!interruptedBeforeCommit) {
           interruptedBeforeCommit = true;
           await route.abort('failed');
+          return;
+        }
+        if (!expiredDuringRequest) {
+          expiredDuringRequest = true;
+          await db.query(
+            "UPDATE sessions SET expires_at=clock_timestamp()-interval '1 second' WHERE user_id=(SELECT user_id FROM memberships WHERE id=$1)",
+            [memberId],
+          );
+          await route.continue();
           return;
         }
         if (!lostRequest) {
@@ -410,9 +493,10 @@ try {
     }
     await page.unroute('**/api/v1/me/stamp-requests', interruptRequest);
     assert.equal(lostRequest, true);
-    assert.ok(autoKeys.length >= 3);
+    assert.ok(autoKeys.length >= 4);
     assert.equal(autoKeys[0], autoKeys[1]);
     assert.equal(autoKeys[1], autoKeys[2]);
+    assert.equal(new Set(autoKeys).size, 1);
     assert.equal(
       (
         await db.query('SELECT count(*)::int AS n FROM stamp_requests WHERE membership_id=$1', [
@@ -440,7 +524,7 @@ try {
     );
     pass(
       project.name +
-        ': interruption before commit and a lost committed response retry the same request key without a duplicate',
+        ': interruption, session expiry during POST and a lost committed reply restore the device session and retry the same request key without a duplicate',
     );
     let firstToken = '';
     await page.route(

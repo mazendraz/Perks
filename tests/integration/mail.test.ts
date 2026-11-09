@@ -1,3 +1,4 @@
+import { createPasswordUser } from '../helpers.js';
 import { before, after, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
@@ -127,15 +128,9 @@ after(async () => {
 });
 async function register() {
   const email = 'smtp-' + randomUUID() + '@nuqta.test';
-  const registered = await app.inject({
-    method: 'POST',
-    url: '/api/v1/auth/register',
-    headers: { origin, 'x-nuqta-language': 'en' },
-    payload: { email, password },
-  });
-  assert.equal(registered.statusCode, 200);
-  return { email, id: (await db.query('SELECT id FROM users WHERE email=$1', [email])).rows[0].id };
+  return { email, id: await createPasswordUser(db, email, password) };
 }
+
 test('reset mail survives an API restart, crosses a real TLS SMTP server once, opens a working reset link and queues the password-change confirmation', async () => {
   const user = await register();
   const request = await app.inject({

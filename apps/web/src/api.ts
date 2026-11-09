@@ -1,4 +1,4 @@
-import type { ApiFailure } from '../../../packages/contracts/src/index.js';
+import type { ApiFailure, Session } from '../../../packages/contracts/src/index.js';
 import { portalForPath, type Portal } from './portals.js';
 import { setNetworkUnavailable } from './network.js';
 let csrf = '';
@@ -28,6 +28,7 @@ export async function api<T>(
     revision?: number;
     workspace?: Portal | 'shared';
   } = {},
+  restoreDevice = true,
 ): Promise<T> {
   const headers: Record<string, string> = {};
   headers['x-nuqta-language'] = document.documentElement.lang === 'en' ? 'en' : 'ar';
@@ -75,9 +76,32 @@ export async function api<T>(
   setNetworkUnavailable(false);
   if (response.status === 204) return undefined as T;
   const body = (await response.json()) as T & ApiFailure;
+  if (
+    restoreDevice &&
+    portal === 'customer' &&
+    path !== '/session' &&
+    ((response.status === 401 && body.error?.code === 'UNAUTHENTICATED') ||
+      (response.status === 403 && body.error?.code === 'CSRF_REJECTED'))
+  ) {
+    try {
+      const session = await api<Session>('/session', { workspace: 'customer' }, false);
+      csrf = session.csrfToken;
+      window.dispatchEvent(new Event('nuqta:customer-session-restored'));
+      // Authentication/CSRF rejected the first attempt before its handler ran.
+      // Retry once, retaining the exact commercial command and idempotency key.
+      return api<T>(path, options, false);
+    } catch {
+      /* A revoked or absent device must still receive the original failure. */
+    }
+  }
   if (response.status === 403 && body.error?.code === 'MFA_REQUIRED')
     window.dispatchEvent(new Event('nuqta:mfa-required'));
-  if (response.status === 401 && csrf && body.error?.code === 'UNAUTHENTICATED') {
+  if (
+    path !== '/session' &&
+    response.status === 401 &&
+    csrf &&
+    body.error?.code === 'UNAUTHENTICATED'
+  ) {
     csrf = '';
     window.dispatchEvent(new Event('nuqta:session-expired'));
   }
@@ -91,6 +115,18 @@ export async function api<T>(
   return body;
 }
 const arErrors: Record<string, string> = {
+  CUSTOMER_DEVICE_REQUIRED:
+    'كارت العميل بيفتح من سكان المحل أو رابط الاسترجاع على واتساب. الإيميل والباسورد للفريق والإدارة.',
+  REGISTRATION_CLOSED:
+    'حسابات الفريق بيضيفها المسؤول أو صاحب المحل. العميل يفتح الكارت من كود المحل.',
+  CUSTOMER_PHONE_EXISTS: 'الرقم ده عليه كارت. اطلب من الكاشير يبعتهولك على واتساب.',
+  CUSTOMER_DEVICE_REVOKED: 'الكارت مش على الجهاز ده. اطلب من الكاشير يرجعهولك على واتساب.',
+  CUSTOMER_REGISTRATION_LIMIT: 'وصلت لعدد المحاولات المسموح. جرّب بعد ساعة أو اسأل الكاشير.',
+  CUSTOMER_SEARCH_LIMIT: 'وصلت لحد البحث في الساعة. اسأل المدير يساعد العميل.',
+  CUSTOMER_RECOVERY_LIMIT: 'وصلنا لحد10روابط للعميل النهارده. جرّب بكرة.',
+  CASHIER_RECOVERY_DISABLED: 'استرجاع الكروت متاح للمالك أو المدير عندكم. اطلب مساعدتهم.',
+  RECOVERY_LINK_INVALID: 'الرابط ده اتستخدم أو انتهى. اطلب من الكاشير رابط جديد.',
+  DEVICE_ALREADY_BOUND: 'فيه كارت تاني مربوط بالجهاز. اخرج منه الأول أو افتح الرابط في متصفح تاني.',
   CUSTOMER_QR_REQUIRED: 'امسح كود العميل من موبايله الأول، وبعدها اعتمد الطلب.',
   REQUEST_DAILY_LIMIT: 'وصلت لحد طلبات الأختام النهارده. ارجع بكرة أو راجع فريق المحل.',
   ADMIN_EMAIL_IN_USE: 'الإيميل ده مستخدم بالفعل. اختار إيميل مستقل لحساب الإدارة.',
@@ -98,7 +134,6 @@ const arErrors: Record<string, string> = {
   LAST_PLATFORM_ADMIN: 'لازم يفضل فيه سوبر أدمن نشط واحد على الأقل.',
   PORTAL_ACCESS_REQUIRED:
     'الحساب ده مش مخصص للبوابة دي. ادخل من البوابة المناسبة أو راجع مسؤول الحساب.',
-  REGISTRATION_CLOSED: 'حسابات الشغل بيجهزها مسؤول المنصة أو صاحب المحل.',
   OWNER_PREVIEW_READ_ONLY:
     'دي معاينة لواجهة المالك. احفظ التعديلات الفعلية من ملف المحل في إدارة المنصة.',
   OWNER_PREVIEW_SCOPE: 'الصفحة دي خارج نطاق معاينة المحل.',
@@ -162,6 +197,22 @@ const arErrors: Record<string, string> = {
   INTERNAL_ERROR: 'حصل خطأ. استخدم مرجع الطلب مع الدعم.',
 };
 const enErrors: Record<string, string> = {
+  CUSTOMER_DEVICE_REQUIRED:
+    'Open your customer card from the shop code or a WhatsApp recovery link. Email and password are for staff and administrators.',
+  REGISTRATION_CLOSED:
+    'An administrator or owner creates team accounts. Customers open a card from the shop code.',
+  CUSTOMER_PHONE_EXISTS:
+    'This number already has a card. Ask the cashier to send it to you on WhatsApp.',
+  CUSTOMER_DEVICE_REVOKED:
+    'Your card is not on this device. Ask the cashier to restore it on WhatsApp.',
+  CUSTOMER_REGISTRATION_LIMIT: 'Too many attempts. Try again in an hour or ask the cashier.',
+  CUSTOMER_SEARCH_LIMIT: 'The hourly search limit was reached. Ask a manager to help the customer.',
+  CUSTOMER_RECOVERY_LIMIT:
+    'This customer reached the limit of 10 recovery links today. Try tomorrow.',
+  CASHIER_RECOVERY_DISABLED: 'Ask the owner or manager to restore this customer’s card.',
+  RECOVERY_LINK_INVALID: 'This link was used or expired. Ask the cashier for a new one.',
+  DEVICE_ALREADY_BOUND:
+    'This device is linked to another customer. Sign out first or use another browser.',
   CUSTOMER_QR_REQUIRED: 'Scan the customer code from their phone before approving the request.',
   REQUEST_DAILY_LIMIT:
     'You have reached today’s stamp request limit. Scan again tomorrow or ask the shop team.',
@@ -177,8 +228,6 @@ const enErrors: Record<string, string> = {
   LAST_PLATFORM_ADMIN: 'Keep at least one active super administrator.',
   PORTAL_ACCESS_REQUIRED:
     'This account does not have access to this portal. Use the correct portal or contact your account administrator.',
-  REGISTRATION_CLOSED:
-    'Staff accounts are created by the platform administrator or business owner.',
   OWNER_PREVIEW_READ_ONLY:
     'This is an owner preview. Save actual changes from the business workspace in the platform.',
   OWNER_PREVIEW_SCOPE: 'This page is outside this business preview.',

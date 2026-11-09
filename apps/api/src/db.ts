@@ -4,13 +4,14 @@ import { AppError } from './errors.js';
 export type DB = pg.PoolClient;
 export interface Actor {
   id: string;
-  email: string;
+  email: string | null;
+  displayName?: string;
   role: 'platform_admin' | 'platform_support' | 'customer';
   sessionId: string;
   mfaAt: Date | null;
   mfaRequired?: boolean;
   locale?: 'ar' | 'en';
-  authMethod?: 'otp' | 'password' | 'managed';
+  authMethod?: 'otp' | 'password' | 'managed' | 'device';
   csrfHash: string;
   preview?: { adminId: string; merchantId: string; staffId: string };
 }

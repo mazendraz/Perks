@@ -1,4 +1,6 @@
-import { chromium, devices, type Page } from 'playwright';
+import { chromium, type Page } from 'playwright';
+import { spawnSync } from 'node:child_process';
+import { existsSync } from 'node:fs';
 import assert from 'node:assert/strict';
 import { readFile, mkdir, writeFile } from 'node:fs/promises';
 import { resolve, relative } from 'node:path';
@@ -6,9 +8,6 @@ import { createHash, randomUUID } from 'node:crypto';
 import { build } from 'vite';
 import react from '@vitejs/plugin-react';
 import legacy from '@vitejs/plugin-legacy';
-import Fastify from 'fastify';
-import fastifyStatic from '@fastify/static';
-import helmet from '@fastify/helmet';
 import {
   legacyTargets,
   legacyScriptHashes,
@@ -42,6 +41,13 @@ const report: {
     maxFrameMs: number;
     framesOver32: number;
     frameMs: number[];
+    idleMaxFrameMs?: number;
+    maxConcurrentTools?: number;
+    finalBalance?: number;
+    tracedMaxFrameMs?: number;
+    tracedFramesOver32?: number;
+    gpuCompositing?: string;
+    gpuDevices?: string[];
   };
   reason?: string;
 } = {
@@ -52,9 +58,9 @@ const report: {
   checks: [],
 };
 await mkdir(directory, { recursive: true });
-const browser = await chromium.launch({ headless: true }),
+const browser = await chromium.launch({ headless: true, args: ['--enable-gpu'] }),
   pages: Page[] = [];
-const performanceServer = Fastify({ logger: false });
+
 async function productionFixture() {
   const temporary = resolve('.local', 'motion-production-' + randomUUID()),
     source = resolve(temporary, 'src'),
@@ -86,13 +92,7 @@ async function productionFixture() {
       assert.ok(
         legacyScriptHashes.includes(createHash('sha256').update(script[2]!).digest('base64')),
       );
-  await performanceServer.register(helmet, {
-    contentSecurityPolicy: {
-      directives: { scriptSrc: scriptSources, upgradeInsecureRequests: null },
-    },
-  });
-  await performanceServer.register(fastifyStatic, { root: output });
-  return performanceServer.listen({ port: 0, host: '127.0.0.1' });
+  return output;
 }
 const pass = (value: string) => {
   report.checks.push(value);
@@ -301,55 +301,64 @@ try {
         ': six frozen WAAPI frames match reference counter timing at 0/120/300/360/480/700ms',
     );
   }
-  const page = await browser.newPage({ ...devices['Pixel 5'] });
-  pages.push(page);
-  await page.addInitScript('window.__name = function(value) { return value; }');
-  await page.goto(await productionFixture());
-  await page.locator('.loyalty-card').waitFor();
-  await page.evaluate(() => document.fonts.ready);
-  await page.getByRole('button', { name: 'Three stamps', exact: true }).click();
-  await page.waitForTimeout(1700);
-  await page.getByRole('button', { name: 'Reset two', exact: true }).click();
-  const session = await page.context().newCDPSession(page);
-  await session.send('Emulation.setCPUThrottlingRate', { rate: 4 });
-  await session.send('Tracing.start', {
-    categories: 'devtools.timeline,disabled-by-default-devtools.timeline.frame',
-    transferMode: 'ReturnAsStream',
-  });
-  const frameMs = await page.evaluate(
-    () =>
-      new Promise<number[]>((resolveResult) => {
-        const frames: number[] = [];
-        let previous = performance.now();
-        const start = previous;
-        const tick = (now: number) => {
-          if (now > previous) frames.push(now - previous);
-          previous = now;
-          if (now - start < 1900) requestAnimationFrame(tick);
-          else resolveResult(frames);
-        };
-        requestAnimationFrame(tick);
-        (window as unknown as { nuqtaMotionFixture: Fixture }).nuqtaMotionFixture.stamp(3);
-      }),
-  );
-  const complete = new Promise<{ stream?: string }>((resolveResult) =>
-    session.once('Tracing.tracingComplete', resolveResult),
-  );
-  await session.send('Tracing.end');
-  const { stream } = await complete;
-  assert.ok(stream, 'Chrome must return the recorded trace stream');
-  let trace = '';
-  for (;;) {
-    const part = await session.send('IO.read', { handle: stream });
-    trace += part.base64Encoded ? Buffer.from(part.data, 'base64').toString('utf8') : part.data;
-    if (part.eof) break;
-    assert.ok(trace.length < 30 * 1024 * 1024);
+  await browser.close();
+  const output = await productionFixture();
+  const runtimePath = resolve('.local/motion-linux-runtime.json');
+  const linux =
+    process.platform === 'win32' && existsSync(runtimePath)
+      ? (JSON.parse(await readFile(runtimePath, 'utf8')) as { distro: string; nodeVersion: string })
+      : null;
+  const linuxPath = (value: string) => {
+    const absolute = resolve(value);
+    assert.match(absolute, /^[A-Za-z]:[\\/]/);
+    return '/mnt/' + absolute[0]!.toLowerCase() + absolute.slice(2).replaceAll('\\', '/');
+  };
+  const runId = randomUUID();
+  const configPath = resolve('.local/motion-performance-' + runId + '.json');
+  if (linux) {
+    assert.match(linux.distro, /^[A-Za-z0-9._-]+$/);
+    assert.equal(linux.nodeVersion, process.version, 'Linux and host Node versions must match');
   }
-  await session.send('IO.close', { handle: stream });
-  await writeFile(directory + '/pixel5-cpu4x-trace.json', trace);
-  const framesOver32 = frameMs.filter((ms) => ms > 32).length;
-  report.performance = { cpuThrottle: 4, maxFrameMs: Math.max(...frameMs), framesOver32, frameMs };
-  assert.equal(framesOver32, 0, 'motion frame intervals must stay at or below 32ms under CPU4x');
+  await writeFile(
+    configPath,
+    JSON.stringify({
+      runId,
+      root: linux ? linuxPath(output) : output,
+      directory: linux ? linuxPath(directory) : resolve(directory),
+      scriptSources,
+      ...(linux ? { browserRoot: linuxPath('.local/linux-motion/browsers') } : {}),
+    }),
+  );
+  const result = linux
+    ? spawnSync(
+        'wsl.exe',
+        [
+          '-d',
+          linux.distro,
+          '--cd',
+          linuxPath('.'),
+          '--exec',
+          linuxPath('.local/linux-motion/node-' + linux.nodeVersion + '-linux-x64/bin/node'),
+          'tools/stamp-motion-performance.cjs',
+          linuxPath(configPath),
+        ],
+        { encoding: 'utf8', windowsHide: true, timeout: 60_000 },
+      )
+    : spawnSync(process.execPath, ['tools/stamp-motion-performance.cjs', configPath], {
+        encoding: 'utf8',
+        windowsHide: true,
+        timeout: 60_000,
+      });
+  const perfReport = JSON.parse(
+    await readFile(directory + '/pixel5-cpu4x-performance.json', 'utf8'),
+  );
+  assert.equal(perfReport.runId, runId, 'performance evidence must belong to this invocation');
+  report.performance = perfReport;
+  assert.equal(
+    result.status,
+    0,
+    (result.stderr || result.error?.message || 'Performance runner failed').slice(-1200),
+  );
   pass('Pixel 5 emulation at CPU4x: recorded Chrome trace and no frame interval above 32ms');
   report.status = 'passed';
 } catch (error) {
@@ -358,7 +367,6 @@ try {
   console.error(report.reason);
   process.exitCode = 1;
 } finally {
-  await performanceServer.close();
   await browser.close();
   await writeFile(directory + '/animation.json', JSON.stringify(report, null, 2) + '\n');
 }

@@ -1,3 +1,4 @@
+import { createPasswordUser } from '../helpers.js';
 import { before, after, test } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
@@ -35,19 +36,17 @@ const headers = (r: Response) => ({
   'x-csrf-token': r.json().csrfToken as string,
 });
 let address = 1;
-async function register(role = 'customer') {
-  const email = 'prod-' + randomUUID() + '@nuqta.test';
+async function register(role = 'owner') {
+  const email = 'prod-' + randomUUID() + '@nuqta.test',
+    id = await createPasswordUser(db, email, password, role);
   const r = await app.inject({
     method: 'POST',
-    url: '/api/v1/auth/register',
+    url: '/api/v1/auth/login',
     remoteAddress: '192.0.2.' + address++,
     headers: { origin },
     payload: { email, password },
   });
   assert.equal(r.statusCode, 200, r.body);
-  const id = (await db.query('SELECT id FROM users WHERE email=$1', [email])).rows[0].id;
-  if (role !== 'customer')
-    await db.query('UPDATE users SET global_role=$2 WHERE id=$1', [id, role]);
   return { email, id, first: r, headers: headers(r) };
 }
 const login = (email: string) =>
@@ -67,7 +66,7 @@ after(async () => {
   await db.end();
 });
 
-test('production password registration/login/change/reset use secure cookies and expose no local mail or managed exchange', async () => {
+test('production team password login/change/reset use secure cookies and expose no local mail or managed exchange', async () => {
   const u = await register();
   assert.ok(
     u.first.cookies.every(
@@ -269,70 +268,26 @@ test('every platform role requires MFA in production, enrollment is session-boun
   }
 });
 
-test('password session lifetimes follow privilege; only active customer sessions slide and expired/promoted sessions cannot renew', async () => {
-  const merchant = (
-    await db.query("INSERT INTO merchants(name,slug) VALUES('TTL test',$1) RETURNING id", [
-      'ttl-' + randomUUID(),
-    ])
-  ).rows[0].id;
-  for (const role of ['platform_admin', 'owner', 'cashier', 'customer']) {
-    const u = await register(role === 'platform_admin' ? role : 'customer');
-    if (role === 'owner' || role === 'cashier')
-      await db.query(
-        'INSERT INTO staff_memberships(merchant_id,user_id,email,name,role) VALUES($1,$2,$3,$4,$4)',
-        [merchant, u.id, u.email, role],
-      );
-    const signed = await login(u.email);
+test('platform and staff password sessions have hard privilege lifetimes and cannot renew expired sessions', async () => {
+  for (const role of ['platform_admin', 'owner', 'cashier']) {
+    const u = await register(role),
+      signed = await login(u.email);
+    assert.equal(signed.statusCode, 200);
     const row = (
       await db.query(
         'SELECT id,extract(epoch from(expires_at-created_at))::integer AS ttl FROM sessions WHERE user_id=$1 ORDER BY created_at DESC LIMIT 1',
         [u.id],
       )
     ).rows[0];
-    assert.equal(
-      row.ttl,
-      role === 'platform_admin' ? 12 * 3600 : role === 'customer' ? 30 * 86400 : 7 * 86400,
+    assert.equal(row.ttl, role === 'platform_admin' ? 12 * 3600 : 7 * 86400);
+    await db.query(
+      "UPDATE sessions SET created_at=now()-interval '8 days',expires_at=now()+interval '1 day' WHERE id=$1",
+      [row.id],
     );
-    if (role === 'customer') {
-      await db.query("UPDATE sessions SET expires_at=now()+interval '1 day' WHERE id=$1", [row.id]);
-      const renewed = await app.inject({ url: '/api/v1/session', headers: headers(signed) });
-      assert.equal(renewed.statusCode, 200);
-      assert.ok(renewed.cookies.some((cookie) => cookie.maxAge === 30 * 86400));
-      assert.ok(
-        (
-          await db.query(
-            "SELECT expires_at>now()+interval '29 days' AS renewed FROM sessions WHERE id=$1",
-            [row.id],
-          )
-        ).rows[0].renewed,
-      );
-      await db.query("UPDATE sessions SET expires_at=now()-interval '1 second' WHERE id=$1", [
-        row.id,
-      ]);
-      assert.equal(
-        (await app.inject({ url: '/api/v1/session', headers: headers(signed) })).statusCode,
-        401,
-      );
-    } else {
-      await db.query(
-        "UPDATE sessions SET created_at=now()-interval '8 days',expires_at=now()+interval '1 day' WHERE id=$1",
-        [row.id],
-      );
-      assert.equal(
-        (await app.inject({ url: '/api/v1/session', headers: headers(signed) })).statusCode,
-        401,
-      );
-    }
-    if (role === 'owner') {
-      // A customer token minted before promotion must not become a 30-day staff session.
-      await db.query("UPDATE sessions SET created_at=now()-interval '8 days' WHERE user_id=$1", [
-        u.id,
-      ]);
-      assert.equal(
-        (await app.inject({ url: '/api/v1/session', headers: u.headers })).statusCode,
-        401,
-      );
-    }
+    assert.equal(
+      (await app.inject({ url: '/api/v1/session', headers: headers(signed) })).statusCode,
+      401,
+    );
   }
 });
 

@@ -7,13 +7,6 @@ export const newPassword = z.string().min(10).max(128);
 export const loginInput = z
   .object({ email: emailInput, password: z.string().min(1).max(128) })
   .strict();
-export const registerInput = z
-  .object({
-    email: emailInput,
-    password: newPassword,
-    displayName: z.string().trim().min(1).max(60).optional(),
-  })
-  .strict();
 export const changePasswordInput = z
   .object({ currentPassword: z.string().min(1).max(128), password: newPassword })
   .strict();

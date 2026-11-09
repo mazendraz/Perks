@@ -144,7 +144,7 @@ for (const script of [
         .slice(-6000)
         .replace(/NQP:[a-f0-9]{64}/g, 'NQP:[redacted]')
         .replace(/postgres(?:ql)?:\/\/[^\s]+/g, '[database URL redacted]')
-        .replace(/\/(invite|reset-password)\/[^\s/]+/g, '/$1/[redacted]'),
+        .replace(/\/(invite|reset-password|r|customer\/recoveries)\/[^\s/]+/g, '/$1/[redacted]'),
     );
     process.exitCode = 1;
     break;

@@ -14,7 +14,7 @@ export function stampMotion({
   layer,
   seed,
   shape = 'circle',
-  delay = 0,
+  delay: startDelay = 0,
   reduced = false,
   onImpact,
   position,
@@ -70,170 +70,178 @@ export function stampMotion({
       );
     later(resolveFinished, 300);
   } else {
-    const base = position ? null : card.getBoundingClientRect(),
-      rect = position ?? slot.getBoundingClientRect();
-    const x = position ? position.x : (rect as DOMRect).left - base!.left + rect.width / 2,
-      y = position ? position.y : (rect as DOMRect).top - base!.top + rect.height / 2;
-    const { angle } = stampGeometry(seed, shape),
-      random = stampRandom(seed + ':flight');
-    const node = (className: string) => {
-      const element = document.createElement('div');
-      element.className = className;
-      element.style.left = x + 'px';
-      element.style.top = y + 'px';
-      layer.append(element);
-      nodes.push(element);
-      return element;
-    };
-    const tool = node('nq-stamp-tool'),
-      shadow = node('nq-stamp-shadow'),
-      gradient = 'nq-tool-wood-' + ++toolSequence;
-    // Static SVG only; brand ink comes from currentColor, never HTML interpolation.
-    tool.innerHTML =
-      '<svg viewBox="0 0 74 96" width="74" height="96" aria-hidden="true"><defs><linearGradient id="' +
-      gradient +
-      '" x1="0" x2="1"><stop offset="0" stop-color="#3b2a1a"/><stop offset=".5" stop-color="#6a4a2c"/><stop offset="1" stop-color="#3b2a1a"/></linearGradient></defs><ellipse cx="37" cy="14" rx="15" ry="11" fill="url(#' +
-      gradient +
-      ')"/><rect x="31" y="20" width="12" height="34" rx="5" fill="url(#' +
-      gradient +
-      ')"/><rect x="12" y="52" width="50" height="16" rx="6" fill="#2a1f15"/><rect x="9" y="66" width="56" height="12" rx="4" fill="currentColor"/><rect x="9" y="76" width="56" height="4" rx="2" fill="currentColor" opacity=".75"/></svg>';
-    const rotate = ' rotate(' + angle + 'deg)';
-    animate(
-      tool,
-      [
-        { opacity: 0, transform: 'translateY(-40px) scale(1.25)' + rotate },
-        { opacity: 1, transform: 'translateY(-30px) scale(1.2)' + rotate },
-      ],
-      { delay, duration: 120, fill: 'forwards', easing: 'ease-out' },
-      'nuqta-tool-appear',
-    );
-    animate(
-      shadow,
-      [
-        { opacity: 0, transform: 'scale(.45)' },
-        { opacity: 0.35, transform: 'scale(.7)' },
-      ],
-      { delay, duration: 120, fill: 'forwards' },
-      'nuqta-shadow-appear',
-    );
-    animate(
-      tool,
-      [
-        { transform: 'translateY(-30px) scale(1.2)' + rotate },
-        { transform: 'translateY(0) scale(1)' + rotate },
-      ],
-      { delay: delay + 120, duration: 180, fill: 'forwards', easing: 'cubic-bezier(.55,0,.9,.4)' },
-      'nuqta-tool-descend',
-    );
-    animate(
-      shadow,
-      [
-        { opacity: 0.35, transform: 'scale(.7)' },
-        { opacity: 0.85, transform: 'scale(1)' },
-      ],
-      { delay: delay + 120, duration: 180, fill: 'forwards', easing: 'ease-in' },
-      'nuqta-shadow-descend',
-    );
-    animate(
-      ink,
-      [
-        { opacity: 0, transform: 'scale(1.18)' },
-        { opacity: 1, transform: 'scale(.97)', offset: 0.6 },
-        { opacity: 1, transform: 'scale(1)' },
-      ],
-      { delay: delay + 300, duration: 220, fill: 'both', easing: 'ease-out' },
-      'nuqta-stamp-ink',
-    );
-    animate(
-      tool,
-      [
-        { transform: 'translateY(0) scale(1,1)' + rotate },
-        { transform: 'translateY(3px) scale(1.04,.9)' + rotate },
-        { transform: 'translateY(0) scale(1)' + rotate },
-      ],
-      { delay: delay + 300, duration: 120, fill: 'forwards' },
-      'nuqta-tool-squash',
-    );
-    animate(
-      card,
-      [{ transform: 'none' }, { transform: 'translateY(3px) scale(.988)' }, { transform: 'none' }],
-      { delay: delay + 300, duration: 160, easing: 'ease-out' },
-      'nuqta-card-thud',
-    );
-    const ring = node('nq-stamp-ring');
-    const frame = slot.querySelector('.stamp-frame')?.cloneNode(true);
-    if (frame) ring.append(frame);
-    ring.style.width = rect.width + 'px';
-    ring.style.height = rect.height + 'px';
-    ring.style.marginLeft = -rect.width / 2 + 'px';
-    ring.style.marginTop = -rect.height / 2 + 'px';
-    animate(
-      ring,
-      [
-        { opacity: 0.8, transform: 'scale(1)' },
-        { opacity: 0, transform: 'scale(1.7)' },
-      ],
-      { delay: delay + 300, duration: 420, easing: 'ease-out', fill: 'forwards' },
-      'nuqta-ink-ring',
-    );
-    for (let i = 0; i < 7; i++) {
-      const dot = node('nq-ink-dot'),
-        a = random() * Math.PI * 2,
-        r = 30 + random() * 20,
-        s = 0.5 + random() * 0.9;
+    const start = () => {
+      const delay = 0;
+      const base = position ? null : card.getBoundingClientRect(),
+        rect = position ?? slot.getBoundingClientRect();
+      const x = position ? position.x : (rect as DOMRect).left - base!.left + rect.width / 2,
+        y = position ? position.y : (rect as DOMRect).top - base!.top + rect.height / 2;
+      const { angle } = stampGeometry(seed, shape),
+        random = stampRandom(seed + ':flight');
+      const fragment = document.createDocumentFragment();
+      const node = (className: string) => {
+        const element = document.createElement('div');
+        element.className = className;
+        element.style.left = x + 'px';
+        element.style.top = y + 'px';
+        fragment.append(element);
+        nodes.push(element);
+        return element;
+      };
+      const tool = node('nq-stamp-tool'),
+        shadow = node('nq-stamp-shadow'),
+        gradient = 'nq-tool-wood-' + ++toolSequence;
+      // Static SVG only; brand ink comes from currentColor, never HTML interpolation.
+      tool.innerHTML =
+        '<svg viewBox="0 0 74 96" width="74" height="96" aria-hidden="true"><defs><linearGradient id="' +
+        gradient +
+        '" x1="0" x2="1"><stop offset="0" stop-color="#3b2a1a"/><stop offset=".5" stop-color="#6a4a2c"/><stop offset="1" stop-color="#3b2a1a"/></linearGradient></defs><ellipse cx="37" cy="14" rx="15" ry="11" fill="url(#' +
+        gradient +
+        ')"/><rect x="31" y="20" width="12" height="34" rx="5" fill="url(#' +
+        gradient +
+        ')"/><rect x="12" y="52" width="50" height="16" rx="6" fill="#2a1f15"/><rect x="9" y="66" width="56" height="12" rx="4" fill="currentColor"/><rect x="9" y="76" width="56" height="4" rx="2" fill="currentColor" opacity=".75"/></svg>';
+      const ring = node('nq-stamp-ring');
+      const frame = slot.querySelector('.stamp-frame')?.cloneNode(true);
+      if (frame) ring.append(frame);
+      ring.style.width = rect.width + 'px';
+      ring.style.height = rect.height + 'px';
+      ring.style.marginLeft = -rect.width / 2 + 'px';
+      ring.style.marginTop = -rect.height / 2 + 'px';
+      const dots = Array.from({ length: 7 }, () => ({
+        dot: node('nq-ink-dot'),
+        a: random() * Math.PI * 2,
+        r: 30 + random() * 20,
+        s: 0.5 + random() * 0.9,
+        duration: 380 + random() * 120,
+      }));
+      // Construct transient effects while detached, so each WAAPI call cannot
+      // force a style/layout pass over the live card. Connect the tree once.
+      const rotate = ' rotate(' + angle + 'deg)';
+      // One compositor track per tool/shadow avoids competing forwards-filled
+      // effects. Segment offsets/easings keep the approved timings unchanged.
       animate(
-        dot,
+        tool,
         [
-          { opacity: 1, transform: 'translate(0,0) scale(' + s + ')' },
           {
+            offset: 0,
             opacity: 0,
-            transform:
-              'translate(' +
-              Math.cos(a) * r +
-              'px,' +
-              Math.sin(a) * r +
-              'px) scale(' +
-              s * 0.4 +
-              ')',
+            transform: 'translateY(-40px) scale(1.25)' + rotate,
+            easing: 'ease-out',
           },
+          {
+            offset: 120 / 640,
+            opacity: 1,
+            transform: 'translateY(-30px) scale(1.2)' + rotate,
+            easing: 'cubic-bezier(.55,0,.9,.4)',
+          },
+          {
+            offset: 300 / 640,
+            opacity: 1,
+            transform: 'translateY(0) scale(1)' + rotate,
+            easing: 'linear',
+          },
+          {
+            offset: 360 / 640,
+            opacity: 1,
+            transform: 'translateY(3px) scale(1.04,.9)' + rotate,
+            easing: 'linear',
+          },
+          {
+            offset: 420 / 640,
+            opacity: 1,
+            transform: 'translateY(0) scale(1)' + rotate,
+            easing: 'ease-in',
+          },
+          { offset: 1, opacity: 0, transform: 'translateY(-44px) scale(1.12)' + rotate },
         ],
-        {
-          delay: delay + 300,
-          duration: 380 + random() * 120,
-          easing: 'cubic-bezier(.1,.7,.3,1)',
-          fill: 'both',
-        },
-        'nuqta-ink-flight',
+        { delay, duration: 640, fill: 'forwards' },
+        'nuqta-tool',
       );
-    }
-    animate(
-      shadow,
-      [{ opacity: 0.85 }, { opacity: 0 }],
-      { delay: delay + 300, duration: 200, fill: 'forwards' },
-      'nuqta-shadow-lift',
-    );
-    animate(
-      tool,
-      [
-        { opacity: 1, transform: 'translateY(0) scale(1)' + rotate },
-        { opacity: 0, transform: 'translateY(-44px) scale(1.12)' + rotate },
-      ],
-      { delay: delay + 420, duration: 220, fill: 'forwards', easing: 'ease-in' },
-      'nuqta-tool-lift',
-    );
-    later(() => {
-      onImpact();
-      try {
-        navigator.vibrate?.(25);
-      } catch {
-        /* Optional haptic. */
+      animate(
+        shadow,
+        [
+          { offset: 0, opacity: 0, transform: 'scale(.45)', easing: 'linear' },
+          { offset: 120 / 500, opacity: 0.35, transform: 'scale(.7)', easing: 'ease-in' },
+          { offset: 300 / 500, opacity: 0.85, transform: 'scale(1)', easing: 'linear' },
+          { offset: 1, opacity: 0, transform: 'scale(1)' },
+        ],
+        { delay, duration: 500, fill: 'forwards' },
+        'nuqta-shadow',
+      );
+      animate(
+        ink,
+        [
+          { opacity: 0, transform: 'scale(1.18)' },
+          { opacity: 1, transform: 'scale(.97)', offset: 0.6 },
+          { opacity: 1, transform: 'scale(1)' },
+        ],
+        { delay: delay + 300, duration: 220, fill: 'both', easing: 'ease-out' },
+        'nuqta-stamp-ink',
+      );
+      animate(
+        card,
+        [
+          { transform: 'none' },
+          { transform: 'translateY(3px) scale(.988)' },
+          { transform: 'none' },
+        ],
+        { delay: delay + 300, duration: 160, easing: 'ease-out' },
+        'nuqta-card-thud',
+      );
+      animate(
+        ring,
+        [
+          { opacity: 0.8, transform: 'scale(1)' },
+          { opacity: 0, transform: 'scale(1.7)' },
+        ],
+        { delay: delay + 300, duration: 420, easing: 'ease-out', fill: 'forwards' },
+        'nuqta-ink-ring',
+      );
+      for (const { dot, a, r, s, duration } of dots) {
+        animate(
+          dot,
+          [
+            { opacity: 1, transform: 'translate(0,0) scale(' + s + ')' },
+            {
+              opacity: 0,
+              transform:
+                'translate(' +
+                Math.cos(a) * r +
+                'px,' +
+                Math.sin(a) * r +
+                'px) scale(' +
+                s * 0.4 +
+                ')',
+            },
+          ],
+          {
+            delay: delay + 300,
+            duration,
+            easing: 'cubic-bezier(.1,.7,.3,1)',
+            fill: 'both',
+          },
+          'nuqta-ink-flight',
+        );
       }
-    }, delay + 300);
-    later(resolveFinished, delay + 650);
-    later(() => {
-      animations.forEach((animation) => animation.cancel());
-      cleanup();
-    }, delay + 810);
+      layer.append(fragment);
+      later(() => {
+        onImpact();
+        try {
+          navigator.vibrate?.(25);
+        } catch {
+          /* Optional haptic. */
+        }
+      }, delay + 300);
+      later(resolveFinished, delay + 650);
+      later(() => {
+        animations.forEach((animation) => animation.cancel());
+        cleanup();
+      }, delay + 810);
+    };
+    // Build each staggered tool when its flight starts, rather than creating
+    // three SVG/particle trees and every WAAPI effect in one main-thread task.
+    if (startDelay) later(start, startDelay);
+    else start();
   }
   return {
     finished,

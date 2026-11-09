@@ -215,8 +215,13 @@ export function useCardMotion(
       { duration: 720, easing: 'cubic-bezier(.2,.8,.2,1)' },
     );
     animation.id = 'nuqta-first-card';
-    void animation.finished.then(remember).catch(() => {});
-    return () => animation.cancel();
+    // Chrome80 supports WAAPI but not Animation.finished (added in84).
+    // The finish event keeps completion and cancellation semantics on it too.
+    animation.onfinish = remember;
+    return () => {
+      animation.onfinish = null;
+      animation.cancel();
+    };
   }, [card.id, experience, reveal]);
   useLayoutEffect(() => {
     const ghost = article.current?.querySelector<HTMLElement>(

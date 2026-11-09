@@ -8,6 +8,7 @@ import { type Actor, type Pools, transaction } from './db.js';
 import { keyedHash, opaqueToken, otpCode, safeEqual, tokenHash } from './crypto.js';
 import { requireCondition } from './errors.js';
 import { readLocalMailbox } from './mail/mailer.js';
+import { issueDeviceSession, deviceCookie } from './customer-auth/device-auth.js';
 declare module 'fastify' {
   interface FastifyRequest {
     actor: Actor | null;
@@ -47,18 +48,33 @@ export function authModule(app: FastifyInstance, pools: Pools, c: Config) {
           : undefined),
     );
     const scoped = portalCookies(c, portal);
-    const cookieName = req.cookies[scoped.session] ? scoped.session : sessionCookie;
+    let cookieName = req.cookies[scoped.session] ? scoped.session : sessionCookie;
+    const canRestoreDevice = portal === 'customer' && req.method === 'GET';
+    if (canRestoreDevice && !req.cookies[scoped.session]) {
+      if (await issueDeviceSession(pools, c, req, reply)) cookieName = scoped.session;
+    }
     req.sessionCookieName = cookieName;
     req.csrfCookieName = cookieName === sessionCookie ? csrfCookie : scoped.csrf;
-    const raw = req.cookies[cookieName];
-    if (!raw) return;
-    const s = await pools.authPool.query(
-      'SELECT u.id,u.email,u.global_role,u.status,u.preferred_locale,s.id AS session_id,s.csrf_hash,s.mfa_at,s.auth_method,s.expires_at,s.created_at,s.portal,password_session_portal(u.id) AS current_portal FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token_hash=$1 AND s.revoked_at IS NULL AND s.expires_at>now() AND s.credential_version=u.password_version',
-      [tokenHash(raw)],
-    );
-    const row = s.rows[0];
-    if (!row || row.status !== 'active') {
-      reply.clearCookie(cookieName, cookieOptions);
+    let raw = req.cookies[cookieName];
+    const lookup = async () =>
+      raw
+        ? (
+            await pools.authPool.query(
+              "SELECT u.id,u.email,u.display_name,u.global_role,u.status,u.preferred_locale,s.id AS session_id,s.csrf_hash,s.mfa_at,s.auth_method,s.customer_device_id,s.expires_at,s.created_at,s.portal,password_session_portal(u.id) AS current_portal FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token_hash=$1 AND s.revoked_at IS NULL AND s.expires_at>now() AND s.credential_version=u.password_version AND (s.auth_method<>'device' OR customer_device_active(s.customer_device_id,s.user_id))",
+              [tokenHash(raw)],
+            )
+          ).rows[0]
+        : undefined;
+    let row = await lookup();
+    if (!row && canRestoreDevice && cookieName === scoped.session) {
+      const restored = await issueDeviceSession(pools, c, req, reply);
+      if (restored) {
+        raw = restored.token;
+        row = await lookup();
+      }
+    }
+    if (!row || !raw || row.status !== 'active') {
+      if (raw) reply.clearCookie(cookieName, cookieOptions);
       return;
     }
     const policies = [row.portal, row.current_portal];
@@ -66,7 +82,7 @@ export function authModule(app: FastifyInstance, pools: Pools, c: Config) {
       ? 12 * 3600
       : policies.some((value) => value === 'merchant' || value === 'cashier')
         ? 7 * 86400
-        : null;
+        : 30 * 86400;
     if (row.auth_method === 'password' && hardTtl) {
       const cap = new Date(row.created_at.getTime() + hardTtl * 1000);
       if (cap <= new Date()) {
@@ -84,6 +100,7 @@ export function authModule(app: FastifyInstance, pools: Pools, c: Config) {
     req.actor = {
       id: row.id,
       email: row.email,
+      displayName: row.display_name,
       role: row.global_role,
       sessionId: row.session_id,
       mfaAt: row.mfa_at,
@@ -92,6 +109,16 @@ export function authModule(app: FastifyInstance, pools: Pools, c: Config) {
       mfaRequired: deployed(c) && ['platform_admin', 'platform_support'].includes(row.global_role),
       csrfHash: row.csrf_hash,
     };
+    // A customer device grants access to its holder's card only, even if that
+    // same legacy user is later invited to work at a shop. It never becomes a
+    // staff/platform credential by changing a header or a cookie name.
+    if (
+      row.auth_method === 'device' &&
+      !/^\/api\/v1\/(?:session(?:\?|$)|me\/|customer\/|public\/|auth\/logout(?:\?|$))/.test(req.url)
+    ) {
+      req.actor = null;
+      return;
+    }
     if (portal && !(await portalAllowed(pools, req.actor, portal, cookieName === sessionCookie))) {
       req.actor = null;
       return;
@@ -120,37 +147,8 @@ export function authModule(app: FastifyInstance, pools: Pools, c: Config) {
         'MFA_REQUIRED',
         403,
       );
-    // Customer-only sliding sessions; current promotions, revocations and credential changes fence renewal.
-    if (
-      row.auth_method === 'password' &&
-      row.portal === 'customer' &&
-      row.current_portal === 'customer' &&
-      row.expires_at.getTime() < Date.now() + 29 * 86400000
-    ) {
-      const renewed = (
-        await pools.authPool.query(
-          "UPDATE sessions s SET expires_at=clock_timestamp()+interval '30 days' FROM users u WHERE s.id=$1 AND u.id=s.user_id AND u.status='active' AND s.credential_version=u.password_version AND s.revoked_at IS NULL AND s.expires_at>clock_timestamp() AND password_session_portal(u.id)='customer' RETURNING s.expires_at",
-          [row.session_id],
-        )
-      ).rows[0];
-      if (!renewed) {
-        req.actor = null;
-        reply.clearCookie(cookieName, cookieOptions);
-        return;
-      }
-      const names = new Set([cookieName]);
-      if (req.cookies[sessionCookie] === raw) names.add(sessionCookie);
-      for (const name of names) {
-        reply.setCookie(name, raw, { ...cookieOptions, httpOnly: true, maxAge: 30 * 86400 });
-        const csrfName = name.replace('nq_session', 'nq_csrf');
-        if (req.cookies[csrfName])
-          reply.setCookie(csrfName, req.cookies[csrfName], {
-            ...cookieOptions,
-            httpOnly: false,
-            maxAge: 30 * 86400,
-          });
-      }
-    }
+    // Existing legacy customer password sessions may finish their original
+    // lifetime, but are no longer extended. New customers use a bound device.
   });
   async function issue(
     reply: FastifyReply,
@@ -179,6 +177,7 @@ export function authModule(app: FastifyInstance, pools: Pools, c: Config) {
     );
     requireCondition(primary, 'INVALID_CREDENTIALS', 401);
     if (!portal) portal = primary;
+    requireCondition(method !== 'password' || portal !== 'customer', 'PORTAL_ACCESS_REQUIRED', 403);
     if (method === 'password')
       ttl = primary === 'platform' ? 12 * 3600 : primary === 'customer' ? 30 * 86400 : 7 * 86400;
     const names = portalCookies(c, portal);
@@ -328,8 +327,10 @@ export function authModule(app: FastifyInstance, pools: Pools, c: Config) {
       user: {
         id: actor.id,
         email: actor.email,
+        displayName: actor.displayName,
+        deviceBound: actor.authMethod === 'device',
         role: actor.role,
-        mfaRequired: actor.mfaRequired || actor.authMethod !== 'password',
+        mfaRequired: actor.mfaRequired || !['password', 'device'].includes(actor.authMethod || ''),
         mfaVerified: !!actor.mfaAt && Date.now() - actor.mfaAt.getTime() < 900_000,
       },
       csrfToken: req.cookies[req.csrfCookieName] || '',
@@ -342,6 +343,18 @@ export function authModule(app: FastifyInstance, pools: Pools, c: Config) {
     await pools.authPool.query('UPDATE sessions SET revoked_at=now() WHERE id=$1', [
       actor.sessionId,
     ]);
+    if (actor.authMethod === 'device') {
+      await pools.authPool.query(
+        'UPDATE customer_devices SET revoked_at=clock_timestamp() WHERE id=(SELECT customer_device_id FROM sessions WHERE id=$1 AND user_id=$2)',
+        [actor.sessionId, actor.id],
+      );
+      reply.clearCookie(deviceCookie(c), {
+        path: '/',
+        secure: c.COOKIE_SECURE === 'true',
+        httpOnly: true,
+        sameSite: 'lax',
+      });
+    }
     if (req.cookies[sessionCookie] === req.cookies[req.sessionCookieName]) {
       reply.clearCookie(sessionCookie, cookieOptions).clearCookie(csrfCookie, cookieOptions);
     }

@@ -1,5 +1,6 @@
 import { before, after, test } from 'node:test';
 import assert from 'node:assert/strict';
+import { randomUUID } from 'node:crypto';
 import pg from 'pg';
 import { buildApp } from '../../apps/api/src/server.js';
 import { readConfig } from '../../apps/api/src/config.js';
@@ -10,12 +11,26 @@ const c = readConfig(),
   db = new pg.Client({ connectionString: c.DATABASE_MIGRATOR_URL });
 const { app } = await buildApp({ APP_ENV: 'test', LOG_LEVEL: 'silent' });
 let admin: Awaited<ReturnType<typeof login>>, owner: typeof admin;
+const selectedStaffId = '00000000-0000-4000-8000-000000000010';
 before(async () => {
   await db.connect();
   await seed(db);
   await app.ready();
   admin = await adminLogin(app, db);
   owner = await login(app, 'owner@bunn.test');
+  // Multiple owners may have different branch grants. Deliberately select a
+  // second owner so the comparison cannot accidentally use the seed owner.
+  const email = 'preview-owner-' + randomUUID() + '@nuqta.test';
+  await login(app, email);
+  const uid = (await db.query('SELECT id FROM users WHERE email=$1', [email])).rows[0].id;
+  await db.query(
+    "INSERT INTO staff_memberships(id,merchant_id,user_id,email,name,role) VALUES($1,$2,$3,$4,'Preview scope fixture','owner')",
+    [selectedStaffId, ids.merchantA, uid, email],
+  );
+  await db.query(
+    'INSERT INTO staff_branch_grants(merchant_id,staff_id,branch_id) VALUES($1,$2,$3)',
+    [ids.merchantA, selectedStaffId, ids.branchA],
+  );
 });
 after(async () => {
   await app.close();
@@ -33,6 +48,8 @@ test('owner preview reads the actual owner scope, never changes sessions, reject
   const header = { ...admin, 'x-nuqta-owner-preview': ids.merchantA + ':' + context.grant.id };
   assert.equal(context.readOnly, true);
   assert.equal(context.grant.role, 'owner');
+  assert.equal(context.grant.id, selectedStaffId);
+  owner = await login(app, context.owner.email);
   const foreignOwner = (
     await app.inject({
       url: '/api/v1/platform/merchants/' + ids.merchantB + '/owner-preview',

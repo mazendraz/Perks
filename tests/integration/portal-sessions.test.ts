@@ -1,3 +1,4 @@
+import { opaqueToken, tokenHash } from '../../apps/api/src/crypto.js';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
@@ -65,10 +66,31 @@ test('four portals retain separate identities in one cookie jar; cross-portal CS
     for (const portal of keys) {
       // A legacy login from another role must not silently open this portal.
       assert.equal((await request(portal, '/session')).statusCode, 401);
-      const r = await request(portal, '/auth/login', 'POST', {
-        email: people.get(portal)!.email,
-        password,
-      });
+      let r;
+      if (portal === 'customer') {
+        const blocked = await request(portal, '/auth/login', 'POST', {
+          email: people.get(portal)!.email,
+          password,
+        });
+        assert.equal(blocked.statusCode, 410);
+        const token = opaqueToken(),
+          id = people.get(portal)!.id,
+          phone = '+2010' + String(Date.now()).slice(-8);
+        await db.query(
+          'INSERT INTO customer_identities(customer_id,phone_e164,phone_normalized) VALUES($1,$2,$2)',
+          [id, phone],
+        );
+        await db.query(
+          "INSERT INTO customer_devices(customer_id,token_hash,user_agent_family) VALUES($1,$2,'Other')",
+          [id, tokenHash(token)],
+        );
+        jar.set('nq_device', token);
+        r = await request(portal, '/session');
+      } else
+        r = await request(portal, '/auth/login', 'POST', {
+          email: people.get(portal)!.email,
+          password,
+        });
       assert.equal(r.statusCode, 200, r.body);
     }
     const tokens = new Map<string, string>();

@@ -9,7 +9,6 @@ import {
 } from '../../../packages/contracts/src/platform-admin.js';
 import {
   loginInput,
-  registerInput,
   changePasswordInput,
   resetRequestInput,
   resetPasswordInput,
@@ -41,6 +40,12 @@ import {
 } from '../../../packages/contracts/src/commands.js';
 import { provisioningInput } from '../../../packages/contracts/src/provisioning.js';
 import { experienceInput } from './modules/experience.js';
+import {
+  customerRegistrationInput,
+  customerLookupInput,
+  customerRecoveryInput,
+  recoveryConsumeInput,
+} from '../../../packages/contracts/src/customer-identity.js';
 
 type Contract = {
   body?: z.ZodType;
@@ -50,6 +55,32 @@ type Contract = {
   responseStatus?: number;
 };
 const contracts: Record<string, Contract> = {
+  'GET /api/v1/customer/bootstrap': { response: z.object({ csrfToken: z.string() }) },
+  'POST /api/v1/customer/register': {
+    body: customerRegistrationInput,
+    response: z.object({
+      membershipId: z.uuid(),
+      alreadyMember: z.boolean(),
+      csrfToken: z.string(),
+    }),
+  },
+  'POST /api/v1/merchants/:m/customer-recovery/search': { body: customerLookupInput },
+  'POST /api/v1/merchants/:m/customer-recovery': {
+    body: customerRecoveryInput,
+    key: true,
+    response: z.object({ url: z.url(), expiresAt: z.iso.datetime(), draftOnly: z.literal(true) }),
+  },
+  'PATCH /api/v1/merchants/:m/customer-recovery-settings': {
+    body: z.object({ cashierEnabled: z.boolean() }).strict(),
+    revision: true,
+  },
+  'GET /api/v1/customer/recoveries/:token': {
+    response: z.object({ merchantName: z.string(), merchantId: z.uuid(), valid: z.literal(true) }),
+  },
+  'POST /api/v1/customer/recoveries/:token/consume': {
+    body: recoveryConsumeInput,
+    response: z.object({ membershipId: z.uuid(), csrfToken: z.string() }),
+  },
   'POST /api/v1/me/experience': { body: experienceInput, key: true },
   'POST /api/v1/me/stamp-requests': { body: stampRequestInput, key: true },
   'PATCH /api/v1/merchants/:m/stamp-request-settings': {
@@ -152,11 +183,8 @@ const contracts: Record<string, Contract> = {
     }),
   },
   'POST /api/v1/auth/register': {
-    body: registerInput,
-    response: z.object({
-      csrfToken: z.string(),
-      portal: z.enum(['platform', 'merchant', 'cashier', 'customer']),
-    }),
+    response: failureOutput,
+    responseStatus: 403,
   },
   'POST /api/v1/auth/password/change': {
     body: changePasswordInput,
@@ -230,6 +258,7 @@ export const contractDocumentation: swagger.SwaggerTransform = ({ schema = {}, u
   const method = String(route.method).toUpperCase(),
     contract = contracts[method + ' ' + url];
   const publicRoute =
+    url.startsWith('/api/v1/customer/') ||
     url.includes('/public/') ||
     (url.includes('/auth/') &&
       !['/api/v1/auth/mfa/verify', '/api/v1/auth/logout', '/api/v1/auth/password/change'].includes(
@@ -253,10 +282,14 @@ export const contractDocumentation: swagger.SwaggerTransform = ({ schema = {}, u
     };
     required.push('Origin');
   }
-  if (!publicRoute && !['GET', 'HEAD', 'OPTIONS'].includes(method)) {
+  if (
+    (!publicRoute || url.startsWith('/api/v1/customer/')) &&
+    !['GET', 'HEAD', 'OPTIONS'].includes(method)
+  ) {
     headers['x-csrf-token'] = {
       type: 'string',
-      description: 'Session CSRF token; the exact configured Origin header is also required.',
+      description:
+        'Session CSRF token, or the customer/bootstrap token before a device is bound. The exact configured Origin header is also required.',
     };
     required.push('x-csrf-token');
   }

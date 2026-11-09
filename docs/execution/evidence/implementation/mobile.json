@@ -1,11 +1,12 @@
 {
-  "at": "2026-11-09T11:40:12.023Z",
+  "at": "2026-11-09T16:25:07.105Z",
   "status": "passed",
   "checks": [
-    "chromium-pixel5: real customer registration and card through the legacy build with UUID/Popover/ResizeObserver absent",
+    "chromium-pixel5: name/phone/terms registration survives Arabic/English switching, reaches the card within 30 seconds, and needs no email/password or UUID/Popover/ResizeObserver/Animation.finished",
+    "chromium-pixel5: first NFC scan needs only name/phone/terms/submit, preserves context, reveals the card in 720ms and requests one first stamp without granting it",
     "chromium-pixel5: first home-screen offer uses the native prompt or the two-step Safari illustration",
     "chromium-pixel5: five placement scans open the existing card with zero customer taps, create one request, and reload creates none",
-    "chromium-pixel5: interruption before commit and a lost committed response retry the same request key without a duplicate",
+    "chromium-pixel5: interruption, session expiry during POST and a lost committed reply restore the device session and retry the same request key without a duplicate",
     "chromium-pixel5: a shortened display-expiry fixture refreshes the QR automatically before expiration",
     "chromium-pixel5: QR closes on the committed stamp, ink angles survive reload, and home-screen offers stop after the second dismissal",
     "chromium-pixel5: a standalone app suppresses installation offers even without stored offer history",
@@ -17,10 +18,11 @@
     "PWA: offline shell opens while API responses remain network-only and absent from CacheStorage",
     "PWA: a waiting update activates and reloads after the user taps Update now, preserving the authenticated card",
     "chromium-pixel5: paused branches and revoked NFC placements show plain guidance without technical codes or creating a request",
-    "webkit-iphone12: real customer registration and card through the legacy build with UUID/Popover/ResizeObserver absent",
+    "webkit-iphone12: name/phone/terms registration survives Arabic/English switching, reaches the card within 30 seconds, and needs no email/password or UUID/Popover/ResizeObserver/Animation.finished",
+    "webkit-iphone12: first NFC scan needs only name/phone/terms/submit, preserves context, reveals the card in 720ms and requests one first stamp without granting it",
     "webkit-iphone12: first home-screen offer uses the native prompt or the two-step Safari illustration",
     "webkit-iphone12: five placement scans open the existing card with zero customer taps, create one request, and reload creates none",
-    "webkit-iphone12: interruption before commit and a lost committed response retry the same request key without a duplicate",
+    "webkit-iphone12: interruption, session expiry during POST and a lost committed reply restore the device session and retry the same request key without a duplicate",
     "webkit-iphone12: a shortened display-expiry fixture refreshes the QR automatically before expiration",
     "webkit-iphone12: QR closes on the committed stamp, ink angles survive reload, and home-screen offers stop after the second dismissal",
     "webkit-iphone12: a standalone app suppresses installation offers even without stored offer history",
@@ -38,7 +40,7 @@
     "chromium-pixel5",
     "webkit-iphone12"
   ],
-  "build": "cb4ae3e7236f2bbb4f38",
-  "indexSha256": "469e84e62ca248a7e4f2dc51f5b3216f48de5c42c15de5818c6686102bfd8a4f",
+  "build": "06ee354698d77af31bad",
+  "indexSha256": "3f5916dbf48f8603174a4d58aae6b794a57bb96fa09d546408ef5e1d3c0084f5",
   "installabilityErrors": []
 }

@@ -6,6 +6,8 @@ import { contractDocumentation, activationDataSchema } from './openapi.js';
 import { scriptSources } from '../../../packages/domain/src/browser-policy.js';
 import { liveEventsModule } from './live-events.js';
 import { experienceModule } from './modules/experience.js';
+import { customerIdentityModule } from './modules/customer-identity.js';
+import { customerRecoveryModule } from './modules/customer-recovery.js';
 import Fastify from 'fastify';
 import cookie from '@fastify/cookie';
 import rateLimit from '@fastify/rate-limit';
@@ -43,7 +45,10 @@ export async function buildApp(overrides: Partial<Config> = {}) {
                 return {
                   method: req.method,
                   url: String(req.url)
-                    .replace(/(\/(?:invitations|reset-password)\/)[^/]+/g, '$1[redacted]')
+                    .replace(
+                      /(\/(?:invitations|reset-password|customer\/recoveries|r)\/)[^/]+/g,
+                      '$1[redacted]',
+                    )
                     .split('?')[0],
                   host: req.hostname,
                   remoteAddress: req.ip,
@@ -163,6 +168,8 @@ export async function buildApp(overrides: Partial<Config> = {}) {
   requestsModule(app, pools, c);
   liveEventsModule(app, pools, c);
   experienceModule(app, pools);
+  customerIdentityModule(app, pools, c);
+  customerRecoveryModule(app, pools, c);
   customersModule(app, pools, c);
   materialsModule(app, pools, c);
   platformModule(app, pools, c);
@@ -196,7 +203,7 @@ export async function buildApp(overrides: Partial<Config> = {}) {
       if (
         (
           await pools.pool.query(
-            "SELECT count(*)::int AS count FROM schema_migrations WHERE name='010a_customer_experience.sql'",
+            "SELECT count(*)::int AS count FROM schema_migrations WHERE name='010e_recovery_session_scope.sql'",
           )
         ).rows[0].count !== 1
       )

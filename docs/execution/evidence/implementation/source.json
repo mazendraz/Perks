@@ -1,5 +1,5 @@
 {
-  "fingerprint": "52003f977d6cf404e17fca45d8c91313ce5006c4bd7e41f92417bd0de6ec1bdb",
+  "fingerprint": "9e4cc9a74a0e123f17168d53a6af39d8b401dc1908b4d9e23735843ac4c420e5",
   "files": [
     {
       "path": ".dockerignore",
@@ -39,7 +39,7 @@
     },
     {
       "path": "apps/api/src/auth.ts",
-      "sha256": "073d23473a3c017ad1abadb59e0b547bf55047eb5d4858a19302de29079f40c0"
+      "sha256": "a67c442953ec207ab0af0eed9066f2671447ca7d666d5dae621f513b3408745c"
     },
     {
       "path": "apps/api/src/config.ts",
@@ -50,12 +50,16 @@
       "sha256": "73772d570478d773f4677f5f815878f5fd3bd5b675fad6f4560dab575505466e"
     },
     {
+      "path": "apps/api/src/customer-auth/device-auth.ts",
+      "sha256": "07c671a9fbee5910f458ce450426defd642ccf9d9eb2c73b04b0239611299e23"
+    },
+    {
       "path": "apps/api/src/data/common-passwords.ts",
       "sha256": "03bc81e4fea10425b1cb798d950022bf1fd336347aa78c99f392bd3da6ae4f3e"
     },
     {
       "path": "apps/api/src/db.ts",
-      "sha256": "7590fd377e5a33b67a02207014ce1bdffb6523f520ff8a553fea256b93241568"
+      "sha256": "153e2c883fd1cfd07842d28703501c20c7f809302edd54089d3d2fea01088068"
     },
     {
       "path": "apps/api/src/errors.ts",
@@ -63,7 +67,7 @@
     },
     {
       "path": "apps/api/src/live-events.ts",
-      "sha256": "47c269d8eea6de8d126627062c85e2a64c2e3c6bfa98d1013bdb8cd38b5aa7ad"
+      "sha256": "1d4956442d6efbeba0fa3a62c6d8218b31d9b6cfead9cdc9240a70bf0d7b5653"
     },
     {
       "path": "apps/api/src/mail/mailer.ts",
@@ -88,6 +92,14 @@
     {
       "path": "apps/api/src/modules/administration.ts",
       "sha256": "3973633519a35bd8e04b091e491b116aeac1ff5c287ab17b8c1ef0f6f4b6190e"
+    },
+    {
+      "path": "apps/api/src/modules/customer-identity.ts",
+      "sha256": "b96a823fec8332edf98a470a5aec2363d8b0982a618aa364b1b31409bc1df277"
+    },
+    {
+      "path": "apps/api/src/modules/customer-recovery.ts",
+      "sha256": "57e7bc96efcdd07b8d62e4e72e96993b894536938a176ec2153397cf2afdae2d"
     },
     {
       "path": "apps/api/src/modules/customers.ts",
@@ -147,7 +159,7 @@
     },
     {
       "path": "apps/api/src/openapi.ts",
-      "sha256": "93b6bd1a14b77252ebeae3387c2bd1310f1698c6cd65f224488b7c15cffa93c2"
+      "sha256": "9e01b4ccefbe3869dc2ee3c1c9b64f22b793708e09788e83fcaf75ea8f1b3c4c"
     },
     {
       "path": "apps/api/src/operation-access.ts",
@@ -163,7 +175,7 @@
     },
     {
       "path": "apps/api/src/password-auth.ts",
-      "sha256": "fae523db27dcb46d60e674fa2364a8ac79f49fbf990e972744465e34c08941d2"
+      "sha256": "ccfaf2ffe1c482647b1e90d6c195bd6c91b3c78a1621c5b0e7222ffd8ca718e6"
     },
     {
       "path": "apps/api/src/passwords.ts",
@@ -175,11 +187,11 @@
     },
     {
       "path": "apps/api/src/portal-auth.ts",
-      "sha256": "d7e41c03b1204d636d21179bcdefab838640c96cfbfd18e8f82781d8eea083a5"
+      "sha256": "20e4f58311170c1c49a1da2433699d9341270413d6b13d5defa3f1d2c245cc86"
     },
     {
       "path": "apps/api/src/server.ts",
-      "sha256": "34f67429029a059e1115a8cd81d62281838fb33e687b4165f0c71b26f7af6777"
+      "sha256": "0103271969f57552b70efec6aefb6fd2cb9cb95c331acbd01d35a7b79e067a3f"
     },
     {
       "path": "apps/api/src/storage/file-store.ts",
@@ -259,7 +271,7 @@
     },
     {
       "path": "apps/web/src/App.tsx",
-      "sha256": "f9c1052fcde449233a09929d9a783d37723b70fa9dafc10d42ea79ae30a9bcac"
+      "sha256": "782349cb9a132fb3a877fee982f955b895cd61c22860231c4a95ec4734906c71"
     },
     {
       "path": "apps/web/src/FieldErrors.tsx",
@@ -267,7 +279,7 @@
     },
     {
       "path": "apps/web/src/api.ts",
-      "sha256": "09d4547821d8a950365a01a5bc7e9f27253615df239a2f9f53a2c0f90f55c824"
+      "sha256": "e53d2bfc0fab31f2ed4e99398ada5a353864ddcdb07fd9301bf0f660a899535e"
     },
     {
       "path": "apps/web/src/compat.ts",
@@ -315,7 +327,7 @@
     },
     {
       "path": "apps/web/src/features.css",
-      "sha256": "e5cd56c9d436a4d6382a7e705133cd4cb13c36b611c5802f9a06434824d1aa29"
+      "sha256": "bd2d1b0d1aba13f4b71826382eaa721b9e0bb65f9f6e51fc560189fb77a09bbc"
     },
     {
       "path": "apps/web/src/features/AccountSecurity.tsx",
@@ -323,7 +335,7 @@
     },
     {
       "path": "apps/web/src/features/Auth.tsx",
-      "sha256": "17450df7f3289b3ca66a91b2c21369ffd1a0eec904d9cd959c84a0d111e6855b"
+      "sha256": "afdb94cb8c735cc5740cab578dec2e099b18071c6ee63b596a616566023147f6"
     },
     {
       "path": "apps/web/src/features/Branches.tsx",
@@ -343,7 +355,7 @@
     },
     {
       "path": "apps/web/src/features/CashierPage.tsx",
-      "sha256": "7edebda750b1e01b475e25ca5fcdd340c2fa00668f0b91ff94cea9ffd5231ca4"
+      "sha256": "d229b25507d057b4479a98416912427c773b1207222ff3a01e5f21e6674eccc5"
     },
     {
       "path": "apps/web/src/features/CustomerCode.tsx",
@@ -355,7 +367,11 @@
     },
     {
       "path": "apps/web/src/features/CustomerPage.tsx",
-      "sha256": "4cca9577ab93d1ba028bf763e8cfdb1bc33055b2fd0b497391d3e08989dddf44"
+      "sha256": "f7beeda2e6c436e27a5f952b463dc3296cf4709e92e8c145e4cc844095ee73d5"
+    },
+    {
+      "path": "apps/web/src/features/CustomerRecovery.tsx",
+      "sha256": "211d2cafea1168380b9c8c7b937113c8c9c532e67ea9886f31275f398b0de251"
     },
     {
       "path": "apps/web/src/features/Customers.tsx",
@@ -383,7 +399,7 @@
     },
     {
       "path": "apps/web/src/features/MerchantPage.tsx",
-      "sha256": "d3e97a0513e1b7de4c29678f28a23be21783187b938b4a1300d0e1c8b908e893"
+      "sha256": "e5afeb5f9684c2d552159f539fe316bed849305eb72f7e3a9a75e2093276738f"
     },
     {
       "path": "apps/web/src/features/MerchantWorkspace.tsx",
@@ -459,7 +475,7 @@
     },
     {
       "path": "apps/web/src/portals.ts",
-      "sha256": "1c10d3065843a606921fe278b9bd21114061e9fe7e83571dae717de74a413dd0"
+      "sha256": "193758adc638182986af8a4abdf789d25ea5c08dad4716cce33d7d37372ea27e"
     },
     {
       "path": "apps/web/src/pwa.tsx",
@@ -674,6 +690,22 @@
       "sha256": "edfa3f3da6d64587a81034a43e432d90c57a501380013316b3e3ab6f4bc32ae5"
     },
     {
+      "path": "db/migrations/010b_customer_devices.sql",
+      "sha256": "da9d6ab2e05fcb2d88a28a20a2fa4ea3d7476b8b3f50ea9a7afb1c67dc30ba88"
+    },
+    {
+      "path": "db/migrations/010c_customer_registration.sql",
+      "sha256": "3b133d28032c523d18035ed082ef100b61c95133fce9e43b6c1883b9ef7395f7"
+    },
+    {
+      "path": "db/migrations/010d_customer_recovery.sql",
+      "sha256": "92dfa3b16a738763c18f316408345c20b210196720c85dc74f73668481ba0ca5"
+    },
+    {
+      "path": "db/migrations/010e_recovery_session_scope.sql",
+      "sha256": "4cc74d02d2dd4fe053d8af66c39d24c853c8c044a5a2542d95957b9d6cb4e493"
+    },
+    {
       "path": "db/seed.ts",
       "sha256": "8ba8da5880dcd6fcd95228474ff52db4bb563d87cec60392105899f16bee9100"
     },
@@ -755,7 +787,7 @@
     },
     {
       "path": "packages/contracts/src/auth.ts",
-      "sha256": "5a9026f7579e953f75d8a772b5bb628c355dfbac18e25c623eb13a7cd00ce806"
+      "sha256": "9a9abe7cbc851eadf28efce49bebb6648864da628521246ae9df5fe809594bee"
     },
     {
       "path": "packages/contracts/src/branding.ts",
@@ -766,8 +798,12 @@
       "sha256": "a6e3b7b7c393a7482e7b0b667410036f757a6b57ac3fecc7324799ff3380c20f"
     },
     {
+      "path": "packages/contracts/src/customer-identity.ts",
+      "sha256": "10dd36971ab14d11089c887b3b2797ed3126f2f054c75bd4a92c03f5108f4cb3"
+    },
+    {
       "path": "packages/contracts/src/index.ts",
-      "sha256": "3e764b75bad7247a594bf6cc9d80bf038a95320c318f53e26b2612cf88ea9988"
+      "sha256": "1f38a5513a52f2ff9c524734d65ea07a1b477764af5897622fac755aa6613a17"
     },
     {
       "path": "packages/contracts/src/platform-admin.ts",
@@ -807,7 +843,7 @@
     },
     {
       "path": "packages/ui/src/LoyaltyCard.tsx",
-      "sha256": "9e5cf5e1a6386b2ebcf0d5b23040f3f3e10dd59cb7b4aac168a6a2131a9bb357"
+      "sha256": "26e0c06466db963e686fa14f8932bef57b5235b7190b8bfcba2951d555d374e2"
     },
     {
       "path": "packages/ui/src/StampInk.tsx",
@@ -819,11 +855,11 @@
     },
     {
       "path": "packages/ui/src/stamp-motion.ts",
-      "sha256": "9ed47a2b10fb5cf8b0c58c992d35f35373e33516fb3b8ceaef8e9a9c63cef360"
+      "sha256": "8ee984939e5db34d0f78fe6edb312d55ce23c12192b279b318a697dc79a74d3a"
     },
     {
       "path": "packages/ui/src/useCardMotion.ts",
-      "sha256": "9451836ab4438219f9c8c6111b7b32200cdf9fc85ec66b71ab6d8a4ded16b803"
+      "sha256": "541110c55c608e63041c622fbd0272223401b1a7a9709139bde47c2a79e3614b"
     },
     {
       "path": "tests/fixtures/backup-mutation.sql",
@@ -839,15 +875,19 @@
     },
     {
       "path": "tests/helpers.ts",
-      "sha256": "3a7af62901c839cdde0057b5bfcf3c70f59c066cc60885d3133af0a2ecf8caa3"
+      "sha256": "37b44498c01a74b4a12e4f2c4d311d35e33d65a9fb18f285c74126c7be2f6f8d"
     },
     {
       "path": "tests/integration/account-management.test.ts",
-      "sha256": "9c2ad8c5c7ea50714185a38a4bbcef23cacc017fb8e19597894a2d9cb64808c2"
+      "sha256": "49f4d612c165a9dfb9139bd3f2b2894e20221b61fa86ccd71471fef83e88ae8f"
     },
     {
       "path": "tests/integration/administration.test.ts",
       "sha256": "4d0ac03b2652713f4f88b5173756a561400aca008dc0ea452f14db31922507f1"
+    },
+    {
+      "path": "tests/integration/customer-devices.test.ts",
+      "sha256": "cb2edf888c93ed82db393a9d89a1ea067d0ed962d0470fd2f5d31346106c91c9"
     },
     {
       "path": "tests/integration/customers.test.ts",
@@ -879,7 +919,7 @@
     },
     {
       "path": "tests/integration/mail.test.ts",
-      "sha256": "ac1ccb10bc0f2d93b5ba8b0de02d2ec292e5818835c047b8a1ef1c97aff1c153"
+      "sha256": "28d3255297055f03afe40d73af465c0d5592946f01a93a44bc30cc55705215ee"
     },
     {
       "path": "tests/integration/materials.test.ts",
@@ -891,11 +931,11 @@
     },
     {
       "path": "tests/integration/owner-preview.test.ts",
-      "sha256": "a258d1d0f7151fdeeebe40d5d5f957da4e538b2508e8b9caa6e6b9742fff3ea6"
+      "sha256": "4089b79665b7429f6a03cab60ab30e51ccbc007f3fea00d73f009cb572e638a4"
     },
     {
       "path": "tests/integration/passwords.test.ts",
-      "sha256": "2858e4cd5124899a23af797c4e65e6ce8ef0bf18d2f46e52523aca60a4fd8adf"
+      "sha256": "306d81155d44b0470b281923a453a4715c7c17d99d78e3dc2f94d0b9215ffa16"
     },
     {
       "path": "tests/integration/platform-team.test.ts",
@@ -907,11 +947,11 @@
     },
     {
       "path": "tests/integration/portal-sessions.test.ts",
-      "sha256": "7a3cba6e483bb53fbec873f9cc8419a109cf7118350e466ce22bc5467dd2a47b"
+      "sha256": "3f8fd0b8ab1caf48923940626eca4eb665140d414beceb07ae9731f4178fe1c5"
     },
     {
       "path": "tests/integration/production-auth.test.ts",
-      "sha256": "0d7f3896b44b315004b5e2df4f4715ef5ba267c14dd48d3638b1a7c92a2835c7"
+      "sha256": "fad823aeb1b632bb4590f6a285ed9d8ae7c5a85100f9806777268c711dc23d5b"
     },
     {
       "path": "tests/integration/programs.test.ts",
@@ -1070,6 +1110,14 @@
       "sha256": "c831dd8208a385fa16a84505379c4af4266ae78508ab3720f99a9c56c581e184"
     },
     {
+      "path": "tools/setup-motion-linux.sh",
+      "sha256": "08f2c91b9d623925bd5ebcae3e0be14babc06e3f8a0819df2151a27a50698aa9"
+    },
+    {
+      "path": "tools/stamp-motion-performance.cjs",
+      "sha256": "73f3891dc86d5201d290a76003ee9460f4adce1d8d0f03a05a3e5dbcbb8828b0"
+    },
+    {
       "path": "tools/test-backup.ts",
       "sha256": "d3803ab25070be5a30e168c4b1afdd67725f40bef8d6d896ae4b8702ac34ac79"
     },
@@ -1083,7 +1131,7 @@
     },
     {
       "path": "tools/test-e2e.ts",
-      "sha256": "6b7c3e9485d65a57d5b14c1a3a5bf38e3ad134dc259c6d619869b44d9687bbf8"
+      "sha256": "5a8122094497d48d2f4155c658e757500e6148c040d7de12c89b1d584251b849"
     },
     {
       "path": "tools/test-manual-demo.ts",
@@ -1091,7 +1139,7 @@
     },
     {
       "path": "tools/test-mobile.ts",
-      "sha256": "c76d1256231d9f6fb9d01c5c2512057694c1af1e00a5573a30edead43f40862a"
+      "sha256": "7c0884e34776e72766c9e160a720294b30fd0fcb16290ab3a5e090875b1b84ce"
     },
     {
       "path": "tools/test-restore.ts",
@@ -1099,11 +1147,11 @@
     },
     {
       "path": "tools/test-stamp-motion.ts",
-      "sha256": "6bc3a0848f46ff9c35734e8674dd3e6b8e68cc4149ef148d23c0f3b145d80b97"
+      "sha256": "07bbabc970b0e983603828a3a4a88248a439184901f302bbc9473ea3575287cc"
     },
     {
       "path": "tools/verify-implementation.ts",
-      "sha256": "c084455c91a3679187e7a9be9d03e2cdf89d9016f778179b2c0fad081c568dc5"
+      "sha256": "47e40c13dd0891dab4400a9b2e1f0292ffaa2b1d5af4bfc616c3906b3aac5525"
     },
     {
       "path": "tools/web-shell-plugin.ts",

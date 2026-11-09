@@ -39,6 +39,7 @@ export const portalInfo = {
   },
 } as const;
 export function portalForPath(path: string): Portal | undefined {
+  if (path.startsWith('/customer') || path.startsWith('/r/')) return 'customer';
   if (path.endsWith('/login')) return undefined;
   if (path.startsWith('/platform')) return 'platform';
   if (path.startsWith('/merchant')) return 'merchant';

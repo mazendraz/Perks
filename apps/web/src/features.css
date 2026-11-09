@@ -233,6 +233,11 @@ td small {
   border-radius: 14px;
   margin-bottom: 12px;
 }
+.customer-first-visit .join-program {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
 .mobile-cashier {
   max-width: 520px;
   margin: 0 auto;
@@ -755,6 +760,16 @@ button[aria-busy='true']::after {
 .nq-motion-card .filled > .stamp-frame {
   opacity: 0;
 }
+.nq-motion-card.is-experience {
+  will-change: transform;
+}
+.nq-motion-card.is-experience .nq-ink-layer {
+  will-change: transform, opacity;
+}
+.nq-motion-card .nq-ink-layer {
+  /* Keep an impact's inherited colour change outside the detailed SVG. */
+  color: var(--accent-ink);
+}
 .nq-motion-card .nq-ink-layer,
 .nq-motion-card .nq-ghost {
   position: absolute;
@@ -770,6 +785,9 @@ button[aria-busy='true']::after {
   width: min(100%, 56px);
   justify-self: center;
   transform: none;
+  /* Old stamp colour transitions invalidate inherited SVG styles every frame.
+     V2 animates the ink's transform/opacity instead. */
+  transition: none;
 }
 .nq-stamp-ink {
   display: block;
@@ -827,10 +845,12 @@ button[aria-busy='true']::after {
   border-radius: 50%;
   background: radial-gradient(#0006, transparent 70%);
   opacity: 0;
+  will-change: transform, opacity;
 }
 .nq-stamp-ring {
   position: absolute;
   opacity: 0;
+  will-change: transform, opacity;
 }
 .loyalty-card.nq-motion-card .nq-stamp-ring > .stamp-frame {
   position: static;
@@ -846,6 +866,7 @@ button[aria-busy='true']::after {
   border-radius: 50%;
   background: var(--accent);
   opacity: 0;
+  will-change: transform, opacity;
 }
 .nq-confetti {
   position: absolute;

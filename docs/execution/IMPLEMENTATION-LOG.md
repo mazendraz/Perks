@@ -142,3 +142,16 @@ L06B LOCAL_CHECKPOINT / IN_PROGRESS — 2026-11-09: اتنفذ تسجيل الع
 بعد تقوية benchmark ظهر فشلWindows حتى فيcontrol خارجNuqta؛لم يُرخ حد32ms أويُحذف الفشل. أضيف runner اختياري صريح علىWSL Linux بنفسNode وChromium، ونفسbundle/CSP، ودليلrunId يمنع قبول ملف قديم. الجولتانlive وtrace تشترطان الحد نفسه وثلاث أدوات ورصيد5؛Linux CI تستخدمrunner native. التوقيتات المعتمدة محفوظة معmemo للأجزاء الثابتة وتجميعFX ووقفcolor transition القديم. رقم16.8ms فيA قبل الشرط الجديد تاريخي، وليس دليلًا على أداء الشجرة الجديدة.
 
 تجربةمازن بقيت2محل و3حسابات و2موظف وعميل واحد، وبصمةكلماتالمرور واللوجو كما هي. فشل التحقق الجامع قبل تصحيحfixture الملاك مسجل تاريخيًا؛القبول الحالي هوchecks.json الناجح ببصمةالسورس أعلاه. التاليL07؛لاL10 قبلPilot حقيقي.
+
+
+### L07 — تحقق محلي مع بوابة الإرسال الخارجي
+
+L07 LOCAL_VERIFIED / BLOCKED_OWNER — 2026-11-09: JSON logs آمنة من API وworker، وmetrics/health داخلية بتوكن مستقل، وعزل Compose وrotation20m×5. Uptime Kuma2.5.9 الفعلية استقبلت تنبيهات HTTP علىloopback لتوقف الخدمة وbackup قديمة وjob16دقيقة وdisk probe صناعية81% و5xx، وتحذير شهادةTLS موثوقة تنتهي خلال5أيام. لا إرسال خارجي. verify:local passed:26 unit و85 integration و56 desktop و33 mobile و5 animation و9 monitoring؛skip واحد لـsymlink علىWindows. بصمة aa7e2746b28db8b2d168cc945ca1778e2bfe66cdf546ba52f8f68a6dfd83dbd9 متطابقة قبل وبعد. root وتجربة مازن حتى011a؛الحسابات واللوجو محفوظة وready200. القناة الخارجية والدومين وCompose runtime علىسيرفر BLOCKED_OWNER؛Docker المحلي متعطل كماسُجل فيL04،وconfig-only ليس دليل تشغيلstack. التفاصيل في [MONITORING](MONITORING.md).
+
+011 و011a ترحيلات إضافية،لم تُعدّل بعد التطبيق. الأولى توفرcounts فقط بدالةauth؛الثانية تبقيالإلغاءات النهائية المعروفة فيcounts،وتحسبعمرactionable فقط. اختباراتسلبية تثبتأنSMTP_REJECTED والنتائجunknown وfailed والأسبابالمجهولة لا تُستبعد. قياسp95 تقريبي بحدhistogram،والنافذةprocess-local خمسدقائق؛SSE مستبعدة منالمدة.
+
+اللوجز تستخدمallowlist/root logger لحمايةchild bindings،ولا تطبعrequest rawURL أوbody أوIP أوcredential أوخطأخام. Kuma rootless بواجهةloopback،بلاشبكةDB أوسرDB،وCaddy تقفلinternal صراحةً. تسعةأسرارمستقلة واختباراتshell ناجحة؛manifest الرسمي موجود وComposeconfig ناجح،لكنلاengine/image/runtime قبول. التمرينnative يعزلDB والأسرار ويرسللووبback فقط؛صورdashboard وmonitoring.json مولدة.
+
+تحسينالحركة يؤخررسمink الخاناتالمخفية حتىلحظةimpact،معنفسseed/geometry/timing. اختبار24فريمًا ومعيارCPU4x المزدوجلم يُرخ. تاريخالتحقق:فشلتجولةWebKit برسالةaccess-control أثناءرحلةتتضمنجلسةمنتهية؛نجحتالإعادةالمستقلةثمverifyالجامع،بدونتجاهلpageerrors أوتغييرCSP. التحققعلىSafari حقيقي يظلفيL08.
+
+ترقيةتجربةمازن عبرsnapshot أعادت2محل و3حسابات و2موظف وعميلواحد باللوجونفسه،وأعيدتشغيلعملية4180 المحددةفقط. التاليL08،والبنودالخارجيةمعلقةبقرارالمالكالسابقباستكمالالمحلي.

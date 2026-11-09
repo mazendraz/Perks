@@ -1,5 +1,5 @@
 {
-  "fingerprint": "9e4cc9a74a0e123f17168d53a6af39d8b401dc1908b4d9e23735843ac4c420e5",
+  "fingerprint": "aa7e2746b28db8b2d168cc945ca1778e2bfe66cdf546ba52f8f68a6dfd83dbd9",
   "files": [
     {
       "path": ".dockerignore",
@@ -7,7 +7,7 @@
     },
     {
       "path": ".env.example",
-      "sha256": "e6beae36696f781cd2bc646fa3054ef0bfd0cc7613e5167ce666f02914b6356c"
+      "sha256": "040c936f8fcc97f759c24ee87e7b8870613a73830aaf01f4e519d5041078a66e"
     },
     {
       "path": ".gitattributes",
@@ -15,7 +15,7 @@
     },
     {
       "path": ".github/workflows/checks.yml",
-      "sha256": "571d1fcc2dfd1db51dd390d512b85909810b7a6bc45d98af495bc04a514a3a82"
+      "sha256": "499a2b14be8d660493d57fbb3473ca976e0b82a25c49dcadc7388b823b5c6c94"
     },
     {
       "path": ".gitignore",
@@ -43,7 +43,7 @@
     },
     {
       "path": "apps/api/src/config.ts",
-      "sha256": "ed23f713d8668bb5288004b4af1464540f1800975bbf2a9ed43cdfb12d169097"
+      "sha256": "089fbdcabad6fd61f01b2e6d53735086b7ecd93bbd494ff8b2de7b1043ef00c2"
     },
     {
       "path": "apps/api/src/crypto.ts",
@@ -70,6 +70,10 @@
       "sha256": "1d4956442d6efbeba0fa3a62c6d8218b31d9b6cfead9cdc9240a70bf0d7b5653"
     },
     {
+      "path": "apps/api/src/logging.ts",
+      "sha256": "1d92fc775f2f46ec738c3187580487d1d071f46c328bd7002daf441a29542488"
+    },
+    {
       "path": "apps/api/src/mail/mailer.ts",
       "sha256": "01046406bb48bd774e95bc869aadb2f7ebee4d4411307486608ea7ed470aec81"
     },
@@ -79,7 +83,7 @@
     },
     {
       "path": "apps/api/src/main.ts",
-      "sha256": "cbd18025e897eb533e10bb08fdfa8a5f01eabfc33f312d3b9561ebb6f3196e0c"
+      "sha256": "d41f12c4626f36ed526fb1befd0979bc4415cb0f924308c8b18bd73da112d7bf"
     },
     {
       "path": "apps/api/src/mfa.ts",
@@ -120,6 +124,10 @@
     {
       "path": "apps/api/src/modules/materials.ts",
       "sha256": "9c0d6eb6f71f890731c9eba7335ee5078cb9cb51c7940a275d34d30ad8bb546e"
+    },
+    {
+      "path": "apps/api/src/modules/monitoring.ts",
+      "sha256": "00d37736cc83a3860e4ca72c1edfbb6eddacf6d5957413b70e4507e1d80fcc8f"
     },
     {
       "path": "apps/api/src/modules/onboarding.ts",
@@ -191,7 +199,7 @@
     },
     {
       "path": "apps/api/src/server.ts",
-      "sha256": "0103271969f57552b70efec6aefb6fd2cb9cb95c331acbd01d35a7b79e067a3f"
+      "sha256": "dd507adff9a5c10cd2cb213a5d0691766a92a6a297cb44bad320249ebff41924"
     },
     {
       "path": "apps/api/src/storage/file-store.ts",
@@ -519,7 +527,7 @@
     },
     {
       "path": "apps/worker/src/main.ts",
-      "sha256": "47d9b3a535747b375502e010b7753a4e2bbdef78c290ea682bf32d9ee44961a6"
+      "sha256": "46bcd3600f3cd6ea30fb3eedc0ac8b2bdf2571029cebac71fd4b939f5b990234"
     },
     {
       "path": "apps/worker/src/runner.ts",
@@ -706,12 +714,20 @@
       "sha256": "4cc74d02d2dd4fe053d8af66c39d24c853c8c044a5a2542d95957b9d6cb4e493"
     },
     {
+      "path": "db/migrations/011_operational_metrics.sql",
+      "sha256": "4570f1ead6618cd6753f22e9e4eafa203f179b74bad4cb3a803cec403491b274"
+    },
+    {
+      "path": "db/migrations/011a_monitoring_queue_intents.sql",
+      "sha256": "8597089f3de7c8c195bb676d0cf5d11aa0d1b524c527fca19ddd945eef1ca384"
+    },
+    {
       "path": "db/seed.ts",
       "sha256": "8ba8da5880dcd6fcd95228474ff52db4bb563d87cec60392105899f16bee9100"
     },
     {
       "path": "deploy/Caddyfile",
-      "sha256": "bd6426ee24799ddb4a0dc5316480579a0ad1b879054f5004e06317cfed2f4261"
+      "sha256": "a4c0b4b046ac97a33c5749b5ecdf37fbae960980e6f7ca074d50e45430452c67"
     },
     {
       "path": "deploy/backup/db-loop.py",
@@ -735,7 +751,7 @@
     },
     {
       "path": "deploy/compose.yml",
-      "sha256": "8fc41cdf1cb25fd8d0e9cf60b9df59aac0e62fc1314271576edd3d47bf148424"
+      "sha256": "061dc582c0f33e442222bd218587d360dea54f4675f937c998717fc5adae1668"
     },
     {
       "path": "deploy/harden-host.sh",
@@ -743,7 +759,7 @@
     },
     {
       "path": "deploy/init-secrets.sh",
-      "sha256": "58eaf308f3d49195c0955f608ce7906c41b81afb58933a5b6e200c3c2c65a5a3"
+      "sha256": "f0f1911fd1262f7814fe0a02bc90e0e79ea4f47c385310ae7053f3d294c5565e"
     },
     {
       "path": "deploy/postgres/Dockerfile",
@@ -775,7 +791,7 @@
     },
     {
       "path": "package.json",
-      "sha256": "c98d31dfc97e73edadd2a4078f543fc51cec944b2b4373e626f6fd99ee48fd9c"
+      "sha256": "998b3cd3fac25397028bb849bd69da40b01aaa07d98cb0feb568f1cfcb72b986"
     },
     {
       "path": "packages/contracts/package.json",
@@ -830,6 +846,14 @@
       "sha256": "c933510e328d924426a02ec8faa9157e84f3b3a7e406d2369223a6cf7b451534"
     },
     {
+      "path": "packages/domain/src/monitoring.ts",
+      "sha256": "a32151a37badbe282f3d8e4793fadaa39f69fd4fbdeac9490856be4fecdbf073"
+    },
+    {
+      "path": "packages/domain/src/operational-log.ts",
+      "sha256": "37d66747d1529066a334250b06c4422a3f197de75bb7fba02e0677913953617c"
+    },
+    {
       "path": "packages/ui/package.json",
       "sha256": "4d1f36f09e810511ac880668810fb8eca5833e4f990706d850782d078826b02d"
     },
@@ -843,7 +867,7 @@
     },
     {
       "path": "packages/ui/src/LoyaltyCard.tsx",
-      "sha256": "26e0c06466db963e686fa14f8932bef57b5235b7190b8bfcba2951d555d374e2"
+      "sha256": "25176069847f17175409a27d0458928e1989dd81fb68944c3bc5eb68245d991a"
     },
     {
       "path": "packages/ui/src/StampInk.tsx",
@@ -924,6 +948,10 @@
     {
       "path": "tests/integration/materials.test.ts",
       "sha256": "84ac844ecf50f87e14f5ee658f7722c05816ba1108274567e67068fca879ebf9"
+    },
+    {
+      "path": "tests/integration/monitoring.test.ts",
+      "sha256": "a21fca14a40307dc38bf6d6ec997f1345d11050ef7766a363a18834efd1e8155"
     },
     {
       "path": "tests/integration/onboarding.test.ts",
@@ -1026,6 +1054,10 @@
       "sha256": "714ea679d2900c17d5f68521036783ba57e43c67556bf185677e65e103df7da6"
     },
     {
+      "path": "tests/unit/monitoring.test.ts",
+      "sha256": "eb92f76ec0a14d51dedf0bbde9c2699ef3d8b5dd581e3916f8c7ae348730f795"
+    },
+    {
       "path": "tests/unit/passwords.test.ts",
       "sha256": "a365ffdfab75027e5390b55cbc5801eae6b133646f5b7360bc421d9d130e0349"
     },
@@ -1070,6 +1102,10 @@
       "sha256": "639cf831767916a6c8864f84d5ac5992194354ea23b86cacd689c71455b54ed6"
     },
     {
+      "path": "tools/kuma-runtime.ts",
+      "sha256": "8a6586e3a533ccc6ebd2dc8f8ac055f24afa80f867af1888c8cdc1f98f3c424a"
+    },
+    {
       "path": "tools/local-admin-mfa.ts",
       "sha256": "8d63699d712eccfe70f1f62438e3e7f528d55b7cf44f9caee02f86f4a8bfa935"
     },
@@ -1078,12 +1114,16 @@
       "sha256": "4a2947aea9e59b4887327850d25fe568db25f148efeb14e0b25aacc6f16cca49"
     },
     {
+      "path": "tools/local-monitoring.ts",
+      "sha256": "d7d4c0d81747c8324309144d88cd195bfaee9ec10af8fd04808f441ee29ef7e1"
+    },
+    {
       "path": "tools/manual-demo-clients.ts",
       "sha256": "85bf2a2908c704ef33fdc143b7b02e68ba448f38c6501326ef428e180551902a"
     },
     {
       "path": "tools/manual-demo.ts",
-      "sha256": "cf291147cd1e0526d29b4f1b68ad4a4e1988696b6c35f952d61ff8ba92ba142d"
+      "sha256": "15dd0dcc6b637c320d7f2a1f115d886325645c1b9a5281eca4a4e0b08b267d48"
     },
     {
       "path": "tools/migrate-local-storage.ts",
@@ -1110,6 +1150,10 @@
       "sha256": "c831dd8208a385fa16a84505379c4af4266ae78508ab3720f99a9c56c581e184"
     },
     {
+      "path": "tools/setup-kuma.ts",
+      "sha256": "29a85416c3f49aaa1ef6bc229185137ce0f0679fafd4d7f5c01aa30d2748da45"
+    },
+    {
       "path": "tools/setup-motion-linux.sh",
       "sha256": "08f2c91b9d623925bd5ebcae3e0be14babc06e3f8a0819df2151a27a50698aa9"
     },
@@ -1123,11 +1167,11 @@
     },
     {
       "path": "tools/test-deploy-scripts.ts",
-      "sha256": "490cf3d72b78751443de34131c0f959fd26091b3292c7cafccb07bd47fd335c2"
+      "sha256": "b7a14c350cdb8b6fb49c088c8eeae3572ac2ccbc7203bed6e5b5e0ab5abbb538"
     },
     {
       "path": "tools/test-deploy.ts",
-      "sha256": "fdbf6ccb38dc58f712736579f59b88cba79d5a6904df7e6351615e4b84d844ce"
+      "sha256": "9328bb238ff05f4059e668564dfcedd2a1372dc2650a61a203743f1cf55e3807"
     },
     {
       "path": "tools/test-e2e.ts",
@@ -1142,6 +1186,10 @@
       "sha256": "7c0884e34776e72766c9e160a720294b30fd0fcb16290ab3a5e090875b1b84ce"
     },
     {
+      "path": "tools/test-monitoring.ts",
+      "sha256": "e24807b7fc44fa7bf56ff7a784caf5fb912c047324d22f47ebe67ebde9c70867"
+    },
+    {
       "path": "tools/test-restore.ts",
       "sha256": "a87a6633e2637a817b40d42db3eb5cb8067ee69f11d58813760b0f15931a7d78"
     },
@@ -1151,7 +1199,7 @@
     },
     {
       "path": "tools/verify-implementation.ts",
-      "sha256": "47e40c13dd0891dab4400a9b2e1f0292ffaa2b1d5af4bfc616c3906b3aac5525"
+      "sha256": "29f16456f399dea167e4fee0211c2592983d943c195989392b3fa47bf8090907"
     },
     {
       "path": "tools/web-shell-plugin.ts",

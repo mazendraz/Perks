@@ -24,8 +24,8 @@ test "$(stat -c %a "$fixture/.env.production")" = 600
 cp "$fixture/.env.production" "$fixture/original"
 if sh "$fixture/init-secrets.sh" >/dev/null 2>&1; then exit 1; fi
 cmp "$fixture/.env.production" "$fixture/original"
-test "$(awk -F= '/^(AUTH_PEPPER|NUQTA_.*PASSWORD|PGBACKREST_REPO1_CIPHER_PASS|RESTIC_PASSWORD)=/ {print $2}' "$fixture/original" | sort -u | wc -l)" = 8
-test "$(awk -F= '/^(AUTH_PEPPER|NUQTA_.*PASSWORD|PGBACKREST_REPO1_CIPHER_PASS|RESTIC_PASSWORD)=/ && length($2)==64 {n++} END {print n}' "$fixture/original")" = 8
+test "$(awk -F= '/^(AUTH_PEPPER|MONITORING_TOKEN|NUQTA_.*PASSWORD|PGBACKREST_REPO1_CIPHER_PASS|RESTIC_PASSWORD)=/ {print $2}' "$fixture/original" | sort -u | wc -l)" = 9
+test "$(awk -F= '/^(AUTH_PEPPER|MONITORING_TOKEN|NUQTA_.*PASSWORD|PGBACKREST_REPO1_CIPHER_PASS|RESTIC_PASSWORD)=/ && length($2)==64 {n++} END {print n}' "$fixture/original")" = 9
 rm -- "$fixture/init-secrets.sh" "$fixture/.env.production" "$fixture/original"
 rmdir -- "$fixture"
 `;
@@ -58,7 +58,7 @@ const report = {
     result.status === 0
       ? [
           'Shell syntax',
-          'Generated secrets are 0600 and eight distinct 64-character values',
+          'Generated secrets are 0600 and nine distinct 64-character values',
           'Existing configuration is byte-identical after refused overwrite',
         ]
       : [],

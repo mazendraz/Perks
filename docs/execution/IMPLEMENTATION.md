@@ -1,6 +1,10 @@
 # التنفيذ الحالي — 2026-11-09
 
-## تحديث خطة الإطلاق — L06B،2026-11-09
+## تحديث خطة الإطلاق — L07،2026-11-09
+
+### L07 — مراقبة التشغيل
+
+L07 LOCAL_VERIFIED / BLOCKED_OWNER — 2026-11-09: JSON logs آمنة من API وworker، وmetrics/health داخلية بتوكن مستقل، وعزل Compose وrotation20m×5. Uptime Kuma2.5.9 الفعلية استقبلت تنبيهات HTTP علىloopback لتوقف الخدمة وbackup قديمة وjob16دقيقة وdisk probe صناعية81% و5xx، وتحذير شهادةTLS موثوقة تنتهي خلال5أيام. لا إرسال خارجي. verify:local passed:26 unit و85 integration و56 desktop و33 mobile و5 animation و9 monitoring؛skip واحد لـsymlink علىWindows. بصمة aa7e2746b28db8b2d168cc945ca1778e2bfe66cdf546ba52f8f68a6dfd83dbd9 متطابقة قبل وبعد. root وتجربة مازن حتى011a؛الحسابات واللوجو محفوظة وready200. القناة الخارجية والدومين وCompose runtime علىسيرفر BLOCKED_OWNER؛Docker المحلي متعطل كماسُجل فيL04،وconfig-only ليس دليل تشغيلstack. التفاصيل في [MONITORING](MONITORING.md).
 
 ### L06B — هوية الجهاز واسترجاع الكارت
 

@@ -28,6 +28,8 @@ const schema = z.object({
   SMTP_STARTTLS: z.enum(['true', 'false']).default('true'),
   SMTP_CA_FILE: z.string().optional(),
   LOG_LEVEL: z.enum(['silent', 'fatal', 'error', 'warn', 'info', 'debug']).default('info'),
+  MONITORING_TOKEN: z.union([z.string().min(32), z.literal('')]).default(''),
+  BACKUP_STATUS_ROOT: z.string().default(''),
 });
 export type Config = z.infer<typeof schema>;
 type DatabaseKeys =
@@ -78,6 +80,10 @@ export function readMigrationConfig() {
 }
 function validateConfig(c: ServiceConfig & Partial<Pick<Config, DatabaseKeys>>) {
   trustedProxies(c.TRUSTED_PROXIES);
+  if (c.MONITORING_TOKEN && c.MONITORING_TOKEN === c.AUTH_PEPPER)
+    throw new Error('Monitoring token must be independent of authentication secrets.');
+  if (deployed(c) && c.BACKUP_STATUS_ROOT && !isAbsolute(c.BACKUP_STATUS_ROOT))
+    throw new Error('BACKUP_STATUS_ROOT must be absolute when deployed.');
   if (c.APP_ENV === 'production' || c.APP_ENV === 'staging') {
     if (c.AUTH_PROVIDER === 'local')
       throw new Error('Local authentication is forbidden outside development/test.');

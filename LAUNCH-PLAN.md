@@ -158,7 +158,7 @@
 | L05-04 | PITR: استعادة لنقطة زمنية محددة (قبل عملية مقصودة) ومراجعة إن الـLedger مظبوط. | موثّق بأوامر حقيقية في RUNBOOK ومجرّب مرة. | DONE | قبول محلي:استعادةfull إلىوقتقبلشراءfixture رجعتالـledger والأرصدة السابقة؛الأوامر فيdeploy/BACKUP-README. تمرينالسيرفرالحقيقي مازالGo/No-Go. |
 | L05-05 | **BLOCKED_OWNER:** مكان النسخة التانية برّه السيرفر (سيرفر تاني بتاعنا أو ديسك خارجي أو أي storage). الـbackups مشفرة، فالداتا تفضل بتاعتنا حتى لو المكان عند حد تاني. | repo2 متظبط، وتمرين استعادة منه. | BLOCKED_OWNER | مطلوب تحديد وجهة مستقلة خارج السيرفر للنسخة الثانية. |
 | L05-06 | ملفات الـFileStore (`STORAGE_ROOT`) بتتعملها نسخة يومية (restic مشفر) لنفس المكان. | تمرين استعادة لوجو. | DONE | قبول محلي:restic مشفر؛إزالةPNG منfixture ثمrestore بنفسSHA-256؛رفضمفتاحغلط وإعادةتهيئةغيرمصرح بها. مكانالنسخةالخارجيةBLOCKED_OWNER. |
-| L05-07 | تنبيه لو آخر backup ناجح أقدم من 26 ساعة، أو آخر WAL مأرشف أقدم من 30 دقيقة (مربوط بـL07). | test يدوي موثّق. | IN_PROGRESS | backup.test يثبت26h/30m وغياب/قدمالمراقبة وانحرافالساعة؛scheduler تحققفعليًا منWAL. توصيلتنبيهحقيقي ضمنL07 محتاجقناةمعتمدة. |
+| L05-07 | تنبيه لو آخر backup ناجح أقدم من 26 ساعة، أو آخر WAL مأرشف أقدم من 30 دقيقة (مربوط بـL07). | test يدوي موثّق. | BLOCKED_OWNER | backup.test وtest:monitoring أثبتا26h/30m ووصولتنبيهHTTP محلي منKuma؛الإرسالالخارجي ينتظرقناةL07-03. |
 
 ### L06 — الموبايل والمتصفحات القديمة
 
@@ -260,10 +260,10 @@
 
 | ID | المهمة | معيار القبول | الحالة | الدليل / المطلوب |
 |---|---|---|---|---|
-| L07-01 | لوجز JSON من الـapi والـworker على stdout، وDocker logging driver بـrotation (`max-size 20m` و`max-file 5`). | مفيش PII ولا توكنز (الـredaction موجود، ضيف test). | PLANNED | لم يبدأ القبول بعد؛التنفيذ حسب الترتيب. |
-| L07-02 | Uptime Kuma (self-hosted) كـservice إضافية في compose، بيراقب `/health/ready` والـcert expiry وعمر آخر backup. | فيه dashboard شغال. | PLANNED | لم يبدأ القبول بعد؛التنفيذ حسب الترتيب. |
-| L07-03 | تنبيهات على Telegram bot (مجاني) أو الإيميل: لو السيرفر وقع، أو أخطاء 5xx أكتر من 1% في 5 دقايق، أو الديسك فوق 80%، أو الـbackup قديم، أو jobs واقفة في الـoutbox أكتر من 15 دقيقة. | تنبيه تجريبي وصل فعلًا. | PLANNED | لم يبدأ القبول بعد؛التنفيذ حسب الترتيب. |
-| L07-04 | endpoint داخلي (من غير إتاحة عامة) للـmetrics الأساسية: عدد الطلبات، والأخطاء، ومدة الاستجابة p95، وطول الـoutbox. | Uptime Kuma أو اسكربت بيقرأه. | PLANNED | لم يبدأ القبول بعد؛التنفيذ حسب الترتيب. |
+| L07-01 | لوجز JSON من الـapi والـworker على stdout، وDocker logging driver بـrotation (`max-size 20m` و`max-file 5`). | مفيش PII ولا توكنز (الـredaction موجود، ضيف test). | DONE | monitoring.test:PII/headers/query/body/error/child-bindings/startup canaries؛JSON api/worker؛test:deploy -- --config-only وtest:deploy-scripts يثبتان20m×5. |
+| L07-02 | Uptime Kuma (self-hosted) كـservice إضافية في compose، بيراقب `/health/ready` والـcert expiry وعمر آخر backup. | فيه dashboard شغال. | BLOCKED_OWNER | Kuma2.5.9 native dashboard وTLS-expiry/backup probes متحققة فيtest:monitoring وصورةdashboard؛Compose config متحقق. الدومين وcert وسيرفرCompose الفعلي غيرمختارين. |
+| L07-03 | تنبيهات على Telegram bot (مجاني) أو الإيميل: لو السيرفر وقع، أو أخطاء 5xx أكتر من 1% في 5 دقايق، أو الديسك فوق 80%، أو الـbackup قديم، أو jobs واقفة في الـoutbox أكتر من 15 دقيقة. | تنبيه تجريبي وصل فعلًا. | BLOCKED_OWNER | 9checks وتمريرHTTP تنبيهاتفعليإلىloopback لكلحالة؛لاTelegram أوSMTP خارجي. مطلوباختيارالقناةوتجربةوصولرسالةحقيقيةبعداعتمادالموارد. |
+| L07-04 | endpoint داخلي (من غير إتاحة عامة) للـmetrics الأساسية: عدد الطلبات، والأخطاء، ومدة الاستجابة p95، وطول الـoutbox. | Uptime Kuma أو اسكربت بيقرأه. | DONE | /internal/metrics+health؛Bearer مستقل/session401/tokenoff404؛aggregates authonly؛Caddydeny؛Kuma قرأتالمسارفعليًا. 85integration وverify:local passed. |
 
 ### L08 — التجربة على الموبايل (قبل وبعد الـstaging)
 

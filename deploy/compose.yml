@@ -165,7 +165,12 @@ services:
       TRUSTED_PROXIES: 172.30.40.2/32
       DATABASE_URL: postgresql://nuqta_runtime:${NUQTA_RUNTIME_DB_PASSWORD}@postgres:5432/nuqta
       AUTH_DATABASE_URL: postgresql://nuqta_auth:${NUQTA_AUTH_DB_PASSWORD}@postgres:5432/nuqta
-    volumes: [files:/var/lib/nuqta/files]
+      MONITORING_TOKEN: ${MONITORING_TOKEN:?Independent operations token required}
+      BACKUP_STATUS_ROOT: /var/lib/nuqta/backup-health
+    volumes:
+      - files:/var/lib/nuqta/files
+      - database_backup_state:/var/lib/nuqta/backup-health/database:ro
+      - files_backup_state:/var/lib/nuqta/backup-health/files:ro
     networks:
       database: {}
       proxy: { ipv4_address: 172.30.40.3 }
@@ -208,6 +213,30 @@ services:
       timeout: 5s
       start_period: 20s
       retries: 3
+  monitoring:
+    image: louislam/uptime-kuma:2.5.9-slim-rootless
+    restart: unless-stopped
+    user: '1000:1000'
+    read_only: true
+    tmpfs: ['/tmp:rw,noexec,nosuid,size=64m']
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    environment:
+      UPTIME_KUMA_HOST: 0.0.0.0
+      UPTIME_KUMA_PORT: '3001'
+      UPTIME_KUMA_DB_TYPE: sqlite
+      DATA_DIR: /app/data
+    ports: ['127.0.0.1:4301:3001']
+    volumes: [monitoring_data:/app/data]
+    networks: [proxy, monitoring_egress]
+    depends_on: { api: { condition: service_healthy } }
+    healthcheck:
+      test: [CMD, /app/extra/healthcheck]
+      interval: 30s
+      timeout: 5s
+      start_period: 60s
+      retries: 3
+    logging: *logging
   caddy:
     image: ${NUQTA_WEB_IMAGE:-nuqta-web:local}
     build: { context: .., target: web }
@@ -234,6 +263,7 @@ networks:
   database: { internal: true }
   proxy: { ipam: { config: [{ subnet: 172.30.40.0/28 }] } }
   mail_egress: {}
+  monitoring_egress: {}
 volumes:
   postgres_data: {}
   files: {}
@@ -244,3 +274,4 @@ volumes:
   database_backup_state: {}
   files_repository: {}
   files_backup_state: {}
+  monitoring_data: {}

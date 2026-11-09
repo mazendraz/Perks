@@ -8,7 +8,7 @@ import { liveEventsModule } from './live-events.js';
 import { experienceModule } from './modules/experience.js';
 import { customerIdentityModule } from './modules/customer-identity.js';
 import { customerRecoveryModule } from './modules/customer-recovery.js';
-import Fastify from 'fastify';
+import Fastify, { LogController, type FastifyBaseLogger } from 'fastify';
 import cookie from '@fastify/cookie';
 import rateLimit from '@fastify/rate-limit';
 import helmet from '@fastify/helmet';
@@ -29,48 +29,35 @@ import { customersModule } from './modules/customers.js';
 import { materialsModule } from './modules/materials.js';
 import { platformModule } from './modules/platform.js';
 import { administrationModule } from './modules/administration.js';
-export async function buildApp(overrides: Partial<Config> = {}) {
+import { randomUUID } from 'node:crypto';
+import { apiLogger, httpLog, failureLog } from './logging.js';
+import { HttpMetrics } from '../../../packages/domain/src/monitoring.js';
+import { monitoringModule, type MonitoringProbes } from './modules/monitoring.js';
+export async function buildApp(
+  overrides: Partial<Config> = {},
+  options: {
+    logStream?: { write: (line: string) => void };
+    monitoringProbes?: MonitoringProbes;
+  } = {},
+) {
   const c = readConfig(overrides),
     pools = createPools(c);
+  const httpMetrics = new HttpMetrics();
+  const logRoot: { logger?: FastifyBaseLogger } = {};
   const app = Fastify({
+    logController: new LogController({ disableRequestLogging: true }),
+    requestIdHeader: false,
+    genReqId: () => randomUUID(),
     bodyLimit: 1_048_576,
     trustProxy: trustedProxies(c.TRUSTED_PROXIES),
-    logger:
-      c.LOG_LEVEL === 'silent'
-        ? false
-        : {
-            level: c.LOG_LEVEL,
-            serializers: {
-              req(req) {
-                return {
-                  method: req.method,
-                  url: String(req.url)
-                    .replace(
-                      /(\/(?:invitations|reset-password|customer\/recoveries|r)\/)[^/]+/g,
-                      '$1[redacted]',
-                    )
-                    .split('?')[0],
-                  host: req.hostname,
-                  remoteAddress: req.ip,
-                };
-              },
-            },
-            redact: {
-              paths: [
-                'req.body.password',
-                'req.body.accounts',
-                'req.body.currentPassword',
-                'req.body.code',
-                'req.body.recoveryCode',
-                'req.body.token',
-                'req.headers.cookie',
-                'req.headers.authorization',
-                'req.headers["x-csrf-token"]',
-                'res.headers["set-cookie"]',
-              ],
-              censor: '[redacted]',
-            },
-          },
+    logger: c.LOG_LEVEL === 'silent' ? false : apiLogger(c.LOG_LEVEL, options.logStream, logRoot),
+  });
+  logRoot.logger = app.log;
+  app.addHook('onResponse', async (req, reply) => {
+    const route = req.routeOptions.url || '';
+    if (req.url.startsWith('/api/'))
+      httpMetrics.observe(reply.statusCode, route.endsWith('/events') ? null : reply.elapsedTime);
+    req.log.info(httpLog(req, reply));
   });
   await app.register(cookie);
   await app.register(helmet, {
@@ -140,11 +127,7 @@ export async function buildApp(overrides: Partial<Config> = {}) {
     }
     const status =
       typeof error === 'object' && error && 'statusCode' in error ? Number(error.statusCode) : 500;
-    if (status >= 500)
-      req.log.error(
-        { errorType: error instanceof Error ? error.name : 'UnknownError', requestId: req.id },
-        'Request failed',
-      );
+    if (status >= 500) req.log.error(failureLog(req.id));
     reply.code(status >= 400 && status < 500 ? status : 500).send({
       error: {
         code:
@@ -174,6 +157,7 @@ export async function buildApp(overrides: Partial<Config> = {}) {
   materialsModule(app, pools, c);
   platformModule(app, pools, c);
   administrationModule(app, pools);
+  monitoringModule(app, pools, c, httpMetrics, options.monitoringProbes);
   app.get('/health/live', async () => ({ status: 'ok' }));
   app.get('/health/ready', async (_req, reply) => {
     try {
@@ -203,7 +187,7 @@ export async function buildApp(overrides: Partial<Config> = {}) {
       if (
         (
           await pools.pool.query(
-            "SELECT count(*)::int AS count FROM schema_migrations WHERE name='010e_recovery_session_scope.sql'",
+            "SELECT count(*)::int AS count FROM schema_migrations WHERE name='011a_monitoring_queue_intents.sql'",
           )
         ).rows[0].count !== 1
       )

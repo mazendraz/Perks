@@ -13,6 +13,7 @@ APP_ENV=production
 DOMAIN=nuqta.invalid
 PUBLIC_APP_ORIGIN=https://nuqta.invalid
 AUTH_PEPPER=$(openssl rand -hex 32)
+MONITORING_TOKEN=$(openssl rand -hex 32)
 NUQTA_POSTGRES_DB_PASSWORD=$(openssl rand -hex 32)
 NUQTA_MIGRATOR_DB_PASSWORD=$(openssl rand -hex 32)
 NUQTA_RUNTIME_DB_PASSWORD=$(openssl rand -hex 32)

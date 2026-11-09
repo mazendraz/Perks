@@ -48,3 +48,8 @@ References: [Fastify trustProxy](https://fastify.dev/docs/latest/Reference/Serve
 ## L05 additions
 
 See [BACKUP-README](BACKUP-README.md) for WAL, encrypted pgBackRest/restic, schedules and isolated recovery. First installation now also requires PGBACKREST_REPO1_CIPHER_PASS and RESTIC_PASSWORD (generated automatically). Same-host backup volumes do not replace the pending off-host repository. The backup image creates the FileStore mount directory with UID1000 too, so whichever service initializes the shared volume first uses compatible ownership.
+
+
+## المراقبة الخاصة بالتشغيل
+
+إعداد Kuma المحلية والقياسات والتنبيهات وتجارب الفشل في [MONITORING](../docs/execution/MONITORING.md). الخدمة rootless على127.0.0.1:4301؛Caddy ترفض/internal،والـAPI تحتاجMONITORING_TOKEN مستقلًا تقرأهKuma كـBearer. إعداداتالمالك وقناةالتنبيه والإرسالالحقيقي وتحققCompose runtime ما زالتمرحلةتشغيل فعلية بعداختيارالسيرفر والدومين. ملفاتحالتيالباك أب مركبةread-only داخلAPI،والأسرارالقائمة لا تُدوّرعندالترقية.

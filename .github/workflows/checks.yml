@@ -37,6 +37,9 @@ jobs:
       - run: npm run build
       - run: npm run test:deploy-scripts
       - run: npx playwright install --with-deps chromium webkit
+      - run: npm run monitoring:setup
+      - run: npm run test:monitoring
+        timeout-minutes: 5
       - run: npm run test:e2e:ci
         timeout-minutes: 10
       - uses: actions/upload-artifact@v4
@@ -46,6 +49,8 @@ jobs:
           path: |
             docs/execution/evidence/implementation/browser.json
             docs/execution/evidence/implementation/mobile.json
+            docs/execution/evidence/implementation/monitoring.json
+            docs/execution/evidence/implementation/monitoring-dashboard.png
             docs/execution/evidence/animation/
             docs/execution/evidence/implementation/*-ar.png
             docs/execution/evidence/implementation/*-en.png

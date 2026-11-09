@@ -25,6 +25,7 @@ const report: {
   browserChecks?: number;
   mobileChecks?: number;
   animationChecks?: number;
+  monitoringChecks?: number;
   sourceFingerprint?: string;
   sourceFingerprintAfter?: string;
   environment?: Record<string, string>;
@@ -111,6 +112,7 @@ for (const script of [
   'build',
   'openapi:export',
   'test:integration',
+  'test:monitoring',
   'test:manual-demo',
   'test:e2e',
   'test:e2e:mobile',
@@ -124,7 +126,9 @@ for (const script of [
     encoding: 'utf8',
     windowsHide: true,
     maxBuffer: 10 * 1024 * 1024,
-    timeout: ['test:integration', 'test:e2e', 'test:e2e:mobile'].includes(script) ? 300000 : 180000,
+    timeout: ['test:integration', 'test:monitoring', 'test:e2e', 'test:e2e:mobile'].includes(script)
+      ? 300000
+      : 180000,
   });
   const passed = /ℹ pass (\d+)/.exec(result.stdout || '');
   const skipped = /ℹ skipped (\d+)/.exec(result.stdout || '');
@@ -165,6 +169,11 @@ if (!process.exitCode) {
   );
   assert.equal(animation.status, 'passed');
   report.animationChecks = animation.checks.length;
+  const monitoring = JSON.parse(
+    await readFile('docs/execution/evidence/implementation/monitoring.json', 'utf8'),
+  );
+  assert.equal(monitoring.status, 'passed');
+  report.monitoringChecks = monitoring.checks.length;
   report.sourceFingerprintAfter = (await snapshot()).fingerprint;
   if (report.sourceFingerprintAfter !== report.sourceFingerprint) {
     report.status = 'source_changed_during_verification';

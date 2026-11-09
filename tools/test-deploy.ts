@@ -7,6 +7,7 @@ import https from 'node:https';
 import type { IncomingHttpHeaders } from 'node:http';
 const stamp = Date.now(),
   project = 'nuqta_l04_smoke_' + stamp;
+const configOnly = process.argv.includes('--config-only');
 assert.match(project, /^nuqta_l04_smoke_\d+$/);
 const directory = resolve('.local', 'deploy-smoke-' + stamp);
 await mkdir(directory, { recursive: true, mode: 0o700 });
@@ -27,6 +28,7 @@ const values: Record<string, string> = {
 };
 for (const key of [
   'AUTH_PEPPER',
+  'MONITORING_TOKEN',
   'NUQTA_POSTGRES_DB_PASSWORD',
   'NUQTA_MIGRATOR_DB_PASSWORD',
   'NUQTA_RUNTIME_DB_PASSWORD',
@@ -125,14 +127,21 @@ async function checked(args: string[], label: string, timeout = 30000) {
   );
   return result.out;
 }
-async function request(path: string) {
+async function request(path: string, headers: Record<string, string> = {}) {
   assert.ok(path.startsWith('/') && !path.startsWith('//'));
   // Synthetic loopback stack only: Caddy's internal test CA is not installed on this host.
   // Never use this override for a production domain or SMTP.
   return await new Promise<{ status: number; headers: IncomingHttpHeaders; body: string }>(
     (resolveResponse, reject) => {
       const req = https.get(
-        { hostname: 'localhost', port: 56443, path, rejectUnauthorized: false, timeout: 5000 },
+        {
+          hostname: 'localhost',
+          port: 56443,
+          path,
+          headers,
+          rejectUnauthorized: false,
+          timeout: 5000,
+        },
         (res) => {
           let body = '';
           res.setEncoding('utf8');
@@ -155,10 +164,30 @@ try {
     await checked([...prefix, 'config', '--format', 'json'], 'Compose configuration'),
   );
   const services = composed.services;
-  for (const name of ['postgres', 'migrate', 'api', 'worker', 'caddy']) assert.ok(services[name]);
+  for (const name of ['postgres', 'migrate', 'api', 'worker', 'caddy', 'monitoring'])
+    assert.ok(services[name]);
   for (const name of ['postgres', 'migrate', 'api', 'worker'])
     assert.ok(!services[name].ports?.length);
   assert.ok(composed.networks.database.internal);
+  assert.equal(services.monitoring.image, 'louislam/uptime-kuma:2.5.9-slim-rootless');
+  assert.ok(
+    services.monitoring.ports.every((port: { host_ip: string }) => port.host_ip === '127.0.0.1'),
+  );
+  assert.ok(!services.monitoring.networks.database);
+  assert.equal(services.monitoring.user, '1000:1000');
+  assert.equal(services.monitoring.read_only, true);
+  assert.ok(
+    !Object.keys(services.monitoring.environment).some((name) =>
+      /DATABASE_URL|AUTH_PEPPER|SMTP_PASS/.test(name),
+    ),
+  );
+  assert.equal(services.api.environment.MONITORING_TOKEN, values.MONITORING_TOKEN);
+  for (const service of Object.values(services) as {
+    logging: { options: Record<string, string> };
+  }[]) {
+    assert.equal(service.logging.options['max-size'], '20m');
+    assert.equal(service.logging.options['max-file'], '5');
+  }
   assert.ok(
     !services.api.environment.WORKER_DATABASE_URL &&
       !services.api.environment.DATABASE_MIGRATOR_URL,
@@ -175,8 +204,15 @@ try {
   for (const name of ['api', 'worker'])
     assert.equal(services[name].depends_on.migrate.condition, 'service_completed_successfully');
   pass('Compose parses; DB is private and process credentials are separated');
-  const info = await command(['info', '--format', '{{.ServerVersion}}'], 10000);
-  if (info.code !== 0) {
+  pass(
+    'Pinned rootless Kuma exposes only a loopback dashboard, has no database/auth secrets, and all services retain bounded JSON logs',
+  );
+  const info = configOnly ? null : await command(['info', '--format', '{{.ServerVersion}}'], 10000);
+  if (configOnly) {
+    report.status = 'CONFIG_VERIFIED_RUNTIME_NOT_RUN';
+    report.reason =
+      'Configuration-only mode selected; no engine, images, stack or gateway runtime was tested.';
+  } else if (!info || info.code !== 0) {
     report.status = 'BLOCKED_LOCAL_DOCKER';
     report.reason =
       'Linux Docker engine did not respond; image build, stack, headers and container role checks were not run.';
@@ -204,6 +240,12 @@ try {
     const ready = await request('/health/ready');
     assert.equal(ready.status, 200);
     assert.equal((await request('/health/live')).status, 200);
+    assert.equal(
+      (await request('/internal/metrics', { Authorization: 'Bearer ' + values.MONITORING_TOKEN }))
+        .status,
+      404,
+    );
+    assert.equal((await request('/internal/health')).status, 404);
     pass('Fresh PostgreSQL, migrations, API, worker and Caddy are healthy');
     const login = await request('/login');
     assert.equal(login.status, 200);
@@ -279,7 +321,8 @@ try {
   }
   await mkdir('docs/execution/evidence/implementation', { recursive: true });
   await writeFile(
-    'docs/execution/evidence/implementation/deployment.json',
+    'docs/execution/evidence/implementation/' +
+      (configOnly ? 'deployment-config.json' : 'deployment.json'),
     JSON.stringify(report, null, 2) + '\n',
   );
 }

@@ -225,7 +225,8 @@ export function LoyaltyCard({
               filled={i < displayBalance}
               last={i === threshold - 1}
               seed={
-                card.stamp_ink?.[i]
+                // Hidden slots stay stable; draw each committed mark on its impact.
+                i < displayBalance && card.stamp_ink?.[i]
                   ? card.stamp_ink[i]!.ledgerId + ':' + card.stamp_ink[i]!.ordinal
                   : card.id + ':' + (card.cycle_number ?? 1) + ':' + i
               }

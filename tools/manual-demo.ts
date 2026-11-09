@@ -12,6 +12,7 @@ import { buildApp } from '../apps/api/src/server.js';
 import { runOne } from '../apps/worker/src/runner.js';
 import { cleanupExports } from '../apps/worker/src/export-cleanup.js';
 import { createFileStore } from '../apps/api/src/storage/file-store.js';
+import { operationalLog } from '../packages/domain/src/operational-log.js';
 
 export const workspace = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 export const manualRoot = resolve(workspace, '.local/manual-demo');
@@ -203,6 +204,8 @@ async function start() {
     if (
       req.url.startsWith('/api/') ||
       req.url.startsWith('/health/') ||
+      req.url === '/internal' ||
+      req.url.startsWith('/internal/') ||
       req.url.startsWith('/assets/') ||
       /[.](?:js|css|png|svg|webmanifest|ttf|woff2?)(?:\?|$)/.test(req.url)
     )
@@ -230,7 +233,7 @@ async function start() {
       }
       if (!(await runOne(worker, c))) await new Promise((r) => setTimeout(r, 500));
     } catch {
-      console.error('Manual demo worker will retry; no payloads or secrets are logged.');
+      operationalLog('worker', 'error', 'worker.iteration_failed');
       await new Promise((r) => setTimeout(r, 1500));
     }
   }

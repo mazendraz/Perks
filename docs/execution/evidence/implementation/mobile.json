@@ -1,5 +1,5 @@
 {
-  "at": "2026-11-09T16:25:07.105Z",
+  "at": "2026-11-09T17:50:31.842Z",
   "status": "passed",
   "checks": [
     "chromium-pixel5: name/phone/terms registration survives Arabic/English switching, reaches the card within 30 seconds, and needs no email/password or UUID/Popover/ResizeObserver/Animation.finished",
@@ -40,7 +40,7 @@
     "chromium-pixel5",
     "webkit-iphone12"
   ],
-  "build": "06ee354698d77af31bad",
-  "indexSha256": "3f5916dbf48f8603174a4d58aae6b794a57bb96fa09d546408ef5e1d3c0084f5",
+  "build": "ffeea31e262a7d469393",
+  "indexSha256": "be41d2c2305a04eacd176525d8d7b1c0605ac729855c14edb5a85be9192e6e1d",
   "installabilityErrors": []
 }

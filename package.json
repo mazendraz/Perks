@@ -46,7 +46,10 @@
     "test:deploy-scripts": "tsx tools/test-deploy-scripts.ts",
     "test:backup": "tsx tools/test-backup.ts",
     "test:e2e:mobile": "tsx tools/test-mobile.ts",
-    "test:animation": "tsx tools/test-stamp-motion.ts"
+    "test:animation": "tsx tools/test-stamp-motion.ts",
+    "monitoring:setup": "tsx tools/setup-kuma.ts",
+    "test:monitoring": "tsx tools/test-monitoring.ts",
+    "monitoring:local": "tsx tools/local-monitoring.ts"
   },
   "dependencies": {
     "@fastify/cookie": "11.1.5",

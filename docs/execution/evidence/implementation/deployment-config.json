@@ -1,0 +1,26 @@
+{
+  "at": "2026-11-09T17:49:54.847Z",
+  "status": "CONFIG_VERIFIED_RUNTIME_NOT_RUN",
+  "project": "nuqta_l04_smoke_1794246594843",
+  "checks": [
+    "Compose parses; DB is private and process credentials are separated",
+    "Pinned rootless Kuma exposes only a loopback dashboard, has no database/auth secrets, and all services retain bounded JSON logs"
+  ],
+  "source": {
+    "Dockerfile": "f0fea17a037eed733b52cb0d83b08e9c03e940052883706ba571ac366e372b2e",
+    ".dockerignore": "171bb631f099ec5c59ca7472be40931c970eee203d34396c9094cc598fe82379",
+    "deploy/compose.yml": "061dc582c0f33e442222bd218587d360dea54f4675f937c998717fc5adae1668",
+    "deploy/Caddyfile": "a4c0b4b046ac97a33c5749b5ecdf37fbae960980e6f7ca074d50e45430452c67",
+    "deploy/postgres/init-roles.sh": "7b8a000be0546a983edddbb96e00c84f4b85b2bda6f75a4b99a74dbd60597b89",
+    "apps/api/src/config.ts": "089fbdcabad6fd61f01b2e6d53735086b7ecd93bbd494ff8b2de7b1043ef00c2",
+    "apps/api/src/server.ts": "dd507adff9a5c10cd2cb213a5d0691766a92a6a297cb44bad320249ebff41924",
+    "db/migrate.ts": "3eba479ed40f459c627584ca68950cefdf528d37637a0dd2896fd979cbf13b1d",
+    "deploy/postgres/Dockerfile": "e66a0e4f6b48834f1357cc3cbf077535d11c128cde58946bdac5af26a9443f81",
+    "deploy/postgres/postgresql.conf": "f278783d819f025177f4ddb32193f148ad1ff48b91b8e82c8bcfc9f7c4c75d6e",
+    "deploy/postgres/pgbackrest.conf": "2b3ba3ebc0c3f92eb4545bd2fdf8a346d63a316bf145aee5238c94da86934e55",
+    "deploy/backup/db-loop.py": "4eab305af11e584155d29df22d5be07262b295c56a8d0bec455c4d81288b5416",
+    "deploy/backup/files.sh": "55f6cf870df6b42e73b74911a391fc5a74eecbde15561a585fb8f1f35651a763",
+    "deploy/backup/files-loop.sh": "9dc95670070b9434a7d4dcd8ebc01027cf82519c70979dd095b4a11c9ee0a377"
+  },
+  "reason": "Configuration-only mode selected; no engine, images, stack or gateway runtime was tested."
+}

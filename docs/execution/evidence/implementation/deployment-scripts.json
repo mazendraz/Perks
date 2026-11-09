@@ -1,17 +1,17 @@
 {
-  "at": "2026-11-09T00:33:36.692Z",
+  "at": "2026-11-09T17:13:14.412Z",
   "status": "passed",
   "runtime": "WSL Ubuntu",
   "checks": [
     "Shell syntax",
-    "Generated secrets are 0600 and eight distinct 64-character values",
+    "Generated secrets are 0600 and nine distinct 64-character values",
     "Existing configuration is byte-identical after refused overwrite"
   ],
   "source": {
-    "deploy/init-secrets.sh": "58eaf308f3d49195c0955f608ce7906c41b81afb58933a5b6e200c3c2c65a5a3",
+    "deploy/init-secrets.sh": "f0f1911fd1262f7814fe0a02bc90e0e79ea4f47c385310ae7053f3d294c5565e",
     "deploy/harden-host.sh": "e54bef5768b6ff5b7bf3b2a005c01b668fdeb1f930dc9de5d86827c91cd35498",
     "deploy/postgres/init-roles.sh": "7b8a000be0546a983edddbb96e00c84f4b85b2bda6f75a4b99a74dbd60597b89",
-    "tools/test-deploy-scripts.ts": "490cf3d72b78751443de34131c0f959fd26091b3292c7cafccb07bd47fd335c2",
+    "tools/test-deploy-scripts.ts": "b7a14c350cdb8b6fb49c088c8eeae3572ac2ccbc7203bed6e5b5e0ab5abbb538",
     "deploy/restore-drill.sh": "b05ef0a7daea9b9cc6cf28a308800adf26b3baf58f4b37971be9649ffdc24afa",
     "deploy/backup/db-loop.py": "4eab305af11e584155d29df22d5be07262b295c56a8d0bec455c4d81288b5416",
     "deploy/backup/verify-restore.py": "f87b8b80f191594c9e98b59853d4bd8f030f1633a592ceaa72312ffeaa039522",

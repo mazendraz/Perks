@@ -13,6 +13,10 @@
     -Server
   }
   @backend path /api/* /health/*
+  @private_monitoring path /internal /internal/*
+  handle @private_monitoring {
+    respond 404
+  }
   handle @backend {
     reverse_proxy api:4100 {
       # Replace untrusted client-supplied forwarding; only this proxy is trusted.

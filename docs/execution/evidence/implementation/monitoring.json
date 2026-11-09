@@ -1,0 +1,30 @@
+{
+  "at": "2026-11-09T17:48:52.097Z",
+  "status": "passed",
+  "checks": [
+    "Pinned Uptime Kuma native dashboard starts, authenticates a synthetic user and delivers a real HTTP notification to a loopback receiver",
+    "Kuma detects server_unavailable and the local receiver receives its failure notification",
+    "Kuma detects backup_unhealthy and the local receiver receives its failure notification",
+    "Kuma detects outbox_older_than_15m and the local receiver receives its failure notification",
+    "Kuma detects disk_above_80_percent and the local receiver receives its failure notification",
+    "Kuma detects http_5xx_above_1_percent and the local receiver receives its failure notification",
+    "Kuma validates a trusted loopback TLS certificate with verification enabled and delivers its actual expiry warning",
+    "Delivered notifications contain no internal bearer or dashboard password; no real Telegram/SMTP channel was configured",
+    "The actual Kuma web dashboard signs in and renders the configured synthetic monitors"
+  ],
+  "kuma": {
+    "version": "2.5.9",
+    "commit": "df601c58d9205562f34cfe5ef35264b341019d19"
+  },
+  "realExternalDelivery": false,
+  "syntheticDiskProbe": true,
+  "source": {
+    "apps/api/src/logging.ts": "1d92fc775f2f46ec738c3187580487d1d071f46c328bd7002daf441a29542488",
+    "apps/api/src/modules/monitoring.ts": "00d37736cc83a3860e4ca72c1edfbb6eddacf6d5957413b70e4507e1d80fcc8f",
+    "packages/domain/src/monitoring.ts": "a32151a37badbe282f3d8e4793fadaa39f69fd4fbdeac9490856be4fecdbf073",
+    "db/migrations/011_operational_metrics.sql": "4570f1ead6618cd6753f22e9e4eafa203f179b74bad4cb3a803cec403491b274",
+    "deploy/compose.yml": "061dc582c0f33e442222bd218587d360dea54f4675f937c998717fc5adae1668",
+    "tools/test-monitoring.ts": "e24807b7fc44fa7bf56ff7a784caf5fb912c047324d22f47ebe67ebde9c70867",
+    "tools/kuma-runtime.ts": "8a6586e3a533ccc6ebd2dc8f8ac055f24afa80f867af1888c8cdc1f98f3c424a"
+  }
+}

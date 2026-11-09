@@ -1,6 +1,6 @@
 {
-  "at": "2026-11-09T17:52:37.172Z",
-  "passed": 447,
+  "at": "2026-11-09T18:24:53.005Z",
+  "passed": 450,
   "failed": 0,
   "errors": [],
   "checks": [
@@ -380,6 +380,11 @@
       "detail": "local link target"
     },
     {
+      "name": "link:docs\\execution\\STATUS.md:DEVICE-TEST.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
       "name": "link:docs\\execution\\STATUS.md:MONITORING.md",
       "ok": true,
       "detail": "local link target"
@@ -585,6 +590,11 @@
       "detail": "local link target"
     },
     {
+      "name": "link:docs\\execution\\IMPLEMENTATION.md:DEVICE-TEST.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
       "name": "link:docs\\execution\\IMPLEMENTATION.md:MONITORING.md",
       "ok": true,
       "detail": "local link target"
@@ -701,6 +711,11 @@
     },
     {
       "name": "link:docs\\execution\\IMPLEMENTATION-LOG.md:MONITORING.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\IMPLEMENTATION-LOG.md:DEVICE-TEST.md",
       "ok": true,
       "detail": "local link target"
     },

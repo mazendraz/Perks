@@ -1,6 +1,10 @@
 # التنفيذ الحالي — 2026-11-09
 
-## تحديث خطة الإطلاق — L07،2026-11-09
+## تحديث خطة الإطلاق — L08،2026-11-09
+
+### L08 — تجهيز تجربة صناعية واختبار الأجهزة
+
+L08 LOCAL_VERIFIED / BLOCKED_OWNER — 2026-11-09: أدوات اختبار الموبايل جاهزة بقاعدة وملفات وحسابات صناعية جديدة فقط. cloudflared2026.10.7 الرسمي تم تنزيله والتحقق منSHA-256 وإصداره دونفتحنفق. test:tunnel:7فحوص فعلية لـVite/React وHost والملفاتالخاصة وSecurepassword وOrigin/CSRF وQR؛externalTunnelOpened=false. staging لهاoverlay ومشروع وvolumes وشبكات وأسرارمستقلة،وtest:staging-config أثبتتconfig فقط بلاruntime. verify:local passed:27 unit و85 integration و56 desktop و33 mobile و5 animation و9 monitoring و7 tunnel؛skip واحد للـsymlink علىWindows. بصمة ea35672c9684b3a639d3365d0c8096a8b774e2de3249495e1427ab333fec4086 متطابقة قبل وبعد. فتحالرابطوالأجهزةالفعلية وNFC وstaging/TLS BLOCKED_OWNER. سجل كلجهاز وكلرحلة NOT_RUN في[DEVICE-TEST](DEVICE-TEST.md)،وليسقبولًابالمحاكاة. تجربةمازن على4180 وحساباتهاكماهي. التاليL09 المحليةالمستقلة؛لاL10 قبلPilot.
 
 ### L07 — مراقبة التشغيل
 

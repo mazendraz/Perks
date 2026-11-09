@@ -1,0 +1,22 @@
+{
+  "at": "2026-11-09T18:21:49.895Z",
+  "status": "passed",
+  "checks": [
+    "Fresh synthetic database, files, credentials and pepper are isolated; secure password auth and no external mail",
+    "Actual Vite server binds loopback, accepts the exact tunnel host, rejects another Host, and proxies readiness",
+    "Actual Vite React login renders in Chromium with dependency prebundles and no page errors",
+    "Private canary, environment, deployment scripts and docs cannot be served through Vite, including encoded hidden paths",
+    "Unsupported Quick Tunnel SSE paths fail explicitly, so the existing 3-second polling fallback remains active",
+    "Cashier password login sets Secure HttpOnly Strict cookies; OTP/mailbox remain closed, Origin and CSRF remain enforced",
+    "Only the two newly seeded synthetic merchants are present, with an active QR landing route"
+  ],
+  "externalTunnelOpened": false,
+  "source": {
+    "tools/dev-tunnel.ts": "afb531abb99ae3b32b4c1743c8bb49b65ed19bef2e022baf232a37ca6b57d0e9",
+    "tools/tunnel-fixture.ts": "d1710821db17eb41b2bfa79686a695ec1de015080cb74764c0b3051960c44a7c",
+    "tools/tunnel-policy.ts": "cb34b6e32d4046b895390631e087be0b96f84c1398ca1fd72b6645151a0eb781",
+    "tools/cloudflared-runtime.ts": "0a70283823f4d3b72a9602ef2bf2317e394714f00506b3e0f0b28f6ecb2b1ac2",
+    "tools/private-local.ts": "704d12a3fefa353116e32a7aea4db33f333e505babc4d6490e59bdef7a542d7f",
+    "tools/test-tunnel.ts": "6ebee50766ac714cc73a7209c9c2af851a021308263f736e5f313c58e1229f9b"
+  }
+}

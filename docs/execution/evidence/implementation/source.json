@@ -1,5 +1,5 @@
 {
-  "fingerprint": "aa7e2746b28db8b2d168cc945ca1778e2bfe66cdf546ba52f8f68a6dfd83dbd9",
+  "fingerprint": "ea35672c9684b3a639d3365d0c8096a8b774e2de3249495e1427ab333fec4086",
   "files": [
     {
       "path": ".dockerignore",
@@ -15,7 +15,7 @@
     },
     {
       "path": ".github/workflows/checks.yml",
-      "sha256": "499a2b14be8d660493d57fbb3473ca976e0b82a25c49dcadc7388b823b5c6c94"
+      "sha256": "ec44ca56ccc0d3915996a856d0c37e9cc924a706a24b279fc275c77fa2c72eec"
     },
     {
       "path": ".gitignore",
@@ -750,6 +750,10 @@
       "sha256": "f87b8b80f191594c9e98b59853d4bd8f030f1633a592ceaa72312ffeaa039522"
     },
     {
+      "path": "deploy/compose.staging.yml",
+      "sha256": "a1f3bd0b680f1108cab279efc0f3e6c3376d3e42933d89c164afd61f77d61469"
+    },
+    {
       "path": "deploy/compose.yml",
       "sha256": "061dc582c0f33e442222bd218587d360dea54f4675f937c998717fc5adae1668"
     },
@@ -791,7 +795,7 @@
     },
     {
       "path": "package.json",
-      "sha256": "998b3cd3fac25397028bb849bd69da40b01aaa07d98cb0feb568f1cfcb72b986"
+      "sha256": "93cf40551d6a0a00fa5a54cbe1e2efef6a5b16562c4b4211d6d9a4acaf905b26"
     },
     {
       "path": "packages/contracts/package.json",
@@ -1070,6 +1074,10 @@
       "sha256": "2e883fa8c8c912434b504524103cb2f099f55fb29fa3ceeff0653d45922ab82e"
     },
     {
+      "path": "tests/unit/tunnel.test.ts",
+      "sha256": "0a11467c411cbc35de8af7fbdf6bcecce76e8f4301744f2f9ed82a58460b8ff3"
+    },
+    {
       "path": "tools/audit/browser-journeys.cjs",
       "sha256": "8a530f52c2b97fd32065244b1d6bf10b76b1a7630f5451b6dafe58df59c2adb4"
     },
@@ -1088,6 +1096,14 @@
     {
       "path": "tools/ci-e2e.ts",
       "sha256": "2c9fa3925ede5bf9a59bb155d425e3fc6bc67f00f8265bdd6efa8da214524010"
+    },
+    {
+      "path": "tools/cloudflared-runtime.ts",
+      "sha256": "0a70283823f4d3b72a9602ef2bf2317e394714f00506b3e0f0b28f6ecb2b1ac2"
+    },
+    {
+      "path": "tools/dev-tunnel.ts",
+      "sha256": "afb531abb99ae3b32b4c1743c8bb49b65ed19bef2e022baf232a37ca6b57d0e9"
     },
     {
       "path": "tools/dev.ts",
@@ -1138,6 +1154,14 @@
       "sha256": "6576aa599d3a1e599385115becf29deabf74fae72892e50237ecf1b47778f858"
     },
     {
+      "path": "tools/prepare-staging.ts",
+      "sha256": "a12da9ed5a844749f1b1c252c8fbafdbd81cca9499ba4bda54ebdc94a8a663ae"
+    },
+    {
+      "path": "tools/private-local.ts",
+      "sha256": "704d12a3fefa353116e32a7aea4db33f333e505babc4d6490e59bdef7a542d7f"
+    },
+    {
       "path": "tools/qr-codec.ts",
       "sha256": "7b0061b286298aa3e61691bfa91dd19c5df350c739150376b525b744dc61b86d"
     },
@@ -1156,6 +1180,14 @@
     {
       "path": "tools/setup-motion-linux.sh",
       "sha256": "08f2c91b9d623925bd5ebcae3e0be14babc06e3f8a0819df2151a27a50698aa9"
+    },
+    {
+      "path": "tools/setup-tunnel.ts",
+      "sha256": "00a42854f90592f720ea386aeebfaebcb05b54e50d0d571e85f4ab66c20c7e31"
+    },
+    {
+      "path": "tools/staging-config.ts",
+      "sha256": "4b77c621dee8057d42c13ed8b9ae7a76b3f03f5c8addcb41703a20c99034b46b"
     },
     {
       "path": "tools/stamp-motion-performance.cjs",
@@ -1194,12 +1226,28 @@
       "sha256": "a87a6633e2637a817b40d42db3eb5cb8067ee69f11d58813760b0f15931a7d78"
     },
     {
+      "path": "tools/test-staging.ts",
+      "sha256": "16bbc359895109e4bf9e167fed846b60d8552a00311885d1bef83ae1b813710a"
+    },
+    {
       "path": "tools/test-stamp-motion.ts",
       "sha256": "07bbabc970b0e983603828a3a4a88248a439184901f302bbc9473ea3575287cc"
     },
     {
+      "path": "tools/test-tunnel.ts",
+      "sha256": "6ebee50766ac714cc73a7209c9c2af851a021308263f736e5f313c58e1229f9b"
+    },
+    {
+      "path": "tools/tunnel-fixture.ts",
+      "sha256": "d1710821db17eb41b2bfa79686a695ec1de015080cb74764c0b3051960c44a7c"
+    },
+    {
+      "path": "tools/tunnel-policy.ts",
+      "sha256": "cb34b6e32d4046b895390631e087be0b96f84c1398ca1fd72b6645151a0eb781"
+    },
+    {
       "path": "tools/verify-implementation.ts",
-      "sha256": "29f16456f399dea167e4fee0211c2592983d943c195989392b3fa47bf8090907"
+      "sha256": "3524435c8e3d2656b6bcfeb56362e4caddba73148816892a37bfff186484029f"
     },
     {
       "path": "tools/web-shell-plugin.ts",

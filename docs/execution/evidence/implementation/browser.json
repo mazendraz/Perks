@@ -1,5 +1,5 @@
 {
-  "at": "2026-11-09T17:50:29.569Z",
+  "at": "2026-11-09T18:23:10.181Z",
   "browser": "msedge",
   "browserVersion": "157.0.4341.42",
   "appEnv": "development",
@@ -62,8 +62,8 @@
     "Forgot password dispatches through the durable worker mailbox; the real recovery link opens the reset screen and the new password restores the owner workspace"
   ],
   "errors": [],
-  "merchantId": "8b0b8b90-2195-41a4-9584-ec69cdd417ea",
-  "membershipId": "b0afdab7-8455-4a36-8cfe-571118cacf70",
+  "merchantId": "e29bed64-f2e2-4d3e-8b85-ba0552f8a510",
+  "membershipId": "03b71e68-5cbb-4a6e-ac13-84b816d060c6",
   "metrics": {
     "registered": 1,
     "active": 1,

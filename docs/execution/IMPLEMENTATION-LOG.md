@@ -155,3 +155,14 @@ L07 LOCAL_VERIFIED / BLOCKED_OWNER — 2026-11-09: JSON logs آمنة من API �
 تحسينالحركة يؤخررسمink الخاناتالمخفية حتىلحظةimpact،معنفسseed/geometry/timing. اختبار24فريمًا ومعيارCPU4x المزدوجلم يُرخ. تاريخالتحقق:فشلتجولةWebKit برسالةaccess-control أثناءرحلةتتضمنجلسةمنتهية؛نجحتالإعادةالمستقلةثمverifyالجامع،بدونتجاهلpageerrors أوتغييرCSP. التحققعلىSafari حقيقي يظلفيL08.
 
 ترقيةتجربةمازن عبرsnapshot أعادت2محل و3حسابات و2موظف وعميلواحد باللوجونفسه،وأعيدتشغيلعملية4180 المحددةفقط. التاليL08،والبنودالخارجيةمعلقةبقرارالمالكالسابقباستكمالالمحلي.
+
+
+### L08 — تحقق محلي قبل موافقة النشر والأجهزة
+
+L08 LOCAL_VERIFIED / BLOCKED_OWNER — 2026-11-09: أدوات اختبار الموبايل جاهزة بقاعدة وملفات وحسابات صناعية جديدة فقط. cloudflared2026.10.7 الرسمي تم تنزيله والتحقق منSHA-256 وإصداره دونفتحنفق. test:tunnel:7فحوص فعلية لـVite/React وHost والملفاتالخاصة وSecurepassword وOrigin/CSRF وQR؛externalTunnelOpened=false. staging لهاoverlay ومشروع وvolumes وشبكات وأسرارمستقلة،وtest:staging-config أثبتتconfig فقط بلاruntime. verify:local passed:27 unit و85 integration و56 desktop و33 mobile و5 animation و9 monitoring و7 tunnel؛skip واحد للـsymlink علىWindows. بصمة ea35672c9684b3a639d3365d0c8096a8b774e2de3249495e1427ab333fec4086 متطابقة قبل وبعد. فتحالرابطوالأجهزةالفعلية وNFC وstaging/TLS BLOCKED_OWNER. سجل كلجهاز وكلرحلة NOT_RUN في[DEVICE-TEST](DEVICE-TEST.md)،وليسقبولًابالمحاكاة. تجربةمازن على4180 وحساباتهاكماهي. التاليL09 المحليةالمستقلة؛لاL10 قبلPilot.
+
+الأمرdev:tunnel الافتراضي يجهزفقط،والنشر يتطلب --publish-synthetic صراحةً بسببقاعدة8 وخيارالمالك باستكمالالمحلي. لم يُنفذالنشر. prepareTunnel لايستعملقاعدةموجودة،وcleanup فيالاختبار يحذففقطالقاعدةالتيأنشأتهاستدعاؤه. لاكتابةلـroot.env أوحسابمازن. الأسراروحساباتالنسخةالصناعية في.local فقط؛CLI default اشتغلفعليًا،وstaging:prepare أنشأتملفمراجعةدونoverwrite.
+
+QuickTunnels لا تدعمSSE حسبCloudflare،فالـproxy التجريبي يغلقمساراتها503 لتشغيلpolling3s. قبولتحتثانية يظلعلىstaging معSSE،ولا يُنسبللنفق. Vite تعملبـexact allowedHost وجذورواجهةمحدودة،معحجبملفاتالبيئةوالمجلداتالخاصةوالـencodedpaths. dependencycache JS فقطمسموححتىتعملReact؛اختبارالمتصفحيثبتذلك. حدثإغلاقمتكررمنSIGINT/exit لايكررإغلاقpool.
+
+Compose staging تستخدمsubnet جديدةوtrustproxy واحدًا. port bindings الافتراضيةloopback فلايمكنالادعاءبقبولTLS؛اختيارمضيفأوingress وتشغيله فعليًا ينتظرالمالك. DEVICE-TEST تحتويخمسةأنواعأجهزة و13رحلةلكلجهاز،كلهاNOT_RUN؛لاصوركاميراصناعيةتملأخانةهاردوير. الأدلةمولدةفيtunnel.json وstaging-config.json،وCI مهيأةلإعادةالتحققولكنلاremote.

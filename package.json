@@ -49,7 +49,12 @@
     "test:animation": "tsx tools/test-stamp-motion.ts",
     "monitoring:setup": "tsx tools/setup-kuma.ts",
     "test:monitoring": "tsx tools/test-monitoring.ts",
-    "monitoring:local": "tsx tools/local-monitoring.ts"
+    "monitoring:local": "tsx tools/local-monitoring.ts",
+    "tunnel:setup": "tsx tools/setup-tunnel.ts",
+    "dev:tunnel": "tsx tools/dev-tunnel.ts",
+    "test:tunnel": "tsx tools/test-tunnel.ts",
+    "staging:prepare": "tsx tools/prepare-staging.ts",
+    "test:staging-config": "tsx tools/test-staging.ts"
   },
   "dependencies": {
     "@fastify/cookie": "11.1.5",

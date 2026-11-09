@@ -1,0 +1,25 @@
+# Separate project/volumes/subnet; actual host, DNS and TLS are owner gates.
+name: nuqta-staging
+services:
+  migrate:
+    environment:
+      APP_ENV: staging
+  api:
+    environment:
+      APP_ENV: staging
+      TRUSTED_PROXIES: 172.30.41.2/32
+    networks:
+      proxy: { ipv4_address: 172.30.41.3 }
+  worker:
+    environment:
+      APP_ENV: staging
+  caddy:
+    ports: !override ['${STAGING_HTTP_BIND:-127.0.0.1:18080}:80', '${STAGING_HTTPS_BIND:-127.0.0.1:18443}:443', '${STAGING_HTTPS_BIND:-127.0.0.1:18443}:443/udp']
+    networks:
+      proxy: { ipv4_address: 172.30.41.2 }
+  monitoring:
+    ports: !override ['127.0.0.1:4302:3001']
+networks:
+  proxy:
+    ipam:
+      config: !override [{ subnet: 172.30.41.0/28 }]

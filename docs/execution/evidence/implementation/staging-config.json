@@ -1,0 +1,16 @@
+{
+  "at": "2026-11-09T18:15:22.087Z",
+  "status": "CONFIG_VERIFIED_RUNTIME_NOT_RUN",
+  "checks": [
+    "Staging enforces password auth, Secure cookies, HTTPS origin and its independent domain for API/worker/migrator",
+    "Separate project, volumes, networks, proxy subnet and secrets prevent accidental production state reuse",
+    "Review bindings stay loopback and do not occupy production 80/443 or monitoring4301; database remains private"
+  ],
+  "runtimeStarted": false,
+  "source": {
+    "deploy/compose.yml": "061dc582c0f33e442222bd218587d360dea54f4675f937c998717fc5adae1668",
+    "deploy/compose.staging.yml": "a1f3bd0b680f1108cab279efc0f3e6c3376d3e42933d89c164afd61f77d61469",
+    "tools/staging-config.ts": "4b77c621dee8057d42c13ed8b9ae7a76b3f03f5c8addcb41703a20c99034b46b",
+    "tools/test-staging.ts": "16bbc359895109e4bf9e167fed846b60d8552a00311885d1bef83ae1b813710a"
+  }
+}

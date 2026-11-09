@@ -53,3 +53,4 @@ See [BACKUP-README](BACKUP-README.md) for WAL, encrypted pgBackRest/restic, sche
 ## المراقبة الخاصة بالتشغيل
 
 إعداد Kuma المحلية والقياسات والتنبيهات وتجارب الفشل في [MONITORING](../docs/execution/MONITORING.md). الخدمة rootless على127.0.0.1:4301؛Caddy ترفض/internal،والـAPI تحتاجMONITORING_TOKEN مستقلًا تقرأهKuma كـBearer. إعداداتالمالك وقناةالتنبيه والإرسالالحقيقي وتحققCompose runtime ما زالتمرحلةتشغيل فعلية بعداختيارالسيرفر والدومين. ملفاتحالتيالباك أب مركبةread-only داخلAPI،والأسرارالقائمة لا تُدوّرعندالترقية.
+تفاصيل تجهيز staging وعزلها عن الإنتاج في[STAGING](STAGING.md)،وسجل قبول الأجهزة في[DEVICE-TEST](../docs/execution/DEVICE-TEST.md).

@@ -26,6 +26,7 @@ const report: {
   mobileChecks?: number;
   animationChecks?: number;
   monitoringChecks?: number;
+  tunnelChecks?: number;
   sourceFingerprint?: string;
   sourceFingerprintAfter?: string;
   environment?: Record<string, string>;
@@ -113,6 +114,7 @@ for (const script of [
   'openapi:export',
   'test:integration',
   'test:monitoring',
+  'test:tunnel',
   'test:manual-demo',
   'test:e2e',
   'test:e2e:mobile',
@@ -174,6 +176,12 @@ if (!process.exitCode) {
   );
   assert.equal(monitoring.status, 'passed');
   report.monitoringChecks = monitoring.checks.length;
+  const tunnel = JSON.parse(
+    await readFile('docs/execution/evidence/implementation/tunnel.json', 'utf8'),
+  );
+  assert.equal(tunnel.status, 'passed');
+  assert.equal(tunnel.externalTunnelOpened, false);
+  report.tunnelChecks = tunnel.checks.length;
   report.sourceFingerprintAfter = (await snapshot()).fingerprint;
   if (report.sourceFingerprintAfter !== report.sourceFingerprint) {
     report.status = 'source_changed_during_verification';

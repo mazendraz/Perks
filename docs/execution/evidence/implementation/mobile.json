@@ -1,5 +1,5 @@
 {
-  "at": "2026-11-09T17:50:31.842Z",
+  "at": "2026-11-09T18:23:12.093Z",
   "status": "passed",
   "checks": [
     "chromium-pixel5: name/phone/terms registration survives Arabic/English switching, reaches the card within 30 seconds, and needs no email/password or UUID/Popover/ResizeObserver/Animation.finished",

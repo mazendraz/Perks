@@ -40,6 +40,8 @@ jobs:
       - run: npm run monitoring:setup
       - run: npm run test:monitoring
         timeout-minutes: 5
+      - run: npm run test:tunnel
+        timeout-minutes: 3
       - run: npm run test:e2e:ci
         timeout-minutes: 10
       - uses: actions/upload-artifact@v4
@@ -51,6 +53,7 @@ jobs:
             docs/execution/evidence/implementation/mobile.json
             docs/execution/evidence/implementation/monitoring.json
             docs/execution/evidence/implementation/monitoring-dashboard.png
+            docs/execution/evidence/implementation/tunnel.json
             docs/execution/evidence/animation/
             docs/execution/evidence/implementation/*-ar.png
             docs/execution/evidence/implementation/*-en.png
@@ -63,6 +66,7 @@ jobs:
         with: { node-version: 24, cache: npm }
       - run: npm ci
       - run: npm run test:deploy
+      - run: npm run test:staging-config
       - uses: actions/upload-artifact@v4
         if: always()
         with:

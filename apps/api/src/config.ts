@@ -1,6 +1,7 @@
 import { existsSync } from 'node:fs';
 import { isAbsolute, relative, resolve, parse, sep } from 'node:path';
 import { z } from 'zod';
+import { isIP } from 'node:net';
 if (existsSync('.env')) process.loadEnvFile('.env');
 const schema = z.object({
   APP_ENV: z.enum(['development', 'test', 'staging', 'production']).default('development'),
@@ -17,6 +18,7 @@ const schema = z.object({
   MAIL_TRANSPORT: z.enum(['file', 'smtp']).default('file'),
   MAIL_FILE_ROOT: z.string().min(1).default('.local/mail'),
   STORAGE_ROOT: z.string().min(1).default('.local'),
+  TRUSTED_PROXIES: z.string().default(''),
   SMTP_HOST: z.string().optional(),
   SMTP_PORT: z.coerce.number().int().min(1).max(65535).optional(),
   SMTP_USER: z.string().optional(),
@@ -28,8 +30,54 @@ const schema = z.object({
   LOG_LEVEL: z.enum(['silent', 'fatal', 'error', 'warn', 'info', 'debug']).default('info'),
 });
 export type Config = z.infer<typeof schema>;
-export function readConfig(overrides: Partial<Config> = {}): Config {
-  const c = schema.parse({ ...process.env, ...overrides });
+type DatabaseKeys =
+  'DATABASE_URL' | 'AUTH_DATABASE_URL' | 'DATABASE_MIGRATOR_URL' | 'WORKER_DATABASE_URL';
+export type ServiceConfig = Omit<Config, DatabaseKeys>;
+const workerSchema = schema
+  .omit({ DATABASE_URL: true, AUTH_DATABASE_URL: true, DATABASE_MIGRATOR_URL: true })
+  .extend({ WORKER_DATABASE_URL: z.string().min(1) });
+export type WorkerConfig = z.infer<typeof workerSchema>;
+export function trustedProxies(value: string): string[] {
+  if (!value.trim()) return [];
+  return value.split(',').map((entry) => {
+    const cidr = entry.trim(),
+      parts = cidr.split('/'),
+      version = isIP(parts[0] || '');
+    if (
+      !version ||
+      parts.length !== 2 ||
+      !/^\d+$/.test(parts[1]!) ||
+      Number(parts[1]) < 1 ||
+      Number(parts[1]) > (version === 4 ? 32 : 128)
+    )
+      throw new Error('TRUSTED_PROXIES requires explicit IP CIDRs; global trust is forbidden.');
+    return cidr;
+  });
+}
+export function readConfig(
+  overrides: Partial<Config> = {},
+  environment: NodeJS.ProcessEnv = process.env,
+): Config {
+  const c = schema.parse({ ...environment, ...overrides });
+  validateConfig(c);
+  return c;
+}
+export function readWorkerConfig(
+  overrides: Partial<WorkerConfig> = {},
+  environment: NodeJS.ProcessEnv = process.env,
+): WorkerConfig {
+  const c = workerSchema.parse({ ...environment, ...overrides });
+  validateConfig(c);
+  return c;
+}
+export function readMigrationConfig() {
+  return schema
+    .pick({ APP_ENV: true })
+    .extend({ DATABASE_MIGRATOR_URL: z.url() })
+    .parse(process.env);
+}
+function validateConfig(c: ServiceConfig & Partial<Pick<Config, DatabaseKeys>>) {
+  trustedProxies(c.TRUSTED_PROXIES);
   if (c.APP_ENV === 'production' || c.APP_ENV === 'staging') {
     if (c.AUTH_PROVIDER === 'local')
       throw new Error('Local authentication is forbidden outside development/test.');
@@ -73,9 +121,9 @@ export function readConfig(overrides: Partial<Config> = {}): Config {
         'STORAGE_ROOT must be a dedicated absolute directory outside the application code.',
       );
   }
-  return c;
 }
 export const passwordEnabled = (c: Config) =>
   c.AUTH_PROVIDER === 'password' ||
   (c.AUTH_PROVIDER === 'local' && ['development', 'test'].includes(c.APP_ENV));
-export const deployed = (c: Config) => ['staging', 'production'].includes(c.APP_ENV);
+export const deployed = (c: Pick<Config, 'APP_ENV'>) =>
+  ['staging', 'production'].includes(c.APP_ENV);

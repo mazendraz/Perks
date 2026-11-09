@@ -1,0 +1,19 @@
+{
+  "at": "2026-11-08T23:56:47.321Z",
+  "status": "BLOCKED_LOCAL_DOCKER",
+  "project": "nuqta_l04_smoke_1794182207314",
+  "checks": [
+    "Compose parses; DB is private and process credentials are separated"
+  ],
+  "source": {
+    "Dockerfile": "f0fea17a037eed733b52cb0d83b08e9c03e940052883706ba571ac366e372b2e",
+    ".dockerignore": "171bb631f099ec5c59ca7472be40931c970eee203d34396c9094cc598fe82379",
+    "deploy/compose.yml": "5a2121c72f932411aadc2ee2dff396d8322aecc8f53312d7ecd1621a479107f0",
+    "deploy/Caddyfile": "6d72f1980e1953931e913d06a02e3cb73f8bbe1eab5f8ff55eadbab7165842a3",
+    "deploy/postgres/init-roles.sh": "e49fefdfad7cea8fe977abc4f966dab9311ee4c88d7f95f11bf35c334824c220",
+    "apps/api/src/config.ts": "ed23f713d8668bb5288004b4af1464540f1800975bbf2a9ed43cdfb12d169097",
+    "apps/api/src/server.ts": "d4a7448164490302550ec8c102ecb305141055dd40cf586873552d943de690b6",
+    "db/migrate.ts": "3eba479ed40f459c627584ca68950cefdf528d37637a0dd2896fd979cbf13b1d"
+  },
+  "reason": "Linux Docker engine did not respond; image build, stack, headers and container role checks were not run."
+}

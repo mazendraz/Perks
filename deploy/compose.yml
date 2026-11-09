@@ -1,0 +1,145 @@
+name: nuqta
+x-logging: &logging
+  driver: json-file
+  options: { max-size: 20m, max-file: '5' }
+x-app: &app
+  image: ${NUQTA_IMAGE:-nuqta-app:local}
+  build: { context: .., target: runtime }
+  user: '1000:1000'
+  read_only: true
+  tmpfs: ['/tmp:rw,noexec,nosuid,size=64m']
+  cap_drop: [ALL]
+  security_opt: [no-new-privileges:true]
+  logging: *logging
+x-environment: &environment
+  APP_ENV: ${APP_ENV:-production}
+  AUTH_PROVIDER: password
+  COOKIE_SECURE: 'true'
+  HOST: 0.0.0.0
+  PORT: '4100'
+  PUBLIC_APP_ORIGIN: ${PUBLIC_APP_ORIGIN:?Run init-secrets and configure the domain}
+  AUTH_PEPPER: ${AUTH_PEPPER:?Required}
+  STORAGE_ROOT: /var/lib/nuqta/files
+  LOG_LEVEL: info
+  MAIL_TRANSPORT: smtp
+  SMTP_HOST: ${SMTP_HOST:?Choose SMTP provider}
+  SMTP_PORT: ${SMTP_PORT:-587}
+  SMTP_USER: ${SMTP_USER:?Required}
+  SMTP_PASS: ${SMTP_PASS:?Required}
+  SMTP_FROM: ${SMTP_FROM:?Required}
+  SMTP_SECURE: ${SMTP_SECURE:-false}
+  SMTP_STARTTLS: 'true'
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_PASSWORD: ${NUQTA_POSTGRES_DB_PASSWORD:?Required}
+      POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
+      NUQTA_MIGRATOR_DB_PASSWORD: ${NUQTA_MIGRATOR_DB_PASSWORD:?Required}
+      NUQTA_RUNTIME_DB_PASSWORD: ${NUQTA_RUNTIME_DB_PASSWORD:?Required}
+      NUQTA_AUTH_DB_PASSWORD: ${NUQTA_AUTH_DB_PASSWORD:?Required}
+      NUQTA_WORKER_DB_PASSWORD: ${NUQTA_WORKER_DB_PASSWORD:?Required}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres/init-roles.sh:/docker-entrypoint-initdb.d/10-nuqta-roles.sh:ro
+    networks: [database]
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -h 127.0.0.1 -U postgres -d nuqta']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    logging: *logging
+  migrate:
+    <<: *app
+    # A one-shot gate: successful exit, rather than a persistent healthcheck/restart.
+    restart: 'no'
+    command: [node, dist/db/migrate.js]
+    environment:
+      APP_ENV: ${APP_ENV:-production}
+      DATABASE_MIGRATOR_URL: postgresql://nuqta_migrator:${NUQTA_MIGRATOR_DB_PASSWORD}@postgres:5432/nuqta
+    networks: [database]
+    depends_on: { postgres: { condition: service_healthy } }
+    healthcheck: { disable: true }
+  api:
+    <<: *app
+    restart: unless-stopped
+    environment:
+      <<: *environment
+      TRUSTED_PROXIES: 172.30.40.2/32
+      DATABASE_URL: postgresql://nuqta_runtime:${NUQTA_RUNTIME_DB_PASSWORD}@postgres:5432/nuqta
+      AUTH_DATABASE_URL: postgresql://nuqta_auth:${NUQTA_AUTH_DB_PASSWORD}@postgres:5432/nuqta
+    volumes: [files:/var/lib/nuqta/files]
+    networks:
+      database: {}
+      proxy: { ipv4_address: 172.30.40.3 }
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      postgres: { condition: service_healthy }
+    healthcheck:
+      test:
+        [
+          CMD,
+          node,
+          -e,
+          "fetch('http://127.0.0.1:4100/health/ready').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+  worker:
+    <<: *app
+    restart: unless-stopped
+    command: [node, dist/apps/worker/src/main.js]
+    environment:
+      <<: *environment
+      WORKER_DATABASE_URL: postgresql://nuqta_worker:${NUQTA_WORKER_DB_PASSWORD}@postgres:5432/nuqta
+    volumes: [files:/var/lib/nuqta/files]
+    networks: [database, mail_egress]
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      postgres: { condition: service_healthy }
+    healthcheck:
+      test:
+        [
+          CMD,
+          node,
+          -e,
+          "const f=require('node:fs');process.exit(Date.now()-f.statSync('/tmp/nuqta-worker-heartbeat').mtimeMs<90000?0:1)",
+        ]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+  caddy:
+    image: ${NUQTA_WEB_IMAGE:-nuqta-web:local}
+    build: { context: .., target: web }
+    restart: unless-stopped
+    user: '1000:1000'
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    cap_add: [NET_BIND_SERVICE]
+    security_opt: [no-new-privileges:true]
+    environment: { DOMAIN: '${DOMAIN:?Choose domain}' }
+    ports: ['${HTTP_BIND:-80}:80', '${HTTPS_BIND:-443}:443', '${HTTPS_BIND:-443}:443/udp']
+    volumes: [caddy_data:/data, caddy_config:/config]
+    networks:
+      proxy: { ipv4_address: 172.30.40.2 }
+    depends_on: { api: { condition: service_healthy } }
+    healthcheck:
+      test: [CMD-SHELL, 'wget -q -O /dev/null http://127.0.0.1:2019/config/']
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    logging: *logging
+networks:
+  database: { internal: true }
+  proxy: { ipam: { config: [{ subnet: 172.30.40.0/28 }] } }
+  mail_egress: {}
+volumes:
+  postgres_data: {}
+  files: {}
+  caddy_data: {}
+  caddy_config: {}

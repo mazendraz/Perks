@@ -4,6 +4,7 @@
   "include": [
     "apps/api/**/*.ts",
     "apps/worker/**/*.ts",
+    "db/migrate.ts",
     "packages/contracts/**/*.ts",
     "packages/domain/**/*.ts"
   ],

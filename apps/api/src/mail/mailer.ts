@@ -3,7 +3,7 @@ import { mkdir, writeFile, readFile, readdir, stat, rename, unlink } from 'node:
 import { resolve } from 'node:path';
 import nodemailer from 'nodemailer';
 import type pg from 'pg';
-import { deployed, type Config } from '../config.js';
+import { deployed, type ServiceConfig } from '../config.js';
 import { canonicalJson, keyedHash } from '../crypto.js';
 
 export interface MailMessage {
@@ -27,7 +27,7 @@ export class MailFailure extends Error {
 }
 const fileWrites = new Map<string, Promise<void>>();
 export class FileSinkMailer implements Mailer {
-  constructor(private c: Config) {
+  constructor(private c: ServiceConfig) {
     if (deployed(c)) throw new Error('File mail sink is forbidden in deployed environments.');
   }
   async send(message: MailMessage) {
@@ -82,7 +82,7 @@ export class FileSinkMailer implements Mailer {
 }
 export class SmtpMailer implements Mailer {
   constructor(
-    private c: Config,
+    private c: ServiceConfig,
     private pool: pg.Pool,
   ) {}
   async send(message: MailMessage) {
@@ -192,10 +192,10 @@ export class SmtpMailer implements Mailer {
     }
   }
 }
-export const createMailer = (c: Config, pool: pg.Pool): Mailer =>
+export const createMailer = (c: ServiceConfig, pool: pg.Pool): Mailer =>
   c.MAIL_TRANSPORT === 'smtp' ? new SmtpMailer(c, pool) : new FileSinkMailer(c);
 
-export async function readLocalMailbox(c: Config) {
+export async function readLocalMailbox(c: ServiceConfig) {
   if (deployed(c) || c.AUTH_PROVIDER !== 'local' || c.MAIL_TRANSPORT !== 'file')
     throw new Error('Local mail is unavailable.');
   const directory = resolve(c.MAIL_FILE_ROOT);

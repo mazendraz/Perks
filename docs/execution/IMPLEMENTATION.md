@@ -1,6 +1,13 @@
 # التنفيذ الحالي — 2026-11-07
 
-## تحديث خطة الإطلاق — L03،2026-11-09
+## تحديث خطة الإطلاق — L04،2026-11-09
+
+### L04 — تجهيز التشغيل
+
+L04 LOCAL_IMPLEMENTED / BLOCKED_OWNER — 2026-11-09: Dockerfile وCompose وCaddy وتهيئة الأدوار والأسرار وhardening وREADME اتضافوا. proxy.test يثبت CIDR ورفض spoofing وعزل rate limit وOrigin؛readiness يراجع الدورين runtime/auth ويرفض ownership أوامتيازات زائدة أوتبديل الأدوار. Worker وmigrator لا يحتاجان credentials الأدوار الأخرى. test:deploy-scripts passed علىLinux وCompose config passed بلا طباعة أسرار. Docker Desktop تعطل عند dockerInference قبل بدءLinux engine؛image build/size وstack وheaders وproduction bootstrap غير متحققة،والتقرير deployment.json يسجلBLOCKED_LOCAL_DOCKER. CI اتضاف له job مستقل للتجربة لكن لا remote لتشغيله. verify:local passed:22 unit و61 integration و55 browser،واختبارsymlink متخطى علىWindows؛sourceFingerprint 02bf772bd3ab456353eb2c0de78bf0382be73e67a88e6820c2ef4e504e7884cf متطابق. لا اعتماد إطلاق ولا تعديل host hardening فعلي.
+
+تفاصيل الأوامر في [deploy/README](../../deploy/README.md). فحص بصمة السورس يشمل deploy وDockerfile والسكربتات،والأدلة لا تحتوي env أوrendered Compose.
+
 
 ### L03 — تخزين ذاتي،متحقق محليًا
 

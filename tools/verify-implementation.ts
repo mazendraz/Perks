@@ -36,12 +36,15 @@ async function snapshot() {
       const path = join(dir, entry.name);
       if (entry.isDirectory()) await walk(path);
       else if (
-        /\.(?:ts|tsx|js|mjs|cjs|css|html|json|sql|ya?ml|svg|ttf|woff2?|otf)$/.test(entry.name)
+        /\.(?:ts|tsx|js|mjs|cjs|css|html|json|sql|ya?ml|svg|ttf|woff2?|otf|sh|conf)$/.test(
+          entry.name,
+        ) ||
+        entry.name === 'Caddyfile'
       )
         paths.push(path.replaceAll('\\', '/'));
     }
   }
-  for (const dir of ['apps', 'packages', 'db', 'tools', 'tests', '.github'])
+  for (const dir of ['apps', 'packages', 'db', 'tools', 'tests', '.github', 'deploy'])
     if (existsSync(dir)) await walk(dir);
   for (const file of [
     'package.json',
@@ -55,6 +58,8 @@ async function snapshot() {
     '.gitignore',
     '.gitattributes',
     '.env.example',
+    'Dockerfile',
+    '.dockerignore',
   ])
     if (existsSync(file)) paths.push(file);
   const files = await Promise.all(

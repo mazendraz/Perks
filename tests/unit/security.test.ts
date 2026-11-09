@@ -10,7 +10,7 @@ import {
   tokenHash,
   totp,
 } from '../../apps/api/src/crypto.js';
-import { readConfig } from '../../apps/api/src/config.js';
+import { readConfig, readWorkerConfig, trustedProxies } from '../../apps/api/src/config.js';
 test('canonical operation payloads ignore object key order but preserve quantity', () => {
   assert.equal(
     canonicalJson({ qty: 2, reference: { b: 1, a: 2 } }),
@@ -95,5 +95,42 @@ test('deployment fails closed with local authentication or insecure cookies', ()
         AUTH_DATABASE_URL: base.DATABASE_URL,
       }),
     /separate/,
+  );
+});
+
+test('proxy configuration denies global trust, and worker config needs no other database credentials', () => {
+  assert.deepEqual(trustedProxies(''), []);
+  assert.deepEqual(trustedProxies('192.0.2.2/32, 2001:db8::1/128'), [
+    '192.0.2.2/32',
+    '2001:db8::1/128',
+  ]);
+  for (const value of [
+    'true',
+    '*',
+    '0.0.0.0/0',
+    '::/0',
+    '192.0.2.1',
+    '192.0.2.1/33',
+    '2001:db8::/129',
+    '192.0.2.1/32,',
+  ])
+    assert.throws(() => trustedProxies(value));
+  const worker = readWorkerConfig(
+    {},
+    {
+      APP_ENV: 'test',
+      AUTH_PROVIDER: 'local',
+      AUTH_PEPPER: 'test-pepper-at-least-thirty-two-characters',
+      WORKER_DATABASE_URL: 'postgresql://worker@127.0.0.1/test',
+    },
+  );
+  assert.equal('DATABASE_URL' in worker, false);
+  assert.equal('AUTH_DATABASE_URL' in worker, false);
+  assert.equal('DATABASE_MIGRATOR_URL' in worker, false);
+  assert.throws(() =>
+    readWorkerConfig(
+      {},
+      { APP_ENV: 'test', AUTH_PEPPER: 'test-pepper-at-least-thirty-two-characters' },
+    ),
   );
 });

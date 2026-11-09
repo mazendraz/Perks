@@ -1,63 +1,63 @@
 {
-  "at": "2026-11-08T21:08:25.075Z",
+  "at": "2026-11-08T23:57:12.431Z",
   "status": "passed",
   "steps": [
     {
       "command": "npm run typecheck",
       "exitCode": 0,
-      "durationMs": 4584.5614
+      "durationMs": 25244.7934
     },
     {
       "command": "npm run lint",
       "exitCode": 0,
-      "durationMs": 2519.5340000000006
+      "durationMs": 10496.3551
     },
     {
       "command": "npm run test",
       "exitCode": 0,
-      "durationMs": 4778.2011,
-      "passedTests": 20,
+      "durationMs": 9715.7411,
+      "passedTests": 22,
       "skippedTests": 1
     },
     {
       "command": "npm run build",
       "exitCode": 0,
-      "durationMs": 3708.58
+      "durationMs": 10583.052600000003
     },
     {
       "command": "npm run openapi:export",
       "exitCode": 0,
-      "durationMs": 1431.1239999999998
+      "durationMs": 2889.9591
     },
     {
       "command": "npm run test:integration",
       "exitCode": 0,
-      "durationMs": 70845.7507,
-      "passedTests": 58,
+      "durationMs": 161966.2232,
+      "passedTests": 61,
       "skippedTests": 0
     },
     {
       "command": "npm run test:manual-demo",
       "exitCode": 0,
-      "durationMs": 6167.797999999995
+      "durationMs": 13858.352600000013
     },
     {
       "command": "npm run test:e2e",
       "exitCode": 0,
-      "durationMs": 83901.65120000001
+      "durationMs": 128763.68270000003
     },
     {
       "command": "npm run test:restore",
       "exitCode": 0,
-      "durationMs": 2609.8649999999907
+      "durationMs": 2180.825200000021
     },
     {
       "command": "npm run verify:plan",
       "exitCode": 0,
-      "durationMs": 445.96369999999297
+      "durationMs": 361.8732000000309
     }
   ],
-  "sourceFingerprint": "a5d36028fe15a58bc6efcf53883555ba32dc92ae96694815f1933cc72fc3e8b6",
+  "sourceFingerprint": "02bf772bd3ab456353eb2c0de78bf0382be73e67a88e6820c2ef4e504e7884cf",
   "environment": {
     "node": "v24.19.0",
     "platform": "win32",
@@ -66,5 +66,5 @@
     "browser": "chromium"
   },
   "browserChecks": 55,
-  "sourceFingerprintAfter": "a5d36028fe15a58bc6efcf53883555ba32dc92ae96694815f1933cc72fc3e8b6"
+  "sourceFingerprintAfter": "02bf772bd3ab456353eb2c0de78bf0382be73e67a88e6820c2ef4e504e7884cf"
 }

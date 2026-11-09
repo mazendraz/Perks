@@ -1,10 +1,10 @@
 import type pg from 'pg';
-import type { Config } from '../../api/src/config.js';
+import type { ServiceConfig } from '../../api/src/config.js';
 import { unseal } from '../../api/src/outbox.js';
 import { createMailer, MailFailure } from '../../api/src/mail/mailer.js';
 import { mailTemplate } from '../../api/src/mail/templates.js';
 
-export async function runAuthMail(pool: pg.Pool, c: Config) {
+export async function runAuthMail(pool: pg.Pool, c: ServiceConfig) {
   const job = (await pool.query('SELECT * FROM claim_auth_mail()')).rows[0];
   if (!job) return false;
   let status = 'sent',

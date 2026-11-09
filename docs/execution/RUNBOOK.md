@@ -211,3 +211,7 @@ STORAGE_ROOT افتراضي .local للتطوير،وفي staging/production ل�
 للترقية المحلية القديمة:أوقف الكاتب،نفّذ db:migrate ثم npm run storage:migrate-local من جذر البيئة. الأداة مقيدة بقاعدة Nuqta المحلية/اختبار علىloopback،وتراجع SHA للصور وتطابق CSV قبل تغيير pointer أوحذف النسخة القديمة. لو وجدت نسخة مختلفة تقف؛لا تمسح الملف المختلف. إعادة التشغيل آمنة بعد مراجعة السبب. demo:setup ليس مطلوبًا لتغيير كلمات المرور؛ترقية تجربة مازن استخدمت migrateManual ثم ترحيل الملفات من manualRoot،وحافظت على الحسابات واللوجو.
 
 تنظيفCSV الحالي محدود200ملف/2000entry ويحترم lease وروابط الساعة؛الاحتفاظ ساعتان مؤقتًا حتى سياسة24ساعة فيL09. اختبارLinux symlink فيCI،ومحليًاWindows متخطى بتسجيل صريح.
+
+## النشر المحلي وحدود L04
+
+راجع [deploy/README](../../deploy/README.md) للأسرار والأدوار والشبكات وCaddy والتحديث والرجوع. `test:deploy-scripts` متحقق علىWSL Ubuntu؛`test:deploy` تحقق منconfig فقط ثمسجلتعطلDockerDesktop عندdockerInference. لاfactoryreset أوحذفWSL/volumes. إعادة فحص stack تحتاج Linux Docker engine سليمة أوCI علىremote. لا تعتبر ملفconfig دليلHTTPS أوimage size. السيرفر والدومين وSMTP لمتُختار؛نستكملمستقلL05وL06حسبقاعدة6.

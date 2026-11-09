@@ -41,7 +41,9 @@
     "demo:start": "tsx tools/manual-demo.ts start",
     "demo:status": "tsx tools/manual-demo.ts status",
     "demo:clients": "tsx tools/manual-demo-clients.ts",
-    "test:manual-demo": "tsx tools/test-manual-demo.ts"
+    "test:manual-demo": "tsx tools/test-manual-demo.ts",
+    "test:deploy": "tsx tools/test-deploy.ts",
+    "test:deploy-scripts": "tsx tools/test-deploy-scripts.ts"
   },
   "dependencies": {
     "@fastify/cookie": "11.1.5",

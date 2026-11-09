@@ -92,3 +92,7 @@ verify:local passed:18 unit و56 integration و55 browser checks وكل مراح
 ### قبول L03 — 2026-11-09
 
 L03 DONE محليًا — 2026-11-09:FileStore بكتابة ذرية وkeys محدودة،وSTORAGE_ROOT إنتاجي خارج الكود،وتنظيف وصورPNG1024 بلاmetadata. ترحيل التطوير راجع51صورة ونقل39مسودة و18CSV بلا ملفات مفقودة؛تجربة مازن راجعت2صورة واحتفظت بالحسابات واللوجو المنشور. verify:local passed:20 unit و58 integration و55 browser؛اختبار symlink متخطى على Windows ويعمل على Linux CI. sourceFingerprint a5d36028fe15a58bc6efcf53883555ba32dc92ae96694815f1933cc72fc3e8b6 متطابق قبل وبعد. D37–D42 اتثبتوا حسب إضافات الخطة،والتنفيذ الوظيفي لهم في L06A/L06B.
+
+### قبول L04 المحلي وحدود التشغيل
+
+L04 LOCAL_IMPLEMENTED / BLOCKED_OWNER — 2026-11-09: Dockerfile وCompose وCaddy وتهيئة الأدوار والأسرار وhardening وREADME اتضافوا. proxy.test يثبت CIDR ورفض spoofing وعزل rate limit وOrigin؛readiness يراجع الدورين runtime/auth ويرفض ownership أوامتيازات زائدة أوتبديل الأدوار. Worker وmigrator لا يحتاجان credentials الأدوار الأخرى. test:deploy-scripts passed علىLinux وCompose config passed بلا طباعة أسرار. Docker Desktop تعطل عند dockerInference قبل بدءLinux engine؛image build/size وstack وheaders وproduction bootstrap غير متحققة،والتقرير deployment.json يسجلBLOCKED_LOCAL_DOCKER. CI اتضاف له job مستقل للتجربة لكن لا remote لتشغيله. verify:local passed:22 unit و61 integration و55 browser،واختبارsymlink متخطى علىWindows؛sourceFingerprint 02bf772bd3ab456353eb2c0de78bf0382be73e67a88e6820c2ef4e504e7884cf متطابق. لا اعتماد إطلاق ولا تعديل host hardening فعلي.

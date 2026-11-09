@@ -1,0 +1,17 @@
+{
+  "at": "2026-11-08T23:54:51.219Z",
+  "status": "passed",
+  "runtime": "WSL Ubuntu",
+  "checks": [
+    "Shell syntax",
+    "Generated secrets are 0600 and six distinct 64-character values",
+    "Existing configuration is byte-identical after refused overwrite"
+  ],
+  "source": {
+    "deploy/init-secrets.sh": "1f3384a2276bd3165edc953602db6b1039a26ca22f87061c0b4196eb619c4410",
+    "deploy/harden-host.sh": "e54bef5768b6ff5b7bf3b2a005c01b668fdeb1f930dc9de5d86827c91cd35498",
+    "deploy/postgres/init-roles.sh": "e49fefdfad7cea8fe977abc4f966dab9311ee4c88d7f95f11bf35c334824c220",
+    "tools/test-deploy-scripts.ts": "e6fb0a413119064a5c1667d144e893ddbfa408c06f31b1f098dfed9e4f6e8c2c"
+  },
+  "hostHardeningExecuted": false
+}

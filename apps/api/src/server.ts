@@ -9,7 +9,7 @@ import rateLimit from '@fastify/rate-limit';
 import helmet from '@fastify/helmet';
 import swagger from '@fastify/swagger';
 import { ZodError } from 'zod';
-import { readConfig, type Config } from './config.js';
+import { readConfig, trustedProxies, type Config } from './config.js';
 import { createPools } from './db.js';
 import { authModule } from './auth.js';
 import { AppError } from './errors.js';
@@ -29,7 +29,7 @@ export async function buildApp(overrides: Partial<Config> = {}) {
     pools = createPools(c);
   const app = Fastify({
     bodyLimit: 1_048_576,
-    trustProxy: false,
+    trustProxy: trustedProxies(c.TRUSTED_PROXIES),
     logger:
       c.LOG_LEVEL === 'silent'
         ? false
@@ -154,20 +154,37 @@ export async function buildApp(overrides: Partial<Config> = {}) {
   app.get('/health/live', async () => ({ status: 'ok' }));
   app.get('/health/ready', async (_req, reply) => {
     try {
-      const r = (
-        await pools.pool.query(
-          "SELECT current_user AS role,rolsuper,rolbypassrls,(SELECT count(*)::int FROM schema_migrations WHERE name='009v_file_store_exports.sql') AS schema,EXISTS(SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relkind IN ('r','p') AND c.relowner=pg_roles.oid) AS owns_tables,current_setting('row_security') AS row_security FROM pg_roles WHERE rolname=current_user",
+      for (const [pool, expectedRole] of [
+        [pools.pool, 'nuqta_runtime'],
+        [pools.authPool, 'nuqta_auth'],
+      ] as const) {
+        const r = (
+          await pool.query(
+            "SELECT current_user AS role,rolsuper,rolbypassrls,rolcreatedb,rolcreaterole,rolreplication,EXISTS(SELECT 1 FROM pg_auth_members WHERE member=pg_roles.oid) AS has_memberships,EXISTS(SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace WHERE n.nspname='public' AND c.relkind IN ('r','p') AND c.relowner=pg_roles.oid) AS owns_tables,current_setting('row_security') AS row_security FROM pg_roles WHERE rolname=current_user",
+          )
+        ).rows[0];
+        if (
+          !r ||
+          r.role !== expectedRole ||
+          r.rolsuper ||
+          r.rolbypassrls ||
+          r.rolcreatedb ||
+          r.rolcreaterole ||
+          r.rolreplication ||
+          r.has_memberships ||
+          r.owns_tables ||
+          r.row_security !== 'on'
         )
-      ).rows[0];
+          throw new Error('Runtime role/schema is not ready');
+      }
       if (
-        !r ||
-        r.rolsuper ||
-        r.rolbypassrls ||
-        r.owns_tables ||
-        r.row_security !== 'on' ||
-        r.schema !== 1
+        (
+          await pools.pool.query(
+            "SELECT count(*)::int AS count FROM schema_migrations WHERE name='009v_file_store_exports.sql'",
+          )
+        ).rows[0].count !== 1
       )
-        throw new Error('Runtime role/schema is not ready');
+        throw new Error('Schema is not ready');
       return { status: 'ready' };
     } catch {
       reply.code(503);

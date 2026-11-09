@@ -35,6 +35,7 @@ jobs:
       - run: npm test
       - run: npm run test:integration
       - run: npm run build
+      - run: npm run test:deploy-scripts
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e:ci
         timeout-minutes: 10
@@ -46,3 +47,17 @@ jobs:
             docs/execution/evidence/implementation/browser.json
             docs/execution/evidence/implementation/*-ar.png
             docs/execution/evidence/implementation/*-en.png
+  deployment:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: npm }
+      - run: npm ci
+      - run: npm run test:deploy
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: deployment-evidence
+          path: docs/execution/evidence/implementation/deployment.json

@@ -1,28 +1,55 @@
 import { readFile, readdir } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import pg from 'pg';
-import { readConfig } from '../apps/api/src/config.js';
-const c = readConfig();
+import { readMigrationConfig } from '../apps/api/src/config.js';
+const c = readMigrationConfig();
 if (!c.DATABASE_MIGRATOR_URL) throw new Error('DATABASE_MIGRATOR_URL is required for migrations.');
 const db = new pg.Client({ connectionString: c.DATABASE_MIGRATOR_URL });
 try {
   await db.connect();
   await db.query("SELECT pg_advisory_lock(hashtext('nuqta-migrations'))");
-  for (const [role, password] of [
-    ['nuqta_runtime', process.env.NUQTA_RUNTIME_DB_PASSWORD],
-    ['nuqta_auth', process.env.NUQTA_AUTH_DB_PASSWORD || process.env.NUQTA_RUNTIME_DB_PASSWORD],
-    ['nuqta_worker', process.env.NUQTA_WORKER_DB_PASSWORD || process.env.NUQTA_RUNTIME_DB_PASSWORD],
-  ]) {
-    if (!password)
-      throw new Error(
-        'Local role setup requires role password variables; values will not be printed.',
-      );
-    if (!(await db.query('SELECT 1 FROM pg_roles WHERE rolname=$1', [role])).rowCount) {
+  const production = ['production', 'staging'].includes(c.APP_ENV);
+  if (production) {
+    const rows = (
       await db.query(
-        `CREATE ROLE ${pg.escapeIdentifier(role!)} LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS PASSWORD ${pg.escapeLiteral(password)}`,
+        "SELECT rolname,rolsuper,rolbypassrls,rolcreaterole,rolcreatedb,rolreplication,EXISTS(SELECT 1 FROM pg_auth_members WHERE member=pg_roles.oid) AS has_memberships FROM pg_roles WHERE rolname IN ('nuqta_migrator','nuqta_runtime','nuqta_auth','nuqta_worker')",
+      )
+    ).rows;
+    if (
+      rows.length !== 4 ||
+      rows.some(
+        (role) =>
+          role.rolsuper ||
+          role.rolbypassrls ||
+          role.rolcreaterole ||
+          role.rolcreatedb ||
+          role.rolreplication ||
+          role.has_memberships,
+      ) ||
+      (await db.query('SELECT current_user AS role')).rows[0].role !== 'nuqta_migrator'
+    )
+      throw new Error(
+        'Production migrations require four pre-created restricted roles and the migrator login.',
       );
+  } else
+    for (const [role, password] of [
+      ['nuqta_runtime', process.env.NUQTA_RUNTIME_DB_PASSWORD],
+      ['nuqta_auth', process.env.NUQTA_AUTH_DB_PASSWORD || process.env.NUQTA_RUNTIME_DB_PASSWORD],
+      [
+        'nuqta_worker',
+        process.env.NUQTA_WORKER_DB_PASSWORD || process.env.NUQTA_RUNTIME_DB_PASSWORD,
+      ],
+    ]) {
+      if (!password)
+        throw new Error(
+          'Local role setup requires role password variables; values will not be printed.',
+        );
+      if (!(await db.query('SELECT 1 FROM pg_roles WHERE rolname=$1', [role])).rowCount) {
+        await db.query(
+          `CREATE ROLE ${pg.escapeIdentifier(role!)} LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS PASSWORD ${pg.escapeLiteral(password)}`,
+        );
+      }
     }
-  }
   await db.query(
     'CREATE TABLE IF NOT EXISTS schema_migrations(name text PRIMARY KEY,sha256 text NOT NULL,applied_at timestamptz NOT NULL DEFAULT now())',
   );

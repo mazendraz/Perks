@@ -1,6 +1,6 @@
 import pg from 'pg';
 import { createFileStore } from '../../api/src/storage/file-store.js';
-import type { Config } from '../../api/src/config.js';
+import type { ServiceConfig } from '../../api/src/config.js';
 import { unseal } from '../../api/src/outbox.js';
 import { tokenHash } from '../../api/src/crypto.js';
 import { createMailer, MailFailure } from '../../api/src/mail/mailer.js';
@@ -16,7 +16,7 @@ export interface ClaimedJob {
   lease_id: string;
   outbox_id: string;
 }
-export async function runOne(pool: pg.Pool, c: Config): Promise<boolean> {
+export async function runOne(pool: pg.Pool, c: ServiceConfig): Promise<boolean> {
   const claim = (await pool.query<ClaimedJob>('SELECT * FROM claim_next_job()')).rows[0];
   if (!claim) return runAuthMail(pool, c);
   const started = new Date();

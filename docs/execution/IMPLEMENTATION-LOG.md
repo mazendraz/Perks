@@ -177,3 +177,5 @@ L09 LOCAL_VERIFIED / BLOCKED_OWNER — 2026-11-10: صفحات الخصوصية �
 manifest موقّع ومربوط بهويةdeployment ويعيد anonymize للبيانات المستعادة؛المفتاح الغلط والتلاعب وscope الغلط يترفضوا. الإثبات محاكاة بيانات مستعادة داخلDB اختبار، وليسpg_restore جديدًا. الخدمات تظلoffline حتى إعادة الحذف وتنظيفCSV؛أحدث نسخة مستقلة ومراجعة فجوة الفقد شرط قبلPilot.
 
 فحوص الاحتفاظ تستخدم Compose daemonless وstaging installer وsystemd-analyze فعلية، ولم تغيرjournald أوتمسحlogs أوتعيد إنشاءcontainers. الصورة العربية لاختيار تاريخ الاشتراك تُراجع معassert أن اليوم والشهر والسنة ظاهرة كاملة. الأصولstandalone لم تتغير. لا رسائل خارجية أوtunnel عام أونشر،ولاCI خارجي مثبت لغيابremote. تجربةمازن تحتفظ بمحليْن و3حسابات و2موظف وعميل واحد.
+
+- 2026-11-10 — الجولة ج من رحلة المستخدم: commits 8f0e5e6 و63cd757 و93a1769 و14194d5 وdbed15d. اختبارات جديدة: `redemption-resume.test.ts` و`arabic-copy-spacing.test.ts`.

@@ -1,4 +1,5 @@
 import { portalAssetUrl } from '../portals.js';
+import { ActionLabel } from '../../../../packages/ui/src/Icon.js';
 import {
   enrollmentPlacementLabel,
   placementDisplayLabel,
@@ -60,7 +61,7 @@ export function EnrollmentCodes({ merchantId, lang }: { merchantId: string; lang
           setAttempt(null);
         }}
       >
-        {ar ? 'توليد QR لفرع' : 'Generate branch QR'}
+        <ActionLabel icon="qr">{ar ? 'توليد QR لفرع' : 'Generate branch QR'}</ActionLabel>
       </button>
       {creating && (
         <form
@@ -104,7 +105,7 @@ export function EnrollmentCodes({ merchantId, lang }: { merchantId: string; lang
           </label>
           <div className="form-actions">
             <button className="primary" disabled={busy || !branch}>
-              {ar ? 'توليد الكود' : 'Generate code'}
+              <ActionLabel icon="qr">{ar ? 'توليد الكود' : 'Generate code'}</ActionLabel>
             </button>
             <button type="button" className="secondary" onClick={() => setCreating(false)}>
               {ar ? 'إلغاء' : 'Cancel'}
@@ -129,14 +130,14 @@ export function EnrollmentCodes({ merchantId, lang }: { merchantId: string; lang
                 />
                 <div className="form-actions">
                   <a className="secondary small" href={portalAssetUrl(base)} download>
-                    PNG
+                    <ActionLabel icon="download">PNG</ActionLabel>
                   </a>
                   <a
                     className="secondary small"
                     href={portalAssetUrl(base + '?format=svg')}
                     download
                   >
-                    SVG
+                    <ActionLabel icon="download">SVG</ActionLabel>
                   </a>
                   <button
                     type="button"
@@ -158,7 +159,15 @@ export function EnrollmentCodes({ merchantId, lang }: { merchantId: string; lang
                         );
                     }}
                   >
-                    {copied === p.id ? (ar ? 'اتنسخ' : 'Copied') : ar ? 'نسخ الرابط' : 'Copy link'}
+                    <ActionLabel icon={copied === p.id ? 'check' : 'copy'}>
+                      {copied === p.id
+                        ? ar
+                          ? 'اتنسخ'
+                          : 'Copied'
+                        : ar
+                          ? 'نسخ الرابط'
+                          : 'Copy link'}
+                    </ActionLabel>
                   </button>
                 </div>
                 <a className="url-box" dir="ltr" href={p.qrUrl}>

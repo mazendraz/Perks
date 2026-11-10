@@ -1,4 +1,5 @@
 import { portalAssetUrl } from '../portals.js';
+import { ActionLabel } from '../../../../packages/ui/src/Icon.js';
 import { placementKindLabel, placementStatusLabel } from '../business-labels.js';
 import { placementDisplayLabel } from '../../../../packages/domain/src/placement-labels.js';
 import { Select } from '../controls/Select.js';
@@ -189,7 +190,7 @@ export function Materials({ grant, lang }: { grant: Grant; lang: Language }) {
               setAction(null);
             }}
           >
-            {ar ? 'طلب قطعة' : 'Request a piece'}
+            <ActionLabel icon="plus">{ar ? 'طلب قطعة' : 'Request a piece'}</ActionLabel>
           </button>
         )}
       </div>
@@ -226,7 +227,9 @@ export function Materials({ grant, lang }: { grant: Grant; lang: Language }) {
                 href={portalAssetUrl('/api/v1' + base + '/placements/' + p.id + '/qr?format=svg')}
                 download
               >
-                {ar ? 'تحميل SVG للطباعة' : 'Download SVG for print'}
+                <ActionLabel icon="download">
+                  {ar ? 'تحميل SVG للطباعة' : 'Download SVG for print'}
+                </ActionLabel>
               </a>
               <a className="url-box" dir="ltr" href={p.qrUrl}>
                 {p.qrUrl}
@@ -239,7 +242,9 @@ export function Materials({ grant, lang }: { grant: Grant; lang: Language }) {
                   className="secondary small"
                   href={portalAssetUrl('/api/v1' + base + '/placements/' + p.id + '/qr')}
                 >
-                  {ar ? 'تنزيل QR للطباعة' : 'Download print QR'}
+                  <ActionLabel icon="download">
+                    {ar ? 'تنزيل QR للطباعة' : 'Download print QR'}
+                  </ActionLabel>
                 </a>
                 {grant.role === 'owner' &&
                   (

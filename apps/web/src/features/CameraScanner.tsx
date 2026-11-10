@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { ActionLabel } from '../../../../packages/ui/src/Icon.js';
 import type { IScannerControls } from '@zxing/browser';
 import type { Language } from '../../../../packages/contracts/src/index.js';
 export function CameraScanner({
@@ -97,13 +98,15 @@ export function CameraScanner({
           setActive(!active);
         }}
       >
-        {active
-          ? lang === 'ar'
-            ? 'اقفل الكاميرا'
-            : 'Close camera'
-          : lang === 'ar'
-            ? 'افتح الكاميرا'
-            : 'Open camera'}
+        <ActionLabel icon={active ? 'close' : 'camera'}>
+          {active
+            ? lang === 'ar'
+              ? 'اقفل الكاميرا'
+              : 'Close camera'
+            : lang === 'ar'
+              ? 'افتح الكاميرا'
+              : 'Open camera'}
+        </ActionLabel>
       </button>
     </div>
   );

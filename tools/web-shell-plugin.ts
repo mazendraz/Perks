@@ -51,7 +51,7 @@ export function webShellPlugin(): Plugin {
       const allowed = files
         .filter(
           (path) =>
-            path !== '/sw.js' && /\.(?:js|css|html|webmanifest|png|svg|ttf|woff2?)$/.test(path),
+            path !== '/sw.js' && /\.(?:js|css|html|webmanifest|png|svg|ttf|otf|woff2?)$/.test(path),
         )
         .sort();
       const shell = allowed.filter(

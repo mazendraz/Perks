@@ -28,7 +28,7 @@ import {
   type CardTemplate,
   type LogoStyle,
 } from '../../../../packages/contracts/src/branding.js';
-import { Icon } from '../../../../packages/ui/src/Icon.js';
+import { ActionLabel, Icon } from '../../../../packages/ui/src/Icon.js';
 import { PurchaseTrend, type TrendData } from './PurchaseTrend.js';
 import { Branches } from './Branches.js';
 import { Support } from './Support.js';
@@ -430,6 +430,19 @@ export function MerchantPage({ grant, lang }: { grant: Grant; lang: Language }) 
       : []),
     ['operations', ar ? 'العمليات' : 'Transactions'],
   ];
+  const tabIcons: Record<string, string> = {
+    overview: 'chart',
+    customers: 'people',
+    outreach: 'message',
+    materials: 'qr',
+    programs: 'gift',
+    branches: 'branch',
+    team: 'people',
+    brand: 'shop',
+    subscription: 'receipt',
+    support: 'support',
+    operations: 'clock',
+  };
   const sections = [
     { id: 'overview', label: ar ? 'الرئيسية' : 'Overview', icon: 'chart', tabs: ['overview'] },
     {
@@ -468,7 +481,7 @@ export function MerchantPage({ grant, lang }: { grant: Grant; lang: Language }) 
           <h1>{ar ? 'لوحة التاجر' : 'Merchant dashboard'}</h1>
         </div>
         <a className="secondary small" href={'/join/' + grant.slug}>
-          {ar ? 'افتح التسجيل' : 'Open enrollment'}
+          <ActionLabel icon="qr">{ar ? 'افتح التسجيل' : 'Open enrollment'}</ActionLabel>
         </a>
       </div>
       <nav className="owner-sections" aria-label={ar ? 'أقسام المحل' : 'Business sections'}>
@@ -490,7 +503,7 @@ export function MerchantPage({ grant, lang }: { grant: Grant; lang: Language }) 
             .filter(([k]) => section.tabs.includes(k!))
             .map(([k, l]) => (
               <button key={k} className={tab === k ? 'active' : ''} onClick={() => setTab(k!)}>
-                {l}
+                <ActionLabel icon={tabIcons[k!] || 'cards'}>{l}</ActionLabel>
               </button>
             ))}
         </div>
@@ -860,7 +873,7 @@ export function MerchantPage({ grant, lang }: { grant: Grant; lang: Language }) 
             <div className="brand-savebar">
               <strong>{ar ? 'تصميم الكارت' : 'Card design'}</strong>
               <button className="primary small" type="submit" disabled={busy}>
-                {ar ? 'حفظ التغييرات' : 'Save changes'}
+                <ActionLabel icon="save">{ar ? 'حفظ التغييرات' : 'Save changes'}</ActionLabel>
               </button>
             </div>
             <label>
@@ -1031,7 +1044,7 @@ export function MerchantPage({ grant, lang }: { grant: Grant; lang: Language }) 
               />
             </label>
             <button className="primary" disabled={busy}>
-              {ar ? 'نشر الهوية' : 'Publish branding'}
+              <ActionLabel icon="check">{ar ? 'نشر الهوية' : 'Publish branding'}</ActionLabel>
             </button>
           </form>
           <aside>{preview && <LoyaltyCard card={preview} lang={lang} />}</aside>

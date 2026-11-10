@@ -3,6 +3,7 @@ import type { Grant, Language, AwardResult } from '../../../../packages/contract
 import { api, ApiError, errorText } from '../api.js';
 import { useLiveRefresh } from '../live-events.js';
 import { CameraScanner } from './CameraScanner.js';
+import { ActionLabel } from '../../../../packages/ui/src/Icon.js';
 interface Request {
   id: string;
   membership_id: string;
@@ -420,7 +421,9 @@ export function CashierRequests({
             }}
           >
             <label>
-              {ar ? 'أو اكتب كود العميل للطلب' : 'Or enter the request customer QR code'}
+              <ActionLabel icon="keyboard">
+                {ar ? 'أو اكتب كود العميل للطلب' : 'Or enter the request customer QR code'}
+              </ActionLabel>
               <input
                 dir="ltr"
                 autoComplete="off"
@@ -430,7 +433,7 @@ export function CashierRequests({
               />
             </label>
             <button className="secondary" disabled={busy}>
-              {ar ? 'اقرأ كود الطلب' : 'Read request code'}
+              <ActionLabel icon="scan">{ar ? 'اقرأ كود الطلب' : 'Read request code'}</ActionLabel>
             </button>
           </form>
         </div>
@@ -466,7 +469,9 @@ export function CashierRequests({
             </p>
             <form onSubmit={(event) => void submit(event, row, true)}>
               <label>
-                {ar ? 'رقم إيصال الطلب' : 'Request receipt number'}
+                <ActionLabel icon="receipt">
+                  {ar ? 'رقم إيصال الطلب' : 'Request receipt number'}
+                </ActionLabel>
                 <input
                   required
                   maxLength={120}
@@ -505,7 +510,7 @@ export function CashierRequests({
                   (!!pending && (!resumable || pending.request.id !== row.id))
                 }
               >
-                {ar ? 'اختم' : 'Stamp request'}
+                <ActionLabel icon="stamp">{ar ? 'اختم' : 'Stamp request'}</ActionLabel>
               </button>
             </form>
             {!pending && (

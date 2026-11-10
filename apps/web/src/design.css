@@ -1,19 +1,13 @@
 @font-face {
-  font-family: 'Plex Arabic';
-  src: url('/fonts/ibm-regular.ttf') format('truetype');
-  font-weight: 400;
+  font-family: 'GE SS Arabic';
+  src: url('/fonts/ge-ss-two-light.otf') format('opentype');
+  font-weight: 300 400;
   font-display: swap;
 }
 @font-face {
-  font-family: 'Plex Arabic';
-  src: url('/fonts/ibm-medium.ttf') format('truetype');
-  font-weight: 500;
-  font-display: swap;
-}
-@font-face {
-  font-family: 'Plex Arabic';
-  src: url('/fonts/ibm-semibold.ttf') format('truetype');
-  font-weight: 600 900;
+  font-family: 'GE SS Arabic';
+  src: url('/fonts/ge-ss-text-medium.otf') format('opentype');
+  font-weight: 500 900;
   font-display: swap;
 }
 @font-face {
@@ -32,16 +26,32 @@
   --gold: #cbff64;
   color: var(--ink);
   background: var(--paper);
-  font-family: 'Plex Arabic', sans-serif;
+  font-family: 'GE SS Arabic', sans-serif;
   font-size: 14px;
   line-height: 1.8;
 }
 :root:lang(en) {
-  font-family: 'Manrope', 'Plex Arabic', sans-serif;
+  font-family: 'Manrope', 'GE SS Arabic', sans-serif;
 }
 body {
-  min-width: 320px;
+  min-width: 0;
   background: var(--paper);
+}
+.action-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55em;
+  max-width: 100%;
+  min-width: 0;
+  vertical-align: middle;
+}
+.action-label > svg {
+  flex: 0 0 auto;
+}
+.action-label > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 ::selection {
   background: #e9ffc0;
@@ -151,7 +161,7 @@ label {
 }
 .wordmark {
   color: #191c3c;
-  font-family: 'Plex Arabic', sans-serif;
+  font-family: 'GE SS Arabic', sans-serif;
   font-size: 29px;
   font-weight: 600;
   gap: 11px;
@@ -176,7 +186,7 @@ label {
   gap: 14px;
 }
 .top-actions > .text-button {
-  font-family: 'Manrope', 'Plex Arabic', sans-serif;
+  font-family: 'Manrope', 'GE SS Arabic', sans-serif;
   font-size: 12px;
   text-decoration: none;
   border: 1px solid #dfe0e6;
@@ -243,7 +253,7 @@ label {
   place-items: center;
   background: #dfe0ea;
   color: #31365c;
-  font-family: 'Manrope', 'Plex Arabic', sans-serif;
+  font-family: 'Manrope', 'GE SS Arabic', sans-serif;
   font-size: 21px;
   font-weight: 700;
 }
@@ -365,7 +375,7 @@ label {
 }
 .kpi strong {
   color: #222540;
-  font-family: 'Manrope', 'Plex Arabic', sans-serif;
+  font-family: 'Manrope', 'GE SS Arabic', sans-serif;
   font-size: 34px;
   font-weight: 600;
   line-height: 1.4;
@@ -604,7 +614,7 @@ td small {
   color: #7e82a9;
 }
 .welcome-card-mark > span {
-  font-family: 'Manrope', 'Plex Arabic', sans-serif;
+  font-family: 'Manrope', 'GE SS Arabic', sans-serif;
   font-size: 8px;
   letter-spacing: 1px;
 }
@@ -645,7 +655,7 @@ td small {
   align-items: center;
   justify-content: space-between;
   font-size: 8px;
-  font-family: 'Manrope', 'Plex Arabic', sans-serif;
+  font-family: 'Manrope', 'GE SS Arabic', sans-serif;
   letter-spacing: 2px;
   opacity: 0.58;
   margin-bottom: 21px;
@@ -674,7 +684,7 @@ td small {
   height: 43px;
   flex: 0 0 43px;
   font-size: 25px;
-  font-family: 'Manrope', 'Plex Arabic', sans-serif;
+  font-family: 'Manrope', 'GE SS Arabic', sans-serif;
 }
 .brand-mark img {
   width: 100%;
@@ -775,7 +785,7 @@ td small {
   font-size: 10px;
   opacity: 0.8;
   letter-spacing: 0.1px;
-  font-family: 'Manrope', 'Plex Arabic', sans-serif;
+  font-family: 'Manrope', 'GE SS Arabic', sans-serif;
 }
 .card-progress b {
   font-size: 13px;
@@ -945,7 +955,7 @@ td small {
   border-bottom-color: #e0e2ec;
 }
 .activity-row > strong {
-  font-family: 'Manrope', 'Plex Arabic', sans-serif;
+  font-family: 'Manrope', 'GE SS Arabic', sans-serif;
   color: #343860;
   font-weight: 600;
 }
@@ -1170,7 +1180,7 @@ td small {
   padding-top: 20px;
   border-top: 1px solid #cbccdd;
   color: #444a7e;
-  font-family: 'Manrope', 'Plex Arabic', sans-serif;
+  font-family: 'Manrope', 'GE SS Arabic', sans-serif;
   font-size: 8px;
   letter-spacing: 0.4px;
 }
@@ -1558,8 +1568,9 @@ td small {
     display: none;
   }
   .sidebar nav {
-    flex-direction: row;
-    overflow-x: auto;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    overflow: visible;
     gap: 5px;
     padding-bottom: 9px;
     scrollbar-width: none;
@@ -1567,11 +1578,14 @@ td small {
   .sidebar nav button {
     padding: 8px 11px;
     min-height: 39px;
-    white-space: nowrap;
+    white-space: normal;
+    min-width: 0;
+    overflow-wrap: anywhere;
     gap: 7px;
     font-size: 11px;
   }
   .sidebar nav button svg {
+    flex-shrink: 0;
     width: 16px;
     height: 16px;
   }
@@ -2638,7 +2652,7 @@ td small {
   display: block;
   font-size: 27px;
   color: #2c2f51;
-  font-family: Manrope, 'Plex Arabic', sans-serif;
+  font-family: Manrope, 'GE SS Arabic', sans-serif;
   font-variant-numeric: tabular-nums;
 }
 .preview-metrics small {
@@ -3346,7 +3360,7 @@ input[type='number']::-webkit-outer-spin-button {
 }
 .logo-initial {
   display: block;
-  font-family: 'Plex Arabic', Manrope, sans-serif;
+  font-family: 'GE SS Arabic', Manrope, sans-serif;
   font-size: 18px;
   line-height: 1.3;
 }
@@ -3551,13 +3565,14 @@ input[type='number']::-webkit-outer-spin-button {
   color: #282c4f;
 }
 .owner-sections {
-  display: flex;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 120px), 1fr));
   gap: 7px;
   padding: 6px;
   border: 1px solid #d8d9e5;
   border-radius: 14px;
   background: #fff;
-  overflow: auto;
+  overflow: visible;
   scrollbar-width: thin;
   margin-bottom: 24px;
 }
@@ -3574,7 +3589,12 @@ input[type='number']::-webkit-outer-spin-button {
   padding: 10px 14px;
   color: #686b83;
   font-size: 12px;
-  white-space: nowrap;
+  white-space: normal;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.owner-sections button svg {
+  flex-shrink: 0;
 }
 .owner-sections button.active {
   background: #181b38;
@@ -3672,6 +3692,9 @@ input[type='number']::-webkit-outer-spin-button {
     padding: 18px 16px 36px;
   }
   .owner-sections {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    overflow: visible;
     margin-bottom: 18px;
     gap: 3px;
   }
@@ -3679,8 +3702,12 @@ input[type='number']::-webkit-outer-spin-button {
     flex-direction: column;
     gap: 5px;
     font-size: 10px;
-    min-width: 70px;
-    padding: 10px 9px;
+    min-width: 0;
+    min-height: 64px;
+    padding: 10px 2px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    line-height: 1.4;
   }
   .owner-subtabs {
     margin-top: 0;
@@ -3700,6 +3727,19 @@ input[type='number']::-webkit-outer-spin-button {
   .ios-switch-track,
   .ios-switch-track > span {
     transition: none;
+  }
+}
+@media (max-width: 360px) {
+  .owner-sections {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+  .owner-sections button {
+    grid-column: span 2;
+    font-size: 11px;
+    padding: 8px 4px;
+  }
+  .owner-sections button:nth-child(n + 4) {
+    grid-column: span 3;
   }
 }
 .loyalty-card.has-logo .brand-mark {
@@ -3855,7 +3895,7 @@ input.nq-phone-input {
   direction: ltr;
   text-align: left;
   unicode-bidi: plaintext;
-  font-family: Manrope, 'Plex Arabic', sans-serif;
+  font-family: Manrope, 'GE SS Arabic', sans-serif;
   letter-spacing: 0.3px;
 }
 .phone-format-hint {

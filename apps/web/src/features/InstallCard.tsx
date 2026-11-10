@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { CardData, Language } from '../../../../packages/contracts/src/index.js';
-import { Icon } from '../../../../packages/ui/src/Icon.js';
+import { ActionLabel, Icon } from '../../../../packages/ui/src/Icon.js';
 import {
   installOffers,
   rememberInstallOffer,
@@ -103,7 +103,9 @@ export function InstallCard({
                 : 'Save it on your home screen for next time.'}
             </p>
             <button className="primary small" onClick={() => void save()}>
-              {ar ? 'احفظ على الشاشة الرئيسية' : 'Save to home screen'}
+              <ActionLabel icon="download">
+                {ar ? 'احفظ على الشاشة الرئيسية' : 'Save to home screen'}
+              </ActionLabel>
             </button>
             <button className="text-button" onClick={close}>
               {ar ? 'مش دلوقتي' : 'Not now'}
@@ -112,7 +114,9 @@ export function InstallCard({
         </aside>
       ) : (
         <button className="text-button install-card-link" onClick={() => void save()}>
-          {ar ? 'احفظ الكارت على موبايلك' : 'Save this card on your phone'}
+          <ActionLabel icon="download">
+            {ar ? 'احفظ الكارت على موبايلك' : 'Save this card on your phone'}
+          </ActionLabel>
         </button>
       )}
       {guide && !qrOpen && (

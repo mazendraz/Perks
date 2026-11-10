@@ -1,4 +1,5 @@
 import { Select } from '../controls/Select.js';
+import { ActionLabel } from '../../../../packages/ui/src/Icon.js';
 import { useLiveRefresh } from '../live-events.js';
 import { useAutoStampRequest } from '../useAutoStampRequest.js';
 import { useEffect, useState, useRef } from 'react';
@@ -131,7 +132,7 @@ export function CustomerRequests({
                 .finally(() => setBusy(false));
             }}
           >
-            {ar ? 'إلغاء الطلب' : 'Cancel request'}
+            <ActionLabel icon="close">{ar ? 'إلغاء الطلب' : 'Cancel request'}</ActionLabel>
           </button>
         </>
       ) : (
@@ -151,7 +152,7 @@ export function CustomerRequests({
             disabled={busy || !branch || !card.earning_active}
             onClick={() => void create()}
           >
-            {ar ? 'طلب ختم' : 'Request stamp'}
+            <ActionLabel icon="stamp">{ar ? 'طلب ختم' : 'Request stamp'}</ActionLabel>
           </button>
           {latest && (
             <p className="notice" role="status">

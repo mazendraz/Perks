@@ -1,5 +1,5 @@
 import { Select } from '../controls/Select.js';
-import { Icon } from '../../../../packages/ui/src/Icon.js';
+import { ActionLabel, Icon } from '../../../../packages/ui/src/Icon.js';
 import { FieldErrors, fieldProps } from '../FieldErrors.js';
 import { CashierRequests } from './StampRequests.js';
 import { TeamCustomerRecovery } from './CustomerRecovery.js';
@@ -462,7 +462,9 @@ export function CashierPage({ grant, lang }: { grant: Grant; lang: Language }) {
                         className="text-button"
                         onClick={() => setCorrection({ tx: t, reason: '' })}
                       >
-                        {ar ? 'طلب تصحيح' : 'Request correction'}
+                        <ActionLabel icon="refresh">
+                          {ar ? 'طلب تصحيح' : 'Request correction'}
+                        </ActionLabel>
                       </button>
                     )}
                   </div>
@@ -490,7 +492,9 @@ export function CashierPage({ grant, lang }: { grant: Grant; lang: Language }) {
             }}
           >
             <label>
-              {ar ? 'أو اكتب الكود من كارت العميل' : 'Or enter the customer card code'}
+              <ActionLabel icon="keyboard">
+                {ar ? 'أو اكتب الكود من كارت العميل' : 'Or enter the customer card code'}
+              </ActionLabel>
               <input
                 dir="ltr"
                 value={manual}
@@ -501,7 +505,7 @@ export function CashierPage({ grant, lang }: { grant: Grant; lang: Language }) {
               />
             </label>
             <button className="secondary" disabled={busy} aria-busy={busy}>
-              {ar ? 'قراءة الكود' : 'Read code'}
+              <ActionLabel icon="scan">{ar ? 'قراءة الكود' : 'Read code'}</ActionLabel>
             </button>
           </form>
         </section>
@@ -522,7 +526,7 @@ export function CashierPage({ grant, lang }: { grant: Grant; lang: Language }) {
                 setStep('stamp');
               }}
             >
-              {ar ? 'إضافة ختم' : 'Add stamps'}
+              <ActionLabel icon="stamp">{ar ? 'إضافة ختم' : 'Add stamps'}</ActionLabel>
             </button>
           </section>
           <section className="panel">
@@ -541,7 +545,7 @@ export function CashierPage({ grant, lang }: { grant: Grant; lang: Language }) {
                     aria-busy={busy}
                     onClick={() => void startRedemption(r)}
                   >
-                    {ar ? 'استبدال' : 'Redeem'}
+                    <ActionLabel icon="gift">{ar ? 'استبدال' : 'Redeem'}</ActionLabel>
                   </button>
                 </div>
               ))}
@@ -659,7 +663,9 @@ export function CashierPage({ grant, lang }: { grant: Grant; lang: Language }) {
                 {ar ? 'تحقق من نفس العملية' : 'Check the same operation'}
               </button>
               <button className="secondary" onClick={() => setStep('scan')}>
-                {ar ? 'امسح نفس الكارت وأعد المحاولة' : 'Scan the same card and retry'}
+                <ActionLabel icon="scan">
+                  {ar ? 'امسح نفس الكارت وأعد المحاولة' : 'Scan the same card and retry'}
+                </ActionLabel>
               </button>
             </div>
           )}

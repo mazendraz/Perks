@@ -30,6 +30,7 @@ assert.ok(['msedge', 'chromium'].includes(browserName));
 const browser = await chromium.launch({
   ...(browserName === 'msedge' ? { channel: 'msedge' } : {}),
   headless: true,
+  ignoreDefaultArgs: ['--hide-scrollbars'],
 });
 const checks: string[] = [],
   errors: string[] = [];
@@ -148,6 +149,7 @@ try {
       .getByRole('button', { name: expected === 'ar' ? 'English' : 'العربية', exact: true })
       .click();
     await reloadPage(page);
+    await page.locator('input[type=email]').waitFor();
     assert.equal(await page.locator('html').getAttribute('lang'), expected === 'ar' ? 'en' : 'ar');
     await device.close();
   }
@@ -1490,20 +1492,37 @@ try {
     [ap, 'platform'],
   ] as const) {
     for (const language of ['en', 'ar']) {
-      await p.setViewportSize({ width: 390, height: 844 });
       if (language === 'ar') await p.getByRole('button', { name: 'العربية', exact: true }).click();
-      await p.waitForTimeout(250);
-      const size = await p.evaluate(() => ({
-        width: innerWidth,
-        content: document.documentElement.scrollWidth,
-        dir: document.documentElement.dir,
-      }));
-      assert.ok(size.content <= size.width + 1, `${name} ${language} mobile overflow`);
+      for (const width of [320, 360, 430, 390]) {
+        await p.setViewportSize({ width, height: 844 });
+        await p.waitForTimeout(250);
+        const size = await p.evaluate(() => ({
+          width: document.documentElement.clientWidth,
+          content: document.documentElement.scrollWidth,
+          dir: document.documentElement.dir,
+        }));
+        assert.ok(size.content <= size.width + 1, `${name} ${language} ${width}px mobile overflow`);
+        const clipped = await p
+          .locator('button:visible, [role="option"]:visible')
+          .evaluateAll((elements) =>
+            elements
+              .filter(
+                (el) =>
+                  el.scrollWidth > el.clientWidth + 2 || el.scrollHeight > el.clientHeight + 2,
+              )
+              .map((el) => el.textContent?.trim().slice(0, 90)),
+          );
+        if (clipped.length)
+          await p.screenshot({
+            path: `${evidence}/mobile-clipped-${name}-${language}-${width}.png`,
+          });
+        assert.deepEqual(clipped, [], `${name} ${language} ${width}px clipped controls`);
+      }
       await screenshot(p, name + '-' + language);
     }
   }
   ok(
-    'All four workspaces render at 390px in Arabic RTL and English LTR without horizontal overflow',
+    'All four workspaces fit 320/360/390/430px in Arabic RTL and English LTR without horizontal overflow or clipped controls',
   );
   assert.deepEqual(errors, []);
   ok('No uncaught browser page errors');
@@ -1708,8 +1727,6 @@ try {
   const staffReset = await context(),
     staffResetPage = await staffReset.newPage();
   await navigateTo(staffResetPage, '/login?dev=1');
-  if ((await staffResetPage.locator('html').getAttribute('lang')) === 'ar')
-    await staffResetPage.getByRole('button', { name: 'English', exact: true }).click();
   await staffResetPage.getByRole('button', { name: 'Forgot password?', exact: true }).click();
   await staffResetPage.getByLabel('Email', { exact: true }).fill(email('owner'));
   await staffResetPage.getByRole('button', { name: 'Send recovery link', exact: true }).click();

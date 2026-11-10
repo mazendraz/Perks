@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { ActionLabel } from '../../../../packages/ui/src/Icon.js';
 import type { Language } from '../../../../packages/contracts/src/index.js';
 export interface CustomerQr {
   token: string;
@@ -60,9 +61,11 @@ export function CustomerCode({
         aria-labelledby="customer-code-title"
       >
         <div className="section-heading">
-          <h2 id="customer-code-title">{ar ? 'الكود الشخصي' : 'Personal QR'}</h2>
+          <h2 id="customer-code-title">
+            <ActionLabel icon="qr">{ar ? 'الكود الشخصي' : 'Personal QR'}</ActionLabel>
+          </h2>
           <button type="button" className="secondary" data-dialog-close onClick={onClose}>
-            {ar ? 'اقفل الكود' : 'Close code'}
+            <ActionLabel icon="close">{ar ? 'اقفل الكود' : 'Close code'}</ActionLabel>
           </button>
         </div>
         <p>
@@ -86,7 +89,7 @@ export function CustomerCode({
           </p>
         )}
         <button className="text-button" onClick={() => void onRefresh()} disabled={busy}>
-          {ar ? 'جدّد الكود' : 'Refresh code'}
+          <ActionLabel icon="refresh">{ar ? 'جدّد الكود' : 'Refresh code'}</ActionLabel>
         </button>
       </section>
     </div>

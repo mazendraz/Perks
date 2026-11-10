@@ -10,6 +10,20 @@ export async function auditMobileBrand(page: Page, project: string, directory: s
     .click();
   for (const lang of ['en', 'ar'] as const) {
     if (lang === 'ar') await page.getByRole('button', { name: 'العربية', exact: true }).click();
+    if (lang === 'ar') {
+      assert.equal(
+        await page.evaluate(async () =>
+          (
+            await Promise.all([
+              document.fonts.load('400 16px "GE SS Arabic"', 'العربية'),
+              document.fonts.load('500 16px "GE SS Arabic"', 'العربية'),
+            ])
+          ).every((faces) => faces.length > 0 && faces.every((face) => face.status === 'loaded')),
+        ),
+        true,
+        project + ' supplied Arabic font weights actually load',
+      );
+    }
     const name = page.getByRole('textbox', {
       name: lang === 'ar' ? 'اسم النشاط' : 'Business name',
       exact: true,
@@ -25,7 +39,9 @@ export async function auditMobileBrand(page: Page, project: string, directory: s
           ),
       );
       const issues = await page
-        .locator('.template-filters button, .logo-choices button, .brand-savebar button')
+        .locator(
+          '.template-filters button, .logo-choices button, .brand-savebar button, .owner-sections button',
+        )
         .evaluateAll((elements) =>
           elements
             .filter(
@@ -34,6 +50,13 @@ export async function auditMobileBrand(page: Page, project: string, directory: s
             .map((el) => el.textContent?.trim()),
         );
       assert.deepEqual(issues, [], `${project} ${lang} ${width}px clipped editor controls`);
+      assert.equal(
+        await page
+          .locator('.owner-sections')
+          .evaluate((el) => el.scrollWidth <= el.clientWidth + 1),
+        true,
+        `${project} ${lang} ${width}px internal section navigation overflow`,
+      );
       assert.deepEqual(
         await page.locator('.template-thumb').evaluateAll((frames) =>
           frames
@@ -86,7 +109,9 @@ export async function auditMobileBrand(page: Page, project: string, directory: s
         );
       }
       assert.equal(
-        await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1),
+        await page.evaluate(
+          () => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1,
+        ),
         true,
         `${project} ${lang} ${width}px page overflow`,
       );

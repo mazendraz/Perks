@@ -1,0 +1,36 @@
+{
+  "at": "2026-11-10T10:47:41.163Z",
+  "status": "failed",
+  "checks": [
+    "chromium-pixel5: name/phone/terms registration survives Arabic/English switching, reaches the card within 30 seconds, and needs no email/password or UUID/Popover/ResizeObserver/Animation.finished",
+    "chromium-pixel5: first NFC scan needs only name/phone/terms/submit, preserves context, reveals the card in 720ms and requests one first stamp without granting it",
+    "chromium-pixel5: first home-screen offer uses the native prompt or the two-step Safari illustration",
+    "chromium-pixel5: five placement scans open the existing card with zero customer taps, create one request, and reload creates none",
+    "chromium-pixel5: interruption, session expiry during POST and a lost committed reply restore the device session and retry the same request key without a duplicate",
+    "chromium-pixel5: a shortened display-expiry fixture refreshes the QR automatically before expiration",
+    "chromium-pixel5: QR closes on the committed stamp, ink angles survive reload, and home-screen offers stop after the second dismissal",
+    "chromium-pixel5: a standalone app suppresses installation offers even without stored offer history",
+    "chromium-pixel5: cashier manual QR input commits one stamp and updates the actual customer balance",
+    "Camera synthetic stream: rear-camera constraint, muted/playsInline, tracks stopped on hide and after late permission; no auto-resume",
+    "chromium-pixel5: fallback portaled select responds to touch and remains usable in a keyboard-managed modal without native Popover or ResizeObserver",
+    "chromium-pixel5: no CSP violations or page errors with production-built scripts",
+    "Chromium: browser installability checks return no errors (current replacement for retired Lighthouse PWA audit)",
+    "PWA: offline shell opens while API responses remain network-only and absent from CacheStorage",
+    "PWA: a waiting update activates and reloads after the user taps Update now, preserving the authenticated card",
+    "chromium-pixel5: paused branches and revoked NFC placements show plain guidance without technical codes or creating a request",
+    "webkit-iphone12: name/phone/terms registration survives Arabic/English switching, reaches the card within 30 seconds, and needs no email/password or UUID/Popover/ResizeObserver/Animation.finished",
+    "webkit-iphone12: first NFC scan needs only name/phone/terms/submit, preserves context, reveals the card in 720ms and requests one first stamp without granting it",
+    "webkit-iphone12: first home-screen offer uses the native prompt or the two-step Safari illustration",
+    "webkit-iphone12: five placement scans open the existing card with zero customer taps, create one request, and reload creates none",
+    "webkit-iphone12: interruption, session expiry during POST and a lost committed reply restore the device session and retry the same request key without a duplicate",
+    "webkit-iphone12: a shortened display-expiry fixture refreshes the QR automatically before expiration"
+  ],
+  "projects": [
+    "chromium-pixel5",
+    "webkit-iphone12"
+  ],
+  "build": "d0c3992a5a7754d8f50c",
+  "indexSha256": "5f9329e0af0f901935da195d673679fd9de2770fb50a1a5753a980da7f95f928",
+  "installabilityErrors": [],
+  "reason": "webkit-iphone12: AssertionError [ERR_ASSERTION]: first committed stamp must be visible in under one second locally"
+}

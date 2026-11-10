@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import { portalForPath } from './portals.js';
 type Refresh = () => void | Promise<void>;
 const channels = new Map<string, { listeners: Set<Refresh>; stop: () => void }>();
-function subscribe(url: string, refresh: Refresh) {
+export function subscribeLiveRefresh(url: string, refresh: Refresh) {
   let channel = channels.get(url);
   if (!channel) {
     const listeners = new Set<Refresh>();
@@ -22,15 +22,32 @@ function subscribe(url: string, refresh: Refresh) {
     };
     const connect = () => {
       if (document.hidden || source || typeof EventSource !== 'function') return;
-      source = new EventSource(url);
-      source.addEventListener('open', () => {
-        connected = true;
+      const stream = new EventSource(url);
+      source = stream;
+      stream.addEventListener('open', () => {
+        if (source === stream) connected = true;
       });
-      source.addEventListener('error', () => {
+      stream.addEventListener('error', () => {
+        if (source !== stream) return;
         connected = false;
+        // Avoid the browser reconnecting an obsolete authenticated stream.
+        // The bounded poll below retries using the latest scoped cookies.
+        stream.close();
+        source = undefined;
+        update();
       });
-      source.addEventListener('sync', update);
-      source.addEventListener('activity', update);
+      stream.addEventListener('sync', update);
+      stream.addEventListener('activity', update);
+    };
+    const restored = () => {
+      // REST recovery has already validated the device and committed new
+      // cookies/CSRF. Retire the stream bound to the old session immediately,
+      // before the next purchase notification discovers its expired actor.
+      source?.close();
+      source = undefined;
+      connected = false;
+      connect();
+      update();
     };
     const visibility = () => {
       if (document.hidden) {
@@ -51,6 +68,7 @@ function subscribe(url: string, refresh: Refresh) {
       }
     }, 3000);
     document.addEventListener('visibilitychange', visibility);
+    window.addEventListener('nuqta:customer-session-restored', restored);
     connect();
     channel = {
       listeners,
@@ -59,6 +77,7 @@ function subscribe(url: string, refresh: Refresh) {
         window.clearTimeout(refreshTimer);
         window.clearInterval(interval);
         document.removeEventListener('visibilitychange', visibility);
+        window.removeEventListener('nuqta:customer-session-restored', restored);
       },
     };
     channels.set(url, channel);
@@ -77,5 +96,5 @@ export function useLiveRefresh(path: string, refresh: Refresh) {
   latest.current = refresh;
   const portal = portalForPath(location.pathname);
   const url = '/api/v1' + path + (portal ? '?__portal=' + portal : '');
-  useEffect(() => subscribe(url, () => latest.current()), [url]);
+  useEffect(() => subscribeLiveRefresh(url, () => latest.current()), [url]);
 }

@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { authenticated } from '../auth.js';
-import { transaction, audit, type Pools } from '../db.js';
+import { transaction, customerLifecycleLock, audit, type Pools } from '../db.js';
 import type { Config } from '../config.js';
 import { keyedHash, tokenHash } from '../crypto.js';
 import { requireCondition } from '../errors.js';
@@ -64,6 +64,7 @@ export function customerRecoveryModule(app: FastifyInstance, pools: Pools, c: Co
       pools.pool,
       async (db) => {
         await merchantGrant(db, actor, m, undefined, p.branchId);
+        await customerLifecycleLock(db, p.customerId);
         return (
           await db.query('SELECT create_customer_recovery($1,$2,$3,$4) AS value', [
             m,
@@ -145,18 +146,22 @@ export function customerRecoveryModule(app: FastifyInstance, pools: Pools, c: Co
       const { token } = tokenParams.parse(req.params),
         p = recoveryConsumeInput.parse(req.body),
         hash = deviceCsrf(req, c);
-      const result = await transaction(
-        pools.authPool,
-        async (db) =>
-          (
-            await db.query('SELECT consume_customer_recovery($1,$2,$3,$4) AS value', [
-              tokenHash(token),
-              hash,
-              deviceAgentFamily(String(req.headers['user-agent'] || '')),
-              p.revokeOldDevices,
-            ])
-          ).rows[0].value,
-      );
+      const result = await transaction(pools.authPool, async (db) => {
+        const identity = (
+          await db.query('SELECT customer_id FROM customer_recoveries WHERE token_hash=$1', [
+            tokenHash(token),
+          ])
+        ).rows[0];
+        if (identity) await customerLifecycleLock(db, identity.customer_id);
+        return (
+          await db.query('SELECT consume_customer_recovery($1,$2,$3,$4) AS value', [
+            tokenHash(token),
+            hash,
+            deviceAgentFamily(String(req.headers['user-agent'] || '')),
+            p.revokeOldDevices,
+          ])
+        ).rows[0].value;
+      });
       requireCondition(result, 'RECOVERY_LINK_INVALID', 410);
       requireCondition(!result.deviceConflict, 'DEVICE_ALREADY_BOUND', 409);
       const session = await issueDeviceSession(pools, c, req, reply);

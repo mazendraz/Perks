@@ -115,6 +115,14 @@ export async function api<T>(
   return body;
 }
 const arErrors: Record<string, string> = {
+  SUBSCRIPTION_INACTIVE:
+    'جمع الأختام متوقف لأن الاشتراك مش ساري أو متوقف يدويًا. كلم صاحب المحل؛ المكافآت المكتسبة تفضل حسب صلاحيتها.',
+  PAYMENT_REFERENCE_USED: 'مرجع الدفعة ده مسجل بالفعل. راجع السجل قبل إضافة تسجيل جديد.',
+  PAYMENT_ALREADY_VOID: 'تسجيل الدفعة دي اتلغى قبل كده. حدّث السجل.',
+  WORK_ACCOUNT_REVIEW_REQUIRED:
+    'الهوية دي مرتبطة بفريق محل كمان. اطلب من مسؤول نقطة يفصل حساب العمل قبل حذف حساب العميل.',
+  CUSTOMER_PRIVACY_DELETED: 'بيانات عميل اتحذفت. اطلب ملف تصدير جديد بالبيانات الحالية.',
+  PRIVACY_CHANGED: 'الخصوصية والشروط اتحدثت. راجع النسخة الجديدة ووافق عليها قبل التسجيل.',
   CUSTOMER_DEVICE_REQUIRED:
     'كارت العميل بيفتح من سكان المحل أو رابط الاسترجاع على واتساب. الإيميل والباسورد للفريق والإدارة.',
   REGISTRATION_CLOSED:
@@ -197,6 +205,16 @@ const arErrors: Record<string, string> = {
   INTERNAL_ERROR: 'حصل خطأ. استخدم مرجع الطلب مع الدعم.',
 };
 const enErrors: Record<string, string> = {
+  SUBSCRIPTION_INACTIVE:
+    'Stamp earning is paused because coverage is inactive or manually paused. Ask the owner; earned rewards retain their validity.',
+  PAYMENT_REFERENCE_USED:
+    'This payment reference is already recorded. Check the history before adding another record.',
+  PAYMENT_ALREADY_VOID: 'This payment record was already voided. Refresh the history.',
+  WORK_ACCOUNT_REVIEW_REQUIRED:
+    'This identity also belongs to a shop team. Ask a Nuqta administrator to separate the work identity before deleting the customer account.',
+  CUSTOMER_PRIVACY_DELETED: 'Customer data was deleted. Request a new export of the current data.',
+  PRIVACY_CHANGED:
+    'Privacy and terms have changed. Review and accept the current notice before continuing.',
   CUSTOMER_DEVICE_REQUIRED:
     'Open your customer card from the shop code or a WhatsApp recovery link. Email and password are for staff and administrators.',
   REGISTRATION_CLOSED:

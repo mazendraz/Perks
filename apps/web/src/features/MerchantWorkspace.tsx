@@ -8,6 +8,7 @@ import type { Language } from '../../../../packages/contracts/src/index.js';
 import { api, errorText } from '../api.js';
 import { Support } from './Support.js';
 import { EnrollmentCodes } from './EnrollmentCodes.js';
+import { Subscriptions } from './Subscriptions.js';
 interface Workspace {
   merchant: {
     id: string;
@@ -43,12 +44,14 @@ interface Workspace {
 }
 export function MerchantWorkspace({
   merchantId,
+  viewerId,
   lang,
   onBack,
   initialTab = 'overview',
   initialProgramId = '',
 }: {
   merchantId: string;
+  viewerId: string;
   lang: Language;
   onBack: () => void;
   initialTab?: string;
@@ -113,6 +116,7 @@ export function MerchantWorkspace({
         {(
           [
             ['overview', 'نظرة عامة', 'Overview'],
+            ['subscription', 'الاشتراك', 'Subscription'],
             ['design', 'الكارت والهوية', 'Card and branding'],
             ['customers', 'العملاء وواتساب', 'Customers and WhatsApp'],
             ['team', 'الفروع والحسابات', 'Branches and accounts'],
@@ -131,6 +135,9 @@ export function MerchantWorkspace({
           </button>
         ))}
       </nav>
+      {tab === 'subscription' && (
+        <Subscriptions key={merchantId} merchantId={merchantId} viewerId={viewerId} lang={lang} />
+      )}
       {data && tab === 'overview' && (
         <>
           <div className="kpi-grid">

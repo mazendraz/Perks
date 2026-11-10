@@ -1,0 +1,18 @@
+{
+  "at": "2026-11-10T00:52:31.504Z",
+  "status": "CONFIG_VERIFIED_RUNTIME_NOT_RUN",
+  "checks": [
+    "Actual Compose base/staging/retention merge switches every service to journald without unsupported JSON-driver options or secret metadata",
+    "Installer stages exact review files and refuses a second installation without overwriting them",
+    "Real systemd-analyze validates the service, hourly timer and30-day duration; no host service, journal or container is changed"
+  ],
+  "hostPolicyApplied": false,
+  "source": {
+    "deploy/compose.retention.yml": "03d8057aad99ab1e5ded5f5cba3a235b9394c2fe3fc8ea4af457aab9f40b659c",
+    "deploy/log-retention/install.sh": "0e87e52bfe0d732d377fab441bbf1d2f250a4e81b8f1fb39a3160be5b1181901",
+    "deploy/log-retention/journald.conf": "18c6aa18c990f8fbf68351abed8fec9070691bfbbf58535b177c31c7e48b554a",
+    "deploy/log-retention/nuqta-log-retention.service": "29124f401cbe6811f74c8014098889068544425abab9ee741adf2e2fa3168c3a",
+    "deploy/log-retention/nuqta-log-retention.timer": "6ebcecaeda9978f4efd2c27f3a9ec436aaa366c40c8b2deb808b551ebdb82760",
+    "tools/test-log-retention.ts": "359ed3c6a5348a403a168d350116e45923d8360e0ccc518be06152310afc3dfc"
+  }
+}

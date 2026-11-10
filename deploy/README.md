@@ -1,5 +1,7 @@
 # Nuqta deployment — L04
 
+Before Pilot, review [RETENTION](RETENTION.md) for the optional host-wide log policy and the offline deletion-reconciliation procedure after restoring backups. The policy was not applied to a server, and independent deletion-manifest delivery is not configured.
+
 ملفات تجهيز محلية فقط. السيرفر والدومين وSMTP لسه غير مختارين؛ الإطلاق محتاج قبول L05–L09 كمان. الشرح التالي للمشغّل التقني، ولا يشغّل إعدادات السيرفر على جهاز التطوير.
 
 Target: a dedicated Ubuntu 24.04 LTS host, at least 2 vCPU, 4 GB RAM and 80 GB SSD. Install Docker Engine and Compose using the [official Ubuntu instructions](https://docs.docker.com/engine/install/ubuntu/).

@@ -67,8 +67,12 @@ jobs:
       - run: npm ci
       - run: npm run test:deploy
       - run: npm run test:staging-config
+      - run: npm run test:log-retention
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: deployment-evidence
-          path: docs/execution/evidence/implementation/deployment.json
+          path: |
+            docs/execution/evidence/implementation/deployment.json
+            docs/execution/evidence/implementation/staging-config.json
+            docs/execution/evidence/implementation/log-retention.json

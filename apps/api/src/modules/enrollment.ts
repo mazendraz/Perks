@@ -9,6 +9,7 @@ import { idempotencyKey, operation } from '../operations.js';
 import { keyedHash, tokenHash, opaqueToken } from '../crypto.js';
 import { requireCondition } from '../errors.js';
 import { merchantGrant } from '../policy.js';
+import { acceptedLegal } from '../legal.js';
 export function readPresentationToken(value: string) {
   return value.replace(/^NQP:/, '');
 }
@@ -24,6 +25,7 @@ export function enrollmentModule(app: FastifyInstance, pools: Pools, c: Config) 
     const actor = authenticated(req),
       body = enrollmentInput.parse(req.body),
       key = idempotencyKey(req);
+    const notice = actor.authMethod === 'device' ? acceptedLegal(body) : undefined;
     return transaction(
       pools.pool,
       (db) =>
@@ -32,6 +34,12 @@ export function enrollmentModule(app: FastifyInstance, pools: Pools, c: Config) 
           actor,
           { scope: 'membership.enroll', key, payload: body, merchantId: body.merchantId },
           async () => {
+            if (notice)
+              await db.query('SELECT accept_customer_legal($1,$2,$3)', [
+                actor.sessionId,
+                notice.acceptance.version,
+                notice.acceptance.text,
+              ]);
             if (body.consents.whatsapp)
               await db.query('SELECT pg_advisory_xact_lock(hashtextextended($1,0))', [
                 'consent:' + body.merchantId + ':' + actor.id,
@@ -87,7 +95,7 @@ export function enrollmentModule(app: FastifyInstance, pools: Pools, c: Config) 
       async (db) => ({
         cards: (
           await db.query(
-              "SELECT card || jsonb_build_object('logo_asset_id',b.logo_asset_id,'stamp_ink',customer_stamp_artwork((card->>'id')::uuid)) AS card FROM my_cards() card LEFT JOIN public_merchant_brands b ON b.id=(card->>'merchant_id')::uuid",
+            "SELECT card || jsonb_build_object('logo_asset_id',b.logo_asset_id,'stamp_ink',customer_stamp_artwork((card->>'id')::uuid),'earning_active',(card->>'earning_active')::boolean AND merchant_earning_allowed((card->>'merchant_id')::uuid)) AS card FROM my_cards() card LEFT JOIN public_merchant_brands b ON b.id=(card->>'merchant_id')::uuid",
           )
         ).rows.map((r) => r.card),
       }),
@@ -102,7 +110,7 @@ export function enrollmentModule(app: FastifyInstance, pools: Pools, c: Config) 
       async (db) => {
         const card = (
           await db.query(
-              "SELECT card || jsonb_build_object('logo_asset_id',b.logo_asset_id,'stamp_ink',customer_stamp_artwork((card->>'id')::uuid)) AS card FROM my_cards() card LEFT JOIN public_merchant_brands b ON b.id=(card->>'merchant_id')::uuid WHERE card->>'id'=$1",
+            "SELECT card || jsonb_build_object('logo_asset_id',b.logo_asset_id,'stamp_ink',customer_stamp_artwork((card->>'id')::uuid),'earning_active',(card->>'earning_active')::boolean AND merchant_earning_allowed((card->>'merchant_id')::uuid)) AS card FROM my_cards() card LEFT JOIN public_merchant_brands b ON b.id=(card->>'merchant_id')::uuid WHERE card->>'id'=$1",
             [id],
           )
         ).rows[0]?.card;

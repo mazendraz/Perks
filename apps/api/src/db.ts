@@ -45,6 +45,14 @@ export async function transaction<T>(
     await db.query('BEGIN');
     if (actor?.preview) await db.query('SET TRANSACTION READ ONLY');
     if (actor) await db.query("SELECT set_config('app.user_id',$1,true)", [actor.id]);
+    if (actor?.authMethod === 'device') {
+      await customerLifecycleLock(db, actor.id);
+      if (
+        !(await db.query('SELECT customer_session_current($1) AS valid', [actor.sessionId])).rows[0]
+          .valid
+      )
+        throw new AppError('UNAUTHENTICATED', 401);
+    }
     const result = await fn(db);
     await db.query('COMMIT');
     return result;
@@ -79,4 +87,9 @@ export async function audit(
     'INSERT INTO audit_events(actor_id,merchant_id,action,target_id,detail) VALUES($1,$2,$3,$4,$5)',
     [actor.id, merchantId, action, targetId, detail],
   );
+}
+export async function customerLifecycleLock(db: DB, userId: string) {
+  await db.query('SELECT pg_advisory_xact_lock(hashtextextended($1,0))', [
+    'customer-lifecycle:' + userId,
+  ]);
 }

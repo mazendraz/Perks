@@ -4,6 +4,7 @@ import { saveLogo } from '../controls/save-logo.js';
 import { FileUpload } from '../controls/FileUpload.js';
 import { Select } from '../controls/Select.js';
 import { CustomerOutreach } from './CustomerOutreach.js';
+import { Subscriptions } from './Subscriptions.js';
 import { TeamCustomerRecovery, RecoveryPolicy } from './CustomerRecovery.js';
 import { AccountSecurity } from './AccountSecurity.js';
 import {
@@ -1031,20 +1032,28 @@ export function MerchantPage({ grant, lang }: { grant: Grant; lang: Language }) 
         </div>
       )}
       {tab === 'subscription' && (
-        <section className="panel">
-          <h2>
-            {ar ? 'الخطة الحالية' : 'Current plan'}: {entitlement?.plan || '—'}
-          </h2>
-          <p>
-            {entitlement?.max_branches} {ar ? 'فروع' : 'branches'} ·{entitlement?.max_staff}{' '}
-            {ar ? 'موظفين' : 'staff'} ·{entitlement?.max_customers} {ar ? 'عميل' : 'customers'}
-          </p>
-          <p className="muted">
-            {ar
-              ? 'التحصيل الآلي غير مفعّل. إدارة الاتفاق والفواتير بتتم مع فريق المنصة.'
-              : 'Automatic billing is not enabled. Contact the platform team for subscription terms and invoices.'}
-          </p>
-        </section>
+        <>
+          <section className="panel">
+            <h2>
+              {ar ? 'الخطة الحالية' : 'Current plan'}: {entitlement?.plan || '—'}
+            </h2>
+            <p>
+              {entitlement?.max_branches} {ar ? 'فروع' : 'branches'} ·{entitlement?.max_staff}{' '}
+              {ar ? 'موظفين' : 'staff'} ·{entitlement?.max_customers} {ar ? 'عميل' : 'customers'}
+            </p>
+            <p className="muted">
+              {ar
+                ? 'فريق نقطة بيسجل المدفوعات المتفق عليها، وتقدر تتابع التغطية والسجل هنا.'
+                : 'The Nuqta team records agreed payments. You can follow coverage and payment history here.'}
+            </p>
+          </section>
+          <Subscriptions
+            key={grant.merchant_id}
+            merchantId={grant.merchant_id}
+            lang={lang}
+            readOnly
+          />
+        </>
       )}
       {tab === 'operations' && (
         <section className="panel">

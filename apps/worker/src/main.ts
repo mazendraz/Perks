@@ -28,6 +28,7 @@ async function main() {
       if (Date.now() - lastSweep > 60000) {
         await pool.query('SELECT sweep_expired_rewards()');
         await pool.query('SELECT sweep_expired_requests()');
+        await pool.query('SELECT sweep_expired_sessions()');
         await cleanupExports(pool, createFileStore(c));
         lastSweep = Date.now();
       }

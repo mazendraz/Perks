@@ -1,6 +1,6 @@
 {
-  "at": "2026-11-09T18:24:53.005Z",
-  "passed": 450,
+  "at": "2026-11-10T00:56:16.579Z",
+  "passed": 469,
   "failed": 0,
   "errors": [],
   "checks": [
@@ -335,7 +335,27 @@
       "detail": "local link target"
     },
     {
+      "name": "link:docs\\execution\\RUNBOOK.md:CUSTOMER-IDENTITY.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
       "name": "link:docs\\execution\\RUNBOOK.md:PASSWORD-AND-DESIGN.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\RUNBOOK.md:PILOT-RUNBOOK.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\RUNBOOK.md:PRIVACY-AND-PILOT.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\RUNBOOK.md:../../deploy/RETENTION.md",
       "ok": true,
       "detail": "local link target"
     },
@@ -376,6 +396,21 @@
     },
     {
       "name": "link:docs\\execution\\RUNBOOK.md:../../deploy/BACKUP-README.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\STATUS.md:PRIVACY-AND-PILOT.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\STATUS.md:PILOT-RUNBOOK.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\STATUS.md:../../deploy/RETENTION.md",
       "ok": true,
       "detail": "local link target"
     },
@@ -510,6 +545,21 @@
       "detail": "local link target"
     },
     {
+      "name": "link:docs\\execution\\README.md:PRIVACY-AND-PILOT.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\README.md:PILOT-RUNBOOK.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\README.md:../../deploy/RETENTION.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
       "name": "link:docs\\execution\\README.md:IMPLEMENTATION.md",
       "ok": true,
       "detail": "local link target"
@@ -586,6 +636,21 @@
     },
     {
       "name": "link:docs\\execution\\README.md:evidence/inventory.json",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\IMPLEMENTATION.md:PRIVACY-AND-PILOT.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\IMPLEMENTATION.md:PILOT-RUNBOOK.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\IMPLEMENTATION.md:../../deploy/RETENTION.md",
       "ok": true,
       "detail": "local link target"
     },
@@ -720,6 +785,21 @@
       "detail": "local link target"
     },
     {
+      "name": "link:docs\\execution\\IMPLEMENTATION-LOG.md:PRIVACY-AND-PILOT.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\IMPLEMENTATION-LOG.md:PILOT-RUNBOOK.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\IMPLEMENTATION-LOG.md:../../deploy/RETENTION.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
       "name": "link:README.md:docs/execution/ACCOUNT-PREVIEW-AND-CONTACT.md",
       "ok": true,
       "detail": "local link target"
@@ -751,6 +831,21 @@
     },
     {
       "name": "link:README.md:docs/execution/RUNBOOK.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:README.md:docs/execution/PILOT-RUNBOOK.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:README.md:docs/execution/PRIVACY-AND-PILOT.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:README.md:deploy/RETENTION.md",
       "ok": true,
       "detail": "local link target"
     },

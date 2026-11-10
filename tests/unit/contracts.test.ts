@@ -51,6 +51,22 @@ test('OpenAPI describes the actual shared commands, field errors and concurrency
         .content['application/json'].schema.properties.cycleNumber,
     );
     assert.deepEqual(paths['/api/v1/auth/password/change'].post.security, [{ session: [] }]);
+    const payment = paths['/api/v1/platform/merchants/{m}/subscription/payments'].post;
+    assert.equal(
+      payment.requestBody.content['application/json'].schema.properties.amountMinor.type,
+      'integer',
+    );
+    assert.ok(
+      payment.parameters.some(
+        (p: { name: string; required: boolean }) => p.name === 'If-Match' && p.required,
+      ),
+    );
+    assert.ok(
+      paths['/api/v1/customer/register'].post.requestBody.content[
+        'application/json'
+      ].schema.required.includes('acceptedPrivacyHash'),
+    );
+    assert.deepEqual(paths['/api/v1/public/legal'].get.security, []);
   } finally {
     await app.close();
   }

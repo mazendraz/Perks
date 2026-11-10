@@ -1,4 +1,5 @@
 import { PhoneInput } from '../controls/PhoneInput.js';
+import type { LegalNotice } from '../../../../packages/contracts/src/legal.js';
 import { Select } from '../controls/Select.js';
 import { CustomerContact } from './CustomerOutreach.js';
 import { FieldErrors, fieldProps } from '../FieldErrors.js';
@@ -65,10 +66,26 @@ export function EnrollmentPage({
     [alias, setAlias] = useState(session?.user.displayName || ''),
     [phone, setPhone] = useState(''),
     [terms, setTerms] = useState(false),
+    [legal, setLegal] = useState<LegalNotice | null>(null),
     [busy, setBusy] = useState(false),
     [prepared, setPrepared] = useState(deviceBound),
     [error, setError] = useState(''),
     [validation, setValidation] = useState<ApiError | null>(null);
+  useEffect(() => {
+    let active = true;
+    setTerms(false);
+    setLegal(null);
+    void api<LegalNotice>('/public/legal?lang=' + lang)
+      .then((value) => {
+        if (active) setLegal(value);
+      })
+      .catch((error) => {
+        if (active) setError(errorText(error, lang));
+      });
+    return () => {
+      active = false;
+    };
+  }, [lang]);
   useEffect(() => {
     let alive = true;
     void api<NonNullable<typeof info>>('/public/merchants/' + encodeURIComponent(slug))
@@ -104,7 +121,7 @@ export function EnrollmentPage({
   };
   const join = async (event: FormEvent) => {
     event.preventDefault();
-    if (!info || !prepared) return;
+    if (!info || !prepared || !legal || legal.locale !== lang) return;
     const chosen = info.programs.find((p) => p.id === program);
     if (!chosen) return;
     setBusy(true);
@@ -132,6 +149,9 @@ export function EnrollmentPage({
         branchId,
         acceptedTerms: terms,
         acceptedTermsHash: chosen.termsHash,
+        acceptedPrivacyVersion: legal.acceptance.version,
+        acceptedPrivacyHash: legal.acceptance.hash,
+        acceptedPrivacyLocale: legal.locale,
         source: query.get('src') === 'nfc' ? 'nfc' : query.get('src') === 'qr' ? 'qr' : 'link',
       };
       if (deviceBound) {
@@ -189,7 +209,7 @@ export function EnrollmentPage({
       setError(errorText(error, lang).split(' · ')[0]!);
       if (
         error instanceof ApiError &&
-        ['TERMS_CHANGED', 'PROGRAM_VERSION_CHANGED'].includes(error.code)
+        ['TERMS_CHANGED', 'PROGRAM_VERSION_CHANGED', 'PRIVACY_CHANGED'].includes(error.code)
       ) {
         setTerms(false);
         try {
@@ -198,6 +218,7 @@ export function EnrollmentPage({
           );
           setInfo(value);
           setProgram(value.programs[0]?.id || '');
+          setLegal(await api<LegalNotice>('/public/legal?lang=' + lang));
         } catch {
           /* Consent remains unchecked. */
         }
@@ -290,6 +311,22 @@ export function EnrollmentPage({
                   ? 'بنحفظ اسمك ورقمك للكارت واسترجاعه بطلبك،وبنربطه بالجهاز ده. التسجيل مش موافقة على التسويق.'
                   : 'Your name and number are used for your card and recovery you request. The card is linked to this device. Registration does not opt you into marketing.'}
               </p>
+              <p className="muted">
+                {ar
+                  ? 'مسودة محلية، والمراجعة القانونية مطلوبة قبل الإطلاق.'
+                  : 'Local draft. Legal review is required before launch.'}
+              </p>
+              <nav
+                className="legal-links"
+                aria-label={ar ? 'اقرأ الشروط والخصوصية' : 'Read terms and privacy'}
+              >
+                <a href={'/privacy?lang=' + lang} target="_blank" rel="noopener noreferrer">
+                  {ar ? 'الخصوصية كاملة' : 'Full privacy notice'}
+                </a>
+                <a href={'/terms?lang=' + lang} target="_blank" rel="noopener noreferrer">
+                  {ar ? 'شروط الاستخدام' : 'Terms of use'}
+                </a>
+              </nav>
             </details>
             <label className="checkbox-label">
               <input
@@ -303,7 +340,10 @@ export function EnrollmentPage({
                 ? 'موافق على شروط البرنامج والمكافأة والخصوصية'
                 : 'I accept the program, reward and privacy terms'}
             </label>
-            <button className="primary full" disabled={busy || !prepared || !program}>
+            <button
+              className="primary full"
+              disabled={busy || !prepared || !program || !legal || legal.locale !== lang}
+            >
               {busy
                 ? ar
                   ? 'بنجهّز كارتك…'

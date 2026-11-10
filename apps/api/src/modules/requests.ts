@@ -12,6 +12,7 @@ import { requireCondition } from '../errors.js';
 import { idempotencyKey, operation, expectedRevision } from '../operations.js';
 import { merchantGrant } from '../policy.js';
 import { award } from './loyalty.js';
+import { requireEarning } from '../subscriptions.js';
 function code(nonce: string, c: Config) {
   return (parseInt(keyedHash('request:' + nonce, c.AUTH_PEPPER).slice(0, 12), 16) % 1_000_000)
     .toString()
@@ -118,6 +119,7 @@ export function requestsModule(app: FastifyInstance, pools: Pools, c: Config) {
           actor,
           { scope: 'request.create', key, payload: p, merchantId: ms.merchant_id },
           async () => {
+            await requireEarning(db, ms.merchant_id);
             await db.query('SELECT pg_advisory_xact_lock(hashtextextended($1,0))', [
               'request:' + p.membershipId,
             ]);

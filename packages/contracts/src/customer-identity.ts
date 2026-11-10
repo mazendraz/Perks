@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { contactPhone } from './account-management.js';
+import { legalAcceptanceFields } from './legal.js';
 export const customerPhone = contactPhone.refine(
   (value) => value.length > 0 && (!value.startsWith('+20') || /^\+201[0125][0-9]{8}$/.test(value)),
   'Enter your mobile number',
@@ -16,6 +17,7 @@ export const customerRegistrationInput = z
     branchId: z.uuid(),
     placementCode: z.string().min(20).max(80).optional(),
     source: z.enum(['qr', 'nfc', 'link']).default('qr'),
+    ...legalAcceptanceFields,
   })
   .strict();
 export const customerLookupInput = z.object({ phone: customerPhone, branchId: z.uuid() }).strict();
@@ -25,7 +27,3 @@ export const customerRecoveryInput = z
 export const recoveryConsumeInput = z
   .object({ revokeOldDevices: z.boolean().default(true) })
   .strict();
-// This is a versioned local draft awaiting the owner's L09 legal review.
-export const customerPrivacyVersion = 'pilot-privacy-draft-v1';
-export const customerPrivacyText =
-  'بنحفظ اسمك ورقمك علشان كارت الولاء واسترجاعه بطلبك،وبنربط الكارت بالجهاز ده. التسجيل مش موافقة على التسويق. / We store your name and number for loyalty and recovery you request, and link the card to this device. Registration does not opt you into marketing.';

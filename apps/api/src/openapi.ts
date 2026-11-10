@@ -40,6 +40,13 @@ import {
 } from '../../../packages/contracts/src/commands.js';
 import { provisioningInput } from '../../../packages/contracts/src/provisioning.js';
 import { experienceInput } from './modules/experience.js';
+import { legalNoticeOutput, customerDeletionInput } from '../../../packages/contracts/src/legal.js';
+import {
+  subscriptionPaymentInput,
+  subscriptionPauseInput,
+  subscriptionVoidInput,
+  subscriptionStateOutput,
+} from '../../../packages/contracts/src/subscriptions.js';
 import {
   customerRegistrationInput,
   customerLookupInput,
@@ -55,6 +62,41 @@ type Contract = {
   responseStatus?: number;
 };
 const contracts: Record<string, Contract> = {
+  'GET /api/v1/public/legal': { response: legalNoticeOutput },
+  'GET /api/v1/customer/deletion-status': { response: z.object({ deleted: z.boolean() }) },
+  'POST /api/v1/me/privacy/delete': {
+    body: customerDeletionInput,
+    key: true,
+    response: z.object({
+      deleted: z.literal(true),
+      alreadyDeleted: z.boolean().optional(),
+      operationId: z.uuid(),
+    }),
+  },
+  'GET /api/v1/platform/merchants/:m/subscription': { response: subscriptionStateOutput },
+  'GET /api/v1/merchants/:m/subscription': { response: subscriptionStateOutput },
+  'POST /api/v1/platform/merchants/:m/subscription/payments': {
+    body: subscriptionPaymentInput,
+    key: true,
+    revision: true,
+    response: z.object({
+      paymentId: z.uuid(),
+      subscription: subscriptionStateOutput,
+      operationId: z.uuid(),
+    }),
+  },
+  'PATCH /api/v1/platform/merchants/:m/subscription': {
+    body: subscriptionPauseInput,
+    key: true,
+    revision: true,
+    response: z.object({ subscription: subscriptionStateOutput, operationId: z.uuid() }),
+  },
+  'POST /api/v1/platform/merchants/:m/subscription/payments/:id/void': {
+    body: subscriptionVoidInput,
+    key: true,
+    revision: true,
+    response: z.object({ subscription: subscriptionStateOutput, operationId: z.uuid() }),
+  },
   'GET /api/v1/customer/bootstrap': { response: z.object({ csrfToken: z.string() }) },
   'POST /api/v1/customer/register': {
     body: customerRegistrationInput,
@@ -306,7 +348,7 @@ export const contractDocumentation: swagger.SwaggerTransform = ({ schema = {}, u
     headers['If-Match'] = {
       type: 'integer',
       minimum: 1,
-      description: 'The last observed draft revision.',
+      description: 'The last observed resource revision.',
     };
     required.push('If-Match');
   }
@@ -348,7 +390,7 @@ export const contractDocumentation: swagger.SwaggerTransform = ({ schema = {}, u
     ...(url.startsWith('/api/v1/platform/')
       ? {
           description:
-            'Platform authorization required. Password sessions use current account and platform-role checks. Legacy test sessions additionally require fresh MFA.',
+            'Platform authorization and, in staging/production, fresh platform MFA are required. Legacy test sessions also require fresh MFA.',
         }
       : {}),
   };

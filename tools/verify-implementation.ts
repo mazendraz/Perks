@@ -27,6 +27,7 @@ const report: {
   animationChecks?: number;
   monitoringChecks?: number;
   tunnelChecks?: number;
+  logRetentionConfigChecks?: number;
   sourceFingerprint?: string;
   sourceFingerprintAfter?: string;
   environment?: Record<string, string>;
@@ -40,7 +41,7 @@ async function snapshot() {
       const path = join(dir, entry.name);
       if (entry.isDirectory()) await walk(path);
       else if (
-        /\.(?:ts|tsx|js|mjs|cjs|css|html|json|webmanifest|png|sql|ya?ml|svg|ttf|woff2?|otf|sh|conf|py)$/.test(
+        /\.(?:ts|tsx|js|mjs|cjs|css|html|json|webmanifest|png|sql|ya?ml|svg|ttf|woff2?|otf|sh|conf|py|service|timer)$/.test(
           entry.name,
         ) ||
         ['Caddyfile', 'Dockerfile'].includes(entry.name)
@@ -115,6 +116,7 @@ for (const script of [
   'test:integration',
   'test:monitoring',
   'test:tunnel',
+  'test:log-retention',
   'test:manual-demo',
   'test:e2e',
   'test:e2e:mobile',
@@ -182,6 +184,12 @@ if (!process.exitCode) {
   assert.equal(tunnel.status, 'passed');
   assert.equal(tunnel.externalTunnelOpened, false);
   report.tunnelChecks = tunnel.checks.length;
+  const logs = JSON.parse(
+    await readFile('docs/execution/evidence/implementation/log-retention.json', 'utf8'),
+  );
+  assert.equal(logs.status, 'CONFIG_VERIFIED_RUNTIME_NOT_RUN');
+  assert.equal(logs.hostPolicyApplied, false);
+  report.logRetentionConfigChecks = logs.checks.length;
   report.sourceFingerprintAfter = (await snapshot()).fingerprint;
   if (report.sourceFingerprintAfter !== report.sourceFingerprint) {
     report.status = 'source_changed_during_verification';

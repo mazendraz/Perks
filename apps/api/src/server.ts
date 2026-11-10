@@ -8,6 +8,8 @@ import { liveEventsModule } from './live-events.js';
 import { experienceModule } from './modules/experience.js';
 import { customerIdentityModule } from './modules/customer-identity.js';
 import { customerRecoveryModule } from './modules/customer-recovery.js';
+import { customerPrivacyModule } from './modules/customer-privacy.js';
+import { subscriptionsModule } from './modules/subscriptions.js';
 import Fastify, { LogController, type FastifyBaseLogger } from 'fastify';
 import cookie from '@fastify/cookie';
 import rateLimit from '@fastify/rate-limit';
@@ -153,6 +155,8 @@ export async function buildApp(
   experienceModule(app, pools);
   customerIdentityModule(app, pools, c);
   customerRecoveryModule(app, pools, c);
+  customerPrivacyModule(app, pools, c);
+  subscriptionsModule(app, pools);
   customersModule(app, pools, c);
   materialsModule(app, pools, c);
   platformModule(app, pools, c);
@@ -187,7 +191,7 @@ export async function buildApp(
       if (
         (
           await pools.pool.query(
-            "SELECT count(*)::int AS count FROM schema_migrations WHERE name='011a_monitoring_queue_intents.sql'",
+            "SELECT count(*)::int AS count FROM schema_migrations WHERE name='012e_privacy_restore_manifest.sql'",
           )
         ).rows[0].count !== 1
       )

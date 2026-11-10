@@ -7,6 +7,8 @@ import { networkUnavailable } from './network.js';
 import { Icon } from '../../../packages/ui/src/Icon.js';
 import { Login, ResetPassword, PasswordSettings } from './features/Auth.js';
 import { PlatformMfa } from './features/PlatformMfa.js';
+import { LegalPage } from './features/Legal.js';
+import { DeleteCustomerAccount, CustomerDeletionComplete } from './features/CustomerPrivacy.js';
 import { useDialogAccessibility } from './dialog-accessibility.js';
 import { Operations } from './features/Operations.js';
 import { PlacementPage } from './features/Materials.js';
@@ -39,12 +41,30 @@ export function App() {
     if (fallback) fallback.hidden = true;
   }, []);
   const route = useRoute(),
-    [lang, setLang] = useState<Language>(initialLanguage);
+    [lang, setLang] = useState<Language>(() => {
+      const linked = new URLSearchParams(location.search).get('lang');
+      return ['/privacy', '/terms'].includes(location.pathname) &&
+        (linked === 'ar' || linked === 'en')
+        ? linked
+        : initialLanguage();
+    });
   const portal = portalForPath(route);
   const [sessionPortal, setSessionPortal] = useState<Portal | undefined>(portal);
   const [session, setSession] = useState<Session | null>(null),
     [loading, setLoading] = useState(true),
     [notice, setNotice] = useState('');
+  const [accountDeleted, setAccountDeleted] = useState(false);
+  useEffect(() => {
+    const deleted = () => {
+      setSession(null);
+      setCsrf('');
+      setNotice('');
+      setAccountDeleted(true);
+      navigate('/customer/deleted');
+    };
+    window.addEventListener('nuqta:customer-deleted', deleted);
+    return () => window.removeEventListener('nuqta:customer-deleted', deleted);
+  }, []);
   const refresh = useCallback(async () => {
     try {
       const s = await api<Session>('/session');
@@ -198,7 +218,11 @@ export function App() {
           </button>
         </div>
       )}
-      {route.startsWith('/reset-password/') ? (
+      {route === '/customer/deleted' && accountDeleted ? (
+        <CustomerDeletionComplete lang={lang} />
+      ) : route === '/privacy' || route === '/terms' ? (
+        <LegalPage kind={route === '/privacy' ? 'privacy' : 'terms'} lang={lang} />
+      ) : route.startsWith('/reset-password/') ? (
         <ResetPassword token={route.split('/')[2] || ''} lang={lang} />
       ) : route.startsWith('/p/') ? (
         <PlacementPage code={route.split('/')[2] || ''} lang={lang} />
@@ -244,6 +268,10 @@ export function App() {
       )}
       <footer className="footer">
         {ar ? 'نقطة · كل علاقة بتبدأ بنقطة' : 'Nuqta · A small beginning, a lasting connection'}
+        <nav className="legal-links" aria-label={ar ? 'الخصوصية والشروط' : 'Privacy and terms'}>
+          <a href={'/privacy?lang=' + lang}>{ar ? 'الخصوصية' : 'Privacy'}</a>
+          <a href={'/terms?lang=' + lang}>{ar ? 'الشروط' : 'Terms'}</a>
+        </nav>
       </footer>
     </ControlLocale.Provider>
   );
@@ -338,11 +366,14 @@ function Workspace({
           <bdi>{session.user.email || session.user.displayName}</bdi>
         </p>
         {portal === 'customer' ? (
-          <p className="panel">
-            {ar
-              ? 'كارتك مربوط بالجهاز ده. لو غيرت الموبايل،اطلب من الكاشير يرجعهولك على واتساب. مش محتاج باسورد.'
-              : 'Your card is linked to this device. If you change phones, ask the cashier to restore it on WhatsApp. You do not need a password.'}
-          </p>
+          <>
+            <p className="panel">
+              {ar
+                ? 'كارتك مربوط بالجهاز ده. لو غيرت الموبايل،اطلب من الكاشير يرجعهولك على واتساب. مش محتاج باسورد.'
+                : 'Your card is linked to this device. If you change phones, ask the cashier to restore it on WhatsApp. You do not need a password.'}
+            </p>
+            <DeleteCustomerAccount lang={lang} />
+          </>
         ) : (
           <PasswordSettings lang={lang} refresh={refresh} />
         )}

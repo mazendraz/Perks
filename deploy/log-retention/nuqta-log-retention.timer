@@ -1,0 +1,12 @@
+[Unit]
+Description=Hourly Nuqta journal retention
+
+[Timer]
+OnCalendar=hourly
+AccuracySec=1min
+RandomizedDelaySec=2min
+Persistent=true
+Unit=nuqta-log-retention.service
+
+[Install]
+WantedBy=timers.target

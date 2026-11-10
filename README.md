@@ -9,6 +9,9 @@
 - [حالة المراحل والأدلة](docs/execution/STATUS.md)
 - [اللي اتنفذ وحدوده](docs/execution/IMPLEMENTATION.md)
 - [دليل التشغيل](docs/execution/RUNBOOK.md)
+- [تجهيز محل وتدريب الكاشير ومراجعة المشاكل](docs/execution/PILOT-RUNBOOK.md)
+- [الخصوصية والاشتراك اليدوي وحدود القبول](docs/execution/PRIVACY-AND-PILOT.md)
+- [الاحتفاظ بالبيانات وإعادة الحذف بعد الاستعادة](deploy/RETENTION.md)
 - [الخطة والـBacklog](docs/execution/README.md)
 
 ## التشغيل السريع — PowerShell

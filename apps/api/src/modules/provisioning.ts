@@ -20,7 +20,7 @@ import {
 } from '../../../../packages/contracts/src/provisioning.js';
 import { authenticated } from '../auth.js';
 import { audit, transaction, type Pools, type DB, type Actor } from '../db.js';
-import type { Config } from '../config.js';
+import { deployed, type Config } from '../config.js';
 import { requireCondition } from '../errors.js';
 import { merchantGrant, platform } from '../policy.js';
 import { expectedRevision, idempotencyKey, operation } from '../operations.js';
@@ -258,8 +258,16 @@ export function provisioningModule(app: FastifyInstance, pools: Pools, c: Config
               )
             ).rows[0];
             await db.query(
-              'INSERT INTO feature_entitlements(merchant_id,plan,max_branches,max_staff,max_programs,max_customers) VALUES($1,$2,$3,$4,$5,$6)',
-              [m.id, d.plan, limits.branches, limits.staff, limits.programs, limits.customers],
+              'INSERT INTO feature_entitlements(merchant_id,plan,max_branches,max_staff,max_programs,max_customers,billing_required) VALUES($1,$2,$3,$4,$5,$6,$7)',
+              [
+                m.id,
+                d.plan,
+                limits.branches,
+                limits.staff,
+                limits.programs,
+                limits.customers,
+                deployed(c),
+              ],
             );
             const branches: { id: string; name: string }[] = [];
             for (const b of d.branches)

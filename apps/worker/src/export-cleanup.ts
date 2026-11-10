@@ -37,7 +37,9 @@ export async function cleanupExports(
       const fresh = await files.stat(entry.key);
       if (
         fresh &&
-        Date.now() - fresh.modifiedAt >= retentionMs &&
+        (Date.now() - fresh.modifiedAt >= retentionMs ||
+          (await db.query('SELECT export_privacy_purge_required($1) AS required', [key])).rows[0]
+            .required) &&
         (await db.query('SELECT export_artifact_deletable($1) AS allowed', [key])).rows[0].allowed
       ) {
         await files.delete(entry.key);

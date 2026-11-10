@@ -1,4 +1,8 @@
-# التنفيذ الحالي — 2026-11-09
+# التنفيذ الحالي — 2026-11-10
+
+## تحديث خطة الإطلاق — L09، 2026-11-10
+
+L09 LOCAL_VERIFIED / BLOCKED_OWNER — 2026-11-10: صفحات الخصوصية والشروط AR/EN مسودات ظاهرة للمستخدم، والتسجيل يحفظ النص والنسخة واللغة وhash ويرفض الموافقة القديمة. حذف العميل يبطل الأجهزة والجلسات والاسترجاع وQR والتصديرات، مع تطابق Ledger والأرصدة وسجل المكافآت قبل وبعد. الاحتفاظ المحلي: CSV جديدة 24 ساعة، وجلسات منتهية أكثر من90 يومًا بدفعات500. الاشتراك اليدوي يسجل ويُبطل دفعات immutable؛ انتهاء المدة أو pause يمنع أختامًا جديدة ويُبقي عرض الكارت وصرف المكافأة المكتسبة وتجديد الدورة. verify:local passed:28 unit و99 integration و60 desktop و33 mobile و5 animation و9 monitoring و7 tunnel و3 log-config؛skip واحد للـsymlink علىWindows. كل15خطوة نجحت وبصمة 5b3bc4fdd731771623d68a9c4053b5cf79b8be2ae9bac027eacd557ea6b14313 متطابقة قبل وبعد. root وتجربة مازن حتى012e، مع تطابق الحسابات وكلمات المرور واللوجو وready200 ودخولplatform فعلي. سياسة لوجز30يوم CONFIG_VERIFIED_RUNTIME_NOT_RUN فقط ولم تُطبق علىhost؛نسخةmanifest مستقلة مشفرة وجدولتها لم تُجهز. الموافقة القانونية والأسعار ومسؤول needs_review وقراءةrunbook والأجهزة/السيرفر/Pilot تظل BLOCKED_OWNER. لا بدءL10 قبلPilot حقيقي أوطلب صريح. التفاصيل في [PRIVACY-AND-PILOT](PRIVACY-AND-PILOT.md) و[PILOT-RUNBOOK](PILOT-RUNBOOK.md) و[RETENTION](../../deploy/RETENTION.md).
 
 ## تحديث خطة الإطلاق — L08،2026-11-09
 

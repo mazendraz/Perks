@@ -15,6 +15,7 @@ import { idempotencyKey, operation } from '../operations.js';
 import { tokenHash } from '../crypto.js';
 import { readPresentationToken } from './enrollment.js';
 import { emitOutbox } from '../outbox.js';
+import { requireEarning } from '../subscriptions.js';
 export { awardInput as awardBody } from '../../../../packages/contracts/src/commands.js';
 import {
   awardInput as awardBody,
@@ -77,6 +78,7 @@ export async function award(
       requireCondition(account, 'NOT_FOUND', 404);
       requireCondition(account.membership_status === 'active', 'MEMBERSHIP_DISABLED', 403);
       requireCondition(account.program_status === 'active', 'PROGRAM_INACTIVE', 409);
+      await requireEarning(db, merchantId);
       const clock = (await db.query('SELECT clock_timestamp() AS at')).rows[0].at as Date;
       if (source === 'request') {
         const request = (

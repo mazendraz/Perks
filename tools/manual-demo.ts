@@ -228,6 +228,7 @@ async function start() {
       if (Date.now() - sweep > 60000) {
         await worker.query('SELECT sweep_expired_rewards()');
         await worker.query('SELECT sweep_expired_requests()');
+        await worker.query('SELECT sweep_expired_sessions()');
         await cleanupExports(worker, createFileStore(c));
         sweep = Date.now();
       }

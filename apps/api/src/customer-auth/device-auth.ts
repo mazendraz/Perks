@@ -1,6 +1,6 @@
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import type { Config } from '../config.js';
-import { transaction, type Pools } from '../db.js';
+import { transaction, customerLifecycleLock, type Pools } from '../db.js';
 import { keyedHash, opaqueToken, safeEqual, tokenHash } from '../crypto.js';
 import { portalCookies } from '../portal-auth.js';
 import { requireCondition } from '../errors.js';
@@ -58,6 +58,13 @@ export async function issueDeviceSession(
   const token = opaqueToken(),
     csrf = opaqueToken();
   const created = await transaction(pools.authPool, async (db) => {
+    const identity = (
+      await db.query('SELECT customer_id FROM customer_devices WHERE token_hash=$1', [
+        tokenHash(raw),
+      ])
+    ).rows[0];
+    if (!identity) return false;
+    await customerLifecycleLock(db, identity.customer_id);
     const device = (
       await db.query(
         "SELECT d.id,d.customer_id,u.password_version FROM customer_devices d JOIN users u ON u.id=d.customer_id WHERE d.token_hash=$1 AND d.revoked_at IS NULL AND d.expires_at>clock_timestamp() AND u.status='active' AND u.global_role='customer' FOR UPDATE OF d",

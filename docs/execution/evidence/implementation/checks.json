@@ -1,83 +1,88 @@
 {
-  "at": "2026-11-09T18:19:22.826Z",
+  "at": "2026-11-10T00:49:26.007Z",
   "status": "passed",
   "steps": [
     {
       "command": "npm run typecheck",
       "exitCode": 0,
-      "durationMs": 4957.4646
+      "durationMs": 5784.0008
     },
     {
       "command": "npm run lint",
       "exitCode": 0,
-      "durationMs": 2875.3422999999993
+      "durationMs": 3534.4065999999993
     },
     {
       "command": "npm run test",
       "exitCode": 0,
-      "durationMs": 5745.7249,
-      "passedTests": 27,
+      "durationMs": 7053.4113,
+      "passedTests": 28,
       "skippedTests": 1
     },
     {
       "command": "npm run build",
       "exitCode": 0,
-      "durationMs": 13340.278799999998
+      "durationMs": 17279.1464
     },
     {
       "command": "npm run openapi:export",
       "exitCode": 0,
-      "durationMs": 1353.9229000000014
+      "durationMs": 1689.7929999999978
     },
     {
       "command": "npm run test:integration",
       "exitCode": 0,
-      "durationMs": 106669.5745,
-      "passedTests": 85,
+      "durationMs": 132716.5762,
+      "passedTests": 99,
       "skippedTests": 0
     },
     {
       "command": "npm run test:monitoring",
       "exitCode": 0,
-      "durationMs": 10679.69769999999
+      "durationMs": 11789.632899999997
     },
     {
       "command": "npm run test:tunnel",
       "exitCode": 0,
-      "durationMs": 4307.960300000006
+      "durationMs": 5150.525499999989
+    },
+    {
+      "command": "npm run test:log-retention",
+      "exitCode": 0,
+      "durationMs": 6340.485499999981
     },
     {
       "command": "npm run test:manual-demo",
       "exitCode": 0,
-      "durationMs": 6621.480299999996
+      "durationMs": 8228.693300000014
     },
     {
       "command": "npm run test:e2e",
       "exitCode": 0,
-      "durationMs": 71189.94569999998
+      "durationMs": 85023.74349999998
     },
     {
       "command": "npm run test:e2e:mobile",
       "exitCode": 0,
-      "durationMs": 45726.198599999974
+      "durationMs": 50004.86259999999
     },
     {
       "command": "npm run test:animation",
       "exitCode": 0,
-      "durationMs": 34746.346699999995
+      "durationMs": 56242.523800000024
     },
     {
       "command": "npm run test:restore",
       "exitCode": 0,
-      "durationMs": 2452.5163000000175
+      "durationMs": 3082.7190999999875
     },
     {
       "command": "npm run verify:plan",
       "exitCode": 0,
-      "durationMs": 377.7989000000525
+      "durationMs": 429.89139999996405
     }
   ],
-  "sourceFingerprint": "ea35672c9684b3a639d3365d0c8096a8b774e2de3249495e1427ab333fec4086",
+  "sourceFingerprint": "5b3bc4fdd731771623d68a9c4053b5cf79b8be2ae9bac027eacd557ea6b14313",
   "environment": {
     "node": "v24.19.0",
     "platform": "win32",
@@ -85,10 +90,11 @@
     "authProvider": "local",
     "browser": "msedge"
   },
-  "browserChecks": 56,
+  "browserChecks": 60,
   "mobileChecks": 33,
   "animationChecks": 5,
   "monitoringChecks": 9,
   "tunnelChecks": 7,
-  "sourceFingerprintAfter": "ea35672c9684b3a639d3365d0c8096a8b774e2de3249495e1427ab333fec4086"
+  "logRetentionConfigChecks": 3,
+  "sourceFingerprintAfter": "5b3bc4fdd731771623d68a9c4053b5cf79b8be2ae9bac027eacd557ea6b14313"
 }

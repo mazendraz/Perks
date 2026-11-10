@@ -1,0 +1,14 @@
+[Unit]
+Description=Rotate and expire journals on the dedicated Nuqta host
+After=systemd-journald.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/journalctl --rotate --vacuum-time=30d
+User=root
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=-/var/log/journal -/run/log/journal
+RestrictAddressFamilies=AF_UNIX

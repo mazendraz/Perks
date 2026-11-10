@@ -31,7 +31,7 @@ API وworker يخرجانJSON علىstdout/stderr. سطرHTTP يحتويالمس
 
 سجلاتAPI تمر عبرallowlist لرسائلHTTP والفشل. النصوص والـbindings غيرالمعروفة منplugins تتحول إلى`framework.event` معlevel ومعرفطلب آمن؛لا تُكتبmessage أوstack قد تحملبيانات. الكاتب يستخدمroot logger حتى لا تتسربchild bindings. أخطاءبدءAPI/worker والـworker loop لهاevents ثابتة،ولا تُطبعDB URLs أوأخطاءالإعداد الخام. استخدمrequestId معoperation tracing والدعم للتحقيق.
 
-كلخدماتCompose،ومنهاالمراقبة،تستخدمjson-file rotation بحد20m وخمسةملفات. سياسةالعمر30يوم تتبعL09 ولا تُعتبرمتحققة منحدالحجم وحده.
+كل خدمات Compose الأساسية تستخدم json-file rotation بحد 20m وخمسة ملفات. L09 أضافت overlay لـjournald وسياسة 30 يومًا وتحقق إعدادات فقط؛ لم تُطبق على host. راجع [RETENTION](../../deploy/RETENTION.md) لنطاقها على السيرفر كله وخطوات تفعيلها ومحدودية الإثبات.
 
 ## Compose والتنبيهات
 

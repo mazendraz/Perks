@@ -120,11 +120,35 @@ async function login(page: Page, email: string) {
 async function watch(context: BrowserContext) {
   await context.addInitScript('window.__name = function(value) { return value; }');
   await context.addInitScript(() => {
-    const state = window as unknown as { policyViolations: string[] };
+    const state = window as unknown as {
+      policyViolations: string[];
+      policyViolationDetails: {
+        directive: string;
+        blocked: string;
+        source: string;
+        line: number;
+      }[];
+    };
     state.policyViolations = [];
-    document.addEventListener('securitypolicyviolation', (event) =>
-      state.policyViolations.push(event.effectiveDirective),
-    );
+    state.policyViolationDetails = [];
+    document.addEventListener('securitypolicyviolation', (event) => {
+      const resource = (value: string) => {
+        if (['inline', 'eval', 'wasm-eval', ''].includes(value)) return value;
+        try {
+          const name = new URL(value).pathname.split('/').pop() || '';
+          return /\.(js|css)$/.test(name) ? name : '[document or resource]';
+        } catch {
+          return '[resource]';
+        }
+      };
+      state.policyViolations.push(event.effectiveDirective);
+      state.policyViolationDetails.push({
+        directive: event.effectiveDirective,
+        blocked: resource(event.blockedURI),
+        source: resource(event.sourceFile),
+        line: event.lineNumber,
+      });
+    });
     Object.defineProperty(crypto, 'randomUUID', { value: undefined, configurable: true });
     Object.defineProperty(HTMLElement.prototype, 'showPopover', {
       value: undefined,
@@ -770,12 +794,24 @@ try {
       project.name +
         ': fallback portaled select responds to touch and remains usable in a keyboard-managed modal without native Popover or ResizeObserver',
     );
-    for (const target of [page, cp, op])
+    for (const [label, target] of [
+      ['customer', page],
+      ['cashier', cp],
+      ['owner', op],
+    ] as const)
       assert.deepEqual(
         await target.evaluate(
           () => (window as unknown as { policyViolations: string[] }).policyViolations,
         ),
         [],
+        label +
+          ' CSP diagnostics: ' +
+          JSON.stringify(
+            await target.evaluate(
+              () =>
+                (window as unknown as { policyViolationDetails: unknown[] }).policyViolationDetails,
+            ),
+          ),
       );
     assert.deepEqual(errors, []);
     await owner.close();

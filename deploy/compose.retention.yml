@@ -1,0 +1,21 @@
+# Add after the base/staging files on an approved dedicated Linux host.
+# JSON message contents remain unchanged; age retention is managed by journald.
+services:
+  postgres:
+    logging: !override { driver: journald, options: { tag: 'nuqta/{{.Name}}' } }
+  database_backup:
+    logging: !override { driver: journald, options: { tag: 'nuqta/{{.Name}}' } }
+  files_backup:
+    logging: !override { driver: journald, options: { tag: 'nuqta/{{.Name}}' } }
+  migrate:
+    logging: !override { driver: journald, options: { tag: 'nuqta/{{.Name}}' } }
+  restore_drill:
+    logging: !override { driver: journald, options: { tag: 'nuqta/{{.Name}}' } }
+  api:
+    logging: !override { driver: journald, options: { tag: 'nuqta/{{.Name}}' } }
+  worker:
+    logging: !override { driver: journald, options: { tag: 'nuqta/{{.Name}}' } }
+  monitoring:
+    logging: !override { driver: journald, options: { tag: 'nuqta/{{.Name}}' } }
+  caddy:
+    logging: !override { driver: journald, options: { tag: 'nuqta/{{.Name}}' } }

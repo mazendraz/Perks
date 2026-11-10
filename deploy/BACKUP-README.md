@@ -1,5 +1,7 @@
 # Backup and recovery — L05
 
+**L09 addition:** Before reopening an older restored backup, reapply current customer deletions and purge revoked exports using [RETENTION](RETENTION.md). Keep the restore offline. The signed deletion manifest needs an independent encrypted copy; delivery/scheduling of that copy is not yet configured. Earlier PITR evidence does not certify this additional host procedure.
+
 الاختبارات المحلية نجحت على Linux:full وdiff وPITR،ورجوع اللوجو بنفس البايتات منrestic مشفر. ده مش اعتماد لسيرفر إنتاجي أو نسخة برّه الجهاز. السيرفر ومكان النسخة الخارجية لسه BLOCKED_OWNER،وDocker Desktop المحلي متعطل.
 
 ## Components

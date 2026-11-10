@@ -1,5 +1,6 @@
 import { contactPhone } from './account-management.js';
 import { z } from 'zod';
+import { legalAcceptanceFields } from './legal.js';
 
 export const enrollmentInput = z
   .object({
@@ -10,6 +11,9 @@ export const enrollmentInput = z
     contactPhone: contactPhone.optional(),
     acceptedTerms: z.literal(true),
     acceptedTermsHash: z.string().regex(/^[a-f0-9]{64}$/),
+    acceptedPrivacyVersion: legalAcceptanceFields.acceptedPrivacyVersion.optional(),
+    acceptedPrivacyHash: legalAcceptanceFields.acceptedPrivacyHash.optional(),
+    acceptedPrivacyLocale: legalAcceptanceFields.acceptedPrivacyLocale.optional(),
     source: z.enum(['qr', 'nfc', 'link']).default('link'),
     branchId: z.uuid().nullable().default(null),
     consents: z

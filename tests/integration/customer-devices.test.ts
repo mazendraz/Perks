@@ -9,6 +9,7 @@ import { tokenHash, keyedHash } from '../../apps/api/src/crypto.js';
 import { businessDate } from '../../packages/domain/src/loyalty.js';
 import { readFile, readdir } from 'node:fs/promises';
 import { enrollmentTerms, login, key } from '../helpers.js';
+import type { LegalNotice } from '../../packages/contracts/src/legal.js';
 const c = readConfig(),
   db = new pg.Client({ connectionString: c.DATABASE_MIGRATOR_URL }),
   runtime = new pg.Client({ connectionString: c.DATABASE_URL });
@@ -24,6 +25,7 @@ const program = '40000000-0000-4000-8000-000000000001',
 let code: string,
   terms: string,
   address = 1;
+let notice: LegalNotice;
 type Result = Awaited<ReturnType<typeof app.inject>>;
 const cookie = (result: Result) =>
   result.cookies.map((item) => item.name + '=' + item.value).join('; ');
@@ -38,6 +40,7 @@ before(async () => {
     [ids.merchantA, ids.branchA, code, ids.ownerA],
   );
   terms = await enrollmentTerms(app, program);
+  notice = (await app.inject('/api/v1/public/legal?lang=en')).json();
 });
 after(async () => {
   await app.close();
@@ -57,7 +60,12 @@ async function boot() {
     'x-nuqta-workspace': 'customer',
   };
 }
-async function register(phone: string, headers?: Awaited<ReturnType<typeof boot>>, ip?: string) {
+async function register(
+  phone: string,
+  headers?: Awaited<ReturnType<typeof boot>>,
+  ip?: string,
+  policy: Record<string, unknown> = {},
+) {
   headers ??= await boot();
   const result = await app.inject({
     method: 'POST',
@@ -74,11 +82,151 @@ async function register(phone: string, headers?: Awaited<ReturnType<typeof boot>
       placementCode: code,
       acceptedTerms: true,
       acceptedTermsHash: terms,
+      acceptedPrivacyVersion: notice.acceptance.version,
+      acceptedPrivacyHash: notice.acceptance.hash,
+      acceptedPrivacyLocale: notice.locale,
       source: 'qr',
+      ...policy,
     },
   });
   return { result, headers };
 }
+
+test('legal notices are public locale-specific drafts; missing or stale acceptance cannot register, and the exact accepted text survives retries', async () => {
+  const ar = (await app.inject('/api/v1/public/legal?lang=ar')).json() as LegalNotice;
+  assert.equal(ar.reviewRequired, true);
+  assert.equal(notice.reviewRequired, true);
+  assert.notEqual(ar.acceptance.hash, notice.acceptance.hash);
+  assert.equal(ar.acceptance.hash, tokenHash(ar.acceptance.text));
+  assert.equal(ar.acceptance.version.endsWith(':ar'), true);
+  const prepared = await boot();
+  const stale = await register('01512345670', prepared, undefined, {
+    acceptedPrivacyVersion: 'obsolete',
+  });
+  assert.equal(stale.result.statusCode, 409);
+  assert.equal(stale.result.json().error.code, 'PRIVACY_CHANGED');
+  const forged = await register('01512345670', prepared, undefined, {
+    acceptedPrivacyHash: '0'.repeat(64),
+  });
+  assert.equal(forged.result.statusCode, 409);
+  const missing = await register('01512345670', prepared, undefined, {
+    acceptedPrivacyHash: undefined,
+  });
+  assert.equal(missing.result.statusCode, 422);
+  assert.equal(
+    (
+      await db.query(
+        "SELECT count(*)::int AS n FROM customer_identities WHERE phone_e164='+201512345670'",
+      )
+    ).rows[0].n,
+    0,
+  );
+  const acceptance = {
+    acceptedPrivacyVersion: ar.acceptance.version,
+    acceptedPrivacyHash: ar.acceptance.hash,
+    acceptedPrivacyLocale: ar.locale,
+  };
+  const created = await register('01512345670', prepared, undefined, acceptance);
+  assert.equal(created.result.statusCode, 200, created.result.body);
+  assert.equal(
+    (await register('01512345670', prepared, undefined, acceptance)).result.statusCode,
+    200,
+  );
+  const uid = (
+    await db.query("SELECT customer_id FROM customer_identities WHERE phone_e164='+201512345670'")
+  ).rows[0].customer_id;
+  const rows = (
+    await db.query(
+      'SELECT version,text_hash,terms_text FROM customer_privacy_acceptances WHERE customer_id=$1',
+      [uid],
+    )
+  ).rows;
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].version, ar.acceptance.version);
+  assert.equal(rows[0].text_hash, ar.acceptance.hash);
+  assert.equal(rows[0].terms_text, ar.acceptance.text);
+  const headers = {
+    origin,
+    cookie: cookie(created.result),
+    'x-csrf-token': created.result.json().csrfToken,
+    'x-nuqta-workspace': 'customer',
+    ...key(),
+  };
+  const body = {
+    merchantId: ids.merchantA,
+    programId: program,
+    programVersionId: version,
+    branchId: ids.branchA,
+    alias: 'Synthetic holder',
+    acceptedTerms: true,
+    acceptedTermsHash: terms,
+  };
+  assert.equal(
+    (await app.inject({ method: 'POST', url: '/api/v1/me/memberships', headers, payload: body }))
+      .statusCode,
+    422,
+  );
+  assert.equal(
+    (
+      await app.inject({
+        method: 'POST',
+        url: '/api/v1/me/memberships',
+        headers,
+        payload: { ...body, ...acceptance, acceptedPrivacyHash: '0'.repeat(64) },
+      })
+    ).statusCode,
+    409,
+  );
+  const en = {
+    acceptedPrivacyVersion: notice.acceptance.version,
+    acceptedPrivacyHash: notice.acceptance.hash,
+    acceptedPrivacyLocale: notice.locale,
+  };
+  const joined = await app.inject({
+    method: 'POST',
+    url: '/api/v1/me/memberships',
+    headers,
+    payload: { ...body, ...en },
+  });
+  assert.equal(joined.statusCode, 200, joined.body);
+  assert.equal(
+    (
+      await db.query(
+        'SELECT count(*)::int AS n FROM customer_privacy_acceptances WHERE customer_id=$1',
+        [uid],
+      )
+    ).rows[0].n,
+    2,
+  );
+  await assert.rejects(
+    () =>
+      runtime.query(
+        "INSERT INTO customer_privacy_acceptances(customer_id,device_id,version,text_hash,terms_text) VALUES($1,$1,'forged',$2,'forged')",
+        [uid, '0'.repeat(64)],
+      ),
+    (e) => (e as { code: string }).code === '42501',
+  );
+  await runtime.query('BEGIN');
+  try {
+    await runtime.query("SELECT set_config('app.user_id',$1,true)", [ids.ownerA]);
+    const sid = (
+      await db.query('SELECT id FROM sessions WHERE user_id=$1 ORDER BY created_at DESC LIMIT 1', [
+        uid,
+      ])
+    ).rows[0].id;
+    await assert.rejects(
+      () =>
+        runtime.query('SELECT accept_customer_legal($1,$2,$3)', [
+          sid,
+          notice.acceptance.version,
+          notice.acceptance.text,
+        ]),
+      /NQ:UNAUTHENTICATED/,
+    );
+  } finally {
+    await runtime.query('ROLLBACK');
+  }
+});
 test('phone registration needs Origin/CSRF, creates no password/email, and device cookie alone restores the isolated customer session', async () => {
   const prepared = await boot();
   const missing = await app.inject({

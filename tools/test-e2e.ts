@@ -33,6 +33,9 @@ const browser = await chromium.launch({
 });
 const checks: string[] = [],
   errors: string[] = [];
+const capturePageError = (error: { name: string }) => {
+  errors.push(error.name);
+};
 const stamp = Date.now().toString(36),
   origin = c.PUBLIC_APP_ORIGIN;
 const testPassword = 'Qa-' + randomBytes(14).toString('hex');
@@ -686,6 +689,44 @@ try {
   await up.locator('.field-errors button').first().click();
   await up.waitForFunction(() => document.activeElement?.getAttribute('name') === 'displayName');
   await up.getByLabel('Your name', { exact: true }).fill('Browser Customer');
+  await up.route(
+    '**/api/v1/customer/register',
+    async (route) => {
+      const response = await route.fetch({
+        url: registrationOrigin + '/api/v1/customer/register',
+        headers: {
+          ...route.request().headers(),
+          'x-forwarded-for':
+            '2001:db8:' + randomBytes(12).toString('hex').match(/.{4}/g)!.join(':'),
+        },
+        postData: JSON.stringify({
+          ...route.request().postDataJSON(),
+          acceptedPrivacyHash: '0'.repeat(64),
+        }),
+      });
+      assert.equal(response.status(), 409);
+      await route.fulfill({ response });
+    },
+    { times: 1 },
+  );
+  await up.getByRole('button', { name: 'Open my card', exact: true }).click();
+  await up
+    .getByText(
+      'Privacy and terms have changed. Review and accept the current notice before continuing.',
+      { exact: true },
+    )
+    .waitFor();
+  assert.equal(
+    await up
+      .getByLabel('I accept the program, reward and privacy terms', { exact: true })
+      .isChecked(),
+    false,
+  );
+  assert.equal(await up.getByLabel('Your name', { exact: true }).inputValue(), 'Browser Customer');
+  await up.getByLabel('I accept the program, reward and privacy terms', { exact: true }).check();
+  ok(
+    'An outdated privacy notice is rejected; the form preserves identity fields, refreshes the notice and requires fresh consent',
+  );
   await up.route(
     '**/api/v1/customer/register',
     async (route) => {
@@ -1589,6 +1630,50 @@ try {
     .getByRole('alert')
     .filter({ hasText: 'This link was used or expired.' })
     .waitFor();
+  await navigateTo(recoveredPage, '/customer/account');
+  await recoveredPage.getByRole('button', { name: 'Review deletion', exact: true }).click();
+  await recoveredPage
+    .getByLabel('I understand this deletes access to all my cards and rewards', { exact: true })
+    .check();
+  await recoveredPage.route(
+    '**/api/v1/me/privacy/delete',
+    async (route) => {
+      const saved = await route.fetch();
+      assert.equal(saved.status(), 200);
+      await route.abort('failed');
+    },
+    { times: 1 },
+  );
+  await recoveredPage.getByRole('button', { name: 'Delete customer account', exact: true }).click();
+  await recoveredPage
+    .getByRole('heading', { name: 'Customer account deleted', exact: true })
+    .waitFor();
+  assert.deepEqual(
+    (
+      await db.query(
+        'SELECT balance,revision,cycle_number FROM loyalty_accounts WHERE membership_id=$1',
+        [membership],
+      )
+    ).rows[0],
+    beforeRecovery,
+  );
+  assert.equal(
+    (await recoveredContext.cookies()).filter((cookie) =>
+      /^(?:__Host-)?nq_device$/.test(cookie.name),
+    ).length,
+    0,
+  );
+  assert.equal(
+    (
+      await recoveredContext.request.get('/api/v1/session', {
+        headers: { 'x-nuqta-workspace': 'customer' },
+      })
+    ).status(),
+    401,
+  );
+  ok(
+    'Customer deletion recovers a lost committed reply from a verified receipt, clears device access, and preserves the exact stamp balance and cycle',
+  );
   await recoveredContext.close();
   ok(
     'Owner prepares a requested manual WhatsApp recovery; GET leaves it unused, a new browser restores the same stamps once, and the old device loses access without a password screen',
@@ -1623,6 +1708,112 @@ try {
     'Forgot password dispatches through the durable worker mailbox; the real recovery link opens the reset screen and the new password restores the owner workspace',
   );
   await staffReset.close();
+  await ap.setViewportSize({ width: 1365, height: 900 });
+  await navigateTo(ap, '/platform');
+  await businessRow.getByRole('button', { name: 'Open workspace', exact: true }).click();
+  await ap.getByRole('button', { name: 'Subscription', exact: true }).click();
+  await ap.getByRole('button', { name: 'Record payment', exact: true }).click();
+  await ap.getByLabel('Amount in EGP', { exact: true }).fill('٩٥٠٫٥٠');
+  const lastDate = new Date(Date.now() + 30 * 86400000),
+    last = {
+      year: String(lastDate.getFullYear()),
+      month: String(lastDate.getMonth() + 1),
+      day: String(lastDate.getDate()),
+    };
+  await choose(
+    ap.getByRole('combobox', { name: 'Last covered day · Year', exact: true }),
+    last.year,
+  );
+  await choose(
+    ap.getByRole('combobox', { name: 'Last covered day · Month', exact: true }),
+    last.month,
+  );
+  await choose(ap.getByRole('combobox', { name: 'Last covered day · Day', exact: true }), last.day);
+  const paymentReference = 'PAY-' + stamp;
+  await ap.getByLabel('Payment reference (optional)', { exact: true }).fill(paymentReference);
+  await ap.getByLabel('Recording reason', { exact: true }).fill('Synthetic browser manual payment');
+  await screenshot(ap, 'subscription-en');
+  await ap.setViewportSize({ width: 390, height: 844 });
+  await ap.getByRole('button', { name: 'العربية', exact: true }).click();
+  assert.ok(await ap.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
+  assert.ok(
+    await ap
+      .locator('.date-field .nq-select-trigger > span')
+      .evaluateAll((elements) => elements.every((el) => el.scrollWidth <= el.clientWidth + 1)),
+    'Date parts, including the four-digit year, must remain fully visible',
+  );
+  await screenshot(ap, 'subscription-ar-mobile');
+  await ap.getByRole('button', { name: 'English', exact: true }).click();
+  await ap.setViewportSize({ width: 1365, height: 900 });
+  let savedPaymentKey = '';
+  await ap.route(
+    '**/api/v1/platform/merchants/' + mid + '/subscription/payments',
+    async (route) => {
+      savedPaymentKey = route.request().headers()['idempotency-key']!;
+      assert.equal(route.request().postDataJSON().amountMinor, 95050);
+      const response = await route.fetch();
+      assert.equal(response.status(), 200);
+      await route.abort('failed');
+    },
+    { times: 1 },
+  );
+  await ap.getByRole('button', { name: 'Save payment', exact: true }).click();
+  await ap.getByRole('button', { name: 'Retry same change', exact: true }).waitFor();
+  await reloadPage(ap);
+  await businessRow.getByRole('button', { name: 'Open workspace', exact: true }).click();
+  await ap.getByRole('button', { name: 'Subscription', exact: true }).click();
+  const replay = ap.waitForRequest(
+    (request) => request.method() === 'POST' && request.url().endsWith('/subscription/payments'),
+  );
+  await ap.getByRole('button', { name: 'Retry same change', exact: true }).click();
+  assert.equal((await replay).headers()['idempotency-key'], savedPaymentKey);
+  await ap.getByRole('status').filter({ hasText: 'The subscription change was saved.' }).waitFor();
+  assert.equal(
+    (
+      await db.query('SELECT count(*)::int AS n FROM subscription_payments WHERE merchant_id=$1', [
+        mid,
+      ])
+    ).rows[0].n,
+    1,
+  );
+  const paidRow = ap.locator('tr').filter({ hasText: paymentReference });
+  await paidRow.getByRole('button', { name: 'Void payment record', exact: true }).click();
+  const voidDialog = ap.getByRole('dialog', { name: 'Void payment record', exact: true });
+  await voidDialog
+    .getByLabel('Reason for change', { exact: true })
+    .fill('Synthetic correction without removing history');
+  await voidDialog.getByRole('button', { name: 'Save change', exact: true }).click();
+  await voidDialog.waitFor({ state: 'hidden' });
+  await paidRow.getByText('Voided', { exact: true }).waitFor();
+  assert.equal(
+    (
+      await db.query(
+        'SELECT count(*)::int AS n FROM subscription_payment_voids WHERE merchant_id=$1',
+        [mid],
+      )
+    ).rows[0].n,
+    1,
+  );
+  ok(
+    'Branded manual subscription dates and exact Arabic money entry survive a lost reply/reload with one payment; voiding keeps the original record',
+  );
+  const legalContext = await context(),
+    legalPage = await legalContext.newPage();
+  legalPage.on('pageerror', capturePageError);
+  await navigateTo(legalPage, '/privacy?lang=ar');
+  await legalPage.getByRole('heading', { name: 'الخصوصية', exact: true }).waitFor();
+  assert.equal(await legalPage.locator('html').getAttribute('dir'), 'rtl');
+  await screenshot(legalPage, 'privacy-ar');
+  await navigateTo(legalPage, '/terms?lang=en');
+  await legalPage.getByRole('heading', { name: 'Terms of use', exact: true }).waitFor();
+  await legalPage
+    .getByText('Local testing draft — legal review required before launch.', { exact: true })
+    .waitFor();
+  await screenshot(legalPage, 'terms-en');
+  await legalContext.close();
+  ok(
+    'Privacy and terms are public bilingual pages with explicit legal-review status; linked language overrides a different saved preference for that page',
+  );
   assert.deepEqual(errors, []);
   await writeFile(
     evidence + '/browser.json',

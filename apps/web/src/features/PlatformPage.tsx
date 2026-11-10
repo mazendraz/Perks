@@ -424,6 +424,7 @@ export function PlatformPage({ lang, userId }: { lang: Language; userId: string 
   if (workspace)
     return (
       <MerchantWorkspace
+        viewerId={userId}
         initialTab={workspaceTab}
         initialProgramId={workspaceProgram}
         merchantId={workspace}

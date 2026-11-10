@@ -12,6 +12,8 @@ import { runOne } from '../apps/worker/src/runner.js';
 import { tunnelServer, tunnelGuard, quickOrigin } from './tunnel-policy.js';
 import { privateLocalDirectory } from './private-local.js';
 import { operationalLog } from '../packages/domain/src/operational-log.js';
+import { cleanupExports } from '../apps/worker/src/export-cleanup.js';
+import { createFileStore } from '../apps/api/src/storage/file-store.js';
 
 export function requireTunnelBase(c: Config) {
   const parent = new URL(c.DATABASE_MIGRATOR_URL!);
@@ -158,10 +160,18 @@ export async function serveTunnel(
   let web: ViteDevServer | undefined,
     stopped = false,
     running: Promise<void> | undefined,
-    stopping: Promise<void> | undefined;
+    stopping: Promise<void> | undefined,
+    lastSweep = 0;
   const tick = () => {
     if (stopped || running) return;
-    running = runOne(worker, config)
+    running = (async () => {
+      if (Date.now() - lastSweep > 60000) {
+        await worker.query('SELECT sweep_expired_sessions()');
+        await cleanupExports(worker, createFileStore(config));
+        lastSweep = Date.now();
+      }
+      await runOne(worker, config);
+    })()
       .then(
         () => {},
         () => {

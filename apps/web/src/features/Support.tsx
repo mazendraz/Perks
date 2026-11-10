@@ -1,4 +1,5 @@
 import { Select } from '../controls/Select.js';
+import { statusLabel } from '../business-labels.js';
 import { useEffect, useState, type FormEvent } from 'react';
 import type { Language } from '../../../../packages/contracts/src/index.js';
 import { api, errorText } from '../api.js';
@@ -112,7 +113,7 @@ export function Support({ lang, merchantId }: { lang: Language; merchantId?: str
               {t.merchant_name} ·{t.category}
             </small>
           </div>
-          <span className="badge">{t.status}</span>
+          <span className="badge">{statusLabel(t.status, lang)}</span>
         </div>
       ))}
       {!tickets.length && <p className="muted">{ar ? 'مفيش طلبات دعم.' : 'No support tickets.'}</p>}

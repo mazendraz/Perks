@@ -1,4 +1,5 @@
 import { Select } from '../controls/Select.js';
+import { statusLabel } from '../business-labels.js';
 import { useEffect, useState, type FormEvent } from 'react';
 import type { Grant, Language } from '../../../../packages/contracts/src/index.js';
 import { api, errorText } from '../api.js';
@@ -74,7 +75,7 @@ export function Branches({ grant, lang }: { grant: Grant; lang: Language }) {
             <strong>{b.name}</strong>
             <small>{b.address}</small>
           </div>
-          <span className="badge">{b.status}</span>
+          <span className="badge">{statusLabel(b.status, lang)}</span>
           {grant.role === 'owner' && (
             <button
               className="text-button"

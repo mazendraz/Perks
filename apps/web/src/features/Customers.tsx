@@ -1,4 +1,5 @@
 import { portalAssetUrl } from '../portals.js';
+import { transactionTypeLabel } from '../business-labels.js';
 import { Select } from '../controls/Select.js';
 import { useEffect, useState, useRef } from 'react';
 import type { Grant, Language } from '../../../../packages/contracts/src/index.js';
@@ -114,7 +115,7 @@ export function Customers({ grant, lang }: { grant: Grant; lang: Language }) {
           </p>
         )}
         <label>
-          {ar ? 'ابحث بالاسم أوالبريد' : 'Search name or email'}
+          {ar ? 'ابحث بالاسم أو البريد' : 'Search name or email'}
           <input
             type="search"
             maxLength={80}
@@ -156,7 +157,7 @@ export function Customers({ grant, lang }: { grant: Grant; lang: Language }) {
                 ['all', ar ? 'الكل' : 'All'],
                 ['active', ar ? 'نشط آخر 30 يوم' : 'Active in 30 days'],
                 ['inactive', ar ? 'آخر شراء أقدم من 30 يوم' : 'Inactive for over 30 days'],
-                ['never_active', ar ? 'لم يشترِ بعد' : 'Never active'],
+                ['never_active', ar ? 'لسه ماشتراش' : 'No purchase yet'],
               ].map(([v, l]) => (
                 <option key={v} value={v}>
                   {l}
@@ -248,7 +249,21 @@ export function Customers({ grant, lang }: { grant: Grant; lang: Language }) {
                       ? new Date(r.last_purchase_at).toLocaleDateString(lang)
                       : '—'}
                   </td>
-                  <td data-label={ar ? 'الشريحة' : 'Segment'}>{r.segment}</td>
+                  <td data-label={ar ? 'الشريحة' : 'Segment'}>
+                    {r.segment === 'active'
+                      ? ar
+                        ? 'نشط'
+                        : 'Active'
+                      : r.segment === 'inactive'
+                        ? ar
+                          ? 'خامل'
+                          : 'Inactive'
+                        : r.segment === 'never_active'
+                          ? ar
+                            ? 'لسه ماشتراش'
+                            : 'No purchase yet'
+                          : r.segment}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -347,7 +362,7 @@ export function Customers({ grant, lang }: { grant: Grant; lang: Language }) {
                   <small>{new Date(t.at).toLocaleString(lang)}</small>
                 </div>
                 <span>
-                  {t.type} ·{t.quantity}
+                  {transactionTypeLabel(t.type, lang)} · {t.quantity}
                 </span>
               </div>
             ))}

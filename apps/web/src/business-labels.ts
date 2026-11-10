@@ -57,3 +57,55 @@ export function merchantStatusLabel(value: string | undefined, lang: Language) {
 export function subscriptionPlanLabel(value: string | undefined, lang: Language) {
   return plans[value as keyof typeof plans]?.[lang] || (lang === 'ar' ? 'غير محدد' : 'Unknown');
 }
+const transactionTypes = {
+  award: { ar: 'أختام', en: 'Stamps' },
+  redeem: { ar: 'استبدال مكافأة', en: 'Reward redeemed' },
+  correction: { ar: 'تصحيح', en: 'Correction' },
+} as const;
+export function transactionTypeLabel(value: string, lang: Language) {
+  return (
+    transactionTypes[value as keyof typeof transactionTypes]?.[lang] ||
+    (lang === 'ar' ? 'عملية' : 'Transaction')
+  );
+}
+const genericStatuses: Record<string, { ar: string; en: string }> = {
+  active: { ar: 'نشط', en: 'Active' },
+  disabled: { ar: 'موقوف', en: 'Disabled' },
+  paused: { ar: 'متوقف مؤقتًا', en: 'Paused' },
+  suspended: { ar: 'موقوف', en: 'Suspended' },
+  pending: { ar: 'مستني المراجعة', en: 'Pending' },
+  needs_review: { ar: 'محتاج مراجعة خاصة', en: 'Needs review' },
+  approved: { ar: 'اتوافق عليه', en: 'Approved' },
+  applied: { ar: 'اتنفذ', en: 'Applied' },
+  rejected: { ar: 'اترفض', en: 'Rejected' },
+  draft: { ar: 'مسودة', en: 'Draft' },
+  published: { ar: 'منشور', en: 'Published' },
+  archived: { ar: 'مؤرشف', en: 'Archived' },
+  retired: { ar: 'متوقف', en: 'Retired' },
+  invited: { ar: 'مدعو', en: 'Invited' },
+  accepted: { ar: 'اتقبلت', en: 'Accepted' },
+  revoked: { ar: 'اتلغت', en: 'Revoked' },
+  expired: { ar: 'انتهت', en: 'Expired' },
+  cancelled: { ar: 'اتلغى', en: 'Cancelled' },
+  open: { ar: 'مفتوحة', en: 'Open' },
+  in_progress: { ar: 'شغالين عليها', en: 'In progress' },
+  waiting_merchant: { ar: 'مستنية المحل', en: 'Waiting for shop' },
+  waiting: { ar: 'مستنية', en: 'Waiting' },
+  resolved: { ar: 'اتحلت', en: 'Resolved' },
+  closed: { ar: 'مقفولة', en: 'Closed' },
+  queued: { ar: 'في الطابور', en: 'Queued' },
+  running: { ar: 'شغالة', en: 'Running' },
+  succeeded: { ar: 'نجحت', en: 'Succeeded' },
+  failed: { ar: 'فشلت', en: 'Failed' },
+  blocked: { ar: 'متوقفة على إعداد', en: 'Blocked' },
+  dead: { ar: 'متوقفة نهائيًا', en: 'Dead' },
+  ready: { ar: 'جاهزة', en: 'Ready' },
+  requested: { ar: 'مطلوبة', en: 'Requested' },
+  shipped: { ar: 'اتشحنت', en: 'Shipped' },
+  installed: { ar: 'اتركبت', en: 'Installed' },
+  verified: { ar: 'اتجربت', en: 'Verified' },
+};
+/** Display label for internal status values; unknown values stay visible as-is. */
+export function statusLabel(value: string, lang: Language) {
+  return genericStatuses[value]?.[lang] || value;
+}

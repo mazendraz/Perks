@@ -1,5 +1,10 @@
 import { MerchantCardDesigner } from './MerchantCardDesigner.js';
-import { merchantStatusLabel, subscriptionPlanLabel } from '../business-labels.js';
+import {
+  merchantStatusLabel,
+  statusLabel,
+  subscriptionPlanLabel,
+  transactionTypeLabel,
+} from '../business-labels.js';
 import { navigate } from '../useRoute.js';
 import { CustomerOutreach } from './CustomerOutreach.js';
 import { AccountSecurity } from './AccountSecurity.js';
@@ -213,7 +218,7 @@ export function MerchantWorkspace({
                   <strong>{b.name}</strong>
                   <p>{b.address}</p>
                 </div>
-                <span className="badge">{b.status}</span>
+                <span className="badge">{statusLabel(b.status, lang)}</span>
               </div>
             ))}
           </section>
@@ -279,7 +284,7 @@ export function MerchantWorkspace({
                 <div className="section-heading">
                   <strong>{j.kind}</strong>
                   <span className="badge">
-                    {j.status} · {j.attempts}
+                    {statusLabel(j.status, lang)} · {j.attempts}
                   </span>
                 </div>
                 <small>
@@ -313,7 +318,7 @@ export function MerchantWorkspace({
                   </small>
                 </div>
                 <span>
-                  {t.type} · {t.quantity}
+                  {transactionTypeLabel(t.type, lang)} · {t.quantity}
                 </span>
               </div>
             ))}

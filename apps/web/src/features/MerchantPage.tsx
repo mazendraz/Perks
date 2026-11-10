@@ -1,4 +1,10 @@
 import { PhoneInput } from '../controls/PhoneInput.js';
+import {
+  staffRoleLabel,
+  statusLabel,
+  subscriptionPlanLabel,
+  transactionTypeLabel,
+} from '../business-labels.js';
 import { portalAssetUrl } from '../portals.js';
 import { saveLogo } from '../controls/save-logo.js';
 import { FileUpload } from '../controls/FileUpload.js';
@@ -258,7 +264,7 @@ export function MerchantPage({ grant, lang }: { grant: Grant; lang: Language }) 
   const uploadLogo = async (file?: File) => {
     if (!file) return;
     if (file.size > 2_000_000) {
-      setError(ar ? 'الصورة لازم تكون أصغرمن2ميجابايت.' : 'The image must be smaller than 2MB.');
+      setError(ar ? 'الصورة لازم تكون أصغر من 2 ميجابايت.' : 'The image must be smaller than 2MB.');
       return;
     }
     setBusy(true);
@@ -330,7 +336,7 @@ export function MerchantPage({ grant, lang }: { grant: Grant; lang: Language }) 
       setNotice(
         r.status === 'needs_review'
           ? ar
-            ? 'الطلب محتاج مراجعة خاصة؛مفيش رصيد اتغير.'
+            ? 'الطلب محتاج مراجعة خاصة؛ مفيش رصيد اتغير.'
             : 'Manual review required. No balance changed.'
           : ar
             ? 'اتسجل قرار التصحيح.'
@@ -645,7 +651,7 @@ export function MerchantPage({ grant, lang }: { grant: Grant; lang: Language }) 
                         {c.alias} ·{c.requested_delta}
                       </strong>
                       <small className="muted">
-                        {c.reason} ·{c.status}
+                        {c.reason} · {statusLabel(c.status, lang)}
                       </small>
                       <small>
                         <bdi>{c.public_reference}</bdi>
@@ -723,7 +729,7 @@ export function MerchantPage({ grant, lang }: { grant: Grant; lang: Language }) 
             {programs.map((p) => (
               <section className="panel" key={p.id}>
                 <span className="badge">
-                  v{p.version} ·{p.status}
+                  v{p.version} · {statusLabel(p.status, lang)}
                 </span>
                 <h2>{p.name}</h2>
                 <p>
@@ -812,7 +818,7 @@ export function MerchantPage({ grant, lang }: { grant: Grant; lang: Language }) 
               <div>
                 <bdi>{i.email}</bdi>
                 <small>
-                  {i.role} ·{i.status}
+                  {staffRoleLabel(i.role, lang)} · {statusLabel(i.status, lang)}
                 </small>
               </div>
               {i.status === 'pending' && (
@@ -1035,7 +1041,8 @@ export function MerchantPage({ grant, lang }: { grant: Grant; lang: Language }) 
         <>
           <section className="panel">
             <h2>
-              {ar ? 'الخطة الحالية' : 'Current plan'}: {entitlement?.plan || '—'}
+              {ar ? 'الخطة الحالية' : 'Current plan'}:{' '}
+              {entitlement?.plan ? subscriptionPlanLabel(entitlement.plan, lang) : '—'}
             </h2>
             <p>
               {entitlement?.max_branches} {ar ? 'فروع' : 'branches'} ·{entitlement?.max_staff}{' '}
@@ -1077,7 +1084,7 @@ export function MerchantPage({ grant, lang }: { grant: Grant; lang: Language }) 
                       <bdi>{t.public_reference}</bdi>
                     </td>
                     <td data-label={ar ? 'العميل' : 'Customer'}>{t.alias}</td>
-                    <td data-label={ar ? 'النوع' : 'Type'}>{t.type}</td>
+                    <td data-label={ar ? 'النوع' : 'Type'}>{transactionTypeLabel(t.type, lang)}</td>
                     <td data-label={ar ? 'الكمية' : 'Quantity'}>{t.quantity}</td>
                     <td data-label={ar ? 'الفرع' : 'Branch'}>{t.branch_name}</td>
                     <td data-label={ar ? 'الوقت' : 'Time'}>
@@ -1224,7 +1231,7 @@ export function MerchantPage({ grant, lang }: { grant: Grant; lang: Language }) 
             <p>{decision.correction.reason}</p>
             <p className="muted">
               {ar
-                ? 'العكس الآلي متاح لآخرعملية بلاصرفمكافأة. الحالات التانية بتروح مراجعة خاصة.'
+                ? 'العكس الآلي متاح لآخر عملية بلا صرف مكافأة. الحالات التانية بتروح مراجعة خاصة.'
                 : 'Automatic reversal requires the latest award and unused rewards. Other cases go to manual review.'}
             </p>
             <label>
@@ -1366,7 +1373,7 @@ export function MerchantPage({ grant, lang }: { grant: Grant; lang: Language }) 
               />
             </label>
             <label>
-              {ar ? 'أقصى كمية فيالعملية' : 'Max per transaction'}
+              {ar ? 'أقصى كمية في العملية' : 'Max per transaction'}
               <input
                 type="number"
                 min={1}

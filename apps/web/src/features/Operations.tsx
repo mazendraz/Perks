@@ -1,4 +1,5 @@
 import { useEffect, useState, type FormEvent } from 'react';
+import { statusLabel } from '../business-labels.js';
 import type { Language } from '../../../../packages/contracts/src/index.js';
 import { api, errorText } from '../api.js';
 import { Support } from './Support.js';
@@ -190,7 +191,7 @@ export function Operations({ lang, admin }: { lang: Language; admin: boolean }) 
                 <div>
                   <strong>{m.name}</strong>
                   <small>
-                    {m.status} ·{m.memberships} {ar ? 'عضوية' : 'memberships'}
+                    {statusLabel(m.status, lang)} · {m.memberships} {ar ? 'عضوية' : 'memberships'}
                   </small>
                 </div>
                 <span>
@@ -206,7 +207,7 @@ export function Operations({ lang, admin }: { lang: Language; admin: boolean }) 
           {jobs.map((j) => (
             <details className="subpanel" key={j.id}>
               <summary>
-                {j.merchant_name} ·{j.kind} ·{j.status} ·{j.attempts}
+                {j.merchant_name} · {j.kind} · {statusLabel(j.status, lang)} · {j.attempts}
               </summary>
               <p>{j.last_error || '—'}</p>
               <small>
@@ -234,7 +235,7 @@ export function Operations({ lang, admin }: { lang: Language; admin: boolean }) 
               {['blocked', 'unknown'].includes(j.status) && (
                 <p className="muted">
                   {ar
-                    ? 'المهمة محتاجة حل المتطلب أوتسوية نتيجة المزود قبل الإعادة.'
+                    ? 'المهمة محتاجة حل المتطلب أو تسوية نتيجة المزود قبل الإعادة.'
                     : 'Resolve the dependency or reconcile the provider outcome before retrying.'}
                 </p>
               )}
@@ -247,7 +248,7 @@ export function Operations({ lang, admin }: { lang: Language; admin: boolean }) 
           {providers.map((p) => (
             <div className="list-row" key={p.id}>
               <strong>{p.id}</strong>
-              <span className="badge">{p.status}</span>
+              <span className="badge">{statusLabel(p.status, lang)}</span>
             </div>
           ))}
         </section>
@@ -266,7 +267,7 @@ export function Operations({ lang, admin }: { lang: Language; admin: boolean }) 
             }}
           >
             <label>
-              {ar ? 'رقم العملية أوالإيصال' : 'Transaction or receipt reference'}
+              {ar ? 'رقم العملية أو الإيصال' : 'Transaction or receipt reference'}
               <input
                 required
                 dir="ltr"
@@ -308,7 +309,7 @@ export function Operations({ lang, admin }: { lang: Language; admin: boolean }) 
                   {p.label} ·{p.merchant_name}
                 </strong>
                 <small>
-                  {p.branch_name} ·{p.status}
+                  {p.branch_name} · {statusLabel(p.status, lang)}
                 </small>
               </div>
               {['requested', 'ready'].includes(p.status) && (
@@ -347,7 +348,7 @@ export function Operations({ lang, admin }: { lang: Language; admin: boolean }) 
           >
             <h2 id="ops-action">{ar ? 'تفاصيل الإجراء' : 'Action details'}</h2>
             <label>
-              {ar ? 'السبب أوتفاصيل التنفيذ' : 'Reason or execution notes'}
+              {ar ? 'السبب أو تفاصيل التنفيذ' : 'Reason or execution notes'}
               <textarea
                 autoFocus
                 required

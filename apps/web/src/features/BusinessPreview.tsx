@@ -1,5 +1,5 @@
 import { portalAssetUrl } from '../portals.js';
-import { merchantStatusLabel } from '../business-labels.js';
+import { merchantStatusLabel, staffRoleLabel, statusLabel } from '../business-labels.js';
 import { Select } from '../controls/Select.js';
 import { useEffect, useState } from 'react';
 import { navigate } from '../useRoute.js';
@@ -284,7 +284,7 @@ export function BusinessPreview({
                           </small>
                         </div>
                         <span className="badge">
-                          {a.role} · {a.status}
+                          {staffRoleLabel(a.role, lang)} · {statusLabel(a.status, lang)}
                         </span>
                       </div>
                     ))

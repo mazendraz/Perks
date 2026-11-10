@@ -1,0 +1,22 @@
+{
+  "at": "2026-11-10T16:40:54.030Z",
+  "status": "failed",
+  "checks": [
+    "chromium-pixel5: name/phone/terms registration survives Arabic/English switching, reaches the card within 30 seconds, and needs no email/password or UUID/Popover/ResizeObserver/Animation.finished",
+    "chromium-pixel5: first NFC scan needs only name/phone/terms/submit, preserves context, reveals the card in 720ms and requests one first stamp without granting it",
+    "chromium-pixel5: first home-screen offer uses the native prompt or the two-step Safari illustration",
+    "chromium-pixel5: five placement scans open the existing card with zero customer taps, create one request, and reload creates none",
+    "chromium-pixel5: interruption, session expiry during POST and a lost committed reply restore the device session and retry the same request key without a duplicate",
+    "chromium-pixel5: a shortened display-expiry fixture refreshes the QR automatically before expiration",
+    "chromium-pixel5: QR closes on the committed stamp, ink angles survive reload, and home-screen offers stop after the second dismissal",
+    "chromium-pixel5: a standalone app suppresses installation offers even without stored offer history",
+    "chromium-pixel5: cashier manual QR input commits one stamp and updates the actual customer balance",
+    "Camera synthetic stream: rear-camera constraint, muted/playsInline, tracks stopped on hide and after late permission; no auto-resume"
+  ],
+  "projects": [
+    "chromium-pixel5"
+  ],
+  "build": "7ee6dc0243d7a8c2d97e",
+  "indexSha256": "5b213e4c11b76fefc13d6f8415e895ca6508fd11b4d673ab1edbf6d1401dd27d",
+  "reason": "chromium-pixel5: TimeoutError: locator.waitFor: Timeout 2500ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('.card-open').first() to be visible\u001b[22m\n"
+}

@@ -27,6 +27,7 @@ export async function api<T>(
     key?: string;
     revision?: number;
     workspace?: Portal | 'shared';
+    timeoutMs?: number;
   } = {},
   restoreDevice = true,
 ): Promise<T> {
@@ -62,20 +63,30 @@ export async function api<T>(
   if (options.key) headers['Idempotency-Key'] = options.key;
   if (options.revision !== undefined) headers['If-Match'] = String(options.revision);
   let response: Response;
+  let body: T & ApiFailure;
+  const controller = options.timeoutMs ? new AbortController() : undefined;
+  const timer = controller ? setTimeout(() => controller.abort(), options.timeoutMs) : undefined;
   try {
     response = await fetch('/api/v1' + path, {
       credentials: 'same-origin',
       method: options.method || 'GET',
       headers,
       body: options.body === undefined ? undefined : JSON.stringify(options.body),
+      signal: controller?.signal,
     });
+    if (response.status === 204) {
+      setNetworkUnavailable(false);
+      return undefined as T;
+    }
+    body = (await response.json()) as T & ApiFailure;
   } catch {
+    if (controller?.signal.aborted) throw new ApiError('REQUEST_TIMEOUT', 0);
     setNetworkUnavailable(true);
     throw new ApiError('NETWORK_UNCERTAIN', 0);
+  } finally {
+    clearTimeout(timer);
   }
   setNetworkUnavailable(false);
-  if (response.status === 204) return undefined as T;
-  const body = (await response.json()) as T & ApiFailure;
   if (
     restoreDevice &&
     portal === 'customer' &&
@@ -200,6 +211,7 @@ const arErrors: Record<string, string> = {
   FORBIDDEN: 'حسابك مش مصرح له بالإجراء ده.',
   VALIDATION_FAILED: 'راجع البيانات المطلوبة.',
   NETWORK_UNCERTAIN: 'النتيجة لسه مش مؤكدة. هنتحقق من نفس العملية.',
+  REQUEST_TIMEOUT: 'التحميل أخد وقت أطول من المتوقع. جرّب تاني.',
   CONFLICT: 'البيانات اتغيرت أو الطلب اتسجل قبل كده.',
   RATE_LIMITED: 'محاولات كتير. استنى شوية وحاول تاني.',
   INTERNAL_ERROR: 'حصل خطأ. استخدم مرجع الطلب مع الدعم.',
@@ -363,6 +375,7 @@ const enErrors: Record<string, string> = {
   RATE_LIMITED: 'Too many attempts. Wait a moment and try again.',
   INTERNAL_ERROR: 'Something went wrong. Share the request reference with support.',
   NETWORK_UNCERTAIN: 'The result is not confirmed yet. We will check the same operation.',
+  REQUEST_TIMEOUT: 'Loading is taking longer than expected. Try again.',
 };
 export function errorText(error: unknown, lang: 'ar' | 'en' = 'ar') {
   if (error instanceof ApiError)

@@ -8,6 +8,7 @@ import {
 } from 'playwright';
 import assert from 'node:assert/strict';
 import { auditMobileBrand } from './mobile-brand-audit.js';
+import { auditCustomerLoading } from './customer-load-audit.js';
 import { randomUUID, randomBytes, createHash } from 'node:crypto';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
@@ -97,7 +98,9 @@ app.get('/*', { config: { rateLimit: false } }, (req, reply) => {
 async function checkLayout(page: Page, label: string) {
   await page.evaluate(() => document.fonts.ready);
   assert.ok(
-    await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1),
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1,
+    ),
     label + ' horizontal overflow',
   );
   const small = await page
@@ -596,6 +599,33 @@ try {
     await login(cp, cashierEmail);
     await cp.locator('[data-portal="cashier"]').waitFor();
     await cp.getByRole('button', { name: 'Scan card', exact: true }).click();
+    const scanViewport = cp.viewportSize()!;
+    for (const language of ['en', 'ar']) {
+      if (language === 'ar') await cp.getByRole('button', { name: 'العربية', exact: true }).click();
+      for (const width of [320, 390, 430]) {
+        await cp.setViewportSize({ width, height: 844 });
+        await checkLayout(cp, `${project.name} ${language} ${width}px scan actions`);
+        const cameraButton = cp.getByRole('button', {
+          name: language === 'ar' ? 'افتح الكاميرا' : 'Open camera',
+          exact: true,
+        });
+        assert.equal(
+          await cameraButton.locator('svg[data-icon="camera"][aria-hidden="true"]').count(),
+          1,
+        );
+        if (width === 390)
+          await cp.screenshot({
+            path: `${directory}/mobile-icons-${project.name}-${language}.png`,
+            fullPage: true,
+          });
+      }
+    }
+    await cp.getByRole('button', { name: 'English', exact: true }).click();
+    await cp.setViewportSize(scanViewport);
+    pass(
+      project.name +
+        ': labeled camera and manual scan actions remain readable with icons at 320/390/430px in both languages',
+    );
     await cp.getByLabel('Or enter the customer card code', { exact: true }).fill(token);
     await cp.getByRole('button', { name: 'Read code', exact: true }).click();
     await cp.getByRole('button', { name: 'Add stamps', exact: true }).click();
@@ -777,6 +807,11 @@ try {
         'Camera synthetic stream: rear-camera constraint, muted/playsInline, tracks stopped on hide and after late permission; no auto-resume',
       );
     }
+    await auditCustomerLoading(page, project.name, directory);
+    pass(
+      project.name +
+        ': saved cards and the Wallet panel remain available while redemption confirmations are delayed',
+    );
     const owner = await browser.newContext({
       ...devices[project.device],
       locale: 'en-US',
@@ -862,6 +897,19 @@ try {
           [],
         );
         await checkLayout(op, project.name + ' ' + language + ' ' + section);
+        const firstRecord = records.locator('tbody tr').first();
+        await firstRecord.scrollIntoViewIfNeeded();
+        await op.screenshot({
+          path:
+            directory +
+            '/mobile-records-' +
+            project.name +
+            '-' +
+            language +
+            '-' +
+            (section === 'المتابعة' || section === 'Activity' ? 'operations' : 'customers') +
+            '.png',
+        });
       }
     }
     pass(

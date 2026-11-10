@@ -5,6 +5,8 @@ import { CustomerContact } from './CustomerOutreach.js';
 import { FieldErrors, fieldProps } from '../FieldErrors.js';
 import { CustomerRequests } from './StampRequests.js';
 import { useLiveRefresh } from '../live-events.js';
+import { RefreshQueue } from '../refresh-queue.js';
+import { ActionLabel } from '../../../../packages/ui/src/Icon.js';
 import { CustomerCode } from './CustomerCode.js';
 import { InstallCard } from './InstallCard.js';
 import { WalletPanel } from './WalletPanel.js';
@@ -446,37 +448,60 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
   const preferenceGeneration = useRef(0);
   const qrEpoch = useRef(0);
   const loadGeneration = useRef(0);
+  const cardsQueue = useRef(new RefreshQueue());
+  const detailsQueue = useRef(new RefreshQueue());
+  const [loadError, setLoadError] = useState('');
+  const [detailsError, setDetailsError] = useState('');
   const [loadingPreferences, setLoadingPreferences] = useState(false);
   const load = async () => {
-    const generation = ++loadGeneration.current;
-    try {
-      const list = await api<{ cards: SavedCard[] }>('/me/memberships');
-      const h = await api<{ challenges: HolderChallenge[] }>('/me/redemption-challenges');
-      let details: { rewards: Reward[]; activity: typeof activity } | undefined;
-      if (membershipId) {
-        const [r, a] = await Promise.all([
-          api<{ rewards: Reward[] }>('/me/memberships/' + membershipId + '/rewards'),
-          api<{ activity: typeof activity }>('/me/memberships/' + membershipId + '/activity'),
+    const generation = loadGeneration.current;
+    void detailsQueue.current.run(async () => {
+      try {
+        const [h, r, a] = await Promise.all([
+          api<{ challenges: HolderChallenge[] }>('/me/redemption-challenges', { timeoutMs: 10000 }),
+          membershipId
+            ? api<{ rewards: Reward[] }>('/me/memberships/' + membershipId + '/rewards', {
+                timeoutMs: 10000,
+              })
+            : undefined,
+          membershipId
+            ? api<{ activity: typeof activity }>('/me/memberships/' + membershipId + '/activity', {
+                timeoutMs: 10000,
+              })
+            : undefined,
         ]);
-        details = { rewards: r.rewards, activity: a.activity };
+        if (generation !== loadGeneration.current) return;
+        setChallenges(h.challenges);
+        if (r) setRewards(r.rewards);
+        if (a) setActivity(a.activity);
+        setDetailsError('');
+      } catch (e) {
+        if (generation === loadGeneration.current) setDetailsError(errorText(e, lang));
       }
-      if (generation !== loadGeneration.current) return;
-      setCards(list.cards);
-      setChallenges(h.challenges);
-      if (details) {
-        setRewards(details.rewards);
-        setActivity(details.activity);
+    });
+    await cardsQueue.current.run(async () => {
+      try {
+        const list = await api<{ cards: SavedCard[] }>('/me/memberships', { timeoutMs: 10000 });
+        if (generation !== loadGeneration.current) return;
+        setCards(list.cards);
+        setLoadError('');
+        setLoaded(true);
+      } catch (e) {
+        if (generation !== loadGeneration.current) return;
+        setLoadError(errorText(e, lang));
+        setLoaded(true);
       }
-      setError('');
-      setLoaded(true);
-    } catch (e) {
-      if (generation !== loadGeneration.current) return;
-      setError(errorText(e, lang));
-      setLoaded(true);
-    }
+    });
   };
   useLiveRefresh('/me/events', load);
   useEffect(() => {
+    loadGeneration.current++;
+    cardsQueue.current.invalidate();
+    detailsQueue.current.invalidate();
+    setCards([]);
+    setLoaded(false);
+    setLoadError('');
+    setDetailsError('');
     setQr(null);
     qrEpoch.current++;
     setWaiting(false);
@@ -487,6 +512,8 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
     void load();
     return () => {
       loadGeneration.current++;
+      cardsQueue.current.invalidate();
+      detailsQueue.current.invalidate();
     };
   }, [membershipId]);
   const card = cards.find((x) => x.id === membershipId);
@@ -635,9 +662,20 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
           </div>
         </section>
       )}
-      {error && !qr && (
+      {(error || loadError || detailsError) && !qr && (
         <div className="notice error" role="alert">
-          {error}
+          {error || loadError || detailsError}
+          {(loadError || detailsError) && (
+            <button className="secondary small" onClick={() => void load()}>
+              <ActionLabel icon="refresh">{ar ? 'جرّب تاني' : 'Try again'}</ActionLabel>
+            </button>
+          )}
+        </div>
+      )}
+      {!loaded && (
+        <div className="customer-card-loading" role="status">
+          <span className="customer-card-placeholder" aria-hidden="true" />
+          <p>{ar ? 'بنفتح كروتك المحفوظة…' : 'Opening your saved cards…'}</p>
         </div>
       )}
       {!membershipId ? (
@@ -661,7 +699,7 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
               </button>
             ))}
           </div>
-          {loaded && !cards.length && (
+          {loaded && !loadError && !cards.length && (
             <div className="empty-state">
               <h2>{ar ? 'لسه مفيش كروت' : 'No cards yet'}</h2>
               <p>
@@ -724,10 +762,10 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
                       aria-busy={busy}
                       onClick={() => void showQr()}
                     >
-                      {ar ? 'اعرض الكود' : 'Show my code'}
+                      <ActionLabel icon="qr">{ar ? 'اعرض الكود' : 'Show my code'}</ActionLabel>
                     </button>
                     <button className="secondary" onClick={() => setTab('history')}>
-                      {ar ? 'آخر نشاط' : 'Recent activity'}
+                      <ActionLabel icon="clock">{ar ? 'آخر نشاط' : 'Recent activity'}</ActionLabel>
                     </button>
                   </div>
                   {qr && !holder && (
@@ -870,7 +908,8 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
           </div>
         </div>
       ) : (
-        loaded && (
+        loaded &&
+        !loadError && (
           <div className="empty-state">
             {ar ? 'الكارت مش متاح للحساب ده.' : 'This card is not available to your account.'}
           </div>

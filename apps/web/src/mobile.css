@@ -30,6 +30,30 @@
 .pwa-status button {
   white-space: nowrap;
 }
+.customer-card-loading {
+  width: min(100%, 380px);
+  margin: 20px auto;
+  text-align: center;
+  color: var(--muted);
+}
+.customer-card-placeholder {
+  display: block;
+  height: 220px;
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  background: linear-gradient(135deg, #e9eaf1, #f7f7fa);
+  animation: customer-card-loading 1.4s ease-in-out infinite;
+}
+@keyframes customer-card-loading {
+  50% {
+    opacity: 0.55;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .customer-card-placeholder {
+    animation: none;
+  }
+}
 @media (max-width: 760px) {
   #root button,
   .nq-popup button,

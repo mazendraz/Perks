@@ -10,6 +10,7 @@ import { buildApp } from '../apps/api/src/server.js';
 import { seed, ids } from '../db/seed.js';
 import { runOne } from '../apps/worker/src/runner.js';
 import { runAppleWalletPushes } from '../apps/worker/src/apple-wallet-push.js';
+import { runGoogleWalletUpdates } from '../apps/worker/src/google-wallet-updates.js';
 import { tunnelServer, tunnelGuard, quickOrigin } from './tunnel-policy.js';
 import { privateLocalDirectory } from './private-local.js';
 import { operationalLog } from '../packages/domain/src/operational-log.js';
@@ -172,6 +173,7 @@ export async function serveTunnel(
         lastSweep = Date.now();
       }
       await runAppleWalletPushes(worker, config);
+      await runGoogleWalletUpdates(worker, config);
       await runOne(worker, config);
     })()
       .then(

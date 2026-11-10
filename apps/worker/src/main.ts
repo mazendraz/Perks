@@ -6,6 +6,7 @@ import { readWorkerConfig } from '../../api/src/config.js';
 import { runOne } from './runner.js';
 import { cleanupExports } from './export-cleanup.js';
 import { runAppleWalletPushes } from './apple-wallet-push.js';
+import { runGoogleWalletUpdates } from './google-wallet-updates.js';
 import { createFileStore } from '../../api/src/storage/file-store.js';
 import { operationalLog } from '../../../packages/domain/src/operational-log.js';
 async function main() {
@@ -34,6 +35,7 @@ async function main() {
         lastSweep = Date.now();
       }
       await runAppleWalletPushes(pool, c);
+      await runGoogleWalletUpdates(pool, c);
       const worked = await runOne(pool, c);
       if (Date.now() - lastHeartbeat > 10000) {
         await writeFile(join(tmpdir(), 'nuqta-worker-heartbeat'), '', { mode: 0o600 });

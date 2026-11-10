@@ -15,6 +15,14 @@ import {
   type WalletCard,
 } from '../wallet/apple-pass.js';
 import { APPLE_PASS_MIME, APPLE_SERVICE_PREFIX } from '../wallet/constants.js';
+import sharp from 'sharp';
+import { stripSvg } from '../wallet/apple-pass.js';
+import {
+  GOOGLE_STRIP_PREFIX,
+  loadGoogleWallet,
+  saveUrl,
+  stripVersion,
+} from '../wallet/google-wallet.js';
 
 const device = z.string().regex(/^[A-Za-z0-9._-]{1,128}$/);
 const serial = z.uuid();
@@ -50,7 +58,50 @@ export function walletModule(app: FastifyInstance, pools: Pools, c: Config) {
       .header('X-Content-Type-Options', 'nosniff')
       .send(body);
   }
-  app.get('/api/v1/wallet/availability', async () => ({ apple: !!signer }));
+  const google = loadGoogleWallet(c);
+  app.get('/api/v1/wallet/availability', async () => ({ apple: !!signer, google: !!google }));
+  app.get('/api/v1/me/memberships/:id/wallet/google', async (req, reply) => {
+    const actor = authenticated(req),
+      { id } = z.object({ id: z.uuid() }).parse(req.params);
+    requireCondition(google, 'WALLET_UNAVAILABLE', 404);
+    const issued = await transaction(
+      pools.pool,
+      async (db) =>
+        (await db.query('SELECT google_wallet_issue($1,$2) AS value', [id, randomUUID()])).rows[0]
+          .value as { object_key: string; card: WalletCard & { logo_asset_id?: string } } | null,
+      actor,
+    );
+    requireCondition(issued, 'NOT_FOUND', 404);
+    return reply.redirect(
+      saveUrl(
+        google!,
+        issued.card,
+        issued.object_key,
+        c.PUBLIC_APP_ORIGIN,
+        stripVersion(issued.card),
+      ),
+      303,
+    );
+  });
+  // Google fetches the stamp strip by URL; the random key is the only handle and it shows no name.
+  app.get(GOOGLE_STRIP_PREFIX + '/:key/:version', async (req, reply) => {
+    const p = z
+      .object({ key: z.uuid(), version: z.string().regex(/^[0-9a-f]{12}\.png$/) })
+      .safeParse(req.params);
+    if (!p.success || !google) return reply.code(404).send();
+    const card = (await pools.pool.query('SELECT google_wallet_strip($1) AS card', [p.data.key]))
+      .rows[0].card as WalletCard | null;
+    if (!card) return reply.code(404).send();
+    const image = await sharp(Buffer.from(stripSvg(card, 3)))
+      .resize(1032, 338)
+      .png()
+      .toBuffer();
+    return reply
+      .type('image/png')
+      .header('X-Content-Type-Options', 'nosniff')
+      .header('Cache-Control', 'public, max-age=300')
+      .send(image);
+  });
   app.get('/api/v1/me/memberships/:id/wallet/apple', async (req, reply) => {
     const actor = authenticated(req),
       { id } = z.object({ id: z.uuid() }).parse(req.params);

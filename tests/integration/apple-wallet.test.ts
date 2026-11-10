@@ -108,6 +108,7 @@ test('a customer downloads a signed pass for their own card only', async () => {
   await award(m, 2);
   assert.deepEqual((await app.inject({ url: '/api/v1/wallet/availability' })).json(), {
     apple: true,
+    google: false,
   });
   const r = await app.inject({
     url: '/api/v1/me/memberships/' + m.id + '/wallet/apple',

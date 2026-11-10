@@ -88,7 +88,8 @@ export async function buildApp(
   app.addHook('onSend', async (req, reply, payload) => {
     if (
       (req.url.startsWith('/api/') &&
-        req.routeOptions.url !== '/api/v1/public/merchants/:m/logos/:id') ||
+        req.routeOptions.url !== '/api/v1/public/merchants/:m/logos/:id' &&
+        !req.url.startsWith('/api/v1/public/wallet/google/strips/')) ||
       req.url.startsWith('/health/')
     )
       reply.header('Cache-Control', 'no-store');
@@ -193,7 +194,7 @@ export async function buildApp(
       if (
         (
           await pools.pool.query(
-            "SELECT count(*)::int AS count FROM schema_migrations WHERE name='013_apple_wallet.sql'",
+            "SELECT count(*)::int AS count FROM schema_migrations WHERE name='013a_google_wallet.sql'",
           )
         ).rows[0].count !== 1
       )

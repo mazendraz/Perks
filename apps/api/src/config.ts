@@ -44,6 +44,12 @@ const schema = z.object({
   APPLE_PASS_KEY_PASSPHRASE: z.string().optional(),
   APPLE_WWDR_CERT_FILE: z.string().optional(),
   APPLE_APNS_ORIGIN: z.url().default('https://api.push.apple.com'),
+  GOOGLE_WALLET_ENABLED: z.enum(['true', 'false']).default('false'),
+  GOOGLE_WALLET_ISSUER_ID: z
+    .string()
+    .regex(/^\d{10,25}$/)
+    .optional(),
+  GOOGLE_WALLET_SERVICE_ACCOUNT_FILE: z.string().optional(),
 });
 export type Config = z.infer<typeof schema>;
 type DatabaseKeys =
@@ -94,6 +100,13 @@ export function readMigrationConfig() {
 }
 function validateConfig(c: ServiceConfig & Partial<Pick<Config, DatabaseKeys>>) {
   trustedProxies(c.TRUSTED_PROXIES);
+  if (
+    c.GOOGLE_WALLET_ENABLED === 'true' &&
+    (!c.GOOGLE_WALLET_ISSUER_ID || !c.GOOGLE_WALLET_SERVICE_ACCOUNT_FILE)
+  )
+    throw new Error(
+      'Google Wallet requires GOOGLE_WALLET_ISSUER_ID and GOOGLE_WALLET_SERVICE_ACCOUNT_FILE.',
+    );
   if (c.APPLE_WALLET_ENABLED === 'true') {
     if (
       !c.APPLE_PASS_TYPE_ID ||

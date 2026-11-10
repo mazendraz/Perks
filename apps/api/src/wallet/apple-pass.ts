@@ -160,7 +160,7 @@ export function stripSvg(card: WalletCard, scale: number) {
 
 const arStamps = (n: number) =>
   n === 1 ? 'ختم واحد' : n === 2 ? 'ختمين' : n <= 10 ? `${n} أختام` : `${n} ختم`;
-function texts(card: WalletCard) {
+export function texts(card: WalletCard) {
   const left = Math.max(0, card.threshold - card.display_balance),
     ready = card.pending_rewards > 0;
   return {

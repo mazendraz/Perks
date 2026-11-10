@@ -30,6 +30,20 @@ const schema = z.object({
   LOG_LEVEL: z.enum(['silent', 'fatal', 'error', 'warn', 'info', 'debug']).default('info'),
   MONITORING_TOKEN: z.union([z.string().min(32), z.literal('')]).default(''),
   BACKUP_STATUS_ROOT: z.string().default(''),
+  APPLE_WALLET_ENABLED: z.enum(['true', 'false']).default('false'),
+  APPLE_PASS_TYPE_ID: z
+    .string()
+    .regex(/^pass\.[A-Za-z0-9.-]+$/)
+    .optional(),
+  APPLE_TEAM_ID: z
+    .string()
+    .regex(/^[A-Z0-9]{10}$/)
+    .optional(),
+  APPLE_PASS_CERT_FILE: z.string().optional(),
+  APPLE_PASS_KEY_FILE: z.string().optional(),
+  APPLE_PASS_KEY_PASSPHRASE: z.string().optional(),
+  APPLE_WWDR_CERT_FILE: z.string().optional(),
+  APPLE_APNS_ORIGIN: z.url().default('https://api.push.apple.com'),
 });
 export type Config = z.infer<typeof schema>;
 type DatabaseKeys =
@@ -80,6 +94,20 @@ export function readMigrationConfig() {
 }
 function validateConfig(c: ServiceConfig & Partial<Pick<Config, DatabaseKeys>>) {
   trustedProxies(c.TRUSTED_PROXIES);
+  if (c.APPLE_WALLET_ENABLED === 'true') {
+    if (
+      !c.APPLE_PASS_TYPE_ID ||
+      !c.APPLE_TEAM_ID ||
+      !c.APPLE_PASS_CERT_FILE ||
+      !c.APPLE_PASS_KEY_FILE ||
+      !c.APPLE_WWDR_CERT_FILE
+    )
+      throw new Error(
+        'Apple Wallet requires APPLE_PASS_TYPE_ID, APPLE_TEAM_ID and the pass certificate, key and WWDR files.',
+      );
+    if (deployed(c) && !c.PUBLIC_APP_ORIGIN.startsWith('https://'))
+      throw new Error('Apple Wallet updates require an HTTPS PUBLIC_APP_ORIGIN.');
+  }
   if (c.MONITORING_TOKEN && c.MONITORING_TOKEN === c.AUTH_PEPPER)
     throw new Error('Monitoring token must be independent of authentication secrets.');
   if (deployed(c) && c.BACKUP_STATUS_ROOT && !isAbsolute(c.BACKUP_STATUS_ROOT))

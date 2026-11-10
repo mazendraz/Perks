@@ -7,6 +7,7 @@ import { CustomerRequests } from './StampRequests.js';
 import { useLiveRefresh } from '../live-events.js';
 import { CustomerCode } from './CustomerCode.js';
 import { InstallCard } from './InstallCard.js';
+import { WalletPanel } from './WalletPanel.js';
 import { useCardExperience } from '../useCardExperience.js';
 import {
   useEffect,
@@ -783,14 +784,7 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
                     )}
                   </section>
                   <CustomerRequests card={card} lang={lang} onPending={setWaiting} />
-                  <section className="panel">
-                    <h2>Wallet</h2>
-                    <p className="muted">
-                      {ar
-                        ? 'الإضافة لـApple Wallet وGoogle Wallet مش متاحة للنشاط ده حاليًا. كارت الويب محدث ومحفوظ.'
-                        : 'Apple Wallet and Google Wallet are not available for this business yet. Your web card stays current.'}
-                    </p>
-                  </section>
+                  <WalletPanel membershipId={card.id} lang={lang} />
                 </>
               )}
               {tab === 'history' && (

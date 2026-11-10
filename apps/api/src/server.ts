@@ -10,6 +10,7 @@ import { customerIdentityModule } from './modules/customer-identity.js';
 import { customerRecoveryModule } from './modules/customer-recovery.js';
 import { customerPrivacyModule } from './modules/customer-privacy.js';
 import { subscriptionsModule } from './modules/subscriptions.js';
+import { walletModule } from './modules/wallet.js';
 import Fastify, { LogController, type FastifyBaseLogger } from 'fastify';
 import cookie from '@fastify/cookie';
 import rateLimit from '@fastify/rate-limit';
@@ -157,6 +158,7 @@ export async function buildApp(
   customerRecoveryModule(app, pools, c);
   customerPrivacyModule(app, pools, c);
   subscriptionsModule(app, pools);
+  walletModule(app, pools, c);
   customersModule(app, pools, c);
   materialsModule(app, pools, c);
   platformModule(app, pools, c);
@@ -191,7 +193,7 @@ export async function buildApp(
       if (
         (
           await pools.pool.query(
-            "SELECT count(*)::int AS count FROM schema_migrations WHERE name='012e_privacy_restore_manifest.sql'",
+            "SELECT count(*)::int AS count FROM schema_migrations WHERE name='013_apple_wallet.sql'",
           )
         ).rows[0].count !== 1
       )

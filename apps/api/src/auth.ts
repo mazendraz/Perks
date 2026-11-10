@@ -1,3 +1,4 @@
+import { APPLE_SERVICE_PREFIX } from './wallet/constants.js';
 import { passwordAuth } from './password-auth.js';
 import { requestPortal, portalCookies, portalAllowed } from './portal-auth.js';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
@@ -39,6 +40,8 @@ export function authModule(app: FastifyInstance, pools: Pools, c: Config) {
   app.addHook('onRequest', async (req, reply) => {
     reply.header('Cache-Control', 'no-store');
     if (!req.url.startsWith('/api/')) return;
+    // Apple's pass web service carries its own per-pass token and never browser cookies.
+    if (req.url.startsWith(APPLE_SERVICE_PREFIX + '/v1/')) return;
     if (!['GET', 'HEAD', 'OPTIONS'].includes(req.method))
       requireCondition(req.headers.origin === c.PUBLIC_APP_ORIGIN, 'ORIGIN_REJECTED', 403);
     const portal = requestPortal(

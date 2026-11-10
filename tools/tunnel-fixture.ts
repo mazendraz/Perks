@@ -9,6 +9,7 @@ import { hashPassword } from '../apps/api/src/passwords.js';
 import { buildApp } from '../apps/api/src/server.js';
 import { seed, ids } from '../db/seed.js';
 import { runOne } from '../apps/worker/src/runner.js';
+import { runAppleWalletPushes } from '../apps/worker/src/apple-wallet-push.js';
 import { tunnelServer, tunnelGuard, quickOrigin } from './tunnel-policy.js';
 import { privateLocalDirectory } from './private-local.js';
 import { operationalLog } from '../packages/domain/src/operational-log.js';
@@ -170,6 +171,7 @@ export async function serveTunnel(
         await cleanupExports(worker, createFileStore(config));
         lastSweep = Date.now();
       }
+      await runAppleWalletPushes(worker, config);
       await runOne(worker, config);
     })()
       .then(

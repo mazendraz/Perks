@@ -552,7 +552,7 @@ export function PlatformPage({ lang, userId }: { lang: Language; userId: string 
                   <input
                     required
                     dir="ltr"
-                    pattern="[a-z0-9][a-z0-9-]{1,62}"
+                    pattern={'[a-z0-9][a-z0-9\\-]{1,62}'}
                     placeholder="your-business"
                     {...fieldProps(validation, 'slug')}
                     value={data.slug}

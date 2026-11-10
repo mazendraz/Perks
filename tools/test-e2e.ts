@@ -190,7 +190,20 @@ try {
   await ap
     .getByRole('textbox', { name: 'Business name', exact: true })
     .fill('Browser Cafe ' + stamp);
-  await ap.getByLabel('Enrollment slug', { exact: true }).fill('qa-' + stamp);
+  const enrollmentSlug = ap.getByLabel('Enrollment slug', { exact: true });
+  for (const invalid of ['my cafe', '-cafe', 'a', 'cafe/branch']) {
+    await enrollmentSlug.fill(invalid);
+    assert.equal(
+      await enrollmentSlug.evaluate((el: HTMLInputElement) => el.validity.patternMismatch),
+      true,
+      `Browser validation must reject enrollment slug ${invalid}`,
+    );
+  }
+  await enrollmentSlug.fill('qa-' + stamp);
+  assert.equal(
+    await enrollmentSlug.evaluate((el: HTMLInputElement) => el.validity.patternMismatch),
+    false,
+  );
   await ap.getByLabel('Contact email', { exact: true }).fill(email('owner'));
   await ap.getByLabel('Owner WhatsApp number (optional)', { exact: true }).fill('+15555550100');
   const ownerPhone = ap.getByLabel('Owner WhatsApp number (optional)', { exact: true });

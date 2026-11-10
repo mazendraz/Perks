@@ -1,0 +1,12 @@
+{
+  "checkedAt": "2026-11-10T19:29:11.786Z",
+  "ownerApproved": true,
+  "origin": "http://localhost:4180",
+  "action": "Restart only the validated manual-demo.ts start listener; no setup, seed or reset",
+  "ready": 200,
+  "portals": 200,
+  "appleArabicArtwork": 200,
+  "googleArabicArtwork": 200,
+  "walletProviders": "Remain disabled in the isolated manual process; root .env unchanged",
+  "deviceWalletVisualTest": "NOT_RUN"
+}

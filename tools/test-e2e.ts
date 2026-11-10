@@ -1432,6 +1432,9 @@ try {
   await ap.waitForTimeout(150);
   assert.ok(await ap.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
   await screenshot(ap, 'business-workspace-qr-ar-mobile');
+  const automaticQrLabels = await ap.locator('.qr-sheet small').allTextContents();
+  assert.ok(automaticQrLabels.some((label) => label.startsWith('تسجيل العملاء • ')));
+  assert.ok(automaticQrLabels.every((label) => !label.startsWith('Enrollment • ')));
   await ap.getByRole('button', { name: 'English', exact: true }).click();
   await ap.setViewportSize({ width: 1365, height: 900 });
   ok(

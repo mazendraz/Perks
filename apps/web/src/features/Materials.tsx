@@ -1,4 +1,5 @@
 import { portalAssetUrl } from '../portals.js';
+import { placementDisplayLabel } from '../../../../packages/domain/src/placement-labels.js';
 import { Select } from '../controls/Select.js';
 import { useEffect, useState, type FormEvent } from 'react';
 import type { Grant, Language, SavedCard } from '../../../../packages/contracts/src/index.js';
@@ -204,7 +205,7 @@ export function Materials({ grant, lang }: { grant: Grant; lang: Language }) {
       {rows.map((p) => (
         <div className="subpanel" key={p.id}>
           <div className="section-heading">
-            <h3>{p.label}</h3>
+            <h3>{placementDisplayLabel(p.label, p.branch_name, lang)}</h3>
             <span className="badge">{p.status}</span>
           </div>
           <p>
@@ -289,7 +290,11 @@ export function Materials({ grant, lang }: { grant: Grant; lang: Language }) {
             onSubmit={(e) => void submit(e)}
           >
             <h2 id="material-title">
-              {create ? (ar ? 'طلب قطعة' : 'Request a piece') : action?.p.label}
+              {create
+                ? ar
+                  ? 'طلب قطعة'
+                  : 'Request a piece'
+                : action && placementDisplayLabel(action.p.label, action.p.branch_name, lang)}
             </h2>
             {create ? (
               <>

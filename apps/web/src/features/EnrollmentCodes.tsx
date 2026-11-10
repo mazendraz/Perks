@@ -1,4 +1,8 @@
 import { portalAssetUrl } from '../portals.js';
+import {
+  enrollmentPlacementLabel,
+  placementDisplayLabel,
+} from '../../../../packages/domain/src/placement-labels.js';
 import { Select } from '../controls/Select.js';
 import { useEffect, useState } from 'react';
 import type { Language } from '../../../../packages/contracts/src/index.js';
@@ -68,7 +72,10 @@ export function EnrollmentCodes({ merchantId, lang }: { merchantId: string; lang
               key: crypto.randomUUID(),
               body: {
                 branchId: branch,
-                label: 'Enrollment • ' + branches.find((b) => b.id === branch)?.name,
+                label: enrollmentPlacementLabel(
+                  branches.find((b) => b.id === branch)?.name || '',
+                  lang,
+                ),
                 kind: 'stand',
               },
             };
@@ -113,7 +120,7 @@ export function EnrollmentCodes({ merchantId, lang }: { merchantId: string; lang
             return (
               <article className="qr-sheet" key={p.id}>
                 <h3>{p.branch_name}</h3>
-                <small>{p.label}</small>
+                <small>{placementDisplayLabel(p.label, p.branch_name, lang)}</small>
                 <img
                   width="220"
                   height="220"

@@ -1,4 +1,5 @@
 import { contactPhone } from '../../../../packages/contracts/src/account-management.js';
+import { enrollmentPlacementLabel } from '../../../../packages/domain/src/placement-labels.js';
 import { publishDraftLogo } from './onboarding.js';
 import { hashPassword } from '../passwords.js';
 import {
@@ -340,7 +341,10 @@ export function provisioningModule(app: FastifyInstance, pools: Pools, c: Config
                   [
                     m.id,
                     b.id,
-                    'Enrollment • ' + b.name,
+                    enrollmentPlacementLabel(
+                      b.name,
+                      req.headers['x-nuqta-language'] === 'ar' ? 'ar' : 'en',
+                    ),
                     randomBytes(24).toString('base64url'),
                     actor.id,
                   ],

@@ -1,0 +1,10 @@
+Wallet brand artwork
+
+Apple and Apple Wallet are trademarks of Apple Inc., registered in the U.S. and other countries.
+Apple's Add to Apple Wallet badges remain Apple artwork, used under the Wallet Marketing Artwork License Agreement approved by the project owner.
+https://developer.apple.com/wallet/add-to-apple-wallet-guidelines/
+
+Google Wallet and the Add to Google Wallet badges are Google trademarks and artwork.
+https://developers.google.com/wallet/retail/loyalty-cards/resources/brand-guidelines
+
+These SVG files are the providers' original artwork, without changes. ASSET-SOURCES.json records the official source and SHA-256 of each file.

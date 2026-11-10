@@ -10,6 +10,29 @@ export function canAddToAppleWallet(ua = navigator.userAgent, touch = navigator.
 export function isAndroid(ua = navigator.userAgent) {
   return /Android/.test(ua);
 }
+export function WalletButton({
+  provider,
+  membershipId,
+  lang,
+}: {
+  provider: 'apple' | 'google';
+  membershipId: string;
+  lang: Language;
+}) {
+  const name = provider === 'apple' ? 'Apple Wallet' : 'Google Wallet';
+  return (
+    <a
+      className={'wallet-badge-button ' + provider + '-wallet-button'}
+      href={portalAssetUrl('/api/v1/me/memberships/' + membershipId + '/wallet/' + provider)}
+    >
+      <img
+        src={'/wallet/' + provider + '-add-to-wallet-' + lang + '.svg'}
+        height={55}
+        alt={(lang === 'ar' ? 'إضافة إلى ' : 'Add to ') + name}
+      />
+    </a>
+  );
+}
 export function WalletPanel({ membershipId, lang }: { membershipId: string; lang: Language }) {
   const ar = lang === 'ar';
   const [wallets, setWallets] = useState<{ apple: boolean; google: boolean } | null>(null);
@@ -23,36 +46,32 @@ export function WalletPanel({ membershipId, lang }: { membershipId: string; lang
     };
   }, []);
   const iphone = canAddToAppleWallet(),
-    android = isAndroid(),
-    base = '/api/v1/me/memberships/' + membershipId + '/wallet/';
+    android = isAndroid();
   const apple = !!wallets?.apple && iphone,
     google = !!wallets?.google && android;
   return (
     <section className="panel wallet-panel">
-      <h2>Wallet</h2>
+      <h2>{ar ? 'كارتك في Wallet' : 'Your card in Wallet'}</h2>
       {apple || google ? (
         <>
           <p className="muted">
             {ar
-              ? 'ضيف الكارت للمحفظة علشان تشوف أختامك من غير ما تفتح الموقع. الكارت هيتحدث لوحده بعد كل ختم.'
-              : 'Add the card to your wallet to see your stamps without opening the site. It updates itself after every stamp.'}
+              ? 'احفظ كارتك باسمك، وشوف رصيدك ومكافأتك من المحفظة. الكارت بيتحدث بعد كل ختم.'
+              : 'Keep your named card, stamp balance and reward in your wallet. It updates after every stamp.'}
           </p>
-          {apple && (
-            <a className="apple-wallet-button" href={portalAssetUrl(base + 'apple')}>
-              <span aria-hidden="true" className="apple-wallet-glyph" />
-              {ar ? 'إضافة إلى Apple Wallet' : 'Add to Apple Wallet'}
-            </a>
-          )}
-          {google && (
-            <a className="google-wallet-button" href={portalAssetUrl(base + 'google')}>
-              <span aria-hidden="true" className="google-wallet-glyph" />
-              {ar ? 'إضافة إلى Google Wallet' : 'Add to Google Wallet'}
-            </a>
-          )}
+          <div className="wallet-badges">
+            {apple && <WalletButton provider="apple" membershipId={membershipId} lang={lang} />}
+            {google && <WalletButton provider="google" membershipId={membershipId} lang={lang} />}
+          </div>
           <p className="muted small">
             {ar
-              ? 'علشان تاخد ختم، افتح الكارت هنا واعرض الكود للكاشير.'
-              : 'To get a stamp, open the card here and show the code to the cashier.'}
+              ? 'وقت الزيارة، المس ستيكر المحل أو امسح QR بتاعه، وورّي الكود اللي هيظهر للكاشير. رابط كارتك موجود كمان في تفاصيل المحفظة.'
+              : 'At the counter, tap the shop tag or scan its QR, then show the fresh code to the cashier. You can also open your card from your wallet’s pass details.'}
+          </p>
+          <p className="muted small">
+            {ar
+              ? 'الإضافة بتشارك اسمك وبيانات الكارت مع مزود المحفظة اللي اخترته.'
+              : 'Adding shares your name and card details with your chosen wallet provider.'}
           </p>
         </>
       ) : wallets?.apple || wallets?.google ? (

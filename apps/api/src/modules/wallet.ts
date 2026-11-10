@@ -92,7 +92,7 @@ export function walletModule(app: FastifyInstance, pools: Pools, c: Config) {
     const card = (await pools.pool.query('SELECT google_wallet_strip($1) AS card', [p.data.key]))
       .rows[0].card as WalletCard | null;
     if (!card) return reply.code(404).send();
-    const image = await sharp(Buffer.from(stripSvg(card, 3)))
+    const image = await sharp(Buffer.from(stripSvg(card, 3, 123)))
       .resize(1032, 338)
       .png()
       .toBuffer();

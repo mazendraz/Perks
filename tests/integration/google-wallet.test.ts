@@ -140,7 +140,7 @@ function fakeGoogle(status: (call: Call) => number) {
   return { calls, g: loadGoogleWallet(c, fetchImpl)! };
 }
 
-test('the save link is a signed JWT with the card and no customer name', async () => {
+test('the save link is a signed JWT with the member name and a non-authorizing card QR', async () => {
   assert.deepEqual((await app.inject({ url: '/api/v1/wallet/availability' })).json(), {
     apple: false,
     google: true,
@@ -158,9 +158,18 @@ test('the save link is a signed JWT with the card and no customer name', async (
   assert.match(object.id, new RegExp('^' + issuer + '\\.perks-card-[0-9a-f-]{36}$'));
   assert.equal(object.loyaltyPoints.balance.string, '2/5');
   assert.equal(object.state, 'ACTIVE');
-  assert.equal(object.barcode, undefined);
-  assert.equal(object.linksModuleData.uris[0].uri, origin + '/customer/' + m.id);
-  assert.ok(!JSON.stringify(claims).includes('عميل جوجل'));
+  assert.equal(object.barcode.type, 'QR_CODE');
+  assert.equal(object.barcode.value, origin + '/customer/' + m.id + '?wallet=1');
+  assert.equal(object.linksModuleData.uris[0].uri, object.barcode.value);
+  assert.equal(object.accountName, 'عميل جوجل');
+  const publicCard = (
+    await db.query('SELECT google_wallet_strip($1) AS card', [object.id.split('perks-card-')[1]])
+  ).rows[0].card;
+  assert.equal(
+    publicCard.customer_name,
+    undefined,
+    'public artwork projection never exposes the member name',
+  );
   assert.equal((await save(m)).payload.loyaltyObjects[0].id, object.id, 'stable object id');
   const strip = await app.inject({ url: object.heroImage.sourceUri.uri.replace(origin, '') });
   assert.equal(strip.statusCode, 200);

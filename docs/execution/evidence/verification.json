@@ -1,6 +1,6 @@
 {
-  "at": "2026-11-10T00:56:16.579Z",
-  "passed": 469,
+  "at": "2026-11-10T19:18:52.112Z",
+  "passed": 474,
   "failed": 0,
   "errors": [],
   "checks": [
@@ -396,6 +396,21 @@
     },
     {
       "name": "link:docs\\execution\\RUNBOOK.md:../../deploy/BACKUP-README.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\STATUS.md:WALLET-PRESENTATION.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\STATUS.md:UI-JOURNEY-TEST.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\STATUS.md:UI-JOURNEY-TEST.md",
       "ok": true,
       "detail": "local link target"
     },
@@ -796,6 +811,16 @@
     },
     {
       "name": "link:docs\\execution\\IMPLEMENTATION-LOG.md:../../deploy/RETENTION.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:docs\\execution\\IMPLEMENTATION-LOG.md:UI-JOURNEY-TEST.md",
+      "ok": true,
+      "detail": "local link target"
+    },
+    {
+      "name": "link:README.md:docs/brand/README.md",
       "ok": true,
       "detail": "local link target"
     },

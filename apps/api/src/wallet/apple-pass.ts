@@ -4,7 +4,8 @@ import { crc32 } from 'node:zlib';
 import forge from 'node-forge';
 import sharp from 'sharp';
 import type { StampIcon, StampShape } from '../../../../packages/contracts/src/branding.js';
-import { stampIconPaths } from '../../../../packages/domain/src/stamp-glyphs.js';
+import { inkFor, stripSvg } from './pass-artwork.js';
+export { inkFor, stripSvg } from './pass-artwork.js';
 import { APPLE_SERVICE_PREFIX } from './constants.js';
 import { perksIconSvg } from '../../../../packages/domain/src/brand.js';
 
@@ -12,6 +13,7 @@ export interface WalletCard {
   id: string;
   merchant_id: string;
   merchant_name: string;
+  customer_name?: string;
   program_name: string;
   threshold: number;
   display_balance: number;
@@ -85,78 +87,7 @@ const rgb = (value: string) => {
   const n = parseInt(value.slice(1), 16);
   return `rgb(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255})`;
 };
-export function inkFor(color: string) {
-  const channels = [1, 3, 5]
-    .map((i) => parseInt(color.slice(i, i + 2), 16) / 255)
-    .map((n) => (n <= 0.04045 ? n / 12.92 : ((n + 0.055) / 1.055) ** 2.4));
-  return channels[0]! * 0.2126 + channels[1]! * 0.7152 + channels[2]! * 0.0722 > 0.179
-    ? '#132a26'
-    : '#ffffff';
-}
 const escapeXml = (s: string) => s.replace(/[<>&"']/g, (ch) => '&#' + ch.charCodeAt(0) + ';');
-
-function frame(shape: StampShape, cx: number, cy: number, r: number) {
-  if (shape === 'hexagon') {
-    const pts = [0, 1, 2, 3, 4, 5].map((i) => {
-      const a = (Math.PI / 3) * i - Math.PI / 2;
-      return (cx + Math.cos(a) * r).toFixed(1) + ',' + (cy + Math.sin(a) * r).toFixed(1);
-    });
-    return `<polygon points="${pts.join(' ')}"/>`;
-  }
-  if (shape === 'seal') {
-    const pts = Array.from({ length: 32 }, (_, i) => {
-      const a = (i * Math.PI) / 16 - Math.PI / 2,
-        rr = i % 2 ? r * 0.85 : r;
-      return (cx + Math.cos(a) * rr).toFixed(1) + ',' + (cy + Math.sin(a) * rr).toFixed(1);
-    });
-    return `<polygon points="${pts.join(' ')}"/>`;
-  }
-  if (shape === 'rounded' || shape === 'square')
-    return `<rect x="${cx - r}" y="${cy - r}" width="${2 * r}" height="${2 * r}" rx="${shape === 'rounded' ? r * 0.26 : r * 0.04}"/>`;
-  return `<circle cx="${cx}" cy="${cy}" r="${r}"/>`;
-}
-// The strip mirrors the web card: one slot per stamp, filled slots carry the business stamp.
-export function stripSvg(card: WalletCard, scale: number) {
-  const width = 375 * scale,
-    height = 123 * scale,
-    total = Math.max(2, Math.min(50, card.threshold)),
-    filled = Math.max(0, Math.min(total, card.display_balance)),
-    rows = total <= 6 ? 1 : total <= 20 ? 2 : Math.ceil(total / 10),
-    perRow = Math.ceil(total / rows),
-    padX = 18 * scale,
-    padY = 12 * scale,
-    cell = Math.min((width - 2 * padX) / perRow, (height - 2 * padY) / rows),
-    r = cell * 0.4,
-    bg = hex(card.primary_color, '#181b38'),
-    accent = hex(card.accent_color, '#cbff64'),
-    ink = inkFor(bg),
-    accentInk = inkFor(accent),
-    icon = stampIconPaths[card.stamp_icon] || stampIconPaths.check,
-    outline = card.stamp_style === 'outline';
-  const slots: string[] = [];
-  for (let i = 0; i < total; i++) {
-    const row = Math.floor(i / perRow),
-      inRow = Math.min(perRow, total - row * perRow),
-      col = i % perRow,
-      rowWidth = inRow * cell,
-      cx = (width - rowWidth) / 2 + cell * col + cell / 2,
-      cy = (height - rows * cell) / 2 + cell * row + cell / 2;
-    if (i < filled) {
-      const fill = outline ? 'none' : rgb(accent),
-        stroke = outline ? rgb(accent) : 'none',
-        glyph = outline ? accent : accentInk,
-        k = (r * 1.15) / 24;
-      slots.push(
-        `<g fill="${fill}" stroke="${stroke}" stroke-width="${2 * scale}">${frame(card.stamp_shape, cx, cy, r)}</g>` +
-          `<g transform="translate(${cx - 12 * k} ${cy - 12 * k}) scale(${k})"><path d="${icon}" fill="none" stroke="${rgb(glyph)}" stroke-width="${card.stamp_icon === 'check' ? 2.6 : 1.8}" stroke-linecap="round" stroke-linejoin="round"/></g>`,
-      );
-    } else
-      slots.push(
-        `<g fill="none" stroke="${rgb(ink)}" stroke-opacity="0.38" stroke-width="${1.6 * scale}" stroke-dasharray="${3 * scale} ${3 * scale}">${frame(card.stamp_shape, cx, cy, r)}</g>`,
-      );
-  }
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}"><rect width="100%" height="100%" fill="${rgb(bg)}"/>${slots.join('')}</svg>`;
-}
 
 const arStamps = (n: number) =>
   n === 1 ? 'ختم واحد' : n === 2 ? 'ختمين' : n <= 10 ? `${n} أختام` : `${n} ختم`;
@@ -167,6 +98,9 @@ export function texts(card: WalletCard) {
     ar: {
       stamps_label: 'الأختام',
       reward_label: 'المكافأة',
+      member_label: 'باسم',
+      member_value: 'عميل Perks',
+      qr_hint: 'افتح كارتك لعرض كود الختم المتجدد',
       status_label: 'حالة الكارت',
       status_value: !card.active
         ? 'الكارت ده اتقفل'
@@ -183,6 +117,9 @@ export function texts(card: WalletCard) {
     en: {
       stamps_label: 'Stamps',
       reward_label: 'Reward',
+      member_label: 'Member',
+      member_value: 'Perks member',
+      qr_hint: 'Open your card for a fresh cashier code',
       status_label: 'Card status',
       status_value: !card.active
         ? 'This card is closed'
@@ -215,7 +152,7 @@ export function passJson(
 ) {
   const bg = hex(card.primary_color, '#181b38'),
     ink = inkFor(bg),
-    cardUrl = options.origin + '/customer/' + card.id;
+    cardUrl = options.origin + '/customer/' + card.id + '?wallet=1';
   return {
     formatVersion: 1,
     passTypeIdentifier: options.signer.passTypeIdentifier,
@@ -235,6 +172,14 @@ export function passJson(
     foregroundColor: rgb(ink),
     labelColor: rgb(ink === '#ffffff' ? '#cfd2dc' : '#3d4a47'),
     sharingProhibited: true,
+    barcodes: [
+      {
+        format: 'PKBarcodeFormatQR',
+        message: cardUrl,
+        messageEncoding: 'iso-8859-1',
+        altText: card.merchant_name,
+      },
+    ],
     ...(card.active ? {} : { voided: true }),
     storeCard: {
       headerFields: [
@@ -245,16 +190,21 @@ export function passJson(
           textAlignment: 'PKTextAlignmentRight',
         },
       ],
-      secondaryFields: [{ key: 'reward', label: 'reward_label', value: card.reward_title }],
-      auxiliaryFields: [
+      secondaryFields: [
+        {
+          key: 'member',
+          label: 'member_label',
+          value: card.active && card.customer_name ? card.customer_name : 'member_value',
+        },
+      ],
+      auxiliaryFields: [{ key: 'reward', label: 'reward_label', value: card.reward_title }],
+      backFields: [
         {
           key: 'status',
           label: 'status_label',
           value: 'status_value',
           changeMessage: 'status_change',
         },
-      ],
-      backFields: [
         {
           key: 'open',
           label: 'open_label',
@@ -354,9 +304,9 @@ export async function buildPkpass(
     ['icon.png', await png(appIcon, 29)],
     ['icon@2x.png', await png(appIcon, 58)],
     ['icon@3x.png', await png(appIcon, 87)],
-    ['strip.png', await png(stripSvg(card, 1), 375, 123)],
-    ['strip@2x.png', await png(stripSvg(card, 2), 750, 246)],
-    ['strip@3x.png', await png(stripSvg(card, 3), 1125, 369)],
+    ['strip.png', await png(stripSvg(card, 1), 375, 144)],
+    ['strip@2x.png', await png(stripSvg(card, 2), 750, 288)],
+    ['strip@3x.png', await png(stripSvg(card, 3), 1125, 432)],
   ];
   if (options.logo)
     for (const [name, h] of [
@@ -367,7 +317,19 @@ export async function buildPkpass(
       files.push([
         name,
         await sharp(options.logo)
-          .resize({ height: h, width: h * 3, fit: 'inside', withoutEnlargement: false })
+          .resize({
+            height: Math.round(h * 0.76),
+            width: Math.round(h * 0.76),
+            fit: 'contain',
+            background: { r: 0, g: 0, b: 0, alpha: 0 },
+          })
+          .extend({
+            top: Math.ceil(h * 0.12),
+            bottom: Math.floor(h * 0.12),
+            left: Math.ceil(h * 0.12),
+            right: Math.floor(h * 0.12),
+            background: { r: 0, g: 0, b: 0, alpha: 0 },
+          })
           .png()
           .toBuffer(),
       ]);

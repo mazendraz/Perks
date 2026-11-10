@@ -552,6 +552,19 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
   // On the very first visit the card is revealed before the full-screen code covers it:
   // the customer sees their new card arrive, then the code opens for the first stamp.
   const firstVisit = useRef(new URLSearchParams(location.search).get('new') === '1');
+  const openedFromWallet = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    if (
+      !card ||
+      new URLSearchParams(location.search).get('wallet') !== '1' ||
+      openedFromWallet.current === card.id
+    )
+      return;
+    openedFromWallet.current = card.id;
+    // The Wallet QR is a link, never an award credential. The authenticated
+    // holder still obtains the same short-lived proof used by the normal UI.
+    void showQr();
+  }, [card?.id]);
   useEffect(() => {
     if (!(waiting && card && new URLSearchParams(location.search).has('code'))) return;
     const reduce =

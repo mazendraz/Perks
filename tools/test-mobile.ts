@@ -9,6 +9,7 @@ import {
 import assert from 'node:assert/strict';
 import { auditMobileBrand } from './mobile-brand-audit.js';
 import { auditCustomerLoading } from './customer-load-audit.js';
+import { auditWalletPresentation } from './wallet-mobile-audit.js';
 import { randomUUID, randomBytes, createHash } from 'node:crypto';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
@@ -821,6 +822,11 @@ try {
       );
     }
     await auditCustomerLoading(page, project.name, directory);
+    await auditWalletPresentation(page, project.name, directory);
+    pass(
+      project.name +
+        ': original localized wallet badges render in color under CSP at 320/390/430px, and the Wallet link opens a fresh authenticated cashier code',
+    );
     pass(
       project.name +
         ': saved cards and the Wallet panel remain available while redemption confirmations are delayed',

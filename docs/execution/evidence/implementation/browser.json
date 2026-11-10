@@ -1,5 +1,5 @@
 {
-  "at": "2026-11-10T18:02:08.181Z",
+  "at": "2026-11-10T19:15:36.620Z",
   "browser": "msedge",
   "browserVersion": "157.0.4341.42",
   "appEnv": "development",
@@ -67,8 +67,8 @@
     "Privacy and terms are public bilingual pages with explicit legal-review status; linked language overrides a different saved preference for that page"
   ],
   "errors": [],
-  "merchantId": "031af489-1342-401b-84b9-6a53272d9961",
-  "membershipId": "d1d60fb9-3125-4934-a9d7-b788aeb4f33f",
+  "merchantId": "2be31cea-a9a9-4b74-990f-ac9a0dec6008",
+  "membershipId": "563edb82-d945-4dac-9347-672a6a512af9",
   "metrics": {
     "registered": 1,
     "active": 1,

@@ -1,0 +1,21 @@
+{
+  "downloadedAt": "2026-11-10",
+  "apple": {
+    "guidelines": "https://developer.apple.com/wallet/add-to-apple-wallet-guidelines/",
+    "download": "https://developer.apple.com/file/?file=wallet&agree=Yes",
+    "note": "Original RGB SVG files copied byte-for-byte from Apple's artwork archive after the project owner approved the Wallet Marketing Agreement.",
+    "files": {
+      "apple-add-to-wallet-ar.svg": "46f86cf3c3967aa56db1e17de7d79f046d924f64e25ca5c38c999f94312ca2cc",
+      "apple-add-to-wallet-en.svg": "052b3b446860fd2f9b49c2f0336038947623a5a9433ee3583585b8552ff6f506"
+    }
+  },
+  "google": {
+    "guidelines": "https://developers.google.com/wallet/retail/loyalty-cards/resources/brand-guidelines",
+    "download": "https://developers.google.com/static/wallet/download-assets/add-to-wallet-svg.zip",
+    "note": "Original Arabic and enUS condensed SVG badges copied byte-for-byte. No redrawing, recoloring, mirroring or changes to the artwork.",
+    "files": {
+      "google-add-to-wallet-ar.svg": "ae0a1450ec88b0352639ef6a17f08dcc8a174232e425f6f6d009fe6d95b8ece4",
+      "google-add-to-wallet-en.svg": "fee1f26a7f5d5c591869deb81c20b3d38ac05fb675c7b920ef6d299cb0555de2"
+    }
+  }
+}

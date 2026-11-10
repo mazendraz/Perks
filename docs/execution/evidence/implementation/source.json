@@ -1,5 +1,5 @@
 {
-  "fingerprint": "6efe192f9f05a7b3eda74c02a2648814e8989b9618fd3ecf4b1afdb14891b585",
+  "fingerprint": "dc70c24bbc0d98d75d7c2586c113ab54a3f995a7b2785f250f20f738cf3162a9",
   "files": [
     {
       "path": ".dockerignore",
@@ -179,7 +179,7 @@
     },
     {
       "path": "apps/api/src/modules/wallet.ts",
-      "sha256": "8d9aa5c4a65718e9eb860990d7ead56b3350a0b7de4f867ec25394533c0e6357"
+      "sha256": "e2659fd73d0872196af4038b40753b09826267c0a147ae78061e5587d8f96dcc"
     },
     {
       "path": "apps/api/src/openapi.ts",
@@ -231,7 +231,7 @@
     },
     {
       "path": "apps/api/src/wallet/apple-pass.ts",
-      "sha256": "a9a1024bca4c2e29124659f90d34e001dc1261d2ec73231e620c645bf857edb9"
+      "sha256": "f85ae1b096346e3875bad10aa68ad945ab286530413b5b96c71f69707d98b23d"
     },
     {
       "path": "apps/api/src/wallet/constants.ts",
@@ -239,7 +239,11 @@
     },
     {
       "path": "apps/api/src/wallet/google-wallet.ts",
-      "sha256": "329dc27295dfba02f8f8c853588e31f6c60ed76f6818d19e53efb09305b449de"
+      "sha256": "99834b16f7d0b04448b592c55bc0847c8567fb03922d7794491cc2bf6bb2f2ad"
+    },
+    {
+      "path": "apps/api/src/wallet/pass-artwork.ts",
+      "sha256": "6f368e5a08de5edec8f13de871f47b5a83fb0c25345fd1f049cbdbc21fab281e"
     },
     {
       "path": "apps/web/index.html",
@@ -334,6 +338,26 @@
       "sha256": "695dacbe6c8bae32811c2142f743fb83b1ea6546206bb017b4ca07d3ce7f39a3"
     },
     {
+      "path": "apps/web/public/wallet/ASSET-SOURCES.json",
+      "sha256": "291c646e406426affd957a9f3fca86069eeeeb782d185842c2c1478d73104868"
+    },
+    {
+      "path": "apps/web/public/wallet/apple-add-to-wallet-ar.svg",
+      "sha256": "46f86cf3c3967aa56db1e17de7d79f046d924f64e25ca5c38c999f94312ca2cc"
+    },
+    {
+      "path": "apps/web/public/wallet/apple-add-to-wallet-en.svg",
+      "sha256": "052b3b446860fd2f9b49c2f0336038947623a5a9433ee3583585b8552ff6f506"
+    },
+    {
+      "path": "apps/web/public/wallet/google-add-to-wallet-ar.svg",
+      "sha256": "ae0a1450ec88b0352639ef6a17f08dcc8a174232e425f6f6d009fe6d95b8ece4"
+    },
+    {
+      "path": "apps/web/public/wallet/google-add-to-wallet-en.svg",
+      "sha256": "fee1f26a7f5d5c591869deb81c20b3d38ac05fb675c7b920ef6d299cb0555de2"
+    },
+    {
       "path": "apps/web/service-worker.template.js",
       "sha256": "3fed2553de4357e54dc5f75a2aa5779431f8da7a10d317c2cd9ff5047ce66784"
     },
@@ -403,7 +427,7 @@
     },
     {
       "path": "apps/web/src/features.css",
-      "sha256": "4ad75027c0357eac9c8c42adcc633e295756a856832b09c144815e94dae81f44"
+      "sha256": "2b4e50e1ea78f31e0fd86cfa4f74ceb4b5e9b7a8e52d330637ee25f8362a4f43"
     },
     {
       "path": "apps/web/src/features/AccountSecurity.tsx",
@@ -443,7 +467,7 @@
     },
     {
       "path": "apps/web/src/features/CustomerPage.tsx",
-      "sha256": "48efcea75b0d0b58e59f18c427b2bdd9ad37d73c7187a2e8512559faab4db0f2"
+      "sha256": "2845cb41e7ab05ffa318afb6d0ab5e89b915c5228af91fe599eaa08f77fa5749"
     },
     {
       "path": "apps/web/src/features/CustomerPrivacy.tsx",
@@ -539,7 +563,7 @@
     },
     {
       "path": "apps/web/src/features/WalletPanel.tsx",
-      "sha256": "0636fed6b63d0cb123617362aeede1bd0f10e269541a17c12d54fb913edcd6b9"
+      "sha256": "becac8521d4ccfd94e1cf4b9eb187142452e9277db8b506fd0c5022ffc8436f0"
     },
     {
       "path": "apps/web/src/install-prompt.ts",
@@ -854,6 +878,10 @@
       "sha256": "30d4f163d50d665f84f968b60e7ff632dd71f8f07186a9500b2a2ab9b56f0e94"
     },
     {
+      "path": "db/migrations/013b_wallet_presentation.sql",
+      "sha256": "df6ea2da8b12091e2bdefe5e657f9e2d30850d9529389910e5874d98eb3dfbf3"
+    },
+    {
       "path": "db/seed.ts",
       "sha256": "4d96dea495e124e9128522afc1fa54120f3e956d401566ed2989c42317cf3c43"
     },
@@ -1095,7 +1123,7 @@
     },
     {
       "path": "tests/integration/apple-wallet.test.ts",
-      "sha256": "08b1c62b36bda4d7ec0540c3022f4eca093ad2e29d5eb56e2d1848699c13af37"
+      "sha256": "c127321801778b59b9ac94b0621a598ff4a4cefd9c4cdec1becd6dde8bd7b2ce"
     },
     {
       "path": "tests/integration/customer-devices.test.ts",
@@ -1123,7 +1151,7 @@
     },
     {
       "path": "tests/integration/google-wallet.test.ts",
-      "sha256": "97ad75abb9c82755af14bee715e0e19e1ca79995c7b75292bef0b708063c40f8"
+      "sha256": "3fa6e4c0d96d9be619d487bbf4d0c0de8d52b4e2c0aac8bc07b32eab92a6265c"
     },
     {
       "path": "tests/integration/live-events.test.ts",
@@ -1314,6 +1342,14 @@
       "sha256": "0a11467c411cbc35de8af7fbdf6bcecce76e8f4301744f2f9ed82a58460b8ff3"
     },
     {
+      "path": "tests/unit/wallet-artwork.test.ts",
+      "sha256": "6e5a1b13e99f3272d5f45f33605d3aac9122578d70af122ef73c1c419607414b"
+    },
+    {
+      "path": "tests/unit/wallet-badges.test.ts",
+      "sha256": "e9e8b25fa23934420f044cfc2d6cb0b9c9afd040f15ca918b265cd085554e00f"
+    },
+    {
       "path": "tests/wallet-certs.ts",
       "sha256": "c186ad4cf1e0d2e984b9626cd4c443196ea1e83a0be9b2b3dcfa2eaf7698ec64"
     },
@@ -1475,7 +1511,7 @@
     },
     {
       "path": "tools/test-mobile.ts",
-      "sha256": "a9933138102f324e84c2c37ef372fc2ef4d66c404cd86de2b7f8044b1a54b14a"
+      "sha256": "4dda36b6af80995da1c1e8499d10a449cb45865b523a50af5f0ba5bddf1bad72"
     },
     {
       "path": "tools/test-monitoring.ts",
@@ -1512,6 +1548,10 @@
     {
       "path": "tools/wallet-check.ts",
       "sha256": "87962d8510b47a906086f8b6a47865b9b246c0e1f003c8e1fcafd7f594648293"
+    },
+    {
+      "path": "tools/wallet-mobile-audit.ts",
+      "sha256": "f47ff6f22fa4abb4ef0cf54fb0eb5031b163f889cdeb3fe43f3043c238cb7213"
     },
     {
       "path": "tools/web-shell-plugin.ts",

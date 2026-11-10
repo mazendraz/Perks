@@ -1,6 +1,7 @@
 import { createHash, createSign } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { texts, type WalletCard } from './apple-pass.js';
+import { WALLET_ARTWORK_VERSION } from './pass-artwork.js';
 
 export const GOOGLE_STRIP_PREFIX = '/api/v1/public/wallet/google/strips';
 export interface GoogleWallet {
@@ -37,6 +38,7 @@ export const stripVersion = (card: WalletCard) =>
   createHash('sha1')
     .update(
       JSON.stringify([
+        WALLET_ARTWORK_VERSION,
         card.threshold,
         card.display_balance,
         card.primary_color,
@@ -96,6 +98,8 @@ export function googleObject(
     id: objectId(g, key),
     classId: classId(g, card),
     state: card.active ? 'ACTIVE' : 'INACTIVE',
+    accountName: card.active ? card.customer_name || '' : '',
+    barcode: { type: 'QR_CODE', value: origin + '/customer/' + card.id + '?wallet=1' },
     loyaltyPoints: {
       localizedLabel: localized(t.ar.stamps_label, t.en.stamps_label),
       balance: { string: `${Math.min(card.display_balance, card.threshold)}/${card.threshold}` },
@@ -125,7 +129,7 @@ export function googleObject(
       uris: [
         {
           id: 'card',
-          uri: origin + '/customer/' + card.id,
+          uri: origin + '/customer/' + card.id + '?wallet=1',
           localizedDescription: localized(t.ar.open_label, t.en.open_label),
         },
       ],

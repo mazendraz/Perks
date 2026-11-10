@@ -1,5 +1,5 @@
 {
-  "at": "2026-11-10T17:59:17.979Z",
+  "at": "2026-11-10T19:13:27.543Z",
   "status": "CONFIG_VERIFIED_RUNTIME_NOT_RUN",
   "checks": [
     "Actual Compose base/staging/retention merge switches every service to journald without unsupported JSON-driver options or secret metadata",

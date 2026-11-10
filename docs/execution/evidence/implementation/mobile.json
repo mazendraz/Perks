@@ -1,5 +1,5 @@
 {
-  "at": "2026-11-10T18:02:11.603Z",
+  "at": "2026-11-10T19:15:39.049Z",
   "status": "passed",
   "checks": [
     "chromium-pixel5: name/phone/terms registration survives Arabic/English switching, reaches the card within 30 seconds, and needs no email/password or UUID/Popover/ResizeObserver/Animation.finished",
@@ -13,6 +13,7 @@
     "chromium-pixel5: a standalone app suppresses installation offers even without stored offer history",
     "chromium-pixel5: cashier manual QR input commits one stamp and updates the actual customer balance",
     "Camera synthetic stream: rear-camera constraint, muted/playsInline, tracks stopped on hide and after late permission; no auto-resume",
+    "chromium-pixel5: original localized wallet badges render in color under CSP at 320/390/430px, and the Wallet link opens a fresh authenticated cashier code",
     "chromium-pixel5: saved cards and the Wallet panel remain available while redemption confirmations are delayed",
     "chromium-pixel5: staff accounts localize roles/status and fit mobile cards without clipped cells in both languages",
     "chromium-pixel5: transaction and customer records have labeled mobile cells with no internal or page horizontal overflow in either language",
@@ -33,6 +34,7 @@
     "webkit-iphone12: QR closes on the committed stamp, ink angles survive reload, and home-screen offers stop after the second dismissal",
     "webkit-iphone12: a standalone app suppresses installation offers even without stored offer history",
     "webkit-iphone12: cashier manual QR input commits one stamp and updates the actual customer balance",
+    "webkit-iphone12: original localized wallet badges render in color under CSP at 320/390/430px, and the Wallet link opens a fresh authenticated cashier code",
     "webkit-iphone12: saved cards and the Wallet panel remain available while redemption confirmations are delayed",
     "webkit-iphone12: staff accounts localize roles/status and fit mobile cards without clipped cells in both languages",
     "webkit-iphone12: transaction and customer records have labeled mobile cells with no internal or page horizontal overflow in either language",
@@ -50,7 +52,7 @@
     "chromium-pixel5",
     "webkit-iphone12"
   ],
-  "build": "30e22b8967bd99d3207d",
-  "indexSha256": "84342cd75d81e11b4314a28a77ab715e40bcfdfeb34557be07b43fd7df03cfd6",
+  "build": "c73ad57bc0fffbe9dcdc",
+  "indexSha256": "6776a32c622e6f1841f90f6510b97970c64dca49a1ef710411b46b623a46ff45",
   "installabilityErrors": []
 }

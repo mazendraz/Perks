@@ -2,7 +2,7 @@ import { ColorPicker } from '../controls/ColorPicker.js';
 import { Icon } from '../../../../packages/ui/src/Icon.js';
 import { Select } from '../controls/Select.js';
 import { StampFrame, StampSymbol } from '../../../../packages/ui/src/StampSymbol.js';
-import { useEffect, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
   cardTemplates,
   templateNames,
@@ -69,8 +69,10 @@ export function LogoStyleControl({
             >
               {logoUrl ? (
                 <img src={logoUrl} alt="" />
+              ) : businessName ? (
+                <span className="logo-initial">{Array.from(businessName)[0]}</span>
               ) : (
-                businessName.slice(0, 1) || <Icon name="shop" size={24} />
+                <Icon name="shop" size={24} />
               )}
             </span>
             <span>
@@ -271,25 +273,21 @@ export function TemplatePicker({
               className="template-choice"
               onClick={() => onChange(t)}
             >
-              <span className="template-thumb" aria-hidden="true">
-                <span>
-                  <LoyaltyCard
-                    card={{
-                      ...card,
-                      id: 'template-' + t,
-                      template: t,
-                      logo_asset_id: undefined,
-                      logo_url: undefined,
-                      threshold: 5,
-                      balance: 2,
-                      stamp_shape: suggestedStamps(t)?.stampShape || card.stamp_shape,
-                      stamp_icon: suggestedStamps(t)?.stampIcon || card.stamp_icon,
-                      stamp_style: suggestedStamps(t)?.stampStyle || card.stamp_style,
-                    }}
-                    lang={lang}
-                  />
-                </span>
-              </span>
+              <TemplateThumbnail
+                card={{
+                  ...card,
+                  id: 'template-' + t,
+                  template: t,
+                  logo_asset_id: undefined,
+                  logo_url: undefined,
+                  threshold: 5,
+                  balance: 2,
+                  stamp_shape: suggestedStamps(t)?.stampShape || card.stamp_shape,
+                  stamp_icon: suggestedStamps(t)?.stampIcon || card.stamp_icon,
+                  stamp_style: suggestedStamps(t)?.stampStyle || card.stamp_style,
+                }}
+                lang={lang}
+              />
               <span>
                 {templateNames[t][lang]}
                 {card.template === t ? ' ✓' : ''}
@@ -301,6 +299,43 @@ export function TemplatePicker({
           ))}
       </div>
     </div>
+  );
+}
+
+function TemplateThumbnail({ card, lang }: { card: CardData; lang: Language }) {
+  const frame = useRef<HTMLSpanElement>(null);
+  const [size, setSize] = useState({ scale: 0.38, height: 148 });
+  useLayoutEffect(() => {
+    const outer = frame.current;
+    const inner = outer?.firstElementChild as HTMLSpanElement | null;
+    if (!outer || !inner) return;
+    let alive = true;
+    const measure = () => {
+      if (!alive || !outer.clientWidth) return;
+      const scale = outer.clientWidth / 340;
+      const height = Math.ceil(inner.offsetHeight * scale);
+      setSize((previous) =>
+        previous.scale === scale && previous.height === height ? previous : { scale, height },
+      );
+    };
+    measure();
+    const observer = typeof ResizeObserver === 'function' ? new ResizeObserver(measure) : null;
+    observer?.observe(outer);
+    observer?.observe(inner);
+    window.addEventListener('resize', measure);
+    void document.fonts?.ready.then(measure);
+    return () => {
+      alive = false;
+      observer?.disconnect();
+      window.removeEventListener('resize', measure);
+    };
+  }, [card, lang]);
+  return (
+    <span className="template-thumb" aria-hidden="true" ref={frame} style={{ height: size.height }}>
+      <span style={{ transform: `scale(${size.scale})` }}>
+        <LoyaltyCard card={card} lang={lang} />
+      </span>
+    </span>
   );
 }
 

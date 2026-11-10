@@ -1853,6 +1853,7 @@ td small {
   border: 1px solid #d7d8e2;
   border-radius: 13px;
   text-align: start;
+  color: var(--ink);
   min-width: 0;
   overflow: hidden;
   transition:
@@ -2151,12 +2152,6 @@ td small {
   .template-gallery {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .template-thumb {
-    height: 160px;
-  }
-  .template-thumb > span {
-    transform: scale(0.42);
-  }
   .qr-sheet {
     padding: 18px;
   }
@@ -2292,18 +2287,22 @@ td small {
 }
 .template-filters {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
-  overflow-x: auto;
+  overflow: visible;
   margin-top: 14px;
   padding-bottom: 3px;
 }
 .template-filters button {
+  flex: 0 1 auto;
+  max-width: 100%;
   border-radius: 7px;
   padding: 7px 10px;
   border: 1px solid #d7d8e5;
   background: #f7f7fa;
   font-size: 11px;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: anywhere;
   color: #464c81;
 }
 .template-filters button[aria-pressed='true'] {
@@ -3343,7 +3342,13 @@ input[type='number']::-webkit-outer-spin-button {
   width: 36px;
   height: 36px;
   font-size: 22px;
-  overflow: hidden;
+  overflow: visible;
+}
+.logo-initial {
+  display: block;
+  font-family: 'Plex Arabic', Manrope, sans-serif;
+  font-size: 18px;
+  line-height: 1.3;
 }
 .logo-style-example img {
   display: block;
@@ -3788,7 +3793,19 @@ input[type='number']::-webkit-outer-spin-button {
   font-size: 15px;
 }
 .brand-savebar .primary {
-  white-space: nowrap;
+  white-space: normal;
+  flex-shrink: 0;
+}
+@media (max-width: 760px) {
+  .brand-savebar {
+    position: static;
+    flex-wrap: wrap;
+    backdrop-filter: none;
+    background: transparent;
+  }
+  .brand-savebar > strong {
+    flex: 1 1 100px;
+  }
 }
 @media (max-width: 640px) {
   .topbar {

@@ -7,6 +7,7 @@ import {
   type Browser,
 } from 'playwright';
 import assert from 'node:assert/strict';
+import { auditMobileBrand } from './mobile-brand-audit.js';
 import { randomUUID, randomBytes, createHash } from 'node:crypto';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
@@ -110,6 +111,22 @@ async function checkLayout(page: Page, label: string) {
         .map((el) => el.tagName + ':' + el.className),
     );
   assert.deepEqual(small, [], label + ' touch targets');
+  const clipped = await page
+    .locator('button:visible, [role="option"]:visible')
+    .evaluateAll((elements) =>
+      elements
+        .filter(
+          (el) => el.scrollWidth > el.clientWidth + 2 || el.scrollHeight > el.clientHeight + 2,
+        )
+        .map((el) => ({
+          text: el.textContent?.trim().slice(0, 90),
+          width: el.clientWidth,
+          contentWidth: el.scrollWidth,
+          height: el.clientHeight,
+          contentHeight: el.scrollHeight,
+        })),
+    );
+  assert.deepEqual(clipped, [], label + ' clipped control content');
 }
 async function login(page: Page, email: string) {
   await page.goto(origin + '/login', { waitUntil: 'domcontentloaded' });
@@ -850,6 +867,11 @@ try {
     pass(
       project.name +
         ': transaction and customer records have labeled mobile cells with no internal or page horizontal overflow in either language',
+    );
+    await auditMobileBrand(op, project.name, directory);
+    pass(
+      project.name +
+        ': owner card editor fits 320/360/390/430/768px in Arabic/English, keeps complete template artwork and Arabic initials, and never covers a focused field',
     );
     pass(
       project.name +

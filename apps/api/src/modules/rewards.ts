@@ -116,16 +116,29 @@ export function rewardsModule(app: FastifyInstance, pools: Pools, c: Config) {
               "UPDATE redemption_challenges SET status='expired' WHERE reward_id=$1 AND status IN ('awaiting_holder','confirmed') AND expires_at<=clock_timestamp()",
               [r],
             );
-            requireCondition(
-              !(
-                await db.query(
-                  "SELECT id FROM redemption_challenges WHERE reward_id=$1 AND status IN ('awaiting_holder','confirmed')",
-                  [r],
-                )
-              ).rowCount,
-              'CHALLENGE_ACTIVE',
-              409,
-            );
+            const active = (
+              await db.query(
+                "SELECT id,expires_at,branch_id,cashier_user_id,cashier_session_id FROM redemption_challenges WHERE reward_id=$1 AND status IN ('awaiting_holder','confirmed')",
+                [r],
+              )
+            ).rows[0];
+            if (active) {
+              // The same cashier session may resume its own open challenge after a reload or a
+              // lost reply. The fresh customer QR proof above was still required; any other
+              // cashier, session or branch keeps the conflict.
+              requireCondition(
+                active.cashier_user_id === actor.id &&
+                  active.cashier_session_id === actor.sessionId &&
+                  active.branch_id === body.branchId,
+                'CHALLENGE_ACTIVE',
+                409,
+              );
+              await audit(db, actor, 'redemption.resume', m, r, {
+                challengeId: active.id,
+                branchId: body.branchId,
+              });
+              return { challengeId: active.id as string, expiresAt: active.expires_at };
+            }
             const id = randomUUID(),
               code = matchCode(id, c.AUTH_PEPPER);
             const ch = (

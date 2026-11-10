@@ -56,7 +56,8 @@
     "staging:prepare": "tsx tools/prepare-staging.ts",
     "test:staging-config": "tsx tools/test-staging.ts",
     "test:log-retention": "tsx tools/test-log-retention.ts",
-    "privacy:manifest": "tsx tools/privacy-manifest-cli.ts"
+    "privacy:manifest": "tsx tools/privacy-manifest-cli.ts",
+    "wallet:check": "tsx tools/wallet-check.ts"
   },
   "dependencies": {
     "@fastify/cookie": "11.1.5",

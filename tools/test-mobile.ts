@@ -779,6 +779,32 @@ try {
       .getByRole('button', { name: 'Business', exact: true })
       .click();
     await op.getByRole('button', { name: 'Team', exact: true }).click();
+    await op.locator('.account-security tbody tr').first().waitFor();
+    await op.getByRole('button', { name: 'العربية', exact: true }).click();
+    const accounts = op.locator('.account-security');
+    const roleCells = accounts.locator('td:nth-child(2)');
+    await roleCells.filter({ hasText: /^مالك/ }).waitFor();
+    assert.equal(await roleCells.filter({ hasText: /^مالك/ }).count(), 1);
+    assert.ok((await accounts.getByText('نشط', { exact: true }).count()) > 0);
+    assert.equal(await roleCells.filter({ hasText: /^owner(?:\s|$)/ }).count(), 0);
+    assert.equal(await accounts.getByText('active', { exact: true }).count(), 0);
+    await checkLayout(op, project.name + ' Arabic team');
+    assert.deepEqual(
+      await accounts
+        .locator('td')
+        .evaluateAll((cells) =>
+          cells
+            .filter((cell) => cell.scrollWidth > cell.clientWidth + 1)
+            .map((cell) => cell.getAttribute('data-label')),
+        ),
+      [],
+    );
+    await op.getByRole('button', { name: 'English', exact: true }).click();
+    await checkLayout(op, project.name + ' English team');
+    pass(
+      project.name +
+        ': staff accounts localize roles/status and fit mobile cards without clipped cells in both languages',
+    );
     await op.getByRole('button', { name: 'Add staff account', exact: true }).click();
     const dialog = op.getByRole('dialog', { name: 'Add staff account', exact: true });
     await dialog.waitFor();

@@ -2737,6 +2737,47 @@ td small {
   margin-bottom: 12px;
 }
 @media (max-width: 760px) {
+  .account-security .table-wrap {
+    overflow: visible;
+  }
+  .account-security table,
+  .account-security tbody {
+    display: block;
+  }
+  .account-security thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .account-security tbody tr {
+    display: grid;
+    gap: 16px;
+    padding: 18px;
+    margin-bottom: 16px;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: var(--surface, #fff);
+  }
+  .account-security td {
+    display: block;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .account-security td::before {
+    content: attr(data-label);
+    display: block;
+    color: var(--muted);
+    font-size: 12px;
+    margin-bottom: 6px;
+  }
+  .account-security .account-actions {
+    min-width: 0;
+  }
   .dialog.business-preview {
     width: calc(100vw - 20px);
     max-height: calc(100dvh - 20px);

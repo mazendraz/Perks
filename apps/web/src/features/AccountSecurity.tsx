@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import type { Language } from '../../../../packages/contracts/src/index.js';
 import { api, ApiError, errorText } from '../api.js';
 import { Icon } from '../../../../packages/ui/src/Icon.js';
+import { staffRoleLabel, staffStatusLabel } from '../business-labels.js';
 export interface SecurityAccount {
   id: string;
   email: string;
@@ -111,23 +112,27 @@ export function AccountSecurity({
           <tbody>
             {rows.map((a) => (
               <tr key={a.id}>
-                <td>
+                <td data-label={ar ? 'الحساب' : 'Account'}>
                   <strong>{a.name}</strong>
                   <small>
                     <bdi>{a.email}</bdi>
                   </small>
                 </td>
-                <td>
-                  {a.role}
+                <td data-label={ar ? 'الدور والفروع' : 'Role and branches'}>
+                  {staffRoleLabel(a.role, lang)}
                   <small>{a.branches.join(' · ')}</small>
                 </td>
-                <td>
-                  <span className="badge">{a.status}</span>
+                <td data-label={ar ? 'الحالة' : 'Status'}>
+                  <span className="badge">{staffStatusLabel(a.status, lang)}</span>
                   {a.lockedUntil && (
-                    <small>{ar ? 'فيه محاولات دخول متوقفة مؤقتًا' : 'Some sign-in attempts are temporarily restricted'}</small>
+                    <small>
+                      {ar
+                        ? 'فيه محاولات دخول متوقفة مؤقتًا'
+                        : 'Some sign-in attempts are temporarily restricted'}
+                    </small>
                   )}
                 </td>
-                <td>
+                <td data-label={ar ? 'الدخول' : 'Sign-in'}>
                   <small>
                     {a.passwordSet
                       ? ar
@@ -150,7 +155,7 @@ export function AccountSecurity({
                     </small>
                   )}
                 </td>
-                <td>
+                <td data-label={ar ? 'التحكم' : 'Controls'}>
                   <div className="account-actions">
                     <button className="text-button" onClick={() => open(a, 'access')}>
                       {ar ? 'تعديل الحساب' : 'Edit account'}

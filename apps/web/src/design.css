@@ -2737,21 +2737,21 @@ td small {
   margin-bottom: 12px;
 }
 @media (max-width: 760px) {
-  .account-security .table-wrap {
+  .mobile-records {
     overflow: visible;
   }
-  .account-security table,
-  .account-security tbody {
+  .mobile-records table,
+  .mobile-records tbody {
     display: block;
   }
-  .account-security thead {
+  .mobile-records thead {
     position: absolute;
     width: 1px;
     height: 1px;
     overflow: hidden;
     clip-path: inset(50%);
   }
-  .account-security tbody tr {
+  .mobile-records tbody tr {
     display: grid;
     gap: 16px;
     padding: 18px;
@@ -2760,7 +2760,7 @@ td small {
     border-radius: 16px;
     background: var(--surface, #fff);
   }
-  .account-security td {
+  .mobile-records td {
     display: block;
     min-width: 0;
     padding: 0;
@@ -2768,7 +2768,7 @@ td small {
     white-space: normal;
     overflow-wrap: anywhere;
   }
-  .account-security td::before {
+  .mobile-records td::before {
     content: attr(data-label);
     display: block;
     color: var(--muted);

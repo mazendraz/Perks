@@ -1058,7 +1058,7 @@ export function MerchantPage({ grant, lang }: { grant: Grant; lang: Language }) 
       {tab === 'operations' && (
         <section className="panel">
           <h2>{ar ? 'سجل العمليات' : 'Transactions'}</h2>
-          <div className="table-wrap">
+          <div className="table-wrap mobile-records">
             <table>
               <thead>
                 <tr>
@@ -1073,19 +1073,28 @@ export function MerchantPage({ grant, lang }: { grant: Grant; lang: Language }) 
               <tbody>
                 {recent.map((t) => (
                   <tr key={t.id}>
-                    <td>
+                    <td data-label={ar ? 'المرجع' : 'Reference'}>
                       <bdi>{t.public_reference}</bdi>
                     </td>
-                    <td>{t.alias}</td>
-                    <td>{t.type}</td>
-                    <td>{t.quantity}</td>
-                    <td>{t.branch_name}</td>
-                    <td>{new Date(t.at).toLocaleString(lang)}</td>
+                    <td data-label={ar ? 'العميل' : 'Customer'}>{t.alias}</td>
+                    <td data-label={ar ? 'النوع' : 'Type'}>{t.type}</td>
+                    <td data-label={ar ? 'الكمية' : 'Quantity'}>{t.quantity}</td>
+                    <td data-label={ar ? 'الفرع' : 'Branch'}>{t.branch_name}</td>
+                    <td data-label={ar ? 'الوقت' : 'Time'}>
+                      {new Date(t.at).toLocaleString(lang)}
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
+          {!recent.length && (
+            <p className="muted">
+              {ar
+                ? 'لسه مفيش عمليات في الفروع المسموحة.'
+                : 'No transactions in your allowed branches yet.'}
+            </p>
+          )}
         </section>
       )}
       {invite && (

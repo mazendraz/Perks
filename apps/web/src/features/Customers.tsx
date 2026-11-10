@@ -218,7 +218,7 @@ export function Customers({ grant, lang }: { grant: Grant; lang: Language }) {
             </button>
           ))}
         </div>
-        <div className="table-wrap">
+        <div className="table-wrap mobile-records">
           <table>
             <thead>
               <tr>
@@ -233,7 +233,7 @@ export function Customers({ grant, lang }: { grant: Grant; lang: Language }) {
             <tbody>
               {rows.map((r) => (
                 <tr key={r.id}>
-                  <td>
+                  <td data-label={ar ? 'العميل' : 'Customer'}>
                     <button className="text-button" onClick={() => void open(r.id)}>
                       {r.alias}
                     </button>
@@ -241,14 +241,14 @@ export function Customers({ grant, lang }: { grant: Grant; lang: Language }) {
                       <bdi>{r.contact_email}</bdi>
                     </small>
                   </td>
-                  <td>{r.visits}</td>
-                  <td>{r.net_stamps}</td>
-                  <td>
+                  <td data-label={ar ? 'الزيارات' : 'Visits'}>{r.visits}</td>
+                  <td data-label={ar ? 'صافي الأختام' : 'Net stamps'}>{r.net_stamps}</td>
+                  <td data-label={ar ? 'آخر شراء' : 'Last purchase'}>
                     {r.last_purchase_at
                       ? new Date(r.last_purchase_at).toLocaleDateString(lang)
                       : '—'}
                   </td>
-                  <td>{r.segment}</td>
+                  <td data-label={ar ? 'الشريحة' : 'Segment'}>{r.segment}</td>
                 </tr>
               ))}
             </tbody>

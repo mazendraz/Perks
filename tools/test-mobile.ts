@@ -816,6 +816,41 @@ try {
     );
     await dialog.getByRole('combobox', { name: 'Role', exact: true }).press('Escape');
     await dialog.waitFor({ state: 'hidden' });
+    for (const language of ['en', 'ar'] as const) {
+      if (language === 'ar') await op.getByRole('button', { name: 'العربية', exact: true }).click();
+      for (const section of language === 'ar'
+        ? ['المتابعة', 'العملاء']
+        : ['Activity', 'Customers']) {
+        await op
+          .getByRole('navigation', {
+            name: language === 'ar' ? 'أقسام المحل' : 'Business sections',
+            exact: true,
+          })
+          .getByRole('button', { name: section, exact: true })
+          .click();
+        const records = op.locator('.mobile-records');
+        await records.waitFor();
+        assert.equal(await records.evaluate((el) => el.scrollWidth <= el.clientWidth + 1), true);
+        assert.deepEqual(
+          await records
+            .locator('td')
+            .evaluateAll((cells) =>
+              cells
+                .filter(
+                  (cell) =>
+                    !cell.getAttribute('data-label') || cell.scrollWidth > cell.clientWidth + 1,
+                )
+                .map((cell) => cell.getAttribute('data-label')),
+            ),
+          [],
+        );
+        await checkLayout(op, project.name + ' ' + language + ' ' + section);
+      }
+    }
+    pass(
+      project.name +
+        ': transaction and customer records have labeled mobile cells with no internal or page horizontal overflow in either language',
+    );
     pass(
       project.name +
         ': fallback portaled select responds to touch and remains usable in a keyboard-managed modal without native Popover or ResizeObserver',

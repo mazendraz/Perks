@@ -97,7 +97,7 @@ export function AccountSecurity({
           {error}
         </p>
       )}
-      <div className="table-wrap">
+      <div className="table-wrap mobile-records">
         <table>
           <thead>
             <tr>

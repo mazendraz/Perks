@@ -76,7 +76,7 @@ export function OwnerView({ merchantId, lang }: { merchantId: string; lang: Lang
                 </>
               )}
               {ar
-                ? 'نفس لوحة المالك وبياناته. المعاينة للمراجعة؛التغييرات الفعلية من ملف المحل.'
+                ? 'نفس لوحة المالك وبياناته. المعاينة للمراجعة؛ التغييرات الفعلية من ملف المحل.'
                 : 'The owner’s dashboard and data. Review here; save actual changes from the business workspace.'}
             </p>
           </div>

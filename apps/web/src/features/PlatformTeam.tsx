@@ -215,7 +215,9 @@ export function PlatformTeam({ lang }: { lang: Language }) {
                     </button>
                     {a.lockedUntil && (
                       <small>
-                        {ar ? 'فيه محاولات دخول متوقفة مؤقتًا' : 'Some sign-in attempts are temporarily restricted'}
+                        {ar
+                          ? 'فيه محاولات دخول متوقفة مؤقتًا'
+                          : 'Some sign-in attempts are temporarily restricted'}
                       </small>
                     )}
                   </td>

@@ -195,7 +195,7 @@ export function Materials({ grant, lang }: { grant: Grant; lang: Language }) {
       </div>
       <p className="muted">
         {ar
-          ? 'كل قطعة لها رابط مستقل. NFC بيحتاج تاج وكاتب متوافقين. اكتب رابط NFC كـNDEF URI، وجربه على جهاز تاني. تنزيل QR مش إثبات طباعة أوتركيب.'
+          ? 'كل قطعة لها رابط مستقل. NFC بيحتاج تاج وكاتب متوافقين. اكتب رابط NFC كـNDEF URI، وجربه على جهاز تاني. تنزيل QR مش إثبات طباعة أو تركيب.'
           : 'Each piece has an independent link. NFC requires a compatible tag and writer. Write the NFC URL as an NDEF URI and test on another device. Downloading a QR does not verify printing or installation.'}
       </p>
       {error && (
@@ -333,7 +333,7 @@ export function Materials({ grant, lang }: { grant: Grant; lang: Language }) {
             ) : (
               <>
                 <label>
-                  {ar ? 'السبب أوتفاصيل التنفيذ' : 'Reason or execution notes'}
+                  {ar ? 'السبب أو تفاصيل التنفيذ' : 'Reason or execution notes'}
                   <textarea
                     autoFocus
                     required

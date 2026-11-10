@@ -18,7 +18,7 @@ export function CustomerDeviceHelp({ lang }: { lang: Language }) {
         <h1>{ar ? 'الكارت مش على الجهاز ده' : 'Your card is not on this device'}</h1>
         <p>
           {ar
-            ? 'افتح كارتك من سكان كود المحل،أو اطلب من الكاشير يبعتهولك على واتساب. مش محتاج إيميل أو باسورد.'
+            ? 'افتح كارتك من سكان كود المحل، أو اطلب من الكاشير يبعتهولك على واتساب. مش محتاج إيميل أو باسورد.'
             : 'Scan the shop code to open your card, or ask the cashier to restore it on WhatsApp. You do not need an email or password.'}
         </p>
       </section>
@@ -230,7 +230,7 @@ export function TeamCustomerRecovery({
       <summary>{ar ? 'رجّع كارت عميل' : 'Restore a customer card'}</summary>
       <p className="muted">
         {ar
-          ? 'بطلب العميل بس. دور برقمه كامل،وبعدها جهّز رسالة واتساب ليه.'
+          ? 'بطلب العميل بس. دور برقمه كامل، وبعدها جهّز رسالة واتساب ليه.'
           : 'Only at the customer’s request. Search their full number, then prepare a WhatsApp message for them.'}
       </p>
       <form onSubmit={(event) => void search(event)}>
@@ -313,7 +313,7 @@ export function TeamCustomerRecovery({
             <div className="notice success">
               <p>
                 {ar
-                  ? 'الرابط جاهز لمرة واحدة خلال24ساعة. واتساب هيفتح برسالة جاهزة،وإنت اللي هتبعتها للعميل.'
+                  ? 'الرابط جاهز لمرة واحدة خلال 24 ساعة. واتساب هيفتح برسالة جاهزة، وإنت اللي هتبعتها للعميل.'
                   : 'A one-use link is ready for 24 hours. WhatsApp opens a draft; you send it to the customer.'}
               </p>
               <a className="primary" href={draft.url} target="_blank" rel="noopener noreferrer">

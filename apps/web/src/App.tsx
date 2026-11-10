@@ -369,7 +369,7 @@ function Workspace({
           <>
             <p className="panel">
               {ar
-                ? 'كارتك مربوط بالجهاز ده. لو غيرت الموبايل،اطلب من الكاشير يرجعهولك على واتساب. مش محتاج باسورد.'
+                ? 'كارتك مربوط بالجهاز ده. لو غيرت الموبايل، اطلب من الكاشير يرجعهولك على واتساب. مش محتاج باسورد.'
                 : 'Your card is linked to this device. If you change phones, ask the cashier to restore it on WhatsApp. You do not need a password.'}
             </p>
             <DeleteCustomerAccount lang={lang} />

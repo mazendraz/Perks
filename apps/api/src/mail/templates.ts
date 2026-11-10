@@ -30,10 +30,10 @@ export function mailTemplate(
         '.'
       : kind === 'password_reset'
         ? ar
-          ? 'لو طلبت تغيير الباسورد،افتح الرابط واختار واحد جديد. الرابط مؤقت وبيشتغل مرة واحدة.'
+          ? 'لو طلبت تغيير الباسورد، افتح الرابط واختار واحد جديد. الرابط مؤقت وبيشتغل مرة واحدة.'
           : 'If you requested a password reset, open this temporary, single-use link and choose a new password.'
         : ar
-          ? 'باسورد حسابك اتغيّر،والجلسات القديمة اتقفلت. لو مش أنت اللي عملت ده،اطلب استعادة حسابك وراجع مسؤول الحساب.'
+          ? 'باسورد حسابك اتغيّر، والجلسات القديمة اتقفلت. لو مش أنت اللي عملت ده، اطلب استعادة حسابك وراجع مسؤول الحساب.'
           : 'Your account password was changed and previous sessions were signed out. If this was not you, recover your account and contact your account administrator.';
   const action =
     kind === 'invitation'

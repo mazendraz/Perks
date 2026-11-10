@@ -249,7 +249,7 @@ export function Login({
             {sent && (
               <p role="status" className="notice success">
                 {ar
-                  ? 'لو البريد مسجل،هنبعتلك رابط استعادة الحساب.'
+                  ? 'لو البريد مسجل، هنبعتلك رابط استعادة الحساب.'
                   : 'If the account exists, a recovery link is on its way.'}
               </p>
             )}
@@ -329,7 +329,7 @@ export function Login({
           <div className="auth-trust">
             <Icon name="shield" size={18} />
             {ar
-              ? 'مساحتك،فريقك،وعملاؤك. كل واحد بصلاحيته.'
+              ? 'مساحتك، فريقك، وعملاؤك. كل واحد بصلاحيته.'
               : 'Your workspace. The right access for everyone.'}
           </div>
         </div>

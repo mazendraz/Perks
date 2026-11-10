@@ -59,7 +59,7 @@ export function PlatformMfa({
         <>
           <p>
             {ar
-              ? 'الأكواد دي بتظهر مرة واحدة. احفظها في مكان خاص؛كل كود بيشتغل مرة واحدة لو موبايلك مش متاح.'
+              ? 'الأكواد دي بتظهر مرة واحدة. احفظها في مكان خاص؛ كل كود بيشتغل مرة واحدة لو موبايلك مش متاح.'
               : 'These codes are shown once. Keep them somewhere private. Each code works once if your phone is unavailable.'}
           </p>
           <ol className="mfa-recovery-codes" dir="ltr">
@@ -79,7 +79,7 @@ export function PlatformMfa({
               })
             }
           >
-            {ar ? 'حفظت الأكواد،كمّل' : 'I saved the codes. Continue'}
+            {ar ? 'حفظت الأكواد، كمّل' : 'I saved the codes. Continue'}
           </button>
         </>
       ) : configured === null ? (
@@ -100,7 +100,7 @@ export function PlatformMfa({
         >
           <p>
             {ar
-              ? 'إدارة المنصة محتاجة تحقق إضافي في الإنتاج. افتح تطبيق تحقق على موبايلك؛هنعرض QR توصله بحسابك.'
+              ? 'إدارة المنصة محتاجة تحقق إضافي في الإنتاج. افتح تطبيق تحقق على موبايلك؛ هنعرض QR توصله بحسابك.'
               : 'Platform administration requires extra verification in production. Use an authenticator app on your phone to scan your account QR.'}
           </p>
           <label>
@@ -151,7 +151,7 @@ export function PlatformMfa({
               </details>
               <p>
                 {ar
-                  ? 'امسح QR من تطبيق التحقق،واكتب الرمز اللي ظهر. التجهيز صالح ١٠ دقايق.'
+                  ? 'امسح QR من تطبيق التحقق، واكتب الرمز اللي ظهر. التجهيز صالح ١٠ دقايق.'
                   : 'Scan this QR in your authenticator and enter its code. Setup expires in 10 minutes.'}
               </p>
             </>

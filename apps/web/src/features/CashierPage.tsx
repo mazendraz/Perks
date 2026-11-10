@@ -473,7 +473,7 @@ export function CashierPage({ grant, lang }: { grant: Grant; lang: Language }) {
               ))
             ) : (
               <p className="muted">
-                {ar ? 'لسه مفيش عمليات فيالفرع ده.' : 'No transactions at this branch yet.'}
+                {ar ? 'لسه مفيش عمليات في الفرع ده.' : 'No transactions at this branch yet.'}
               </p>
             )}
           </section>
@@ -490,7 +490,7 @@ export function CashierPage({ grant, lang }: { grant: Grant; lang: Language }) {
             }}
           >
             <label>
-              {ar ? 'أواكتب الكود من كارت العميل' : 'Or enter the customer card code'}
+              {ar ? 'أو اكتب الكود من كارت العميل' : 'Or enter the customer card code'}
               <input
                 dir="ltr"
                 value={manual}
@@ -650,7 +650,7 @@ export function CashierPage({ grant, lang }: { grant: Grant; lang: Language }) {
           </h2>
           <p>
             {ar
-              ? 'النجاح هيظهر بعدتأكيدالحفظ. لو الردضاع،بنراجع نفسالمحاولة منغيرعمليةجديدة.'
+              ? 'النجاح هيظهر بعد تأكيد الحفظ. لو الرد ضاع، بنراجع نفس المحاولة من غير عملية جديدة.'
               : 'Success follows durable confirmation. A lost response is checked using the same attempt.'}
           </p>
           {!busy && (
@@ -683,7 +683,7 @@ export function CashierPage({ grant, lang }: { grant: Grant; lang: Language }) {
           <bdi>{result.reference}</bdi>
           <p className="muted">{new Date(result.committedAt).toLocaleString(lang)}</p>
           <button className="primary full" onClick={next}>
-            {ar ? 'العميل الليبعده' : 'Next customer'}
+            {ar ? 'العميل اللي بعده' : 'Next customer'}
           </button>
         </section>
       )}
@@ -743,7 +743,7 @@ export function CashierPage({ grant, lang }: { grant: Grant; lang: Language }) {
             {ar ? 'سلّم المكافأة للعميل.' : 'Hand the reward to the customer.'}
           </p>
           <button className="primary full" onClick={next}>
-            {ar ? 'العميل الليبعده' : 'Next customer'}
+            {ar ? 'العميل اللي بعده' : 'Next customer'}
           </button>
         </section>
       )}
@@ -762,7 +762,7 @@ export function CashierPage({ grant, lang }: { grant: Grant; lang: Language }) {
             </p>
             <p className="muted">
               {ar
-                ? 'الطلب هيُراجع لعكس العملية بالكامل. وجود عمليات لاحقة أومكافأة مصروفة يحتاج مراجعة خاصة.'
+                ? 'الطلب هيُراجع لعكس العملية بالكامل. وجود عمليات لاحقة أو مكافأة مصروفة يحتاج مراجعة خاصة.'
                 : 'This requests a full reversal. Later activity or a redeemed reward requires manual review.'}
             </p>
             <label>

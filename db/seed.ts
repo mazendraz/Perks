@@ -98,7 +98,7 @@ export async function seed(client: pg.Client) {
       );
       const createdVersion = await client.query(
         'INSERT INTO program_versions(id,merchant_id,program_id,version,threshold,max_per_tx,reward_title,reward_terms,validity_days) VALUES($1,$2,$3,1,$4,3,$5,$6,30) ON CONFLICT DO NOTHING',
-        [vid, mid, pid, threshold, reward, 'المكافأة صالحة30يوم. لازم تأكيد حامل الكارت.'],
+        [vid, mid, pid, threshold, reward, 'المكافأة صالحة 30 يوم. لازم تأكيد حامل الكارت.'],
       );
       if (createdVersion.rowCount)
         await client.query(

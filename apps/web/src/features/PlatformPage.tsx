@@ -69,7 +69,7 @@ const initial = (): ProvisioningInput => ({
     threshold: 5,
     maxPerTx: 3,
     rewardTitle: '',
-    rewardTerms: 'المكافأة صالحة30يوم من اكتسابها. لا تُستبدل نقدًا.',
+    rewardTerms: 'المكافأة صالحة 30 يوم من اكتسابها. لا تُستبدل نقدًا.',
     validityDays: 30,
     endsAt: null,
   },
@@ -996,7 +996,7 @@ export function PlatformPage({ lang, userId }: { lang: Language; userId: string 
                 </label>
                 <p className="muted">
                   {ar
-                    ? 'الخطة بتحدد حدود الاستخدام. التحصيل الآلي غير مفعّل؛شروط الاشتراك باتفاق منفصل مع النشاط.'
+                    ? 'الخطة بتحدد حدود الاستخدام. التحصيل الآلي غير مفعّل؛ شروط الاشتراك باتفاق منفصل مع النشاط.'
                     : 'The plan sets usage limits. Automatic charging is not enabled; subscription terms are agreed separately.'}
                 </p>
               </>

@@ -85,8 +85,13 @@ export function Login({
     <main id="main" className="auth-layout">
       <section className="auth-story">
         <div className="auth-story-top">
-          <span className="eyebrow">NUQTA / {portal ? portalInfo[portal][lang] : 'نقطة'}</span>
-          <span className="auth-edition">GOOD VISITS. GREAT RELATIONSHIPS.</span>
+          <span className="eyebrow">
+            {ar ? 'نقطة' : 'NUQTA'} /{' '}
+            {portal ? portalInfo[portal][lang] : ar ? 'كروت ولاء' : 'LOYALTY'}
+          </span>
+          <span className="auth-edition">
+            {ar ? 'زيارات حلوة. وعلاقات بتكمّل.' : 'GOOD VISITS. GREAT RELATIONSHIPS.'}
+          </span>
         </div>
         <h1>
           {portal === 'platform' ? (
@@ -131,7 +136,20 @@ export function Login({
         ) : (
           <div className="auth-card-stage">
             <div className="auth-card-back" aria-hidden="true" />
-            <LoyaltyCard card={sample} lang={lang} />
+            <LoyaltyCard
+              card={
+                ar
+                  ? {
+                      ...sample,
+                      merchant_name: 'نادي الصباح',
+                      alias: 'نور أحمد',
+                      program_name: 'زيارة حلوة ومكافأة أحلى.',
+                      reward_title: 'قهوتك الجاية علينا.',
+                    }
+                  : sample
+              }
+              lang={lang}
+            />
             <div className="auth-card-caption">
               <span className="caption-dot" />
               {ar ? 'كارت واحد. زيارات أكتر.' : 'ONE CARD. MORE REASONS TO RETURN.'}
@@ -140,9 +158,9 @@ export function Login({
         )}
         <div className="auth-story-foot">
           <span>
-            01 — 02 — 03 — <b>أقرب للمكافأة</b>
+            01 — 02 — 03 — <b>{ar ? 'أقرب للمكافأة' : 'Closer to your reward'}</b>
           </span>
-          <span>MADE FOR YOUR EVERYDAY.</span>
+          <span>{ar ? 'معاك في كل زيارة.' : 'MADE FOR YOUR EVERYDAY.'}</span>
         </div>
       </section>
 

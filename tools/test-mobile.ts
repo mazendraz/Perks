@@ -845,6 +845,14 @@ try {
         await cdp.send('Page.getInstallabilityErrors')
       ).installabilityErrors;
       assert.deepEqual(report.installabilityErrors, []);
+      assert.equal(
+        await page.locator('meta[name="mobile-web-app-capable"]').getAttribute('content'),
+        'yes',
+      );
+      assert.equal(
+        await page.locator('meta[name="apple-mobile-web-app-capable"]').getAttribute('content'),
+        'yes',
+      );
       pass(
         'Chromium: browser installability checks return no errors (current replacement for retired Lighthouse PWA audit)',
       );

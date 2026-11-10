@@ -106,7 +106,7 @@ export function CustomerDeletionComplete({ lang }: { lang: Language }) {
   const ar = lang === 'ar';
   return (
     <main id="main" className="legal-page">
-      <span className="eyebrow">{ar ? 'نقطة · خصوصيتك' : 'Nuqta · Your privacy'}</span>
+      <span className="eyebrow">{ar ? 'Perks · خصوصيتك' : 'Perks · Your privacy'}</span>
       <h1>{ar ? 'تم حذف حساب العميل' : 'Customer account deleted'}</h1>
       <p role="status">
         {ar

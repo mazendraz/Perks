@@ -11,8 +11,8 @@
   border-radius: 7px;
 }
 .wizard-steps .current {
-  background: #e8eefc;
-  color: #244bb5;
+  background: #ebecf3;
+  color: #12142c;
   font-weight: 600;
 }
 .wizard-steps .done {
@@ -52,7 +52,7 @@
   display: flex;
   flex-direction: column;
   gap: 16px;
-  background: #fafaf8;
+  background: #f8f8fa;
 }
 .checkbox-label {
   flex-direction: row;
@@ -79,7 +79,7 @@ legend {
 .url-box {
   display: block;
   padding: 14px;
-  background: #f6f6f3;
+  background: #f3f3f6;
   border: 1px solid #e6e4df;
   border-radius: 10px;
   overflow-wrap: anywhere;
@@ -467,7 +467,7 @@ td small {
 .trend-bar {
   flex: 1;
   min-width: 0;
-  background: var(--brand, #2b55cf);
+  background: var(--brand, #181b38);
   border-radius: 3px 3px 0 0;
 }
 .trend-axis {
@@ -687,9 +687,9 @@ button[aria-busy='true']::after {
 .request-card {
   margin-block: 16px;
   padding: 18px;
-  border: 1px solid #dbe2d3;
+  border: 1px solid #d3d4e2;
   border-radius: 16px;
-  background: #fcfdf9;
+  background: #fafafc;
   min-width: 0;
 }
 .request-card h3 {
@@ -698,7 +698,7 @@ button[aria-busy='true']::after {
 .request-match {
   font-size: 24px;
   letter-spacing: 0.12em;
-  color: #204c41;
+  color: #20244c;
 }
 .request-quantity {
   display: flex;
@@ -878,7 +878,7 @@ button[aria-busy='true']::after {
 .nq-stamp-wait {
   margin: 12px 0 0;
   text-align: center;
-  color: #71806c;
+  color: #6c6e80;
   font-weight: 500;
 }
 .nq-stamp-wait > span {
@@ -909,7 +909,7 @@ button[aria-busy='true']::after {
   border-radius: 0;
   box-shadow: none;
   background: #fff;
-  color: #172e2a;
+  color: #181b38;
   padding: calc(20px + env(safe-area-inset-top, 0px)) calc(20px + env(safe-area-inset-right, 0px))
     calc(20px + env(safe-area-inset-bottom, 0px)) calc(20px + env(safe-area-inset-left, 0px));
   animation: none;
@@ -932,10 +932,10 @@ button[aria-busy='true']::after {
   gap: 14px;
   padding: 18px;
   margin-top: 20px;
-  border: 1px solid #dce2d3;
+  border: 1px solid #d3d4e2;
   border-radius: 16px;
-  background: #f4f6ee;
-  color: #204c41;
+  background: #eff0f5;
+  color: #20244c;
 }
 .install-card-offer > svg {
   flex: none;
@@ -972,13 +972,13 @@ button[aria-busy='true']::after {
 }
 .experience-metrics dt {
   font-size: 13px;
-  color: #74816d;
+  color: #6d6f81;
 }
 .experience-metrics dd {
   margin: 10px 0 0;
   font-size: 26px;
   font-variant-numeric: tabular-nums;
-  color: #204c41;
+  color: #20244c;
 }
 @media (max-width: 600px) {
   .experience-metrics {
@@ -986,7 +986,7 @@ button[aria-busy='true']::after {
   }
   .experience-metrics > div {
     padding-bottom: 14px;
-    border-bottom: 1px solid #e2e7db;
+    border-bottom: 1px solid #dbdce7;
   }
 }
 .legal-page { max-width: 760px; margin: 64px auto; padding: 0 24px; }

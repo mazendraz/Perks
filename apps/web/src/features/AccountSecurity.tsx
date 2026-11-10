@@ -437,7 +437,7 @@ export function AccountSecurity({
                         const chars =
                             'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-',
                           bytes = crypto.getRandomValues(new Uint8Array(20)),
-                          generated = 'Nuqta!' + Array.from(bytes, (b) => chars[b & 63]).join('');
+                          generated = 'Perks!' + Array.from(bytes, (b) => chars[b & 63]).join('');
                         setPassword(generated);
                         setConfirm(generated);
                         setVisible(true);

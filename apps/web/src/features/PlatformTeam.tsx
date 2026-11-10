@@ -129,8 +129,8 @@ export function PlatformTeam({ lang }: { lang: Language }) {
     <>
       <div className="page-heading">
         <div>
-          <span className="eyebrow">{ar ? 'إدارة نقطة' : 'NUQTA ADMINISTRATION'}</span>
-          <h1>{ar ? 'فريق إدارة نقطة' : 'Platform team'}</h1>
+          <span className="eyebrow">{ar ? 'إدارة Perks' : 'PERKS ADMINISTRATION'}</span>
+          <h1>{ar ? 'فريق إدارة Perks' : 'Platform team'}</h1>
           <p className="muted">
             {ar
               ? 'كل مسؤول له حسابه، وكلكم بتتابعوا نفس المحلات والدعم. كل إجراء بيتسجل باسم صاحبه.'

@@ -1,21 +1,21 @@
 {
   "id": "/",
-  "name": "Nuqta · نقطة",
-  "short_name": "Nuqta",
+  "name": "Perks",
+  "short_name": "Perks",
   "description": "كارت الولاء بتاعك، وأختامك ومكافآتك في مكان واحد.",
   "lang": "ar",
   "dir": "rtl",
   "start_url": "/customer",
   "scope": "/",
   "display": "standalone",
-  "theme_color": "#2B55CF",
-  "background_color": "#f5f5f0",
+  "theme_color": "#181B38",
+  "background_color": "#F5F5F1",
   "prefer_related_applications": false,
   "icons": [
-    { "src": "/icons/nuqta-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "/icons/nuqta-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/perks-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/perks-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
     {
-      "src": "/icons/nuqta-maskable-512.png",
+      "src": "/icons/perks-maskable-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"

@@ -10,8 +10,8 @@ export function portalAssetUrl(path: string) {
 }
 export const portalInfo = {
   platform: {
-    ar: 'إدارة نقطة',
-    en: 'Nuqta administration',
+    ar: 'إدارة Perks',
+    en: 'Perks administration',
     icon: 'shield',
     hintAr: 'المحلات، الحسابات ومتابعة التشغيل',
     hintEn: 'Businesses, accounts and platform operations',

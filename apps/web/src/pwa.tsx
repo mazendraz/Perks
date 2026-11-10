@@ -85,8 +85,8 @@ export function PwaStatus({ lang }: { lang: Language }) {
             ? 'مفيش نت دلوقتي. وصّل النت علشان تكمل.'
             : 'You’re offline. Reconnect to continue.'
           : ar
-            ? 'فيه تحديث جاهز لنقطة.'
-            : 'A Nuqta update is ready.'}
+            ? 'فيه تحديث جاهز لـ Perks.'
+            : 'A Perks update is ready.'}
       </span>
       {!offline && waiting && (
         <button className="primary small" disabled={updating} onClick={() => setUpdating(true)}>

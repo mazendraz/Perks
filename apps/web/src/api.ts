@@ -120,7 +120,7 @@ const arErrors: Record<string, string> = {
   PAYMENT_REFERENCE_USED: 'مرجع الدفعة ده مسجل بالفعل. راجع السجل قبل إضافة تسجيل جديد.',
   PAYMENT_ALREADY_VOID: 'تسجيل الدفعة دي اتلغى قبل كده. حدّث السجل.',
   WORK_ACCOUNT_REVIEW_REQUIRED:
-    'الهوية دي مرتبطة بفريق محل كمان. اطلب من مسؤول نقطة يفصل حساب العمل قبل حذف حساب العميل.',
+    'الهوية دي مرتبطة بفريق محل كمان. اطلب من مسؤول Perks يفصل حساب العمل قبل حذف حساب العميل.',
   CUSTOMER_PRIVACY_DELETED: 'بيانات عميل اتحذفت. اطلب ملف تصدير جديد بالبيانات الحالية.',
   PRIVACY_CHANGED: 'الخصوصية والشروط اتحدثت. راجع النسخة الجديدة ووافق عليها قبل التسجيل.',
   CUSTOMER_DEVICE_REQUIRED:
@@ -242,7 +242,7 @@ const enErrors: Record<string, string> = {
     'This payment reference is already recorded. Check the history before adding another record.',
   PAYMENT_ALREADY_VOID: 'This payment record was already voided. Refresh the history.',
   WORK_ACCOUNT_REVIEW_REQUIRED:
-    'This identity also belongs to a shop team. Ask a Nuqta administrator to separate the work identity before deleting the customer account.',
+    'This identity also belongs to a shop team. Ask a Perks administrator to separate the work identity before deleting the customer account.',
   CUSTOMER_PRIVACY_DELETED: 'Customer data was deleted. Request a new export of the current data.',
   PRIVACY_CHANGED:
     'Privacy and terms have changed. Review and accept the current notice before continuing.',

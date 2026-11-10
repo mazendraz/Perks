@@ -154,7 +154,7 @@ export function App() {
   if (loading || sessionPortal !== portal)
     return (
       <main className="loading-screen" role="status">
-        {ar ? 'بنفتح نقطة…' : 'Opening Nuqta…'}
+        {ar ? 'بنفتح Perks…' : 'Opening Perks…'}
       </main>
     );
   return (
@@ -167,22 +167,9 @@ export function App() {
         <button
           className="wordmark"
           onClick={() => navigate(portal ? '/' + portal : '/')}
-          aria-label={ar ? 'الرئيسية - نقطة' : 'Nuqta home'}
+          aria-label={ar ? 'الرئيسية - Perks' : 'Perks home'}
         >
-          <span className="nuqta-symbol">
-            <svg viewBox="0 0 40 40" aria-hidden="true">
-              <path
-                d="M10 27V13l20 14V13"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-              <circle cx="30" cy="8" r="3" fill="currentColor" />
-            </svg>
-          </span>
-          {ar ? 'نقطة' : 'Nuqta'}
+          <img className="perks-wordmark" src="/brand/perks-logo-wordmark.svg" alt="Perks" />
         </button>
         {portal && <span className="portal-badge">{portalInfo[portal][ar ? 'ar' : 'en']}</span>}
         <div className="top-actions">
@@ -267,7 +254,7 @@ export function App() {
         <Workspace session={session} lang={lang} route={route} refresh={refresh} />
       )}
       <footer className="footer">
-        {ar ? 'نقطة · كل علاقة بتبدأ بنقطة' : 'Nuqta · A small beginning, a lasting connection'}
+        {ar ? 'Perks · كارت الولاء بتاعك على موبايلك' : 'Perks · Loyalty cards in your wallet'}
         <nav className="legal-links" aria-label={ar ? 'الخصوصية والشروط' : 'Privacy and terms'}>
           <a href={'/privacy?lang=' + lang}>{ar ? 'الخصوصية' : 'Privacy'}</a>
           <a href={'/terms?lang=' + lang}>{ar ? 'الشروط' : 'Terms'}</a>
@@ -387,7 +374,7 @@ function Workspace({
         <>
           <div className="page-heading">
             <div>
-              <span className="eyebrow">{ar ? 'إدارة نقطة' : 'NUQTA ADMINISTRATION'}</span>
+              <span className="eyebrow">{ar ? 'إدارة Perks' : 'PERKS ADMINISTRATION'}</span>
               <h1>{ar ? 'التشغيل والدعم' : 'Operations and support'}</h1>
             </div>
           </div>
@@ -422,14 +409,18 @@ function Workspace({
         <aside className="sidebar">
           <div className="sidebar-identity">
             <span className="workspace-avatar">
-              {portal === 'platform' ? 'N' : grant?.name.slice(0, 1) || 'N'}
+              {portal === 'platform' ? (
+                <img className="perks-avatar-mark" src="/brand/perks-app-icon.svg" alt="" />
+              ) : (
+                grant?.name.slice(0, 1) || 'P'
+              )}
             </span>
             <div>
               <strong>
                 {portal === 'platform'
                   ? ar
-                    ? 'إدارة نقطة'
-                    : 'Nuqta administration'
+                    ? 'إدارة Perks'
+                    : 'Perks administration'
                   : grant?.name || portalInfo[portal][ar ? 'ar' : 'en']}
               </strong>
               <small>

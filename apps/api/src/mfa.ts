@@ -134,8 +134,8 @@ export function mfaModule(app: FastifyInstance, pools: Pools, c: Config) {
       const encoded = base32(secret);
       const uri =
         'otpauth://totp/' +
-        encodeURIComponent('Nuqta:' + actor.email) +
-        '?issuer=Nuqta&algorithm=SHA1&digits=6&period=30&secret=' +
+        encodeURIComponent('Perks:' + actor.email) +
+        '?issuer=Perks&algorithm=SHA1&digits=6&period=30&secret=' +
         encoded;
       return {
         secret: encoded,

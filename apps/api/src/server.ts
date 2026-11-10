@@ -96,7 +96,7 @@ export async function buildApp(
   await app.register(swagger, {
     transform: contractDocumentation,
     openapi: {
-      info: { title: 'Nuqta API', version: '0.1.0' },
+      info: { title: 'Perks API', version: '0.1.0' },
       components: {
         schemas: { ProvisioningActivationData: activationDataSchema },
         securitySchemes: {

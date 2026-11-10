@@ -1075,7 +1075,7 @@ export function PlatformPage({ lang, userId }: { lang: Language; userId: string 
       {reauth}
       <div className="page-heading">
         <div>
-          <span className="eyebrow">{ar ? 'نقطة للأعمال' : 'Nuqta for business'}</span>
+          <span className="eyebrow">{ar ? 'Perks للأعمال' : 'Perks for business'}</span>
           <h1>{ar ? 'التجار' : 'Merchants'}</h1>
         </div>
         <button className="primary" onClick={newDraft}>
@@ -1145,7 +1145,7 @@ export function PlatformPage({ lang, userId }: { lang: Language; userId: string 
         <section className="onboarding-empty">
           <div className="onboarding-illustration" aria-hidden="true">
             <div className="mini-membership">
-              <span>NUQTA MEMBERSHIP</span>
+              <span>PERKS MEMBERSHIP</span>
               <strong>{ar ? 'حكاية جديدة' : 'A new beginning'}</strong>
               <div>● ● ● ◌ ◌</div>
             </div>
@@ -1155,7 +1155,7 @@ export function PlatformPage({ lang, userId }: { lang: Language; userId: string 
           </div>
           <div>
             <span className="eyebrow">{ar ? 'أول نشاط. وأول علاقة.' : 'YOUR FIRST BUSINESS'}</span>
-            <h2>{ar ? 'كل حكاية بتبدأ بنقطة.' : 'Every story starts with a Nuqta.'}</h2>
+            <h2>{ar ? 'كل زيارة ليها مكافأة.' : 'Every visit earns a perk.'}</h2>
             <p>
               {ar
                 ? 'جهّز هوية النشاط وبرنامج مكافآته، وادعُ المالك يبدأ مع فريقه.'

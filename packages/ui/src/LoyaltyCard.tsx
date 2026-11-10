@@ -270,7 +270,7 @@ export function LoyaltyCard({
             <strong className="card-reward">{card.reward_title}</strong>
           </div>
           <span className="card-nuqta">
-            NUQTA <i>●</i>
+            PERKS <i>●</i>
           </span>
         </div>
         {!!card.pending_rewards && card.balance > 0 && (

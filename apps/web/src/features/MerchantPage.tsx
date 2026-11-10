@@ -524,7 +524,7 @@ export function MerchantPage({ grant, lang }: { grant: Grant; lang: Language }) 
             </div>
             <div className="welcome-card-mark" aria-hidden="true">
               <Icon name="spark" size={64} />
-              <span>NUQTA / {merchant?.name || grant.name}</span>
+              <span>PERKS / {merchant?.name || grant.name}</span>
             </div>
           </section>
           <div className="filter-row">
@@ -1050,8 +1050,8 @@ export function MerchantPage({ grant, lang }: { grant: Grant; lang: Language }) 
             </p>
             <p className="muted">
               {ar
-                ? 'فريق نقطة بيسجل المدفوعات المتفق عليها، وتقدر تتابع التغطية والسجل هنا.'
-                : 'The Nuqta team records agreed payments. You can follow coverage and payment history here.'}
+                ? 'فريق Perks بيسجل المدفوعات المتفق عليها، وتقدر تتابع التغطية والسجل هنا.'
+                : 'The Perks team records agreed payments. You can follow coverage and payment history here.'}
             </p>
           </section>
           <Subscriptions

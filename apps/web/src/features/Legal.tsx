@@ -26,7 +26,7 @@ export function LegalPage({ kind, lang }: { kind: 'privacy' | 'terms'; lang: Lan
     doc = notice?.[kind];
   return (
     <main id="main" className="legal-page">
-      <span className="eyebrow">{ar ? 'نقطة · معلومات تهمك' : 'Nuqta · Your information'}</span>
+      <span className="eyebrow">{ar ? 'Perks · معلومات تهمك' : 'Perks · Your information'}</span>
       <h1>{doc?.title || (ar ? 'بنفتح الصفحة…' : 'Loading…')}</h1>
       <p className="notice" role="note">
         {ar

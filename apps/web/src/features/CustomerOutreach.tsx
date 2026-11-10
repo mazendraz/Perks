@@ -25,13 +25,13 @@ export function WhatsAppDraft({
         ? ar
           ? 'أهلًا ' +
             recipient.name +
-            '، بنتابع تجهيز حسابكم على نقطة.' +
+            '، بنتابع تجهيز حسابكم على Perks.' +
             (recipient.missing?.length
               ? ' المتبقي: ' + recipient.missing.join('، ') + '.'
               : ' لو محتاجين مساعدة إحنا معاكم.')
           : 'Hi ' +
             recipient.name +
-            ', checking in on your Nuqta setup.' +
+            ', checking in on your Perks setup.' +
             (recipient.missing?.length
               ? ' Still to complete: ' + recipient.missing.join(', ') + '.'
               : ' Let us know if you need a hand.')

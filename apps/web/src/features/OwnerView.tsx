@@ -35,7 +35,7 @@ export function OwnerView({ merchantId, lang }: { merchantId: string; lang: Lang
     <div className="app-layout workspace-merchant owner-view">
       <aside className="sidebar">
         <div className="sidebar-identity">
-          <span className="workspace-avatar">{data?.grant.name.slice(0, 1) || 'N'}</span>
+          <span className="workspace-avatar">{data?.grant.name.slice(0, 1) || 'P'}</span>
           <div>
             <strong>{data?.grant.name || (ar ? 'واجهة المالك' : 'Owner view')}</strong>
             <small>{ar ? 'مساحتك' : 'YOUR WORKSPACE'}</small>

@@ -5,22 +5,25 @@ import { createHash } from 'node:crypto';
 import assert from 'node:assert/strict';
 import sharp from 'sharp';
 import { legacyScriptHashes } from '../packages/domain/src/browser-policy.js';
-export async function writeNuqtaIcons(directory: string) {
-  const iconSvg = Buffer.from(
-    '<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512"><rect width="512" height="512" fill="#2B55CF"/><path d="M160 352V160l192 192V160" fill="none" stroke="#fff" stroke-width="48" stroke-linecap="round" stroke-linejoin="round"/></svg>',
-  );
+import { perksIconSvg } from '../packages/domain/src/brand.js';
+export async function writePerksIcons(directory: string) {
   await mkdir(directory, { recursive: true });
-  for (const size of [180, 192, 512])
-    await sharp(iconSvg)
+  const rounded = Buffer.from(perksIconSvg({ rounded: true })),
+    square = Buffer.from(perksIconSvg({ rounded: false })),
+    maskable = Buffer.from(perksIconSvg({ rounded: false, maskable: true }));
+  // iOS masks the apple-touch icon itself, so it gets the full-bleed square.
+  await sharp(square).resize(180, 180).png().toFile(resolve(directory, 'perks-180.png'));
+  for (const size of [192, 512])
+    await sharp(rounded)
       .resize(size, size)
       .png()
-      .toFile(resolve(directory, 'nuqta-' + size + '.png'));
-  await sharp(iconSvg).png().toFile(resolve(directory, 'nuqta-maskable-512.png'));
+      .toFile(resolve(directory, 'perks-' + size + '.png'));
+  await sharp(maskable).resize(512, 512).png().toFile(resolve(directory, 'perks-maskable-512.png'));
 }
 export function webShellPlugin(): Plugin {
   let root: string, out: string;
   return {
-    name: 'nuqta-private-shell',
+    name: 'perks-private-shell',
     apply: 'build',
     configResolved(config) {
       root = config.root;
@@ -35,7 +38,7 @@ export function webShellPlugin(): Plugin {
           'An unapproved inline script would violate CSP.',
         );
       }
-      await writeNuqtaIcons(resolve(out, 'icons'));
+      await writePerksIcons(resolve(out, 'icons'));
       const files: string[] = [];
       async function walk(path: string) {
         for (const entry of await readdir(path, { withFileTypes: true })) {

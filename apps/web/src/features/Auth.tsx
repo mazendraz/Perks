@@ -86,7 +86,7 @@ export function Login({
       <section className="auth-story">
         <div className="auth-story-top">
           <span className="eyebrow">
-            {ar ? 'نقطة' : 'NUQTA'} /{' '}
+            {ar ? 'Perks' : 'PERKS'} /{' '}
             {portal ? portalInfo[portal][lang] : ar ? 'كروت ولاء' : 'LOYALTY'}
           </span>
           <span className="auth-edition">
@@ -174,8 +174,8 @@ export function Login({
                   ? 'أهلًا بيك في الفريق'
                   : 'WELCOME TO THE TEAM'
                 : ar
-                  ? 'أهلًا بيك في نقطة'
-                  : 'WELCOME TO NUQTA'}
+                  ? 'أهلًا بيك في Perks'
+                  : 'WELCOME TO PERKS'}
           </span>
           <h2>
             {mode === 'reset'
@@ -347,7 +347,7 @@ export function ResetPassword({ token, lang }: { token: string; lang: Language }
   return (
     <main id="main" className="auth-reset">
       <section className="panel">
-        <span className="eyebrow">NUQTA ACCOUNT</span>
+        <span className="eyebrow">PERKS ACCOUNT</span>
         <h1>{ar ? 'باسورد جديد. بداية سهلة.' : 'A fresh password.'}</h1>
         {done ? (
           <>

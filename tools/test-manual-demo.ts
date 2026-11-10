@@ -28,6 +28,10 @@ const c = readConfig({
   COOKIE_SECURE: 'false',
   AUTH_PEPPER: randomBytes(32).toString('hex'),
   LOG_LEVEL: 'silent',
+  // Resolve within the temporary working directory, independently of the
+  // caller's configured mailbox and file store.
+  MAIL_FILE_ROOT: '.local/mail',
+  STORAGE_ROOT: '.local/files',
   DATABASE_MIGRATOR_URL: urlFor(base.DATABASE_MIGRATOR_URL),
   DATABASE_URL: urlFor(base.DATABASE_URL),
   AUTH_DATABASE_URL: urlFor(base.AUTH_DATABASE_URL),

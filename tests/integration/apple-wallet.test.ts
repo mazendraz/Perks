@@ -152,10 +152,11 @@ test('a customer downloads a signed pass for their own card only', async () => {
       '-purpose',
       'any',
       '-out',
-      '/dev/null',
+      join(work, 'verified-manifest.json'),
     ],
     { stdio: 'pipe' },
   );
+  assert.deepEqual(readFileSync(join(work, 'verified-manifest.json')), files.get('manifest.json'));
   const pass = JSON.parse(files.get('pass.json')!.toString());
   assert.equal(pass.passTypeIdentifier, passTypeId);
   assert.equal(pass.teamIdentifier, 'ABCDE12345');

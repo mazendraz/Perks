@@ -36,6 +36,9 @@ interface HolderChallenge {
   terms: string;
   code: string;
 }
+/** Card reveal (720ms) plus a short pause so the new card is seen before the code. */
+export const FIRST_CARD_MOMENT_MS = 1600;
+
 export function EnrollmentPage({
   slug,
   lang,
@@ -518,8 +521,17 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
     }
     lastRevision.current = { id: card.id, revision: card.revision };
   }, [card?.id, card?.revision]);
+  // On the very first visit the card is revealed before the full-screen code covers it:
+  // the customer sees their new card arrive, then the code opens for the first stamp.
+  const firstVisit = useRef(new URLSearchParams(location.search).get('new') === '1');
   useEffect(() => {
-    if (waiting && card && new URLSearchParams(location.search).has('code')) void showQr();
+    if (!(waiting && card && new URLSearchParams(location.search).has('code'))) return;
+    const reduce =
+      typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const delay = firstVisit.current && !reduce ? FIRST_CARD_MOMENT_MS : 0;
+    firstVisit.current = false;
+    const timer = window.setTimeout(() => void showQr(), delay);
+    return () => window.clearTimeout(timer);
   }, [waiting, card?.id]);
   useEffect(() => {
     if (challenges.some((ch) => ch.status === 'awaiting_holder')) {

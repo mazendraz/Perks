@@ -1,5 +1,5 @@
 {
-  "at": "2026-11-10T00:52:27.557Z",
+  "at": "2026-11-10T17:58:40.282Z",
   "status": "passed",
   "checks": [
     "Fresh synthetic database, files, credentials and pepper are isolated; secure password auth and no external mail",
@@ -13,10 +13,10 @@
   "externalTunnelOpened": false,
   "source": {
     "tools/dev-tunnel.ts": "afb531abb99ae3b32b4c1743c8bb49b65ed19bef2e022baf232a37ca6b57d0e9",
-    "tools/tunnel-fixture.ts": "d1adda865f486a9dcc9f01aadd37b626476939eedbd9dd7ba921a13dc9e2e81f",
-    "tools/tunnel-policy.ts": "cb34b6e32d4046b895390631e087be0b96f84c1398ca1fd72b6645151a0eb781",
+    "tools/tunnel-fixture.ts": "95717f09e3ad9629adcdc9549b60d7859aaa8810f1013a36ae87c754e1f600df",
+    "tools/tunnel-policy.ts": "4953f5daeec92ad6fb806c337d00c9e80a183b5bce09c95a8c5430ab73d415e4",
     "tools/cloudflared-runtime.ts": "0a70283823f4d3b72a9602ef2bf2317e394714f00506b3e0f0b28f6ecb2b1ac2",
     "tools/private-local.ts": "704d12a3fefa353116e32a7aea4db33f333e505babc4d6490e59bdef7a542d7f",
-    "tools/test-tunnel.ts": "6ebee50766ac714cc73a7209c9c2af851a021308263f736e5f313c58e1229f9b"
+    "tools/test-tunnel.ts": "7a9b9ba093d750ad5490a53e3d6708b9311212455c1190b553dafdcefc4a4dcb"
   }
 }

@@ -314,7 +314,20 @@ try {
     const page = await customer.newPage(),
       cp = await cashier.newPage(),
       errors: string[] = [];
-    for (const target of [page, cp]) target.on('pageerror', (error) => errors.push(error.message));
+    for (const target of [page, cp])
+      target.on('pageerror', (error) => {
+        errors.push(error.message);
+        console.error(
+          'MOBILE_PAGE_ERROR ' +
+            JSON.stringify({
+              project: project.name,
+              screen: new URL(target.url()).pathname,
+              message: error.message,
+              stack: error.stack,
+              at: new Date().toISOString(),
+            }),
+        );
+      });
     const firstVisitStarted = Date.now(),
       customerPhone = '+2010' + String(randomBytes(4).readUInt32BE()).padStart(10, '0').slice(-8);
     await page.goto(origin + '/join/' + slug + '?b=' + branch + '&src=qr', {

@@ -1,5 +1,5 @@
 {
-  "at": "2026-11-10T00:54:10.166Z",
+  "at": "2026-11-10T18:02:08.181Z",
   "browser": "msedge",
   "browserVersion": "157.0.4341.42",
   "appEnv": "development",
@@ -53,8 +53,9 @@
     "The platform creates password accounts for already-activated businesses from their scoped workspace",
     "Scoped business QR previews load, additional branch QR generation works and the Arabic mobile workspace fits the screen",
     "Merchant support ticket and platform reply persist across separate authenticated contexts",
+    "Arabic business list localizes merchant status, plan and workspace label while preserving the business URL identifier",
     "Platform UI searches the committed redemption by reference",
-    "All four workspaces render at 390px in Arabic RTL and English LTR without horizontal overflow",
+    "All four workspaces fit 320/360/390/430px in Arabic RTL and English LTR without horizontal overflow or clipped controls",
     "No uncaught browser page errors",
     "The platform resets the existing owner account from Preview, invalidates the old owner session and restores sign-in with the new password",
     "Platform MFA setup renders in Arabic/English, decodes its real QR, presents ten recovery codes and resumes with a one-use code; no secrets are written to evidence",
@@ -66,8 +67,8 @@
     "Privacy and terms are public bilingual pages with explicit legal-review status; linked language overrides a different saved preference for that page"
   ],
   "errors": [],
-  "merchantId": "2c57371a-e6ea-4ee1-a621-430e93950575",
-  "membershipId": "6cdb33b2-e84c-4b74-8c35-0add15f0cfe4",
+  "merchantId": "031af489-1342-401b-84b9-6a53272d9961",
+  "membershipId": "d1d60fb9-3125-4934-a9d7-b788aeb4f33f",
   "metrics": {
     "registered": 1,
     "active": 1,

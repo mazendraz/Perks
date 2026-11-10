@@ -2,6 +2,11 @@ import type { Page } from 'playwright';
 
 export async function auditCustomerLoading(page: Page, project: string, directory: string) {
   const returnUrl = page.url();
+  // A scan can leave the rotating code open after reload. Close it through the
+  // UI and let its current request settle before this test navigates away.
+  const closeCode = page.getByRole('button', { name: /Close code|اقفل الكود/, exact: true });
+  if (await closeCode.isVisible()) await closeCode.click();
+  await page.locator('.card-actions button.primary:not(:disabled)').waitFor();
   let release!: () => void;
   const gate = new Promise<void>((resolve) => {
     release = resolve;
@@ -25,6 +30,7 @@ export async function auditCustomerLoading(page: Page, project: string, director
   } finally {
     release();
     await page.unroute(pattern);
-    await page.goto(returnUrl, { waitUntil: 'domcontentloaded' });
+    // The card opened above is already the return destination. Reloading its
+    // old placement query would start another automatic QR during later tests.
   }
 }

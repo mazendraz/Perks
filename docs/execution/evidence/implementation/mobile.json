@@ -1,5 +1,5 @@
 {
-  "at": "2026-11-10T00:54:12.472Z",
+  "at": "2026-11-10T18:02:11.603Z",
   "status": "passed",
   "checks": [
     "chromium-pixel5: name/phone/terms registration survives Arabic/English switching, reaches the card within 30 seconds, and needs no email/password or UUID/Popover/ResizeObserver/Animation.finished",
@@ -8,10 +8,15 @@
     "chromium-pixel5: five placement scans open the existing card with zero customer taps, create one request, and reload creates none",
     "chromium-pixel5: interruption, session expiry during POST and a lost committed reply restore the device session and retry the same request key without a duplicate",
     "chromium-pixel5: a shortened display-expiry fixture refreshes the QR automatically before expiration",
+    "chromium-pixel5: labeled camera and manual scan actions remain readable with icons at 320/390/430px in both languages",
     "chromium-pixel5: QR closes on the committed stamp, ink angles survive reload, and home-screen offers stop after the second dismissal",
     "chromium-pixel5: a standalone app suppresses installation offers even without stored offer history",
     "chromium-pixel5: cashier manual QR input commits one stamp and updates the actual customer balance",
     "Camera synthetic stream: rear-camera constraint, muted/playsInline, tracks stopped on hide and after late permission; no auto-resume",
+    "chromium-pixel5: saved cards and the Wallet panel remain available while redemption confirmations are delayed",
+    "chromium-pixel5: staff accounts localize roles/status and fit mobile cards without clipped cells in both languages",
+    "chromium-pixel5: transaction and customer records have labeled mobile cells with no internal or page horizontal overflow in either language",
+    "chromium-pixel5: owner card editor fits 320/360/390/430/768px in Arabic/English, keeps complete template artwork and Arabic initials, and never covers a focused field",
     "chromium-pixel5: fallback portaled select responds to touch and remains usable in a keyboard-managed modal without native Popover or ResizeObserver",
     "chromium-pixel5: no CSP violations or page errors with production-built scripts",
     "Chromium: browser installability checks return no errors (current replacement for retired Lighthouse PWA audit)",
@@ -24,9 +29,14 @@
     "webkit-iphone12: five placement scans open the existing card with zero customer taps, create one request, and reload creates none",
     "webkit-iphone12: interruption, session expiry during POST and a lost committed reply restore the device session and retry the same request key without a duplicate",
     "webkit-iphone12: a shortened display-expiry fixture refreshes the QR automatically before expiration",
+    "webkit-iphone12: labeled camera and manual scan actions remain readable with icons at 320/390/430px in both languages",
     "webkit-iphone12: QR closes on the committed stamp, ink angles survive reload, and home-screen offers stop after the second dismissal",
     "webkit-iphone12: a standalone app suppresses installation offers even without stored offer history",
     "webkit-iphone12: cashier manual QR input commits one stamp and updates the actual customer balance",
+    "webkit-iphone12: saved cards and the Wallet panel remain available while redemption confirmations are delayed",
+    "webkit-iphone12: staff accounts localize roles/status and fit mobile cards without clipped cells in both languages",
+    "webkit-iphone12: transaction and customer records have labeled mobile cells with no internal or page horizontal overflow in either language",
+    "webkit-iphone12: owner card editor fits 320/360/390/430/768px in Arabic/English, keeps complete template artwork and Arabic initials, and never covers a focused field",
     "webkit-iphone12: fallback portaled select responds to touch and remains usable in a keyboard-managed modal without native Popover or ResizeObserver",
     "webkit-iphone12: no CSP violations or page errors with production-built scripts",
     "webkit-iphone12: paused branches and revoked NFC placements show plain guidance without technical codes or creating a request",
@@ -40,7 +50,7 @@
     "chromium-pixel5",
     "webkit-iphone12"
   ],
-  "build": "12b6c58f89109a3a7890",
-  "indexSha256": "b4ed8c4db1096f87d7034071d289e201ed1f90a0450d85ad9addb6146a344987",
+  "build": "30e22b8967bd99d3207d",
+  "indexSha256": "84342cd75d81e11b4314a28a77ab715e40bcfdfeb34557be07b43fd7df03cfd6",
   "installabilityErrors": []
 }

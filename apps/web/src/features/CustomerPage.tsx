@@ -308,7 +308,7 @@ export function EnrollmentPage({
               <p>{info.programs.find((p) => p.id === program)?.rewardTerms}</p>
               <p>
                 {ar
-                  ? 'بنحفظ اسمك ورقمك للكارت واسترجاعه بطلبك،وبنربطه بالجهاز ده. التسجيل مش موافقة على التسويق.'
+                  ? 'بنحفظ اسمك ورقمك للكارت واسترجاعه بطلبك، وبنربطه بالجهاز ده. التسجيل مش موافقة على التسويق.'
                   : 'Your name and number are used for your card and recovery you request. The card is linked to this device. Registration does not opt you into marketing.'}
               </p>
               <p className="muted">
@@ -354,7 +354,7 @@ export function EnrollmentPage({
             </button>
             <p className="muted">
               {ar
-                ? 'كارتك هيفضل على الجهاز ده. لو غيّرت الموبايل،اطلب من الكاشير يرجعهولك على واتساب.'
+                ? 'كارتك هيفضل على الجهاز ده. لو غيّرت الموبايل، اطلب من الكاشير يرجعهولك على واتساب.'
                 : 'Your card stays on this device. If you change phones, ask the cashier to restore it on WhatsApp.'}
             </p>
           </form>
@@ -577,6 +577,14 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
     }
   };
   const holder = challenges.find((c) => c.status === 'awaiting_holder');
+  // A pending redemption must never sit behind the full-screen customer code: the code is
+  // hidden while the holder decides, and the confirmation is brought into view.
+  useEffect(() => {
+    if (!holder) return;
+    document
+      .querySelector('.holder-confirm')
+      ?.scrollIntoView({ block: 'start', behavior: 'instant' as ScrollBehavior });
+  }, [holder?.id]);
   return (
     <>
       {holder && (
@@ -589,7 +597,7 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
           <h2>{holder.title}</h2>
           <p>
             {ar
-              ? 'لازم الرقم ده يطابق الرقم عند الكاشير. وافق بس لوإنت الليبتستبدل دلوقتي.'
+              ? 'لازم الرقم ده يطابق الرقم عند الكاشير. وافق بس لو إنت اللي بتستبدل دلوقتي.'
               : 'The code must match the cashier screen. Confirm only if you are redeeming now.'}
           </p>
           <div className="match-code">{holder.code}</div>
@@ -601,7 +609,7 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
               aria-busy={busy}
               onClick={() => void decide(holder, false)}
             >
-              {ar ? 'لا،مش أنا' : 'No, not me'}
+              {ar ? 'لا، مش أنا' : 'No, not me'}
             </button>
             <button
               className="primary"
@@ -609,7 +617,7 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
               aria-busy={busy}
               onClick={() => void decide(holder, true)}
             >
-              {ar ? 'أيوه،أنا الليبستبدل' : 'Yes, I am redeeming'}
+              {ar ? 'أيوه، أنا اللي بستبدل' : 'Yes, I am redeeming'}
             </button>
           </div>
         </section>
@@ -709,7 +717,7 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
                       {ar ? 'آخر نشاط' : 'Recent activity'}
                     </button>
                   </div>
-                  {qr && (
+                  {qr && !holder && (
                     <CustomerCode
                       qr={qr}
                       lang={lang}

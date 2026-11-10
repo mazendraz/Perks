@@ -1,4 +1,5 @@
 import { portalAssetUrl } from '../portals.js';
+import { merchantStatusLabel } from '../business-labels.js';
 import { Select } from '../controls/Select.js';
 import { useEffect, useState } from 'react';
 import { navigate } from '../useRoute.js';
@@ -163,7 +164,8 @@ export function BusinessPreview({
               </h2>
               {data && (
                 <small className="muted">
-                  {data.merchant.status} · <bdi>{data.merchant.slug}</bdi>
+                  {merchantStatusLabel(data.merchant.status, lang)} ·{' '}
+                  <bdi>{data.merchant.slug}</bdi>
                 </small>
               )}
             </div>

@@ -1,4 +1,5 @@
 import { PhoneInput } from '../controls/PhoneInput.js';
+import { merchantStatusLabel, subscriptionPlanLabel } from '../business-labels.js';
 import { portalAssetUrl } from '../portals.js';
 import { FileUpload } from '../controls/FileUpload.js';
 import { Select } from '../controls/Select.js';
@@ -982,9 +983,15 @@ export function PlatformPage({ lang, userId }: { lang: Language; userId: string 
                     value={data.plan}
                     onChange={(e) => patch({ plan: e.target.value as ProvisioningInput['plan'] })}
                   >
-                    <option value="starter">Starter ·1 branch /3 staff</option>
-                    <option value="growth">Growth ·3 branches /10 staff</option>
-                    <option value="pro">Pro ·10 branches /40 staff</option>
+                    <option value="starter">
+                      {ar ? 'بداية · فرع واحد / 3 موظفين' : 'Starter · 1 branch / 3 staff'}
+                    </option>
+                    <option value="growth">
+                      {ar ? 'نمو · 3 فروع / 10 موظفين' : 'Growth · 3 branches / 10 staff'}
+                    </option>
+                    <option value="pro">
+                      {ar ? 'احترافية · 10 فروع / 40 موظف' : 'Pro · 10 branches / 40 staff'}
+                    </option>
                   </Select>
                 </label>
                 <p className="muted">
@@ -1011,7 +1018,7 @@ export function PlatformPage({ lang, userId }: { lang: Language; userId: string 
                   <dt>{ar ? 'الفريق' : 'Team'}</dt>
                   <dd>{data.staff.length}</dd>
                   <dt>{ar ? 'الخطة' : 'Plan'}</dt>
-                  <dd>{data.plan}</dd>
+                  <dd>{subscriptionPlanLabel(data.plan, lang)}</dd>
                 </dl>
                 <p className="muted">
                   {ar
@@ -1190,11 +1197,11 @@ export function PlatformPage({ lang, userId }: { lang: Language; userId: string 
                     </small>
                   </td>
                   <td>
-                    <span className="badge">{m.status}</span>
+                    <span className="badge">{merchantStatusLabel(m.status, lang)}</span>
                   </td>
                   <td>{m.branch_count}</td>
                   <td>{m.staff_count}</td>
-                  <td>{m.plan || '—'}</td>
+                  <td>{subscriptionPlanLabel(m.plan, lang)}</td>
                   <td>
                     <button className="primary small" onClick={() => setPreviewBusiness(m.id)}>
                       {ar ? 'معاينة' : 'Preview'}

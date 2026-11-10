@@ -1446,6 +1446,15 @@ try {
   await ap.getByText('Reviewed the synthetic receipt and ledger.', { exact: true }).waitFor();
   ok('Merchant support ticket and platform reply persist across separate authenticated contexts');
   await ap.getByRole('button', { name: 'All businesses', exact: true }).click();
+  await ap.getByRole('button', { name: 'العربية', exact: true }).click();
+  assert.equal(await businessRow.locator('td').nth(1).innerText(), 'نشط');
+  assert.equal(await businessRow.locator('td').nth(4).innerText(), 'نمو');
+  assert.equal(await ap.getByText('PLATFORM', { exact: true }).count(), 0);
+  await ap.getByText('المنصة', { exact: true }).waitFor();
+  await ap.getByRole('button', { name: 'English', exact: true }).click();
+  ok(
+    'Arabic business list localizes merchant status, plan and workspace label while preserving the business URL identifier',
+  );
   await ap.getByRole('button', { name: 'Operations and support', exact: true }).click();
   await ap.getByRole('button', { name: 'Trace operation', exact: true }).click();
   await ap.getByLabel('Transaction or receipt reference', { exact: true }).fill(reference);

@@ -432,7 +432,15 @@ function Workspace({
                     : 'Nuqta administration'
                   : grant?.name || portalInfo[portal][ar ? 'ar' : 'en']}
               </strong>
-              <small>{portal === 'platform' ? 'PLATFORM' : 'BUSINESS OWNER'}</small>
+              <small>
+                {portal === 'platform'
+                  ? ar
+                    ? 'المنصة'
+                    : 'PLATFORM'
+                  : ar
+                    ? 'صاحب المحل'
+                    : 'BUSINESS OWNER'}
+              </small>
             </div>
           </div>
           <div className="sidebar-title">{ar ? 'مساحة العمل' : 'Workspace'}</div>

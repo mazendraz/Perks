@@ -1,4 +1,5 @@
 import { MerchantCardDesigner } from './MerchantCardDesigner.js';
+import { merchantStatusLabel, subscriptionPlanLabel } from '../business-labels.js';
 import { navigate } from '../useRoute.js';
 import { CustomerOutreach } from './CustomerOutreach.js';
 import { AccountSecurity } from './AccountSecurity.js';
@@ -86,7 +87,8 @@ export function MerchantWorkspace({
           <span className="eyebrow">{ar ? 'ملف المحل' : 'BUSINESS WORKSPACE'}</span>
           <h1>{data?.merchant.name || (ar ? 'متابعة المحل' : 'Business operations')}</h1>
           <p className="muted">
-            {data?.merchant.status} · {data?.merchant.plan} · <bdi>{data?.merchant.slug}</bdi>
+            {merchantStatusLabel(data?.merchant.status, lang)} ·{' '}
+            {subscriptionPlanLabel(data?.merchant.plan, lang)} · <bdi>{data?.merchant.slug}</bdi>
           </p>
         </div>
         <div className="form-actions">

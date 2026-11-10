@@ -42,7 +42,7 @@ export function ownerPreviewModule(app: FastifyInstance, pools: Pools) {
     const relative = url.pathname.startsWith(base + '/') ? url.pathname.slice(base.length + 1) : '';
     const allowed =
       url.pathname === base ||
-      /^(?:overview|programs|staff|transactions|corrections|branches|account-security|customers|customer-outreach|customer-exports|segments|placements)$/.test(
+      /^(?:overview|experience|programs|staff|transactions|corrections|branches|account-security|customers|customer-outreach|customer-exports|segments|placements)$/.test(
         relative,
       ) ||
       /^customers\/[a-f0-9-]{36}$/.test(relative) ||

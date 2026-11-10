@@ -572,6 +572,8 @@ try {
   await ap.getByRole('region', { name: 'Owner preview mode', exact: true }).waitFor();
   await ap.getByRole('heading', { name: 'Merchant dashboard', exact: true }).waitFor();
   await ap.locator('.merchant-metrics').waitFor();
+  await ap.locator('.experience-stats .experience-metrics').waitFor();
+  assert.equal(await ap.locator('.experience-stats [role="alert"]').count(), 0);
   const actualOwner = (await (await owner.request.get('/api/v1/session')).json()).grants[0];
   const ownerData = await (
     await owner.request.get('/api/v1/merchants/' + mid + '/overview')

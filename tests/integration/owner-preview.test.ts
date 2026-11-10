@@ -69,6 +69,8 @@ test('owner preview reads the actual owner scope, never changes sessions, reject
   for (const suffix of [
     '',
     '/overview',
+    '/experience?days=30',
+    '/experience?days=30&branchId=' + ids.branchA,
     '/programs',
     '/staff',
     '/transactions',
@@ -107,12 +109,28 @@ test('owner preview reads the actual owner scope, never changes sessions, reject
   );
   for (const url of [
     '/api/v1/merchants/' + ids.merchantB,
+    '/api/v1/merchants/' + ids.merchantB + '/experience',
+    base + '/experience/private',
     '/api/v1/session',
     '/api/v1/platform/health',
     '/api/v1/support/tickets',
     '/api/v1/support/tickets?merchantId=' + ids.merchantB,
   ])
     assert.equal((await app.inject({ url, headers: header })).statusCode, 403, url);
+  const foreignBranch = await app.inject({
+    url: base + '/experience?branchId=' + ids.branchB,
+    headers: header,
+  });
+  assert.equal(foreignBranch.statusCode, 403);
+  assert.equal(foreignBranch.json().error.code, 'BRANCH_UNAUTHORIZED');
+  const metricWrite = await app.inject({
+    method: 'POST',
+    url: base + '/experience',
+    headers: header,
+    payload: {},
+  });
+  assert.equal(metricWrite.statusCode, 403);
+  assert.equal(metricWrite.json().error.code, 'OWNER_PREVIEW_READ_ONLY');
   const denied = await app.inject({
     method: 'PATCH',
     url: base + '/branding',

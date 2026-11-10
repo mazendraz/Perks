@@ -24,6 +24,31 @@ export function staffStatusLabel(value: string, lang: Language) {
   if (value === 'disabled') return lang === 'ar' ? 'موقوف' : 'Disabled';
   return lang === 'ar' ? 'غير محدد' : 'Unknown';
 }
+const placementStatuses = {
+  requested: { ar: 'مطلوبة', en: 'Requested' },
+  ready: { ar: 'جاهزة', en: 'Ready' },
+  shipped: { ar: 'اتشحنت', en: 'Shipped' },
+  installed: { ar: 'اتركبت', en: 'Installed' },
+  verified: { ar: 'اتجربت واشتغلت', en: 'Verified' },
+  revoked: { ar: 'الرابط ملغي', en: 'Revoked' },
+} as const;
+const placementKinds = {
+  stand: { ar: 'حامل على الكاونتر', en: 'Counter stand' },
+  sticker: { ar: 'ستيكر', en: 'Sticker' },
+  nfc: { ar: 'تاج NFC', en: 'NFC tag' },
+} as const;
+export function placementStatusLabel(value: string, lang: Language) {
+  return (
+    placementStatuses[value as keyof typeof placementStatuses]?.[lang] ||
+    (lang === 'ar' ? 'غير محدد' : 'Unknown')
+  );
+}
+export function placementKindLabel(value: string, lang: Language) {
+  return (
+    placementKinds[value as keyof typeof placementKinds]?.[lang] ||
+    (lang === 'ar' ? 'غير محدد' : 'Unknown')
+  );
+}
 export function merchantStatusLabel(value: string | undefined, lang: Language) {
   return (
     statuses[value as keyof typeof statuses]?.[lang] || (lang === 'ar' ? 'غير محدد' : 'Unknown')

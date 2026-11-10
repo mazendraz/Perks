@@ -5,6 +5,8 @@ import {
   subscriptionPlanLabel,
   staffRoleLabel,
   staffStatusLabel,
+  placementKindLabel,
+  placementStatusLabel,
 } from '../../apps/web/src/business-labels.js';
 test('business status and subscription labels cover known values in both languages without exposing unknown internal codes', () => {
   assert.deepEqual(
@@ -29,4 +31,18 @@ test('business status and subscription labels cover known values in both languag
   assert.equal(staffStatusLabel('disabled', 'en'), 'Disabled');
   assert.equal(staffRoleLabel('FUTURE', 'ar'), 'غير محدد');
   assert.equal(staffStatusLabel('FUTURE', 'ar'), 'غير محدد');
+  assert.deepEqual(
+    ['requested', 'ready', 'shipped', 'installed', 'verified', 'revoked'].map((v) =>
+      placementStatusLabel(v, 'ar'),
+    ),
+    ['مطلوبة', 'جاهزة', 'اتشحنت', 'اتركبت', 'اتجربت واشتغلت', 'الرابط ملغي'],
+  );
+  assert.deepEqual(
+    ['stand', 'sticker', 'nfc'].map((v) => placementKindLabel(v, 'ar')),
+    ['حامل على الكاونتر', 'ستيكر', 'تاج NFC'],
+  );
+  assert.equal(placementStatusLabel('requested', 'en'), 'Requested');
+  assert.equal(placementKindLabel('stand', 'en'), 'Counter stand');
+  assert.equal(placementStatusLabel('FUTURE', 'ar'), 'غير محدد');
+  assert.equal(placementKindLabel('FUTURE', 'ar'), 'غير محدد');
 });

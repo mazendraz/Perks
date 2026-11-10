@@ -1,4 +1,5 @@
 import { portalAssetUrl } from '../portals.js';
+import { placementKindLabel, placementStatusLabel } from '../business-labels.js';
 import { placementDisplayLabel } from '../../../../packages/domain/src/placement-labels.js';
 import { Select } from '../controls/Select.js';
 import { useEffect, useState, type FormEvent } from 'react';
@@ -206,10 +207,10 @@ export function Materials({ grant, lang }: { grant: Grant; lang: Language }) {
         <div className="subpanel" key={p.id}>
           <div className="section-heading">
             <h3>{placementDisplayLabel(p.label, p.branch_name, lang)}</h3>
-            <span className="badge">{p.status}</span>
+            <span className="badge">{placementStatusLabel(p.status, lang)}</span>
           </div>
           <p>
-            {p.branch_name} ·{p.kind}
+            {p.branch_name} · {placementKindLabel(p.kind, lang)}
           </p>
           {p.status !== 'revoked' && (
             <>
@@ -321,9 +322,11 @@ export function Materials({ grant, lang }: { grant: Grant; lang: Language }) {
                 <label>
                   {ar ? 'النوع' : 'Type'}
                   <Select value={kind} onChange={(e) => setKind(e.target.value)}>
-                    <option value="stand">Stand</option>
-                    <option value="sticker">Sticker</option>
-                    <option value="nfc">NFC tag</option>
+                    {['stand', 'sticker', 'nfc'].map((value) => (
+                      <option key={value} value={value}>
+                        {placementKindLabel(value, lang)}
+                      </option>
+                    ))}
                   </Select>
                 </label>
               </>

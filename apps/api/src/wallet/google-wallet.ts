@@ -2,6 +2,7 @@ import { createHash, createSign } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { texts, type WalletCard } from './apple-pass.js';
 import { WALLET_ARTWORK_VERSION } from './pass-artwork.js';
+import { walletTheme } from '../../../../packages/domain/src/wallet-theme.js';
 
 export const GOOGLE_STRIP_PREFIX = '/api/v1/public/wallet/google/strips';
 export interface GoogleWallet {
@@ -44,6 +45,7 @@ export const stripVersion = (card: WalletCard) =>
         card.primary_color,
         card.accent_color,
         card.template,
+        card.surface_color,
         card.id,
         card.stamp_shape,
         card.stamp_icon,
@@ -61,7 +63,6 @@ const localized = (ar: string, en: string) => ({
   defaultValue: { language: 'ar', value: ar },
   translatedValues: [{ language: 'en', value: en }],
 });
-const hex = (value: string, fallback: string) => (/^#[0-9a-f]{6}$/i.test(value) ? value : fallback);
 export const classId = (g: GoogleWallet, card: { merchant_id: string }) =>
   g.issuerId + '.perks-merchant-' + card.merchant_id;
 export const objectId = (g: GoogleWallet, key: string) => g.issuerId + '.perks-card-' + key;
@@ -82,7 +83,7 @@ export function googleClass(
       sourceUri: { uri: logo },
       contentDescription: localized('شعار ' + card.merchant_name, card.merchant_name + ' logo'),
     },
-    hexBackgroundColor: hex(card.primary_color, '#181b38'),
+    hexBackgroundColor: walletTheme(card).background,
     countryCode: 'EG',
     reviewStatus: 'UNDER_REVIEW',
     multipleDevicesAndHoldersAllowedStatus: 'ONE_USER_ALL_DEVICES',

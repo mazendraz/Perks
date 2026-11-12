@@ -2,35 +2,18 @@ import type { StampShape } from '../../../../packages/contracts/src/branding.js'
 import { stampRandom } from '../../../../packages/domain/src/stamp-ink.js';
 import { stampIconPaths } from '../../../../packages/domain/src/stamp-glyphs.js';
 import type { WalletCard } from './apple-pass.js';
+import { cardArtMarkup } from '../../../../packages/domain/src/card-art.js';
+import {
+  inkFor,
+  mix,
+  walletArtCategory,
+  walletTheme,
+  type WalletTheme,
+} from '../../../../packages/domain/src/wallet-theme.js';
 
 // Bump whenever the strip changes, so Google re-fetches it and Apple passes refresh.
-export const WALLET_ARTWORK_VERSION = 'perks-card-6';
-const color = (value: string, fallback: string) =>
-  /^#[0-9a-f]{6}$/i.test(value) ? value : fallback;
-function luminance(color: string) {
-  const c = [1, 3, 5]
-    .map((i) => parseInt(color.slice(i, i + 2), 16) / 255)
-    .map((n) => (n <= 0.04045 ? n / 12.92 : ((n + 0.055) / 1.055) ** 2.4));
-  return c[0]! * 0.2126 + c[1]! * 0.7152 + c[2]! * 0.0722;
-}
-export function inkFor(color: string) {
-  return luminance(color) > 0.179 ? '#132a26' : '#ffffff';
-}
-/** Mixes two #rrggbb colours; used for Wallet label text that sits between ink and background. */
-export function mix(a: string, b: string, amount: number) {
-  const pa = parseInt(a.slice(1), 16),
-    pb = parseInt(b.slice(1), 16);
-  return (
-    '#' +
-    [16, 8, 0]
-      .map((s) =>
-        Math.round(((pa >> s) & 255) * (1 - amount) + ((pb >> s) & 255) * amount)
-          .toString(16)
-          .padStart(2, '0'),
-      )
-      .join('')
-  );
-}
+export const WALLET_ARTWORK_VERSION = 'perks-card-7';
+export { inkFor, mix } from '../../../../packages/domain/src/wallet-theme.js';
 
 // Clean slot outlines in a 48-unit box centred on 0,0. At Wallet size a crisp edge reads as
 // premium; the rough ink edge of the web stamp turns into noise at 40 points.
@@ -103,15 +86,61 @@ export function stripLayout(total: number, height = 144, rtl = false) {
   });
 }
 
+/**
+ * The card edition's own drawing (the same line art as the web card), placed as if the strip were
+ * the middle band of the card. It fades out at the top and bottom so it melts into the pass colour.
+ */
+function artLayer(card: WalletCard, theme: WalletTheme, height: number, rtl: boolean) {
+  const { kind, color, opacity, rotate, scale, leaf } = theme.art;
+  if (kind === 'none' || opacity <= 0) return { defs: '', body: '' };
+  const n = (value: number) => value.toFixed(2);
+  // The web card is a 600×420 box; the strip is its width-matched middle band.
+  const k = 375 / 600,
+    top = (height - 420 * k) / 2;
+  const onCard = (inner: string) =>
+    `<g transform="translate(0 ${n(top)}) scale(${k}) translate(300 210) rotate(${rotate}) scale(${scale}) translate(-300 -210)">${inner}</g>`;
+  const lines = (alpha: number) =>
+    `<g fill="none" stroke="${color}" stroke-opacity="${n(alpha)}" stroke-width="1.9" stroke-linecap="round">${cardArtMarkup[walletArtCategory(card.template)]}</g>`;
+  // Leaf outline of the Botanical edition, on the reading end like the web card.
+  const leafPath = leaf
+    ? `<path transform="rotate(18 ${rtl ? 66 : 534} 290)" d="${rtl ? 'M-100 550A333 517 0 0 1 233 33A333 517 0 0 1 -100 550Z' : 'M367 550A333 517 0 0 1 700 33A333 517 0 0 1 367 550Z'}" fill="none" stroke="${color}" stroke-opacity="${n(opacity * 1.2)}" stroke-width="1.9"/>`
+    : '';
+  let defs =
+    `<linearGradient id="fade-g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".24" stop-color="#fff"/><stop offset=".76" stop-color="#fff"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient>` +
+    `<mask id="fade" maskUnits="userSpaceOnUse" x="0" y="0" width="375" height="${height}"><rect width="375" height="${height}" fill="url(#fade-g)"/></mask>`;
+  let body = '';
+  if (kind === 'lines') body = onCard(lines(opacity) + leafPath);
+  else if (kind === 'mosaic') {
+    // The web card's 45° conic tiles: a bow-tie in every 88-point cell.
+    defs += `<pattern id="tiles" width="88" height="88" patternUnits="userSpaceOnUse"><path d="M0 0L44 44L0 88ZM88 0L44 44L88 88Z" fill="${color}" fill-opacity="${n(opacity)}"/></pattern>`;
+    body = `<rect width="375" height="${height}" fill="url(#tiles)"/>`;
+  } else if (kind === 'ruled') {
+    // Espresso: fine vertical rules in the brand colour, plus the café drawing.
+    defs += `<pattern id="rules" width="50" height="${height}" patternUnits="userSpaceOnUse"><rect x="25" width=".7" height="${height}" fill="${color}" fill-opacity="${n(opacity)}"/></pattern>`;
+    body = `<rect width="375" height="${height}" fill="url(#rules)"/>` + onCard(lines(opacity));
+  } else if (kind === 'aurora') {
+    // Two soft accent lights on opposite sides, fading out inside the strip, with the line art barely there.
+    defs += `<radialGradient id="aur" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="${theme.stamp}" stop-opacity="${n(opacity * 1.4)}"/><stop offset="1" stop-color="${theme.stamp}" stop-opacity="0"/></radialGradient>`;
+    body =
+      `<ellipse cx="${rtl ? 70 : 305}" cy="${n(height * 0.36)}" rx="150" ry="${n(height * 0.46)}" fill="url(#aur)"/>` +
+      `<ellipse cx="${rtl ? 305 : 70}" cy="${n(height * 0.64)}" rx="140" ry="${n(height * 0.44)}" fill="url(#aur)"/>` +
+      onCard(lines(opacity * 0.2));
+  }
+  return { defs, body: `<g mask="url(#fade)">${body}</g>` };
+}
+
 export function stripSvg(card: WalletCard, scale: number, height = 144, rtl = false) {
   const total = Math.max(2, Math.min(50, card.threshold)),
     filled = Math.max(0, Math.min(total, card.display_balance));
-  const bg = color(card.primary_color, '#181b38'),
-    accent = color(card.accent_color, '#cbff64'),
-    ink = inkFor(bg),
-    light = ink !== '#ffffff',
+  const theme = walletTheme(card),
+    bg = theme.background,
+    accent = theme.stamp,
+    ink = theme.ink,
+    // A light card (paper editions), judged by the card itself: Noir's cream ink is not a light card.
+    light = inkFor(bg) !== '#ffffff',
     outline = card.stamp_style === 'outline',
-    glyphInk = outline ? accent : inkFor(accent),
+    glyphInk = outline ? accent : theme.stampInk,
+    art = artLayer(card, theme, height, rtl),
     shape = card.stamp_shape,
     icon = stampIconPaths[card.stamp_icon] ? card.stamp_icon : 'check',
     random = stampRandom(card.id + ':wallet');
@@ -158,11 +187,13 @@ export function stripSvg(card: WalletCard, scale: number, height = 144, rtl = fa
     `<radialGradient id="glow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="${mix(bg, light ? '#ffffff' : accent, light ? 0.45 : 0.1)}"/><stop offset="1" stop-color="${bg}"/></radialGradient>` +
     `<linearGradient id="ink" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${mix(accent, '#ffffff', 0.18)}"/><stop offset="1" stop-color="${mix(accent, '#000000', 0.1)}"/></linearGradient>` +
     `<filter id="lift" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="1.2" stdDeviation="1.3" flood-color="#000" flood-opacity="${light ? 0.18 : 0.32}"/></filter>` +
+    art.defs +
     '</defs>';
   return (
     `<svg xmlns="http://www.w3.org/2000/svg" width="${375 * scale}" height="${height * scale}" viewBox="0 0 375 ${height}">` +
     defs +
     `<rect width="375" height="${height}" fill="${bg}"/><ellipse cx="187.5" cy="${height / 2}" rx="187.5" ry="${height / 2}" fill="url(#glow)"/>` +
+    art.body +
     slots.join('') +
     '</svg>'
   );

@@ -8,7 +8,8 @@ import type {
   StampIcon,
   StampShape,
 } from '../../../../packages/contracts/src/branding.js';
-import { inkFor, mix, stripSvg } from './pass-artwork.js';
+import { stripSvg } from './pass-artwork.js';
+import { walletTheme } from '../../../../packages/domain/src/wallet-theme.js';
 export { inkFor, stripSvg } from './pass-artwork.js';
 import { APPLE_SERVICE_PREFIX } from './constants.js';
 import { perksIconSvg } from '../../../../packages/domain/src/brand.js';
@@ -24,6 +25,7 @@ export interface WalletCard {
   pending_rewards: number;
   primary_color: string;
   accent_color: string;
+  surface_color?: string;
   template?: CardTemplate;
   stamp_shape: StampShape;
   stamp_icon: StampIcon;
@@ -87,7 +89,6 @@ export function passAuthToken(serial: string, pepper: string) {
     .digest('base64url');
 }
 
-const hex = (value: string, fallback: string) => (/^#[0-9a-f]{6}$/i.test(value) ? value : fallback);
 const rgb = (value: string) => {
   const n = parseInt(value.slice(1), 16);
   return `rgb(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255})`;
@@ -161,10 +162,17 @@ const stringsFile = (entries: Record<string, string>) =>
 
 export function passJson(
   card: WalletCard,
-  options: { serial: string; authToken: string; origin: string; signer: AppleWalletSigner },
+  options: {
+    serial: string;
+    authToken: string;
+    origin: string;
+    signer: AppleWalletSigner;
+    /** The shop's logo already spells its name, so the name is not repeated beside it. */
+    wordmark?: boolean;
+  },
 ) {
-  const bg = hex(card.primary_color, '#181b38'),
-    ink = inkFor(bg),
+  // Colours come from the shop's card edition (template), the same as the web card.
+  const theme = walletTheme(card),
     cardUrl = options.origin + '/customer/' + card.id + '?wallet=1';
   return {
     formatVersion: 1,
@@ -180,11 +188,10 @@ export function passJson(
       : {}),
     organizationName: card.merchant_name,
     description: card.merchant_name + ' · Perks',
-    logoText: card.merchant_name,
-    backgroundColor: rgb(bg),
-    foregroundColor: rgb(ink),
-    // Labels sit between the ink and the card colour so they read as quiet captions.
-    labelColor: rgb(mix(ink, bg, ink === '#ffffff' ? 0.36 : 0.3)),
+    ...(options.wordmark ? {} : { logoText: card.merchant_name }),
+    backgroundColor: rgb(theme.background),
+    foregroundColor: rgb(theme.ink),
+    labelColor: rgb(theme.label),
     sharingProhibited: true,
     barcodes: [
       {
@@ -308,6 +315,8 @@ async function png(svg: string | Buffer, width: number, height?: number) {
     .png()
     .toBuffer();
 }
+// Logos wider than this are wordmarks: they already carry the shop's name.
+const WORDMARK_RATIO = 1.3;
 const logoSizes = [
   ['logo.png', 50],
   ['logo@2x.png', 100],
@@ -321,7 +330,7 @@ export async function walletLogo(source: Buffer, h: number) {
     ratio = (meta.width || 1) / (meta.height || 1),
     inner = Math.round(h * 0.84),
     pad = h - inner;
-  if (ratio > 1.3)
+  if (ratio > WORDMARK_RATIO)
     return sharp(source)
       .resize({ height: inner, width: Math.round(h * 3), fit: 'inside' })
       .extend({
@@ -362,8 +371,10 @@ export async function buildPkpass(
   },
 ) {
   const appIcon = Buffer.from(perksIconSvg({ rounded: false, maskable: false }));
+  const logoMeta = options.logo ? await sharp(options.logo).metadata() : null,
+    wordmark = !!logoMeta && (logoMeta.width || 1) / (logoMeta.height || 1) > WORDMARK_RATIO;
   const files: [string, Buffer][] = [
-    ['pass.json', Buffer.from(JSON.stringify(passJson(card, options)))],
+    ['pass.json', Buffer.from(JSON.stringify(passJson(card, { ...options, wordmark })))],
     ['icon.png', await png(appIcon, 29)],
     ['icon@2x.png', await png(appIcon, 58)],
     ['icon@3x.png', await png(appIcon, 87)],
@@ -371,7 +382,8 @@ export async function buildPkpass(
     ['strip@2x.png', await png(stripSvg(card, 2), 750, 288)],
     ['strip@3x.png', await png(stripSvg(card, 3), 1125, 432)],
   ];
-  if (options.logo) for (const [name, h] of logoSizes) files.push([name, await walletLogo(options.logo, h)]);
+  if (options.logo)
+    for (const [name, h] of logoSizes) files.push([name, await walletLogo(options.logo, h)]);
   const t = texts(card);
   // Arabic phones fill the stamps from the right, like the Arabic web card.
   for (const scale of [1, 2, 3])

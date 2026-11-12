@@ -148,6 +148,11 @@ const arErrors: Record<string, string> = {
   DEVICE_ALREADY_BOUND: 'فيه كارت تاني مربوط بالجهاز. اخرج منه الأول أو افتح الرابط في متصفح تاني.',
   CUSTOMER_QR_REQUIRED: 'امسح كود العميل من موبايله الأول، وبعدها اعتمد الطلب.',
   REQUEST_DAILY_LIMIT: 'وصلت لحد طلبات الأختام النهارده. ارجع بكرة أو راجع فريق المحل.',
+  MAPS_LINK_UNREADABLE:
+    'مقدرناش نقرا الموقع من الرابط ده. افتحه في خرايط جوجل، دوس مطوّل على مكان المحل، وانسخ الأرقام اللي بتظهر.',
+  COLLECTION_LIMIT: 'العميل وصل لحد الأختام المسموح دلوقتي حسب إعدادات المحل.',
+  BRANCH_POSITION_REQUIRED: 'حدد موقع كل الفروع النشطة الأول عشان تفعّل التحقق من الموقع.',
+  CASHIER_REQUIRED: 'المحل ده محتاج موافقة الكاشير على كل ختم.',
   ADMIN_EMAIL_IN_USE: 'الإيميل ده مستخدم بالفعل. اختار إيميل مستقل لحساب الإدارة.',
   ADMIN_SELF_MANAGEMENT: 'إعدادات حسابك الحالي من «حسابي». ماينفعش توقف نفسك من الفريق.',
   LAST_PLATFORM_ADMIN: 'لازم يفضل فيه سوبر أدمن نشط واحد على الأقل.',
@@ -277,6 +282,11 @@ const enErrors: Record<string, string> = {
   CUSTOMER_QR_REQUIRED: 'Scan the customer code from their phone before approving the request.',
   REQUEST_DAILY_LIMIT:
     'You have reached today’s stamp request limit. Scan again tomorrow or ask the shop team.',
+  MAPS_LINK_UNREADABLE:
+    'This link could not be read. Open it in Google Maps, long-press the shop and copy the numbers shown.',
+  COLLECTION_LIMIT: 'This customer has reached the stamps allowed right now by the shop’s rules.',
+  BRANCH_POSITION_REQUIRED: 'Set a position for every active branch before requiring location.',
+  CASHIER_REQUIRED: 'This shop needs the cashier to approve every stamp.',
   PLACEMENT_UNAVAILABLE: 'This shop code is unavailable. Ask the branch team for the current code.',
   PLACEMENT_REVOKED: 'This shop code was replaced. Ask the branch team for the current code.',
   PASSWORD_LENGTH: 'Choose a password with 10 to 128 characters.',

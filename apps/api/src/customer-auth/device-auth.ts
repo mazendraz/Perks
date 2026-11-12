@@ -83,11 +83,15 @@ export async function issueDeviceSession(
     return true;
   });
   if (!created) return null;
+  // Lax, not Strict: a customer arrives from the iPhone Camera (QR), an NFC tap, Wallet or
+  // WhatsApp. Safari withholds Strict cookies from every request of a page opened that way,
+  // so the stamp request after a scan or a first registration lost the card holder.
+  // Cross-site writes stay blocked by the Origin check and the CSRF header.
   const names = portalCookies(c, 'customer'),
     options = {
       path: '/',
       secure: c.COOKIE_SECURE === 'true',
-      sameSite: 'strict' as const,
+      sameSite: 'lax' as const,
       maxAge: 86400,
     };
   reply.setCookie(names.session, token, { ...options, httpOnly: true });

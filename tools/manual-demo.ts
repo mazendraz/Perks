@@ -62,6 +62,18 @@ export function manualConfig(state: State): Config {
     PUBLIC_APP_ORIGIN: state.origin,
     COOKIE_SECURE: 'false',
     AUTH_PEPPER: state.pepper,
+    APPLE_PASS_CERT_FILE: base.APPLE_PASS_CERT_FILE
+      ? resolve(workspace, base.APPLE_PASS_CERT_FILE)
+      : undefined,
+    APPLE_PASS_KEY_FILE: base.APPLE_PASS_KEY_FILE
+      ? resolve(workspace, base.APPLE_PASS_KEY_FILE)
+      : undefined,
+    APPLE_WWDR_CERT_FILE: base.APPLE_WWDR_CERT_FILE
+      ? resolve(workspace, base.APPLE_WWDR_CERT_FILE)
+      : undefined,
+    GOOGLE_WALLET_SERVICE_ACCOUNT_FILE: base.GOOGLE_WALLET_SERVICE_ACCOUNT_FILE
+      ? resolve(workspace, base.GOOGLE_WALLET_SERVICE_ACCOUNT_FILE)
+      : undefined,
     DATABASE_MIGRATOR_URL: database(base.DATABASE_MIGRATOR_URL),
     DATABASE_URL: database(base.DATABASE_URL),
     AUTH_DATABASE_URL: database(base.AUTH_DATABASE_URL),
@@ -196,6 +208,7 @@ async function start() {
   const assets = resolve(workspace, 'apps/web/dist');
   if (!existsSync(resolve(assets, 'index.html')))
     throw new Error('Run npm run build before starting the manual demo.');
+  await migrateManual(c);
   process.chdir(manualRoot);
   await mkdir('.local', { recursive: true });
   const { app } = await buildApp(c);

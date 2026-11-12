@@ -3,7 +3,7 @@ import { writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import pg from 'pg';
-import { createServer, type ViteDevServer } from 'vite';
+import { build, preview, type PreviewServer } from 'vite';
 import { readConfig, type Config } from '../apps/api/src/config.js';
 import { hashPassword } from '../apps/api/src/passwords.js';
 import { buildApp } from '../apps/api/src/server.js';
@@ -11,7 +11,7 @@ import { seed, ids } from '../db/seed.js';
 import { runOne } from '../apps/worker/src/runner.js';
 import { runAppleWalletPushes } from '../apps/worker/src/apple-wallet-push.js';
 import { runGoogleWalletUpdates } from '../apps/worker/src/google-wallet-updates.js';
-import { tunnelServer, tunnelGuard, quickOrigin } from './tunnel-policy.js';
+import { tunnelPreview, tunnelGuard, quickOrigin } from './tunnel-policy.js';
 import { privateLocalDirectory } from './private-local.js';
 import { operationalLog } from '../packages/domain/src/operational-log.js';
 import { cleanupExports } from '../apps/worker/src/export-cleanup.js';
@@ -159,7 +159,7 @@ export async function serveTunnel(
   const config = readConfig({ ...fixture.config, PUBLIC_APP_ORIGIN: origin, PORT: apiPort });
   const { app } = await buildApp(config);
   const worker = new pg.Pool({ connectionString: config.WORKER_DATABASE_URL, max: 1 });
-  let web: ViteDevServer | undefined,
+  let web: PreviewServer | undefined,
     stopped = false,
     running: Promise<void> | undefined,
     stopping: Promise<void> | undefined,
@@ -200,15 +200,23 @@ export async function serveTunnel(
     })());
   try {
     await app.listen({ port: apiPort, host: '127.0.0.1' });
-    web = await createServer({
+    const outDir = resolve(fixture.root, 'web');
+    await build({
       root: resolve('apps/web'),
       configFile: resolve('apps/web/vite.config.ts'),
-      plugins: [tunnelGuard],
-      server: tunnelServer(origin, apiPort, webPort),
+      build: { outDir, emptyOutDir: true },
       clearScreen: false,
       logLevel: 'error',
     });
-    await web.listen();
+    web = await preview({
+      root: resolve('apps/web'),
+      configFile: resolve('apps/web/vite.config.ts'),
+      plugins: [tunnelGuard],
+      build: { outDir },
+      preview: tunnelPreview(origin, apiPort, webPort),
+      clearScreen: false,
+      logLevel: 'error',
+    });
     await writeFile(resolve(fixture.root, 'origin.txt'), origin + '\n', { mode: 0o600 });
     return { app, web, stop };
   } catch (error) {

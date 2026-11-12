@@ -103,7 +103,7 @@ export function LoyaltyCard({
   } as CSSProperties;
   return (
     <div
-      className={'loyalty-card-shell' + (experience || card.pending_rewards ? ' live-card' : '')}
+      className={'loyalty-card-shell' + (card.pending_rewards ? ' live-card' : '')}
       style={style}
     >
       <svg width="0" height="0" className="nq-ink-definitions" aria-hidden="true">

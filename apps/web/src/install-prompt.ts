@@ -59,27 +59,3 @@ export async function promptInstall() {
   await event.userChoice;
   return true;
 }
-export interface InstallOffers {
-  firstCard: boolean;
-  firstStamp: boolean;
-}
-const key = 'nuqta-home-screen-offers-v1';
-let memory: InstallOffers = { firstCard: false, firstStamp: false };
-export function installOffers(): InstallOffers {
-  try {
-    const value = JSON.parse(localStorage.getItem(key) || 'null');
-    if (value && typeof value.firstCard === 'boolean' && typeof value.firstStamp === 'boolean')
-      memory = value;
-  } catch {
-    /* Storage is optional. */
-  }
-  return { ...memory };
-}
-export function rememberInstallOffer(stage: 'firstCard' | 'firstStamp') {
-  memory = { ...installOffers(), [stage]: true };
-  try {
-    localStorage.setItem(key, JSON.stringify(memory));
-  } catch {
-    /* Memory fallback remains usable. */
-  }
-}

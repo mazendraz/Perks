@@ -1,3 +1,4 @@
+import { CollectionSettings } from './CollectionSettings.js';
 import { MerchantCardDesigner } from './MerchantCardDesigner.js';
 import {
   merchantStatusLabel,
@@ -125,6 +126,7 @@ export function MerchantWorkspace({
             ['overview', 'نظرة عامة', 'Overview'],
             ['subscription', 'الاشتراك', 'Subscription'],
             ['design', 'الكارت والهوية', 'Card and branding'],
+            ['collection', 'جمع الأختام', 'Stamp collection'],
             ['customers', 'العملاء وواتساب', 'Customers and WhatsApp'],
             ['team', 'الفروع والحسابات', 'Branches and accounts'],
             ['qr', 'أكواد QR', 'QR codes'],
@@ -266,6 +268,7 @@ export function MerchantWorkspace({
           onChanged={load}
         />
       )}
+      {tab === 'collection' && <CollectionSettings merchantId={merchantId} lang={lang} />}
       {tab === 'customers' && <CustomerOutreach merchantId={merchantId} lang={lang} />}
       {tab === 'qr' && <EnrollmentCodes merchantId={merchantId} lang={lang} />}
       {tab === 'support' && <Support merchantId={merchantId} lang={lang} />}

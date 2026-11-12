@@ -49,29 +49,20 @@ export function WalletPanel({ membershipId, lang }: { membershipId: string; lang
     android = isAndroid();
   const apple = !!wallets?.apple && iphone,
     google = !!wallets?.google && android;
+  if (!wallets) return null;
   return (
-    <section className="panel wallet-panel">
+    <section className={'panel wallet-panel' + (apple || google ? ' wallet-panel-ready' : '')}>
       <h2>{ar ? 'كارتك في Wallet' : 'Your card in Wallet'}</h2>
       {apple || google ? (
         <>
-          <p className="muted">
-            {ar
-              ? 'احفظ كارتك باسمك، وشوف رصيدك ومكافأتك من المحفظة. الكارت بيتحدث بعد كل ختم.'
-              : 'Keep your named card, stamp balance and reward in your wallet. It updates after every stamp.'}
-          </p>
           <div className="wallet-badges">
             {apple && <WalletButton provider="apple" membershipId={membershipId} lang={lang} />}
             {google && <WalletButton provider="google" membershipId={membershipId} lang={lang} />}
           </div>
           <p className="muted small">
             {ar
-              ? 'وقت الزيارة، المس ستيكر المحل أو امسح QR بتاعه، وورّي الكود اللي هيظهر للكاشير. رابط كارتك موجود كمان في تفاصيل المحفظة.'
-              : 'At the counter, tap the shop tag or scan its QR, then show the fresh code to the cashier. You can also open your card from your wallet’s pass details.'}
-          </p>
-          <p className="muted small">
-            {ar
-              ? 'الإضافة بتشارك اسمك وبيانات الكارت مع مزود المحفظة اللي اخترته.'
-              : 'Adding shares your name and card details with your chosen wallet provider.'}
+              ? 'بيتحدّث لوحده بعد كل ختم. الإضافة بتشارك اسمك وبيانات الكارت مع مزود المحفظة.'
+              : 'It updates after every stamp. Adding shares your name and card details with your wallet provider.'}
           </p>
         </>
       ) : wallets?.apple || wallets?.google ? (

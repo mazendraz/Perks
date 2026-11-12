@@ -164,8 +164,11 @@ test('a customer downloads a signed pass for their own card only', async () => {
   assert.equal(pass.storeCard.headerFields[0].value, '2/5');
   assert.equal(pass.barcodes[0].format, 'PKBarcodeFormatQR');
   assert.equal(pass.barcodes[0].message, origin + '/customer/' + m.id + '?wallet=1');
-  assert.equal(pass.storeCard.secondaryFields[0].value, 'عميل والت');
-  assert.equal(pass.storeCard.auxiliaryFields[0].value, m.rewardTitle);
+  assert.equal(
+    pass.storeCard.backFields.find((field: { key: string }) => field.key === 'member').value,
+    'عميل والت',
+  );
+  assert.equal(pass.storeCard.secondaryFields[0].value, m.rewardTitle);
   const stripMetadata = await (
     await import('sharp')
   )

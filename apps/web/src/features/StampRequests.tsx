@@ -5,6 +5,11 @@ import { useAutoStampRequest } from '../useAutoStampRequest.js';
 import { useEffect, useState, useRef } from 'react';
 import type { Language, SavedCard } from '../../../../packages/contracts/src/index.js';
 import { api, errorText } from '../api.js';
+export interface VisitNotice {
+  tone: 'info' | 'error';
+  text: string;
+  retry?: () => void;
+}
 interface CustomerRequest {
   id: string;
   membership_id: string;
@@ -19,10 +24,14 @@ export function CustomerRequests({
   card,
   lang,
   onPending,
+  onAwarded,
+  onNotice,
 }: {
   card: SavedCard;
   lang: Language;
   onPending?: (pending: boolean) => void;
+  onAwarded?: () => Promise<void> | void;
+  onNotice?: (notice: VisitNotice | null) => void;
 }) {
   const ar = lang === 'ar',
     [branches, setBranches] = useState<{ id: string; name: string }[]>([]),
@@ -42,14 +51,25 @@ export function CustomerRequests({
   };
   const loadGeneration = useRef(0);
   useLiveRefresh('/me/events', load);
-  useAutoStampRequest(
+  const visit = useAutoStampRequest(
     card,
     branch,
     branches.some((b) => b.id === branch),
     lang,
     load,
-    setError,
+    async () => {
+      await onAwarded?.();
+    },
   );
+  // The visit result sits under the card, where the customer is already looking.
+  useEffect(() => {
+    onNotice?.(
+      visit.notice
+        ? { ...visit.notice, retry: visit.notice.retry ? visit.retry : undefined }
+        : null,
+    );
+  }, [visit.notice]);
+  useEffect(() => () => onNotice?.(null), [card.id]);
   useEffect(() => {
     let alive = true;
     setRequests([]);

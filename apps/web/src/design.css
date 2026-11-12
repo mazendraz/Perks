@@ -3963,3 +3963,22 @@ input.nq-phone-input {
   background: var(--ink);
   color: #fff;
 }
+
+.cards-grid .card-open,
+.membership-aside,
+.card-member-line > div:first-child,
+.card-reward-line > div {
+  min-width: 0;
+}
+:is(.cards-grid, .membership-aside) :is(.card-alias, .card-reward) {
+  overflow-wrap: anywhere;
+}
+:is(.cards-grid, .membership-aside) .card-overline {
+  margin-bottom: 10px;
+}
+:is(.cards-grid, .membership-aside) .card-member-line {
+  margin-block: 12px;
+}
+.install-card-link + .cards-grid {
+  margin-block-start: 16px;
+}

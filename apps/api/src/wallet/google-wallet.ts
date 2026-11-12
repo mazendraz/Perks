@@ -43,6 +43,8 @@ export const stripVersion = (card: WalletCard) =>
         card.display_balance,
         card.primary_color,
         card.accent_color,
+        card.template,
+        card.id,
         card.stamp_shape,
         card.stamp_icon,
         card.stamp_style,

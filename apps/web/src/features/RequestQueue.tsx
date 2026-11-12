@@ -10,6 +10,8 @@ interface Request {
   branch_id: string;
   alias: string;
   max_per_tx: number;
+  default_stamps: number;
+  allow_multiple: boolean;
   expires_at: string;
   code?: string;
 }
@@ -255,7 +257,7 @@ export function CashierRequests({
             award: {
               membershipId: row.membership_id,
               branchId: branch,
-              quantity: quantities[row.id] ?? 1,
+              quantity: quantities[row.id] ?? row.default_stamps,
               purchaseReference: {
                 namespace: 'manual',
                 reference: receipts[row.id] ?? '',
@@ -444,7 +446,7 @@ export function CashierRequests({
           command = pending?.request.id === row.id ? pending : undefined;
         const quantity = command?.body.approve
           ? command.body.award.quantity
-          : (quantities[row.id] ?? 1);
+          : (quantities[row.id] ?? row.default_stamps);
         const receipt = command?.body.approve
           ? command.body.award.purchaseReference.reference
           : (receipts[row.id] ?? '');
@@ -485,7 +487,7 @@ export function CashierRequests({
                   type="button"
                   className="secondary"
                   aria-label={ar ? 'قلل الأختام' : 'Fewer stamps'}
-                  disabled={locked || quantity <= 1}
+                  disabled={locked || !row.allow_multiple || quantity <= 1}
                   onClick={() => setQuantities({ ...quantities, [row.id]: quantity - 1 })}
                 >
                   −
@@ -495,7 +497,11 @@ export function CashierRequests({
                   type="button"
                   className="secondary"
                   aria-label={ar ? 'زود الأختام' : 'More stamps'}
-                  disabled={locked || quantity >= Math.min(row.max_per_tx, grant.max_qty)}
+                  disabled={
+                    locked ||
+                    !row.allow_multiple ||
+                    quantity >= Math.min(row.max_per_tx, grant.max_qty)
+                  }
                   onClick={() => setQuantities({ ...quantities, [row.id]: quantity + 1 })}
                 >
                   +

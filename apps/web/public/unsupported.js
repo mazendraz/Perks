@@ -25,23 +25,29 @@
   }
   lang =
     saved === 'ar' || saved === 'en' ? saved : lang.toLowerCase().indexOf('ar') === 0 ? 'ar' : 'en';
-  function show(offline) {
+  function show(reason) {
     var element = document.getElementById('browser-fallback');
     if (!element) return;
     document.documentElement.lang = lang;
     document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
-    element.querySelector('p').textContent = offline
-      ? lang === 'ar'
-        ? 'مفيش نت دلوقتي. وصّل النت وجرب تاني.'
-        : 'You’re offline. Reconnect and try again.'
-      : lang === 'ar'
-        ? 'حدّث المتصفح أو افتح من Chrome.'
-        : 'Update your browser or open in Chrome.';
+    element.querySelector('p').textContent =
+      reason === 'offline'
+        ? lang === 'ar'
+          ? 'مفيش نت دلوقتي. وصّل النت وجرب تاني.'
+          : 'You’re offline. Reconnect and try again.'
+        : reason === 'slow'
+          ? lang === 'ar'
+            ? 'الصفحة بتحمّل ببطء. اتأكد من النت وحدّث الصفحة.'
+            : 'The page is loading slowly. Check your connection and reload.'
+          : lang === 'ar'
+            ? 'حدّث المتصفح أو افتح من Chrome.'
+            : 'Update your browser or open in Chrome.';
     element.hidden = false;
   }
-  if (old) show(false);
+  if (old) show('old');
   setTimeout(function () {
     if (!document.documentElement.hasAttribute('data-nuqta-ready'))
-      show(navigator.onLine === false);
+      // A modern browser that has not started yet is slow or offline, not outdated.
+      show(navigator.onLine === false ? 'offline' : 'slow');
   }, 20000);
 })();

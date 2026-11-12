@@ -181,7 +181,7 @@ export function enrollmentModule(app: FastifyInstance, pools: Pools, c: Config) 
         );
         const r = (
           await db.query(
-            'SELECT t.id,t.source_presentation_id,t.expires_at,t.purpose,t.created_by,t.session_id,t.branch_id,m.id AS membership_id,m.status,m.program_version_id,p.alias,a.balance,a.revision,v.threshold,v.reward_title,v.max_per_tx FROM presentation_tokens t JOIN memberships m ON m.id=t.membership_id AND m.merchant_id=t.merchant_id JOIN tenant_customer_profiles p ON p.id=m.profile_id JOIN loyalty_accounts a ON a.membership_id=m.id JOIN program_versions v ON v.id=m.program_version_id WHERE t.token_hash=$1 AND t.merchant_id=$2 AND t.expires_at>clock_timestamp()',
+            'SELECT t.id,t.source_presentation_id,t.expires_at,t.purpose,t.created_by,t.session_id,t.branch_id,m.id AS membership_id,m.status,m.program_version_id,p.alias,a.balance,a.revision,v.threshold,v.reward_title,least(v.max_per_tx,CASE WHEN cs.allow_multiple THEN cs.max_stamps_per_collection ELSE cs.default_stamps END) AS max_per_tx,cs.default_stamps,cs.allow_multiple FROM presentation_tokens t JOIN stamp_collection_settings cs ON cs.merchant_id=t.merchant_id JOIN memberships m ON m.id=t.membership_id AND m.merchant_id=t.merchant_id JOIN tenant_customer_profiles p ON p.id=m.profile_id JOIN loyalty_accounts a ON a.membership_id=m.id JOIN program_versions v ON v.id=m.program_version_id WHERE t.token_hash=$1 AND t.merchant_id=$2 AND t.expires_at>clock_timestamp()',
             [tokenHash(token), body.merchantId],
           )
         ).rows[0];
@@ -233,6 +233,8 @@ export function enrollmentModule(app: FastifyInstance, pools: Pools, c: Config) 
             rewardTitle: r.reward_title,
             revision: r.revision,
             maxPerTx: r.max_per_tx,
+            defaultStamps: r.default_stamps,
+            allowMultiple: r.allow_multiple,
           },
           rewards,
           presentationContext: 'NQP:' + proof,

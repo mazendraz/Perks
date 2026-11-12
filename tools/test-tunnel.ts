@@ -127,7 +127,8 @@ try {
     assert.ok(response.status >= 400, path);
     assert.ok(!(await response.text()).includes(canary));
   }
-  assert.equal((await request('/src/main.tsx')).status, 200);
+  assert.ok((await request('/src/main.tsx')).status >= 400, 'source modules are not served');
+  assert.match(await (await request('/')).text(), /assets\//, 'the phone gets the built bundle');
   pass(
     'Private canary, environment, deployment scripts and docs cannot be served through Vite, including encoded hidden paths',
   );

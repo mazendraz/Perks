@@ -21,6 +21,9 @@ interface Member {
   rewardTitle: string;
   revision: number;
   maxPerTx: number;
+  // The shop's stamps per visit; the starting quantity, and the only one when multiple stamps are off.
+  defaultStamps: number;
+  allowMultiple: boolean;
 }
 interface PendingAward {
   key: string;
@@ -521,7 +524,7 @@ export function CashierPage({ grant, lang }: { grant: Grant; lang: Language }) {
             <button
               className="primary full"
               onClick={() => {
-                setQty(1);
+                setQty(member.defaultStamps);
                 setReceipt('');
                 setStep('stamp');
               }}
@@ -579,6 +582,7 @@ export function CashierPage({ grant, lang }: { grant: Grant; lang: Language }) {
             <button
               type="button"
               className="secondary"
+              disabled={!member.allowMultiple || qty <= 1}
               aria-label={ar ? 'تقليل الكمية' : 'Decrease quantity'}
               onClick={() => setQty((q) => Math.max(1, q - 1))}
             >
@@ -588,6 +592,7 @@ export function CashierPage({ grant, lang }: { grant: Grant; lang: Language }) {
             <button
               type="button"
               className="secondary"
+              disabled={!member.allowMultiple || qty >= Math.min(grant.max_qty, member.maxPerTx)}
               aria-label={ar ? 'زيادة الكمية' : 'Increase quantity'}
               onClick={() =>
                 setQty((q) => Math.min(Math.min(grant.max_qty, member.maxPerTx), q + 1))

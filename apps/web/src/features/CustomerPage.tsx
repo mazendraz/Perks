@@ -3,6 +3,7 @@ import type { LegalNotice } from '../../../../packages/contracts/src/legal.js';
 import { Select } from '../controls/Select.js';
 import { CustomerContact } from './CustomerOutreach.js';
 import { FieldErrors, fieldProps } from '../FieldErrors.js';
+import type { VisitNotice } from './StampRequests.js';
 import { CustomerRequests } from './StampRequests.js';
 import { useLiveRefresh } from '../live-events.js';
 import { RefreshQueue } from '../refresh-queue.js';
@@ -314,8 +315,8 @@ export function EnrollmentPage({
               <p>{info.programs.find((p) => p.id === program)?.rewardTerms}</p>
               <p>
                 {ar
-                  ? 'بنحفظ اسمك ورقمك للكارت واسترجاعه بطلبك، وبنربطه بالجهاز ده. التسجيل مش موافقة على التسويق.'
-                  : 'Your name and number are used for your card and recovery you request. The card is linked to this device. Registration does not opt you into marketing.'}
+                  ? 'بنحفظ اسمك ورقمك للكارت واسترجاعه بطلبك، وبنربطه بالجهاز ده. ممكن نستخدم موقعك لحظة السكان بس لتأكيد الزيارة، ومش بنحفظه. التسجيل مش موافقة على التسويق.'
+                  : 'Your name and number are used for your card and recovery you request. The card is linked to this device. Your location may be used only at the moment you scan, to confirm the visit, and is never stored. Registration does not opt you into marketing.'}
               </p>
               <p className="muted">
                 {ar
@@ -445,6 +446,7 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
     [tab, setTab] = useState<'card' | 'history' | 'preferences'>('card'),
     [preferences, setPreferences] = useState<{ channel: string; granted: boolean }[]>([]);
   const [waiting, setWaiting] = useState(false);
+  const [visitNotice, setVisitNotice] = useState<VisitNotice | null>(null);
   const preferenceGeneration = useRef(0);
   const qrEpoch = useRef(0);
   const loadGeneration = useRef(0);
@@ -695,12 +697,10 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
         <>
           <div className="page-heading">
             <div>
-              <span className="eyebrow">
-                {ar ? 'كل كارت له رصيده' : 'Each card has its own progress'}
-              </span>
               <h1>{ar ? 'كروتي' : 'My cards'}</h1>
             </div>
           </div>
+          <InstallCard lang={lang} />
           <div className="cards-grid">
             {cards.map((c) => (
               <button
@@ -739,7 +739,21 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
                 waiting={waiting}
                 reveal={new URLSearchParams(location.search).get('new') === '1'}
               />
-              <InstallCard card={card} lang={lang} qrOpen={!!qr} />
+              {visitNotice && (
+                <div
+                  className={
+                    'notice collection-notice' + (visitNotice.tone === 'error' ? ' error' : '')
+                  }
+                  role="status"
+                >
+                  <p>{visitNotice.text}</p>
+                  {visitNotice.retry && (
+                    <button className="secondary small" onClick={visitNotice.retry}>
+                      {ar ? 'جرّب تاني' : 'Try again'}
+                    </button>
+                  )}
+                </div>
+              )}
               <div className="tabbar">
                 <button className={tab === 'card' ? 'active' : ''} onClick={() => setTab('card')}>
                   {ar ? 'الكارت' : 'Card'}
@@ -781,6 +795,7 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
                       <ActionLabel icon="clock">{ar ? 'آخر نشاط' : 'Recent activity'}</ActionLabel>
                     </button>
                   </div>
+                  <WalletPanel membershipId={card.id} lang={lang} />
                   {qr && !holder && (
                     <CustomerCode
                       qr={qr}
@@ -834,8 +849,13 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
                       </p>
                     )}
                   </section>
-                  <CustomerRequests card={card} lang={lang} onPending={setWaiting} />
-                  <WalletPanel membershipId={card.id} lang={lang} />
+                  <CustomerRequests
+                    card={card}
+                    lang={lang}
+                    onPending={setWaiting}
+                    onAwarded={load}
+                    onNotice={setVisitNotice}
+                  />
                 </>
               )}
               {tab === 'history' && (

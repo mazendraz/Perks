@@ -29,6 +29,9 @@ import {
   redemptionOutput,
   requestDecisionInput,
   stampRequestInput,
+  stampCollectionInput,
+  collectionSettingsInput,
+  branchPositionInput,
   preferenceInput,
   failureOutput,
   draftOutput,
@@ -125,6 +128,16 @@ const contracts: Record<string, Contract> = {
   },
   'POST /api/v1/me/experience': { body: experienceInput, key: true },
   'POST /api/v1/me/stamp-requests': { body: stampRequestInput, key: true },
+  'POST /api/v1/me/stamp-collections': { body: stampCollectionInput, key: true },
+  'PATCH /api/v1/platform/merchants/:m/stamp-collection-settings': {
+    body: collectionSettingsInput,
+    revision: true,
+  },
+  'PUT /api/v1/platform/merchants/:m/branches/:b/position': { body: branchPositionInput },
+  'POST /api/v1/platform/maps/resolve': {
+    body: z.object({ url: z.string().max(300) }).strict(),
+    response: z.object({ latitude: z.number(), longitude: z.number() }),
+  },
   'PATCH /api/v1/merchants/:m/stamp-request-settings': {
     body: z.object({ dailyLimit: z.number().int().min(1).max(100) }).strict(),
     revision: true,

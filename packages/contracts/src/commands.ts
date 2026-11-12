@@ -48,6 +48,68 @@ export const stampRequestInput = z
     placementCode: z.string().min(20).max(80).optional(),
   })
   .strict();
+// A sticker tap or scan. Location is sent only after the server asked for it.
+export const stampCollectionInput = z
+  .object({
+    membershipId: z.uuid(),
+    branchId: z.uuid(),
+    placementCode: z.string().min(20).max(80),
+    location: z
+      .object({
+        latitude: z.number().min(-90).max(90),
+        longitude: z.number().min(-180).max(180),
+        accuracy: z.number().positive().max(100000),
+      })
+      .strict()
+      .optional(),
+  })
+  .strict();
+// Independent switches. Every combination has one defined behaviour; the refinements
+// reject only combinations that would hand out stamps with no control at all.
+export const collectionSettingsInput = z
+  .object({
+    requireLocation: z.boolean(),
+    requireCashier: z.boolean(),
+    maxAccuracy: z.number().int().min(20).max(500),
+    collectionsPerDay: z.number().int().min(1).max(50).nullable(),
+    stampsPerDay: z.number().int().min(1).max(200).nullable(),
+    limitWindow: z.enum(['local_day', 'rolling_24h']),
+    cooldownMinutes: z.number().int().min(0).max(1440),
+    defaultStamps: z.number().int().min(1).max(10),
+    allowMultiple: z.boolean(),
+    maxStampsPerCollection: z.number().int().min(1).max(100),
+    welcomeStamps: z.number().int().min(0).max(10),
+    autoBranchHourlyCap: z.number().int().min(1).max(1000),
+    openCollectionAcknowledged: z.boolean(),
+  })
+  .strict()
+  .superRefine((v, ctx) => {
+    const issue = (path: string, message: string) =>
+      ctx.addIssue({ code: 'custom', path: [path], message });
+    if (!v.requireCashier && v.collectionsPerDay === null)
+      issue('collectionsPerDay', 'Automatic stamps need a daily collection limit.');
+    if (!v.requireCashier && v.defaultStamps > 3)
+      issue('defaultStamps', 'Automatic collections give at most 3 stamps.');
+    if (!v.requireCashier && !v.requireLocation && !v.openCollectionAcknowledged)
+      issue('openCollectionAcknowledged', 'Confirm the shop accepts unverified collection.');
+    if (v.defaultStamps > v.maxStampsPerCollection)
+      issue('maxStampsPerCollection', 'The maximum cannot be below the default.');
+    if (v.stampsPerDay !== null && v.stampsPerDay < v.defaultStamps)
+      issue('stampsPerDay', 'The daily stamp limit cannot be below one collection.');
+  });
+export type CollectionSettings = z.infer<typeof collectionSettingsInput>;
+export const branchPositionInput = z.union([
+  z
+    .object({
+      latitude: z.number().min(-90).max(90),
+      longitude: z.number().min(-180).max(180),
+      radius: z.number().int().min(20).max(1000),
+    })
+    .strict(),
+  z
+    .object({ latitude: z.null(), longitude: z.null(), radius: z.number().int().min(20).max(1000) })
+    .strict(),
+]);
 export const draftInput = z
   .object({
     data: z.record(z.string(), z.unknown()).superRefine((value, ctx) => {

@@ -3,8 +3,12 @@ import { readFileSync } from 'node:fs';
 import { crc32 } from 'node:zlib';
 import forge from 'node-forge';
 import sharp from 'sharp';
-import type { StampIcon, StampShape } from '../../../../packages/contracts/src/branding.js';
-import { inkFor, stripSvg } from './pass-artwork.js';
+import type {
+  CardTemplate,
+  StampIcon,
+  StampShape,
+} from '../../../../packages/contracts/src/branding.js';
+import { inkFor, mix, stripSvg } from './pass-artwork.js';
 export { inkFor, stripSvg } from './pass-artwork.js';
 import { APPLE_SERVICE_PREFIX } from './constants.js';
 import { perksIconSvg } from '../../../../packages/domain/src/brand.js';
@@ -20,6 +24,7 @@ export interface WalletCard {
   pending_rewards: number;
   primary_color: string;
   accent_color: string;
+  template?: CardTemplate;
   stamp_shape: StampShape;
   stamp_icon: StampIcon;
   stamp_style: 'solid' | 'outline';
@@ -100,7 +105,9 @@ export function texts(card: WalletCard) {
       reward_label: 'المكافأة',
       member_label: 'باسم',
       member_value: 'عميل Perks',
-      qr_hint: 'افتح كارتك لعرض كود الختم المتجدد',
+      qr_hint: 'امسح الكود يفتح كارتك',
+      left_label: ready ? 'مكافأتك' : 'فاضل',
+      left_value: !card.active ? 'مقفول' : ready ? 'جاهزة 🎁' : arStamps(left),
       status_label: 'حالة الكارت',
       status_value: !card.active
         ? 'الكارت ده اتقفل'
@@ -119,7 +126,13 @@ export function texts(card: WalletCard) {
       reward_label: 'Reward',
       member_label: 'Member',
       member_value: 'Perks member',
-      qr_hint: 'Open your card for a fresh cashier code',
+      qr_hint: 'Scan to open your card',
+      left_label: ready ? 'Your reward' : 'To go',
+      left_value: !card.active
+        ? 'Closed'
+        : ready
+          ? 'Ready 🎁'
+          : `${left} ${left === 1 ? 'stamp' : 'stamps'}`,
       status_label: 'Card status',
       status_value: !card.active
         ? 'This card is closed'
@@ -170,14 +183,15 @@ export function passJson(
     logoText: card.merchant_name,
     backgroundColor: rgb(bg),
     foregroundColor: rgb(ink),
-    labelColor: rgb(ink === '#ffffff' ? '#cfd2dc' : '#3d4a47'),
+    // Labels sit between the ink and the card colour so they read as quiet captions.
+    labelColor: rgb(mix(ink, bg, ink === '#ffffff' ? 0.36 : 0.3)),
     sharingProhibited: true,
     barcodes: [
       {
         format: 'PKBarcodeFormatQR',
         message: cardUrl,
         messageEncoding: 'iso-8859-1',
-        altText: card.merchant_name,
+        altText: 'qr_hint',
       },
     ],
     ...(card.active ? {} : { voided: true }),
@@ -190,15 +204,21 @@ export function passJson(
           textAlignment: 'PKTextAlignmentRight',
         },
       ],
-      secondaryFields: [
+      secondaryFields: [{ key: 'reward', label: 'reward_label', value: card.reward_title }],
+      auxiliaryFields: [
+        {
+          key: 'left',
+          label: 'left_label',
+          value: 'left_value',
+          textAlignment: 'PKTextAlignmentRight',
+        },
+      ],
+      backFields: [
         {
           key: 'member',
           label: 'member_label',
           value: card.active && card.customer_name ? card.customer_name : 'member_value',
         },
-      ],
-      auxiliaryFields: [{ key: 'reward', label: 'reward_label', value: card.reward_title }],
-      backFields: [
         {
           key: 'status',
           label: 'status_label',
@@ -288,6 +308,49 @@ async function png(svg: string | Buffer, width: number, height?: number) {
     .png()
     .toBuffer();
 }
+const logoSizes = [
+  ['logo.png', 50],
+  ['logo@2x.png', 100],
+  ['logo@3x.png', 150],
+] as const;
+// Wallet shows the logo at up to 160×50 points beside the shop name. A square logo is drawn
+// as a rounded tile (so a white logo background reads as an app-icon, not a pasted box);
+// a wide wordmark keeps its own shape.
+export async function walletLogo(source: Buffer, h: number) {
+  const meta = await sharp(source).metadata(),
+    ratio = (meta.width || 1) / (meta.height || 1),
+    inner = Math.round(h * 0.84),
+    pad = h - inner;
+  if (ratio > 1.3)
+    return sharp(source)
+      .resize({ height: inner, width: Math.round(h * 3), fit: 'inside' })
+      .extend({
+        top: Math.ceil(pad / 2),
+        bottom: Math.floor(pad / 2),
+        background: { r: 0, g: 0, b: 0, alpha: 0 },
+      })
+      .png()
+      .toBuffer();
+  const tile = await sharp(source)
+    .resize(inner, inner, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
+    .ensureAlpha()
+    .png()
+    .toBuffer();
+  const mask = Buffer.from(
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${inner}" height="${inner}"><rect width="${inner}" height="${inner}" rx="${(inner * 0.24).toFixed(1)}"/></svg>`,
+  );
+  return sharp(tile)
+    .composite([{ input: mask, blend: 'dest-in' }])
+    .extend({
+      top: Math.ceil(pad / 2),
+      bottom: Math.floor(pad / 2),
+      left: 0,
+      right: Math.round(pad / 2),
+      background: { r: 0, g: 0, b: 0, alpha: 0 },
+    })
+    .png()
+    .toBuffer();
+}
 export async function buildPkpass(
   card: WalletCard,
   options: {
@@ -308,32 +371,14 @@ export async function buildPkpass(
     ['strip@2x.png', await png(stripSvg(card, 2), 750, 288)],
     ['strip@3x.png', await png(stripSvg(card, 3), 1125, 432)],
   ];
-  if (options.logo)
-    for (const [name, h] of [
-      ['logo.png', 50],
-      ['logo@2x.png', 100],
-      ['logo@3x.png', 150],
-    ] as const)
-      files.push([
-        name,
-        await sharp(options.logo)
-          .resize({
-            height: Math.round(h * 0.76),
-            width: Math.round(h * 0.76),
-            fit: 'contain',
-            background: { r: 0, g: 0, b: 0, alpha: 0 },
-          })
-          .extend({
-            top: Math.ceil(h * 0.12),
-            bottom: Math.floor(h * 0.12),
-            left: Math.ceil(h * 0.12),
-            right: Math.floor(h * 0.12),
-            background: { r: 0, g: 0, b: 0, alpha: 0 },
-          })
-          .png()
-          .toBuffer(),
-      ]);
+  if (options.logo) for (const [name, h] of logoSizes) files.push([name, await walletLogo(options.logo, h)]);
   const t = texts(card);
+  // Arabic phones fill the stamps from the right, like the Arabic web card.
+  for (const scale of [1, 2, 3])
+    files.push([
+      `ar.lproj/strip${scale > 1 ? '@' + scale + 'x' : ''}.png`,
+      await png(stripSvg(card, scale, 144, true), 375 * scale, 144 * scale),
+    ]);
   files.push(
     ['ar.lproj/pass.strings', stringsFile(t.ar)],
     ['en.lproj/pass.strings', stringsFile(t.en)],

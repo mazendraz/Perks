@@ -27,6 +27,7 @@ import { enrollmentModule } from './modules/enrollment.js';
 import { loyaltyModule } from './modules/loyalty.js';
 import { rewardsModule } from './modules/rewards.js';
 import { reportingModule } from './modules/reporting.js';
+import { collectionModule } from './modules/collection.js';
 import { requestsModule } from './modules/requests.js';
 import { customersModule } from './modules/customers.js';
 import { materialsModule } from './modules/materials.js';
@@ -41,6 +42,8 @@ export async function buildApp(
   options: {
     logStream?: { write: (line: string) => void };
     monitoringProbes?: MonitoringProbes;
+    // Lets tests answer Google Maps short links without the network.
+    mapsFetch?: typeof fetch;
   } = {},
 ) {
   const c = readConfig(overrides),
@@ -153,6 +156,7 @@ export async function buildApp(
   rewardsModule(app, pools, c);
   reportingModule(app, pools);
   requestsModule(app, pools, c);
+  collectionModule(app, pools, c, options.mapsFetch);
   liveEventsModule(app, pools, c);
   experienceModule(app, pools);
   customerIdentityModule(app, pools, c);

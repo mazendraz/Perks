@@ -1,37 +1,20 @@
-import { useEffect, useRef, useState } from 'react';
-import type { CardData, Language } from '../../../../packages/contracts/src/index.js';
-import { ActionLabel, Icon } from '../../../../packages/ui/src/Icon.js';
+import { useEffect, useState } from 'react';
+import type { Language } from '../../../../packages/contracts/src/index.js';
+import { ActionLabel } from '../../../../packages/ui/src/Icon.js';
 import {
-  installOffers,
-  rememberInstallOffer,
   installPromptReady,
   isInstalled,
   promptInstall,
   subscribeInstall,
 } from '../install-prompt.js';
-export function InstallCard({
-  card,
-  lang,
-  qrOpen,
-}: {
-  card: CardData;
-  lang: Language;
-  qrOpen: boolean;
-}) {
+export function InstallCard({ lang }: { lang: Language }) {
   const ar = lang === 'ar',
     ios =
       /iPhone|iPad|iPod/.test(navigator.userAgent) ||
       (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-  const [banner, setBanner] = useState(false),
-    [guide, setGuide] = useState(false),
+  const [guide, setGuide] = useState(false),
     [ready, setReady] = useState(installPromptReady),
     [installed, setInstalled] = useState(isInstalled);
-  const previous = useRef({
-    id: card.id,
-    revision: card.revision,
-    balance: card.balance,
-    rewards: card.pending_rewards ?? 0,
-  });
   useEffect(
     () =>
       subscribeInstall(() => {
@@ -40,48 +23,12 @@ export function InstallCard({
       }),
     [],
   );
-  useEffect(() => {
-    const old = previous.current;
-    previous.current = {
-      id: card.id,
-      revision: card.revision,
-      balance: card.balance,
-      rewards: card.pending_rewards ?? 0,
-    };
-    if (installed) {
-      setBanner(false);
-      setGuide(false);
-      return;
-    }
-    const offers = installOffers();
-    if (!offers.firstCard) {
-      rememberInstallOffer('firstCard');
-      setBanner(true);
-    } else if (
-      !offers.firstStamp &&
-      old.id === card.id &&
-      card.revision > old.revision &&
-      (card.balance > old.balance || (card.pending_rewards ?? 0) > old.rewards)
-    ) {
-      rememberInstallOffer('firstStamp');
-      if (!banner) setBanner(true);
-    }
-  }, [card.id, card.revision, installed]);
-  useEffect(() => {
-    if (!ios || !banner || qrOpen || installed) return;
-    const timer = window.setTimeout(() => setGuide(true), 1000);
-    return () => window.clearTimeout(timer);
-  }, [ios, banner, qrOpen, installed]);
-  const close = () => {
-    setGuide(false);
-    setBanner(false);
-  };
+  const close = () => setGuide(false);
   if (installed) return null;
   const save = async () => {
     if (ready) {
       try {
         if (await promptInstall()) {
-          setBanner(false);
           return;
         }
       } catch {
@@ -92,34 +39,12 @@ export function InstallCard({
   };
   return (
     <>
-      {banner ? (
-        <aside className="install-card-offer">
-          <Icon name="cards" size={27} />
-          <div>
-            <strong>{ar ? 'كارتك دايمًا معاك' : 'Keep your card close'}</strong>
-            <p>
-              {ar
-                ? 'احفظه على الشاشة الرئيسية عشان توصله بسرعة.'
-                : 'Save it on your home screen for next time.'}
-            </p>
-            <button className="primary small" onClick={() => void save()}>
-              <ActionLabel icon="download">
-                {ar ? 'احفظ على الشاشة الرئيسية' : 'Save to home screen'}
-              </ActionLabel>
-            </button>
-            <button className="text-button" onClick={close}>
-              {ar ? 'مش دلوقتي' : 'Not now'}
-            </button>
-          </div>
-        </aside>
-      ) : (
-        <button className="text-button install-card-link" onClick={() => void save()}>
-          <ActionLabel icon="download">
-            {ar ? 'احفظ الكارت على موبايلك' : 'Save this card on your phone'}
-          </ActionLabel>
-        </button>
-      )}
-      {guide && !qrOpen && (
+      <button className="secondary install-card-link" onClick={() => void save()}>
+        <ActionLabel icon="download">
+          {ar ? 'ضيف My Cards للشاشة الرئيسية' : 'Add My Cards to home screen'}
+        </ActionLabel>
+      </button>
+      {guide && (
         <div className="modal-backdrop">
           <section
             className="dialog install-card-guide"
@@ -128,7 +53,7 @@ export function InstallCard({
             aria-labelledby="install-card-heading"
           >
             <div className="section-heading">
-              <h2 id="install-card-heading">{ar ? 'احفظ كارتك' : 'Save your card'}</h2>
+              <h2 id="install-card-heading">{ar ? 'ضيف My Cards' : 'Add My Cards'}</h2>
               <button className="secondary" data-dialog-close onClick={close}>
                 {ar ? 'إغلاق' : 'Close'}
               </button>
@@ -193,8 +118,8 @@ export function InstallCard({
             ) : (
               <p>
                 {ar
-                  ? 'من قائمة المتصفح، اختار «تثبيت التطبيق» أو «إضافة للشاشة الرئيسية». لو الخيار مش ظاهر، افتح الكارت من Chrome.'
-                  : 'Open the browser menu and choose Install app or Add to Home screen. If it is unavailable, open your card in Chrome.'}
+                  ? 'من قائمة المتصفح، اختار «تثبيت التطبيق» أو «إضافة للشاشة الرئيسية». لو الخيار مش ظاهر، افتح كروتي من Chrome.'
+                  : 'Open the browser menu and choose Install app or Add to Home screen. If it is unavailable, open My Cards in Chrome.'}
               </p>
             )}
             <button className="primary full" onClick={close}>

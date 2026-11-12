@@ -1082,3 +1082,149 @@ button[aria-busy='true']::after {
   width: auto;
   max-width: 100%;
 }
+
+/* On a phone that can save the card, the badge is the whole message. */
+.wallet-panel-ready {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  padding-block: 18px;
+  text-align: center;
+}
+.wallet-panel-ready h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+.wallet-panel-ready .wallet-badges {
+  justify-content: center;
+}
+.wallet-panel-ready .wallet-badge-button {
+  margin: 4px;
+}
+.wallet-panel-ready p {
+  margin: 0;
+  padding: 0;
+}
+.page-heading + .install-card-link {
+  margin-top: 0;
+}
+
+/* Stamp collection: super-admin rules and the customer's "no stamp this time" note. */
+.collection-settings fieldset {
+  display: grid;
+  gap: 12px;
+  margin-block: 14px;
+}
+.collection-settings label.check {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 10px;
+  font-weight: 400;
+}
+.collection-settings label.check input {
+  width: 20px;
+  min-height: 20px;
+  height: 20px;
+  margin-top: 3px;
+  flex: none;
+  accent-color: var(--brand);
+}
+.collection-settings label.check span {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.collection-settings label.check small {
+  color: #6b7180;
+}
+.collection-level.strong {
+  border-inline-start: 4px solid #2f8f5b;
+}
+.collection-level.medium {
+  border-inline-start: 4px solid #d79a1e;
+}
+.collection-level.weak {
+  border-inline-start: 4px solid #c8452f;
+}
+.branch-position {
+  display: grid;
+  gap: 10px;
+  padding-block: 14px;
+  border-top: 1px solid #e6e4df;
+}
+.collection-notice {
+  display: grid;
+  gap: 10px;
+  justify-items: start;
+}
+.collection-notice p {
+  margin: 0;
+}
+
+.position-steps {
+  margin: 0;
+  padding-inline-start: 20px;
+  display: grid;
+  gap: 4px;
+}
+.branch-position-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+.position-state {
+  font-size: 12px;
+  padding: 3px 10px;
+  border-radius: 99px;
+  background: #e6f4ec;
+  color: #1f6b43;
+  white-space: nowrap;
+}
+.position-state.missing {
+  background: #fdeceb;
+  color: #a2352a;
+}
+.range-choices {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 8px;
+}
+.range-choices button {
+  display: grid;
+  gap: 2px;
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid #dcdad4;
+  background: #fff;
+  color: inherit;
+  text-align: center;
+  min-height: 56px;
+}
+.range-choices button.active {
+  border-color: var(--brand);
+  box-shadow: inset 0 0 0 1px var(--brand);
+  background: #f5f5f1;
+}
+.range-choices small {
+  color: #6b7180;
+}
+.position-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+}
+.position-actions > * {
+  width: 100%;
+  white-space: nowrap;
+}
+.position-actions > a {
+  grid-column: 1 / -1;
+  justify-self: center;
+  width: auto;
+}
+/* Coordinates are read and compared digit by digit; keep them in Latin numerals. */
+.branch-position input[lang='en'] {
+  font-family: 'Manrope', system-ui, sans-serif;
+}

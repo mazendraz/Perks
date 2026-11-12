@@ -868,3 +868,67 @@ test('the actual identity migration preserves legacy seed accounts/cards, conver
     await db.query('DROP DATABASE ' + pg.escapeIdentifier(database) + ' WITH (FORCE)');
   }
 });
+test('a customer returning a week later with only the device cookie is recognised and collects at the sticker', async () => {
+  await db.query(
+    'UPDATE stamp_collection_settings SET require_cashier=false,require_location=false,collections_per_day=1,open_collection_acknowledged=true,welcome_stamps=1 WHERE merchant_id=$1',
+    [ids.merchantA],
+  );
+  try {
+    const first = await register('01098765432');
+    assert.equal(first.result.statusCode, 200, first.result.body);
+    const membership = first.result.json().membershipId;
+    // The welcome stamp arrives once, with the new card.
+    assert.equal(
+      (await db.query('SELECT balance FROM loyalty_accounts WHERE membership_id=$1', [membership]))
+        .rows[0].balance,
+      1,
+    );
+    const device = first.result.cookies.find((item) => item.name === '__Host-nq_device')!;
+    // A week passes: every session has expired and the phone kept only its device cookie.
+    await db.query(
+      "UPDATE sessions SET expires_at=clock_timestamp()-interval '1 day' WHERE customer_device_id=(SELECT id FROM customer_devices WHERE token_hash=$1)",
+      [tokenHash(device.value)],
+    );
+    await db.query(
+      "UPDATE customer_devices SET last_seen_at=clock_timestamp()-interval '8 days' WHERE token_hash=$1",
+      [tokenHash(device.value)],
+    );
+    const bare = {
+      origin,
+      cookie: '__Host-nq_device=' + device.value,
+      'x-nuqta-workspace': 'customer',
+    };
+    // The sticker opens the card page; its first request restores the session from the device.
+    const restored = await app.inject({ url: '/api/v1/session', headers: bare });
+    assert.equal(restored.statusCode, 200, restored.body);
+    assert.equal(restored.json().user.deviceBound, true);
+    const session = {
+      ...bare,
+      cookie: bare.cookie + '; ' + cookie(restored),
+      'x-csrf-token': restored.json().csrfToken,
+    };
+    const cards = await app.inject({ url: '/api/v1/me/memberships', headers: session });
+    assert.equal(cards.json().cards[0].id, membership);
+    const collected = await app.inject({
+      method: 'POST',
+      url: '/api/v1/me/stamp-collections',
+      headers: { ...session, ...key() },
+      payload: { membershipId: membership, branchId: ids.branchA, placementCode: code },
+    });
+    assert.equal(collected.statusCode, 200, collected.body);
+    assert.equal(collected.json().outcome, 'awarded');
+    assert.equal(collected.json().balanceAfter, 2);
+    // The device stays valid for another year from this visit.
+    const renewed = (
+      await db.query('SELECT expires_at FROM customer_devices WHERE token_hash=$1', [
+        tokenHash(device.value),
+      ])
+    ).rows[0].expires_at as Date;
+    assert.ok(renewed.getTime() - Date.now() > 360 * 86400_000);
+  } finally {
+    await db.query(
+      'UPDATE stamp_collection_settings SET require_cashier=true,collections_per_day=NULL,open_collection_acknowledged=false,welcome_stamps=0 WHERE merchant_id=$1',
+      [ids.merchantA],
+    );
+  }
+});

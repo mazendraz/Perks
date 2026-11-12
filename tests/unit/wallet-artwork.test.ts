@@ -35,7 +35,7 @@ test('native Wallet strip has the correct aspect ratio and keeps every real stam
         assert.equal((svg.match(/data-slot=/g) || []).length, threshold);
         assert.equal((svg.match(/data-filled="true"/g) || []).length, threshold);
         assert.ok(!svg.includes(card.customer_name!));
-        const defs = svg.match(/<defs>[\s\S]*?<\/defs>/)![0];
+        const defs = svg.match(/<defs>[\s\S]*?<\/defs>/)?.[0] ?? '';
         const slots = svg.slice(svg.indexOf('<g data-slot='), svg.lastIndexOf('</svg>'));
         const raster = await sharp(
           Buffer.from(

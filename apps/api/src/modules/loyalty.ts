@@ -101,6 +101,30 @@ export async function award(
         409,
       );
       requireCondition(p.quantity <= account.max_per_tx, 'QTY_OVER_LIMIT', 422);
+      // The shop's collection rules bind the cashier too: how many stamps at once, and how often.
+      const rules = (
+        await db.query(
+          'SELECT default_stamps,allow_multiple,max_stamps_per_collection FROM stamp_collection_settings WHERE merchant_id=$1',
+          [merchantId],
+        )
+      ).rows[0];
+      requireCondition(
+        rules.allow_multiple
+          ? p.quantity <= rules.max_stamps_per_collection
+          : p.quantity === rules.default_stamps,
+        'QTY_OVER_LIMIT',
+        422,
+      );
+      requireCondition(
+        (
+          await db.query('SELECT collection_eligibility($1,$2) AS value', [
+            p.membershipId,
+            p.quantity,
+          ])
+        ).rows[0].value.eligible,
+        'COLLECTION_LIMIT',
+        409,
+      );
       requireCondition(
         (
           await db.query(

@@ -443,8 +443,11 @@ try {
       project.name +
         ': first NFC scan needs only name/phone/terms/submit, preserves context, reveals the card in 720ms and requests one first stamp without granting it',
     );
+    const memberId = new URL(page.url()).pathname.split('/').at(-1)!;
+    await page.getByRole('button', { name: 'Back to my cards', exact: true }).click();
     if (project.type === webkit) {
-      const guide = page.getByRole('dialog', { name: 'Save your card', exact: true });
+      await page.getByRole('button', { name: 'Add My Cards to home screen', exact: true }).click();
+      const guide = page.getByRole('dialog', { name: 'Add My Cards', exact: true });
       await guide.waitFor();
       assert.equal(await guide.getByRole('img').count(), 2);
       await guide.getByRole('button', { name: 'Got it', exact: true }).click();
@@ -463,7 +466,7 @@ try {
         });
         window.dispatchEvent(event);
       });
-      await page.getByRole('button', { name: 'Save to home screen', exact: true }).click();
+      await page.getByRole('button', { name: 'Add My Cards to home screen', exact: true }).click();
       assert.equal(
         await page.evaluate(
           () => (window as unknown as { installTest: { calls: number } }).installTest.calls,
@@ -475,7 +478,7 @@ try {
       project.name +
         ': first home-screen offer uses the native prompt or the two-step Safari illustration',
     );
-    const memberId = new URL(page.url()).pathname.split('/').at(-1)!;
+    await page.goto(origin + '/customer/' + memberId);
     let lostRequest = false,
       expiredDuringRequest = false,
       interruptedBeforeCommit = false;
@@ -660,11 +663,7 @@ try {
     await page
       .getByRole('dialog', { name: 'Personal QR', exact: true })
       .waitFor({ state: 'hidden' });
-    if (project.type === webkit) {
-      const guide = page.getByRole('dialog', { name: 'Save your card', exact: true });
-      await guide.waitFor();
-      await guide.getByRole('button', { name: 'Got it', exact: true }).click();
-    } else await page.getByRole('button', { name: 'Not now', exact: true }).click();
+    assert.equal(await page.locator('.install-card-link,.install-card-guide').count(), 0);
     const angles = await page.locator('.filled .nq-stamp-ink').evaluateAll((elements) =>
       elements.map((el) => ({
         seed: el.getAttribute('data-ink-seed'),
@@ -674,10 +673,7 @@ try {
     await page.reload({ waitUntil: 'domcontentloaded' });
     await page.getByRole('progressbar', { name: 'Stamp progress', exact: true }).waitFor();
     assert.equal(await page.getByRole('button', { name: 'Not now', exact: true }).count(), 0);
-    assert.equal(
-      await page.getByRole('dialog', { name: 'Save your card', exact: true }).count(),
-      0,
-    );
+    assert.equal(await page.getByRole('dialog', { name: 'Add My Cards', exact: true }).count(), 0);
     assert.deepEqual(
       await page.locator('.filled .nq-stamp-ink').evaluateAll((elements) =>
         elements.map((el) => ({
@@ -689,7 +685,7 @@ try {
     );
     pass(
       project.name +
-        ': QR closes on the committed stamp, ink angles survive reload, and home-screen offers stop after the second dismissal',
+        ': QR closes on the committed stamp, ink angles survive reload, and the stamp is visible without an install prompt',
     );
     const standalone = await browser.newContext({
       ...devices[project.device],
@@ -707,9 +703,9 @@ try {
       };
     });
     const installedPage = await standalone.newPage();
-    await installedPage.goto(origin + '/customer/' + memberId);
-    await installedPage.getByRole('progressbar', { name: 'Stamp progress', exact: true }).waitFor();
-    assert.equal(await installedPage.locator('.install-card-offer,.install-card-guide').count(), 0);
+    await installedPage.goto(origin + '/customer');
+    await installedPage.locator('.card-open').first().waitFor();
+    assert.equal(await installedPage.locator('.install-card-link,.install-card-guide').count(), 0);
     await standalone.close();
     pass(
       project.name +

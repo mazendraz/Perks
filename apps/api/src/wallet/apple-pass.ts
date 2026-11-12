@@ -34,6 +34,8 @@ export interface WalletCard {
   reward_terms: string;
   active: boolean;
   earning_active: boolean;
+  reminder_ar?: string;
+  reminder_en?: string;
 }
 export interface AppleWalletSigner {
   passTypeIdentifier: string;
@@ -97,6 +99,14 @@ const escapeXml = (s: string) => s.replace(/[<>&"']/g, (ch) => '&#' + ch.charCod
 
 const arStamps = (n: number) =>
   n === 1 ? 'ختم واحد' : n === 2 ? 'ختمين' : n <= 10 ? `${n} أختام` : `${n} ختم`;
+const reminderKey = (card: WalletCard) =>
+  card.active && card.reminder_ar
+    ? 'reminder_' +
+      createHash('sha256')
+        .update(JSON.stringify([card.reminder_ar, card.reminder_en]))
+        .digest('hex')
+        .slice(0, 24)
+    : '';
 export function texts(card: WalletCard) {
   const left = Math.max(0, card.threshold - card.display_balance),
     ready = card.pending_rewards > 0;
@@ -116,6 +126,8 @@ export function texts(card: WalletCard) {
           ? 'مكافأتك جاهزة! اطلبها من الكاشير'
           : `باقي ${arStamps(left)} على المكافأة`,
       status_change: '%@',
+      reminder_label: 'رسالة من المحل',
+      ...(reminderKey(card) ? { [reminderKey(card)]: card.reminder_ar! } : {}),
       open_label: 'افتح الكارت',
       open_value: 'علشان تاخد ختم، افتح كارتك واعرض الكود للكاشير',
       terms_label: 'الشروط',
@@ -141,6 +153,8 @@ export function texts(card: WalletCard) {
           ? 'Your reward is ready! Ask the cashier'
           : `${left} ${left === 1 ? 'stamp' : 'stamps'} to your reward`,
       status_change: '%@',
+      reminder_label: 'A message from the business',
+      ...(reminderKey(card) ? { [reminderKey(card)]: card.reminder_en || card.reminder_ar! } : {}),
       open_label: 'Open your card',
       open_value: 'To get a stamp, open your card and show the code to the cashier',
       terms_label: 'Terms',
@@ -149,12 +163,19 @@ export function texts(card: WalletCard) {
     },
   };
 }
+const stringsEscape = (value: string) =>
+  value
+    .replaceAll('\\', '\\\\')
+    .replaceAll('"', '\\"')
+    .replaceAll('\r', '\\r')
+    .replaceAll('\n', '\\n')
+    .replaceAll('\t', '\\t');
 const stringsFile = (entries: Record<string, string>) =>
   Buffer.concat([
     Buffer.from([0xff, 0xfe]),
     Buffer.from(
       Object.entries(entries)
-        .map(([k, v]) => `"${k}" = "${v.replaceAll('\\', '\\\\').replaceAll('"', '\\"')}";\n`)
+        .map(([k, v]) => `"${stringsEscape(k)}" = "${stringsEscape(v)}";\n`)
         .join(''),
       'utf16le',
     ),
@@ -221,6 +242,12 @@ export function passJson(
         },
       ],
       backFields: [
+        {
+          key: 'reminder',
+          label: 'reminder_label',
+          value: reminderKey(card),
+          changeMessage: '%@',
+        },
         {
           key: 'member',
           label: 'member_label',

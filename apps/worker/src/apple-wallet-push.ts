@@ -40,6 +40,15 @@ function apnsClient(c: ServiceConfig, signer: AppleWalletSigner): Push {
     });
 }
 
+export function appleWalletPush(c: ServiceConfig): Push | null {
+  if (c.APPLE_WALLET_ENABLED !== 'true') return null;
+  if (cached === undefined) {
+    const signer = loadAppleSigner(c);
+    cached = signer ? { signer, push: apnsClient(c, signer) } : null;
+  }
+  return cached?.push ?? null;
+}
+
 // Runs inside the worker loop. Disabled unless Apple Wallet is configured.
 export async function runAppleWalletPushes(
   pool: pg.Pool,
@@ -50,12 +59,9 @@ export async function runAppleWalletPushes(
   if (!push && Date.now() - lastRun < 2000) return 0;
   lastRun = Date.now();
   if (!push) {
-    if (cached === undefined) {
-      const signer = loadAppleSigner(c);
-      cached = signer ? { signer, push: apnsClient(c, signer) } : null;
-    }
-    if (!cached) return 0;
-    push = cached.push;
+    const configured = appleWalletPush(c);
+    if (!configured) return 0;
+    push = configured;
   }
   const changes = (
     await pool.query<{ serial: string; push_tokens: string[]; active: boolean }>(

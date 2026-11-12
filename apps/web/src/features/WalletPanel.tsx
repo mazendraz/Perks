@@ -33,7 +33,15 @@ export function WalletButton({
     </a>
   );
 }
-export function WalletPanel({ membershipId, lang }: { membershipId: string; lang: Language }) {
+export function WalletPanel({
+  membershipId,
+  lang,
+  onPreferences,
+}: {
+  membershipId: string;
+  lang: Language;
+  onPreferences?: () => void;
+}) {
   const ar = lang === 'ar';
   const [wallets, setWallets] = useState<{ apple: boolean; google: boolean } | null>(null);
   useEffect(() => {
@@ -77,6 +85,11 @@ export function WalletPanel({ membershipId, lang }: { membershipId: string; lang
             ? 'الإضافة للمحفظة مش متاحة حاليًا. كارت الويب محدث ومحفوظ.'
             : 'Wallet is not available yet. Your web card stays current.'}
         </p>
+      )}
+      {(wallets.apple || wallets.google) && onPreferences && (
+        <button className="text-button" onClick={onPreferences}>
+          {ar ? 'اختار تذكيرات ورسائل المحل' : 'Choose business reminders and messages'}
+        </button>
       )}
     </section>
   );

@@ -1,7 +1,15 @@
 import { PhoneInput } from '../controls/PhoneInput.js';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import type { Language } from '../../../../packages/contracts/src/index.js';
 import { api, errorText } from '../api.js';
+import { Select } from '../controls/Select.js';
+import {
+  personalizeMessage,
+  reminderDefaults,
+  type ReminderSettings,
+  type WhatsAppPurpose,
+} from '../../../../packages/contracts/src/customer-reminders.js';
+import { CustomerReminders, purposeLabels, type ReminderConfig } from './CustomerReminders.js';
 export function WhatsAppDraft({
   merchantId,
   lang,
@@ -16,10 +24,24 @@ export function WhatsAppDraft({
     business?: boolean;
     missing?: string[];
     rewards?: number;
+    lastPurchase?: string | null;
+    businessName?: string;
+    templates?: ReminderSettings['whatsapp'];
+    inactivityDays?: number;
   };
   onClose: () => void;
 }) {
+  const templates = recipient.templates ?? reminderDefaults.whatsapp;
+  const initialPurpose: WhatsAppPurpose = recipient.rewards
+    ? 'reward'
+    : !recipient.lastPurchase
+      ? 'welcome'
+      : Date.now() - Date.parse(recipient.lastPurchase) >=
+          (recipient.inactivityDays ?? 14) * 86400000
+        ? 'inactive'
+        : 'followup';
   const ar = lang === 'ar',
+    [purpose, setPurpose] = useState<WhatsAppPurpose>(initialPurpose),
     [message, setMessage] = useState(
       recipient.business
         ? ar
@@ -35,21 +57,11 @@ export function WhatsAppDraft({
             (recipient.missing?.length
               ? ' Still to complete: ' + recipient.missing.join(', ') + '.'
               : ' Let us know if you need a hand.')
-        : recipient.rewards
-          ? ar
-            ? 'أهلًا ' +
-              recipient.name +
-              '، عندك مكافأة جاهزة على كارت الولاء. تنورنا في زيارتك الجاية.'
-            : 'Hi ' +
-              recipient.name +
-              ', you have a reward ready on your loyalty card. We look forward to your next visit.'
-          : ar
-            ? 'أهلًا ' +
-              recipient.name +
-              '، بنطمن إن كارت الولاء شغال معاك. لو محتاج مساعدة ابعتلنا.'
-            : 'Hi ' +
-              recipient.name +
-              ', checking that your loyalty card is working for you. Let us know if you need help.',
+        : personalizeMessage(
+            templates[initialPurpose][lang],
+            recipient.name,
+            recipient.businessName || (ar ? 'المحل' : 'our business'),
+          ),
     ),
     [url, setUrl] = useState(''),
     [error, setError] = useState(''),
@@ -83,6 +95,32 @@ export function WhatsAppDraft({
       >
         <h2 id="whatsapp-draft-title">{ar ? 'رسالة واتساب' : 'WhatsApp message'}</h2>
         <p>{recipient.name}</p>
+        {!recipient.business && (
+          <label>
+            {ar ? 'رسالة جاهزة' : 'Ready-made message'}
+            <Select
+              value={purpose}
+              onChange={(e) => {
+                const selected = e.target.value as WhatsAppPurpose;
+                setPurpose(selected);
+                setMessage(
+                  personalizeMessage(
+                    templates[selected][lang],
+                    recipient.name,
+                    recipient.businessName || (ar ? 'المحل' : 'our business'),
+                  ),
+                );
+                setUrl('');
+              }}
+            >
+              {Object.entries(purposeLabels(ar)).map(([key, label]) => (
+                <option key={key} value={key} disabled={key === 'reward' && !recipient.rewards}>
+                  {label}
+                </option>
+              ))}
+            </Select>
+          </label>
+        )}
         <label>
           {ar ? 'راجع الرسالة' : 'Review message'}
           <textarea
@@ -99,8 +137,8 @@ export function WhatsAppDraft({
         </label>
         <p className="muted">
           {ar
-            ? 'هنفتح مسودة في واتساب. الإرسال بيتم بإيدك من هناك، والرسالة لسه ما اتبعتتش.'
-            : 'This opens a WhatsApp draft. You send it there; this message has not been sent.'}
+            ? 'عدّل الرسالة براحتك، وبعدها افتح واتساب وابعتها للعميل.'
+            : 'Edit the message, then open WhatsApp and send it to the customer.'}
         </p>
         {error && (
           <p role="alert" className="error-text">
@@ -141,8 +179,35 @@ export function CustomerOutreach({ merchantId, lang }: { merchantId: string; lan
     [offset, setOffset] = useState(0),
     [next, setNext] = useState<number | null>(null),
     [error, setError] = useState(''),
-    [recipient, setRecipient] = useState<Customer | null>(null);
+    [recipient, setRecipient] = useState<Customer | null>(null),
+    [config, setConfig] = useState<ReminderConfig | null>(null);
+  const generation = useRef(0);
+  const loadConfig = async () => {
+    try {
+      setConfig(await api<ReminderConfig>('/merchants/' + merchantId + '/customer-reminders'));
+    } catch (cause) {
+      setError(errorText(cause, lang));
+    }
+  };
+  useEffect(() => {
+    let current = true;
+    setConfig(null);
+    setRecipient(null);
+    setRows([]);
+    setNext(null);
+    void api<ReminderConfig>('/merchants/' + merchantId + '/customer-reminders')
+      .then((value) => {
+        if (current) setConfig(value);
+      })
+      .catch((cause) => {
+        if (current) setError(errorText(cause, lang));
+      });
+    return () => {
+      current = false;
+    };
+  }, [merchantId]);
   const load = async () => {
+    const ticket = ++generation.current;
     try {
       const r = await api<{ customers: Customer[]; nextOffset: number | null }>(
         '/merchants/' +
@@ -152,157 +217,180 @@ export function CustomerOutreach({ merchantId, lang }: { merchantId: string; lan
           '&query=' +
           encodeURIComponent(query),
       );
+      if (ticket !== generation.current) return;
       setRows(r.customers);
       setNext(r.nextOffset);
       setError('');
     } catch (e) {
-      setError(errorText(e, lang));
+      if (ticket === generation.current) setError(errorText(e, lang));
     }
   };
   useEffect(() => {
     const timer = setTimeout(() => void load(), 250);
-    return () => clearTimeout(timer);
+    return () => {
+      clearTimeout(timer);
+      generation.current++;
+    };
   }, [merchantId, offset, query]);
   return (
-    <section className="panel">
-      <div className="section-heading">
-        <div>
-          <h2>{ar ? 'العملاء والتواصل' : 'Customers and contact'}</h2>
-          <p className="muted">
-            {ar
-              ? 'شوف مين لسه ما اشترى، ومين له مكافأة، ومين مجهّز رقم وموافقة واتساب.'
-              : 'See who has not purchased, who has a reward, and who has a WhatsApp number and consent.'}
-          </p>
-        </div>
-        <button className="secondary small" onClick={() => void load()}>
-          {ar ? 'تحديث' : 'Refresh'}
-        </button>
-      </div>
-      <label>
-        {ar ? 'دور باسم العميل' : 'Search customer name'}
-        <input
-          type="search"
-          value={query}
-          maxLength={80}
-          onChange={(e) => {
-            setQuery(e.target.value);
-            setOffset(0);
-          }}
-        />
-      </label>
-      {error && (
-        <p role="alert" className="error-text">
-          {error}
-        </p>
-      )}
-      <div className="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              {(ar
-                ? ['العميل', 'حالة الاستخدام', 'الرقم', 'واتساب', 'التواصل']
-                : ['Customer', 'Activity', 'Phone', 'WhatsApp', 'Contact']
-              ).map((h) => (
-                <th key={h}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((c) => (
-              <tr key={c.id}>
-                <td>
-                  <strong>{c.alias}</strong>
-                </td>
-                <td>
-                  {c.lastPurchase
-                    ? ar
-                      ? 'اشترى قبل كده'
-                      : 'Has purchased'
-                    : ar
-                      ? 'لسه من غير شراء'
-                      : 'No purchase yet'}
-                  {c.availableRewards > 0 && (
-                    <small>
-                      {ar ? 'مكافآت جاهزة: ' : 'Rewards ready: '}
-                      {c.availableRewards}
-                    </small>
-                  )}
-                </td>
-                <td>
-                  {c.phonePresent
-                    ? ar
-                      ? 'رقم موجود'
-                      : 'Number provided'
-                    : ar
-                      ? 'الرقم مش مضاف'
-                      : 'Number missing'}
-                </td>
-                <td>
-                  <span className="badge">
-                    {c.whatsappConsent
-                      ? ar
-                        ? 'موافق'
-                        : 'Opted in'
-                      : ar
-                        ? 'بدون موافقة'
-                        : 'Not opted in'}
-                  </span>
-                </td>
-                <td>
-                  <button
-                    className="secondary small"
-                    disabled={!c.phonePresent || !c.whatsappConsent}
-                    onClick={() => setRecipient(c)}
-                  >
-                    {ar ? 'رسالة واتساب' : 'WhatsApp message'}
-                  </button>
-                  {(!c.phonePresent || !c.whatsappConsent) && (
-                    <small className="muted">
-                      {ar
-                        ? 'العميل يقدر يكملها من تفضيلات كارته.'
-                        : 'The customer can update this in card preferences.'}
-                    </small>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      {!rows.length && !error && (
-        <p className="muted">
-          {ar ? 'لسه مفيش عملاء في الاختيار ده.' : 'No customers in this selection yet.'}
-        </p>
-      )}
-      <div className="form-actions">
-        <button
-          className="secondary small"
-          disabled={!offset}
-          onClick={() => setOffset(Math.max(0, offset - 50))}
-        >
-          {ar ? 'السابق' : 'Previous'}
-        </button>
-        <button
-          className="secondary small"
-          disabled={next === null}
-          onClick={() => setOffset(next!)}
-        >
-          {ar ? 'التالي' : 'Next'}
-        </button>
-      </div>
-      {recipient && (
-        <WhatsAppDraft
+    <>
+      {config && (
+        <CustomerReminders
+          key={merchantId}
           merchantId={merchantId}
           lang={lang}
-          recipient={{
-            id: recipient.id,
-            name: recipient.alias,
-            rewards: recipient.availableRewards,
-          }}
-          onClose={() => setRecipient(null)}
+          config={config}
+          onSaved={setConfig}
+          onRefresh={() => void loadConfig()}
         />
       )}
-    </section>
+      <section className="panel">
+        <div className="section-heading">
+          <div>
+            <h2>{ar ? 'العملاء والتواصل' : 'Customers and contact'}</h2>
+            <p className="muted">
+              {ar
+                ? 'شوف مين لسه ما اشترى، ومين له مكافأة، ومين مجهّز رقم وموافقة واتساب.'
+                : 'See who has not purchased, who has a reward, and who has a WhatsApp number and consent.'}
+            </p>
+          </div>
+          <button className="secondary small" onClick={() => void load()}>
+            {ar ? 'تحديث' : 'Refresh'}
+          </button>
+        </div>
+        <label>
+          {ar ? 'دور باسم العميل' : 'Search customer name'}
+          <input
+            type="search"
+            value={query}
+            maxLength={80}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setOffset(0);
+            }}
+          />
+        </label>
+        {error && (
+          <p role="alert" className="error-text">
+            {error}
+          </p>
+        )}
+        <div className="table-wrap mobile-records">
+          <table>
+            <thead>
+              <tr>
+                {(ar
+                  ? ['العميل', 'حالة الاستخدام', 'الرقم', 'واتساب', 'التواصل']
+                  : ['Customer', 'Activity', 'Phone', 'WhatsApp', 'Contact']
+                ).map((h) => (
+                  <th key={h}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((c) => (
+                <tr key={c.id}>
+                  <td data-label={ar ? 'العميل' : 'Customer'}>
+                    <strong>{c.alias}</strong>
+                  </td>
+                  <td data-label={ar ? 'حالة الاستخدام' : 'Activity'}>
+                    {c.lastPurchase
+                      ? ar
+                        ? 'اشترى قبل كده'
+                        : 'Has purchased'
+                      : ar
+                        ? 'لسه من غير شراء'
+                        : 'No purchase yet'}
+                    {c.lastPurchase && (
+                      <small>{new Date(c.lastPurchase).toLocaleDateString(lang)}</small>
+                    )}
+                    {c.availableRewards > 0 && (
+                      <small>
+                        {ar ? 'مكافآت جاهزة: ' : 'Rewards ready: '}
+                        {c.availableRewards}
+                      </small>
+                    )}
+                  </td>
+                  <td data-label={ar ? 'الرقم' : 'Phone'}>
+                    {c.phonePresent
+                      ? ar
+                        ? 'رقم موجود'
+                        : 'Number provided'
+                      : ar
+                        ? 'الرقم مش مضاف'
+                        : 'Number missing'}
+                  </td>
+                  <td data-label={ar ? 'واتساب' : 'WhatsApp'}>
+                    <span className="badge">
+                      {c.whatsappConsent
+                        ? ar
+                          ? 'موافق'
+                          : 'Opted in'
+                        : ar
+                          ? 'بدون موافقة'
+                          : 'Not opted in'}
+                    </span>
+                  </td>
+                  <td data-label={ar ? 'التواصل' : 'Contact'}>
+                    <button
+                      className="secondary small"
+                      disabled={!config || !c.phonePresent || !c.whatsappConsent}
+                      onClick={() => setRecipient(c)}
+                    >
+                      {ar ? 'رسالة واتساب' : 'WhatsApp message'}
+                    </button>
+                    {(!c.phonePresent || !c.whatsappConsent) && (
+                      <small className="muted">
+                        {ar
+                          ? 'العميل يقدر يكملها من تفضيلات كارته.'
+                          : 'The customer can update this in card preferences.'}
+                      </small>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {!rows.length && !error && (
+          <p className="muted">
+            {ar ? 'لسه مفيش عملاء في الاختيار ده.' : 'No customers in this selection yet.'}
+          </p>
+        )}
+        <div className="form-actions">
+          <button
+            className="secondary small"
+            disabled={!offset}
+            onClick={() => setOffset(Math.max(0, offset - 50))}
+          >
+            {ar ? 'السابق' : 'Previous'}
+          </button>
+          <button
+            className="secondary small"
+            disabled={next === null}
+            onClick={() => setOffset(next!)}
+          >
+            {ar ? 'التالي' : 'Next'}
+          </button>
+        </div>
+        {recipient && (
+          <WhatsAppDraft
+            merchantId={merchantId}
+            lang={lang}
+            recipient={{
+              id: recipient.id,
+              name: recipient.alias,
+              rewards: recipient.availableRewards,
+              lastPurchase: recipient.lastPurchase,
+              businessName: config?.merchantName,
+              templates: config?.settings.whatsapp,
+              inactivityDays: config?.settings.inactivityDays,
+            }}
+            onClose={() => setRecipient(null)}
+          />
+        )}
+      </section>
+    </>
   );
 }
 export function CustomerContact({

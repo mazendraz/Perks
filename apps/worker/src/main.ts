@@ -7,6 +7,7 @@ import { runOne } from './runner.js';
 import { cleanupExports } from './export-cleanup.js';
 import { runAppleWalletPushes } from './apple-wallet-push.js';
 import { runGoogleWalletUpdates } from './google-wallet-updates.js';
+import { runCustomerReminders } from './customer-reminders.js';
 import { createFileStore } from '../../api/src/storage/file-store.js';
 import { operationalLog } from '../../../packages/domain/src/operational-log.js';
 async function main() {
@@ -32,8 +33,13 @@ async function main() {
         await pool.query('SELECT sweep_expired_requests()');
         await pool.query('SELECT sweep_expired_sessions()');
         await cleanupExports(pool, createFileStore(c));
+        await pool.query('SELECT schedule_customer_reminders($1,$2)', [
+          c.APPLE_WALLET_ENABLED === 'true',
+          c.GOOGLE_WALLET_ENABLED === 'true',
+        ]);
         lastSweep = Date.now();
       }
+      await runCustomerReminders(pool, c);
       await runAppleWalletPushes(pool, c);
       await runGoogleWalletUpdates(pool, c);
       const worked = await runOne(pool, c);

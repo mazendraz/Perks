@@ -795,7 +795,7 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
                       <ActionLabel icon="clock">{ar ? 'آخر نشاط' : 'Recent activity'}</ActionLabel>
                     </button>
                   </div>
-                  <WalletPanel membershipId={card.id} lang={lang} />
+                  <WalletPanel membershipId={card.id} lang={lang} onPreferences={() => setTab('preferences')} />
                   {qr && !holder && (
                     <CustomerCode
                       qr={qr}
@@ -930,7 +930,7 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
                           email: ar ? 'البريد الإلكتروني' : 'Email',
                           sms: 'SMS',
                           whatsapp: 'WhatsApp',
-                          push: ar ? 'إشعارات المتصفح' : 'Web Push',
+                          push: ar ? 'تذكيرات كارت Wallet' : 'Wallet card reminders',
                         } as Record<string, string>
                       )[p.channel] || p.channel}
                     </label>

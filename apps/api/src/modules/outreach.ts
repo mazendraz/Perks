@@ -47,7 +47,7 @@ export function outreachModule(app: FastifyInstance, pools: Pools) {
         const rows = (
           await db.query(
             `SELECT cp.id,cp.alias,cp.created_at,(contact.value->>'phonePresent')::boolean AS "phonePresent",(contact.value->>'whatsappConsent')::boolean AS "whatsappConsent",contact.value->>'contactPhone' AS "contactPhone",
-    (SELECT max(t.at) FROM loyalty_transactions t JOIN memberships ms ON ms.id=t.membership_id WHERE ms.profile_id=cp.id AND t.type='award' AND ($5::boolean OR branch_access(t.merchant_id,t.branch_id))) AS "lastPurchase",
+    (SELECT max(t.at) FROM loyalty_transactions t JOIN memberships ms ON ms.id=t.membership_id WHERE ms.profile_id=cp.id AND t.type='award' AND t.source IN ('scan','request','auto') AND ($5::boolean OR branch_access(t.merchant_id,t.branch_id))) AS "lastPurchase",
     (SELECT count(*)::int FROM reward_grants r JOIN memberships ms ON ms.id=r.membership_id WHERE ms.profile_id=cp.id AND r.status='available' AND r.expires_at>now() AND ($5::boolean OR EXISTS(SELECT 1 FROM unnest(r.branch_ids) b WHERE branch_access(r.merchant_id,b)))) AS "availableRewards"
     FROM tenant_customer_profiles cp JOIN LATERAL(SELECT customer_contact_state(cp.merchant_id,cp.id) AS value) contact ON true
     WHERE cp.merchant_id=$1 AND ($2::uuid[] IS NULL OR cp.id=ANY($2)) AND ($3='' OR cp.alias ILIKE '%'||$3||'%') ORDER BY cp.created_at DESC,cp.id LIMIT 51 OFFSET $4`,

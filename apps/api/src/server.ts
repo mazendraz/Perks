@@ -1,4 +1,5 @@
 import { outreachModule } from './modules/outreach.js';
+import { customerRemindersModule } from './modules/customer-reminders.js';
 import { ownerPreviewModule } from './modules/owner-preview.js';
 import { platformTeamModule } from './modules/platform-team.js';
 import { accountManagementModule } from './modules/account-management.js';
@@ -150,6 +151,7 @@ export async function buildApp(
   provisioningModule(app, pools, c);
   accountManagementModule(app, pools, c);
   outreachModule(app, pools);
+  customerRemindersModule(app, pools, c);
   onboardingModule(app, pools, c);
   enrollmentModule(app, pools, c);
   loyaltyModule(app, pools);

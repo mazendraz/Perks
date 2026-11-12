@@ -43,6 +43,7 @@ import {
 } from '../../../packages/contracts/src/commands.js';
 import { provisioningInput } from '../../../packages/contracts/src/provisioning.js';
 import { experienceInput } from './modules/experience.js';
+import { reminderSettingsInput } from '../../../packages/contracts/src/customer-reminders.js';
 import { legalNoticeOutput, customerDeletionInput } from '../../../packages/contracts/src/legal.js';
 import {
   subscriptionPaymentInput,
@@ -229,6 +230,11 @@ const contracts: Record<string, Contract> = {
   'POST /api/v1/merchants/:m/customer-outreach/:id/whatsapp': {
     body: z.object({ message: z.string().trim().min(1).max(2000) }).strict(),
   },
+  'PATCH /api/v1/merchants/:m/customer-reminders': {
+    body: reminderSettingsInput,
+    key: true,
+    revision: true,
+  },
   'PATCH /api/v1/me/merchants/:m/contact': { body: z.object({ contactPhone }).strict() },
   'POST /api/v1/auth/login': {
     body: loginInput,
@@ -360,7 +366,7 @@ export const contractDocumentation: swagger.SwaggerTransform = ({ schema = {}, u
   if (contract?.revision) {
     headers['If-Match'] = {
       type: 'integer',
-      minimum: 1,
+      minimum: url.endsWith('/customer-reminders') ? 0 : 1,
       description: 'The last observed resource revision.',
     };
     required.push('If-Match');

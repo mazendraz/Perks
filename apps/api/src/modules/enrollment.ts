@@ -258,7 +258,7 @@ export function enrollmentModule(app: FastifyInstance, pools: Pools, c: Config) 
         return {
           preferences: (
             await db.query(
-              'SELECT channel,granted,revision FROM consent_current WHERE merchant_id=$1 AND user_id=$2 ORDER BY channel',
+              "SELECT channels.channel,coalesce(c.granted,false) AS granted,coalesce(c.revision,0) AS revision FROM (VALUES('email'),('sms'),('whatsapp'),('push')) channels(channel) LEFT JOIN consent_current c ON c.channel=channels.channel AND c.merchant_id=$1 AND c.user_id=$2 ORDER BY channels.channel",
               [m, actor.id],
             )
           ).rows,

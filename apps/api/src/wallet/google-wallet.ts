@@ -102,11 +102,26 @@ export function googleObject(
     classId: classId(g, card),
     state: card.active ? 'ACTIVE' : 'INACTIVE',
     accountName: card.active ? card.customer_name || '' : '',
-    barcode: { type: 'QR_CODE', value: origin + '/customer/' + card.id + '?wallet=1' },
     loyaltyPoints: {
       localizedLabel: localized(t.ar.stamps_label, t.en.stamps_label),
       balance: { string: `${Math.min(card.display_balance, card.threshold)}/${card.threshold}` },
     },
+    // Same second field as the Apple pass. A balance cannot be translated, so the words live in
+    // the label: a plain number of stamps left, or a gift once the reward is ready.
+    ...(card.active
+      ? {
+          secondaryLoyaltyPoints:
+            card.pending_rewards > 0
+              ? {
+                  localizedLabel: localized('مكافأتك جاهزة', 'Reward ready'),
+                  balance: { string: '🎁' },
+                }
+              : {
+                  localizedLabel: localized('أختام فاضلة', 'Stamps to go'),
+                  balance: { int: Math.max(0, card.threshold - card.display_balance) },
+                },
+        }
+      : {}),
     heroImage: {
       sourceUri: { uri: origin + GOOGLE_STRIP_PREFIX + '/' + key + '/' + version + '.png' },
       contentDescription: localized(t.ar.stamps_label, t.en.stamps_label),

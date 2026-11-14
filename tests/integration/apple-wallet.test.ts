@@ -162,8 +162,14 @@ test('a customer downloads a signed pass for their own card only', async () => {
   assert.equal(pass.teamIdentifier, 'ABCDE12345');
   assert.equal(pass.webServiceURL, origin + '/api/v1/wallet/apple');
   assert.equal(pass.storeCard.headerFields[0].value, '2/5');
-  assert.equal(pass.barcodes[0].format, 'PKBarcodeFormatQR');
-  assert.equal(pass.barcodes[0].message, origin + '/customer/' + m.id + '?wallet=1');
+  assert.equal(pass.barcodes, undefined, 'the pass is a card face with no QR');
+  assert.equal(pass.barcode, undefined);
+  const cardLink = origin + '/customer/' + m.id + '?wallet=1';
+  assert.ok(
+    pass.storeCard.backFields
+      .find((field: { key: string }) => field.key === 'open')
+      .attributedValue.includes(cardLink),
+  );
   assert.equal(
     pass.storeCard.backFields.find((field: { key: string }) => field.key === 'member').value,
     'عميل والت',
@@ -175,15 +181,23 @@ test('a customer downloads a signed pass for their own card only', async () => {
     .default(files.get('strip@3x.png')!)
     .metadata();
   assert.deepEqual([stripMetadata.width, stripMetadata.height], [1125, 432]);
+  // iOS 27 poster face, with the store card kept for older iPhones.
+  assert.equal(pass.posterGeneric.headerFields[0].value, '2/5');
+  assert.equal(pass.posterGeneric.primaryFields[0].value, m.rewardTitle);
+  assert.equal(pass.posterGeneric.primaryFields[0].textAlignment, 'PKTextAlignmentCenter');
+  assert.ok(pass.storeCard, 'store card fallback stays');
+  const artwork = await (await import('sharp')).default(files.get('artwork@3x.png')!).metadata();
+  assert.deepEqual([artwork.width, artwork.height], [1074, 1344]);
+  assert.ok(files.has('ar.lproj/artwork@3x.png'));
   const staticScan = await app.inject({
     method: 'POST',
     url: '/api/v1/cashier/scans/resolve',
     headers: cashier,
-    payload: { merchantId: ids.merchantA, branchId: ids.branchA, token: pass.barcodes[0].message },
+    payload: { merchantId: ids.merchantA, branchId: ids.branchA, token: cardLink },
   });
   assert.equal(staticScan.statusCode, 422, 'Wallet link cannot replace a live holder proof');
   assert.equal(staticScan.json().error.code, 'TOKEN_INVALID');
-  assert.ok(!pass.barcodes[0].message.includes(pass.authenticationToken));
+  assert.ok(!JSON.stringify(pass.storeCard).includes(pass.authenticationToken));
   assert.match(
     files.get('ar.lproj/pass.strings')!.toString('utf16le'),
     /"status_value" = "باقي 3 أختام على المكافأة";/,

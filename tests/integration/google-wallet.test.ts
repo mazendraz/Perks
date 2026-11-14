@@ -140,7 +140,7 @@ function fakeGoogle(status: (call: Call) => number) {
   return { calls, g: loadGoogleWallet(c, fetchImpl)! };
 }
 
-test('the save link is a signed JWT with the member name and a non-authorizing card QR', async () => {
+test('the save link is a signed JWT with the member name and no QR', async () => {
   assert.deepEqual((await app.inject({ url: '/api/v1/wallet/availability' })).json(), {
     apple: false,
     google: true,
@@ -158,9 +158,9 @@ test('the save link is a signed JWT with the member name and a non-authorizing c
   assert.match(object.id, new RegExp('^' + issuer + '\\.perks-card-[0-9a-f-]{36}$'));
   assert.equal(object.loyaltyPoints.balance.string, '2/5');
   assert.equal(object.state, 'ACTIVE');
-  assert.equal(object.barcode.type, 'QR_CODE');
-  assert.equal(object.barcode.value, origin + '/customer/' + m.id + '?wallet=1');
-  assert.equal(object.linksModuleData.uris[0].uri, object.barcode.value);
+  assert.equal(object.barcode, undefined, 'the card carries no QR');
+  assert.deepEqual(object.secondaryLoyaltyPoints.balance, { int: 3 });
+  assert.equal(object.linksModuleData.uris[0].uri, origin + '/customer/' + m.id + '?wallet=1');
   assert.equal(object.accountName, 'عميل جوجل');
   const publicCard = (
     await db.query('SELECT google_wallet_strip($1) AS card', [object.id.split('perks-card-')[1]])

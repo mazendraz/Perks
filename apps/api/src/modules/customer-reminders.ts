@@ -1,8 +1,8 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import {
-  reminderDefaults,
   reminderSettingsInput,
+  withReminderDefaults,
 } from '../../../../packages/contracts/src/customer-reminders.js';
 import { authenticated } from '../auth.js';
 import { audit, transaction, type Pools, type DB, type Actor } from '../db.js';
@@ -65,7 +65,8 @@ export function customerRemindersModule(app: FastifyInstance, pools: Pools, c: C
             ).rows
           : [];
         return {
-          settings: row?.settings ?? reminderDefaults,
+          // Older saved settings get the fields added since (repeat count, reward-ready message).
+          settings: withReminderDefaults(row?.settings),
           revision: row?.revision ?? 0,
           canManage,
           merchantName: merchant.name,

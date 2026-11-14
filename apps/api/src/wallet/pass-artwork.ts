@@ -1,22 +1,19 @@
 import type { StampShape } from '../../../../packages/contracts/src/branding.js';
-import { stampRandom } from '../../../../packages/domain/src/stamp-ink.js';
+import { stampGeometry } from '../../../../packages/domain/src/stamp-ink.js';
 import { stampIconPaths } from '../../../../packages/domain/src/stamp-glyphs.js';
 import type { WalletCard } from './apple-pass.js';
 import { cardArtMarkup } from '../../../../packages/domain/src/card-art.js';
 import {
-  inkFor,
-  mix,
   walletArtCategory,
   walletTheme,
   type WalletTheme,
 } from '../../../../packages/domain/src/wallet-theme.js';
 
 // Bump whenever the strip changes, so Google re-fetches it and Apple passes refresh.
-export const WALLET_ARTWORK_VERSION = 'perks-card-7';
+export const WALLET_ARTWORK_VERSION = 'perks-card-8';
 export { inkFor, mix } from '../../../../packages/domain/src/wallet-theme.js';
 
-// Clean slot outlines in a 48-unit box centred on 0,0. At Wallet size a crisp edge reads as
-// premium; the rough ink edge of the web stamp turns into noise at 40 points.
+// Slot outlines in a 48-unit box centred on 0,0, the same frames as the web card's empty slots.
 function shapePath(shape: StampShape, r = 22) {
   if (shape === 'hexagon') {
     const pts = Array.from({ length: 6 }, (_, i) => {
@@ -44,9 +41,39 @@ function shapePath(shape: StampShape, r = 22) {
   }
   return `M${-r} 0A${r} ${r} 0 1 0 ${r} 0A${r} ${r} 0 1 0 ${-r} 0Z`;
 }
-const GIFT =
-  'M3 9h18v4H3zM5 13v8h14v-8M12 9v12M12 9H8a3 3 0 1 1 3-3l1 3Zm0 0h4a3 3 0 1 0-3-3l-1 3Z';
 
+/**
+ * The reward slot is a gift box instead of a stamp, in a 48-unit box centred on 0,0.
+ * Empty: a dashed outline like the other empty slots. Earned: filled in the stamp colour.
+ */
+function giftSlot(
+  filled: boolean,
+  o: { ink: string; accent: string; glyphInk: string; outline: boolean; dashOpacity: number },
+) {
+  const lid = 'M-20 -11.5H20V-2H-20Z',
+    box = 'M-17 -2H17V21H-17Z',
+    bow =
+      'M0 -11.5C-3 -18 -11 -22 -13.5 -17.5C-15.5 -14 -9 -11.5 0 -11.5C9 -11.5 15.5 -14 13.5 -17.5C11 -22 3 -18 0 -11.5Z';
+  if (!filled)
+    return (
+      `<g fill="none" stroke="${o.ink}" stroke-opacity="${o.dashOpacity}" stroke-width="1.3" stroke-linejoin="round">` +
+      `<path d="${box}" stroke-dasharray="3 3"/><path d="${lid}" stroke-dasharray="3 3"/>` +
+      `<path d="M0 -11.5V21"/><path d="${bow}"/></g>`
+    );
+  const fill = o.outline ? 'none' : o.accent,
+    line = o.outline ? o.accent : o.glyphInk;
+  return (
+    `<g stroke-linejoin="round" filter="url(#gift-lift)">` +
+    `<path d="${box}" fill="${fill}" stroke="${o.accent}" stroke-width="${o.outline ? 2.4 : 0}"/>` +
+    `<path d="${lid}" fill="${fill}" stroke="${o.accent}" stroke-width="${o.outline ? 2.4 : 0}"/>` +
+    `<path d="M-20 -2H20" stroke="${line}" stroke-opacity=".35" stroke-width="1.2"/>` +
+    `<path d="M0 -11.5V21" stroke="${line}" stroke-width="3.2"/>` +
+    `<path d="${bow}" fill="${fill}" stroke="${o.outline ? o.accent : line}" stroke-width="2"/>` +
+    '</g>'
+  );
+}
+const GIFT_LIFT =
+  '<filter id="gift-lift" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="1" stdDeviation="1" flood-color="#000" flood-opacity=".22"/></filter>';
 /**
  * Stamp grid for the Wallet strip. Wallet scales the strip to the pass width and may trim
  * its top and bottom, so stamps stay in a centred band and never touch the edges.
@@ -136,65 +163,208 @@ export function stripSvg(card: WalletCard, scale: number, height = 144, rtl = fa
     bg = theme.background,
     accent = theme.stamp,
     ink = theme.ink,
-    // A light card (paper editions), judged by the card itself: Noir's cream ink is not a light card.
-    light = inkFor(bg) !== '#ffffff',
     outline = card.stamp_style === 'outline',
     glyphInk = outline ? accent : theme.stampInk,
     art = artLayer(card, theme, height, rtl),
     shape = card.stamp_shape,
-    icon = stampIconPaths[card.stamp_icon] ? card.stamp_icon : 'check',
-    random = stampRandom(card.id + ':wallet');
+    icon = stampIconPaths[card.stamp_icon] ? card.stamp_icon : 'check';
   const n = (value: number) => value.toFixed(2);
   const outlinePath = shapePath(shape);
   const glyph = (path: string, stroke: string, width: number, k: number, opacity = 1) =>
     `<g transform="scale(${(k / 24).toFixed(4)}) translate(-12 -12)" fill="none" stroke="${stroke}" stroke-opacity="${opacity}" stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round"><path d="${path}"/></g>`;
+  // Everything below mirrors the web card (packages/ui StampInk + StampFrame): a dashed frame for
+  // an empty slot, the gift on the last one, and the same rough ink stamp for a filled one.
   const slots = stripLayout(total, height, rtl).map(({ x, y, size }, i) => {
-    const k = size / 48,
-      reward = i === total - 1,
-      tilt = (random() - 0.5) * 10;
     const open = `<g data-slot="${i + 1}" data-filled="${i < filled}" transform="translate(${n(x)} ${n(y)})">`;
-    if (i >= filled) {
-      // Empty: a soft recessed well. The reward slot is drawn in the accent colour as the goal.
+    if (i === total - 1)
       return (
         open +
-        `<g transform="scale(${k.toFixed(4)})">` +
-        (reward
-          ? `<path d="${outlinePath}" fill="${accent}" fill-opacity=".14" stroke="${accent}" stroke-opacity=".85" stroke-width="1.6"/>` +
-            glyph(GIFT, accent, 1.9, 22)
-          : `<path d="${outlinePath}" fill="${ink}" fill-opacity="${light ? 0.06 : 0.08}" stroke="${ink}" stroke-opacity="${light ? 0.2 : 0.22}" stroke-width="1.2"/>`) +
+        `<g transform="scale(${(size / 48).toFixed(4)})">` +
+        giftSlot(i < filled, { ink, accent, glyphInk, outline, dashOpacity: 0.3 }) +
         '</g></g>'
       );
-    }
-    // Filled: a crisp pressed stamp in the shop's accent, slightly turned like a real stamp.
+    if (i >= filled)
+      return (
+        open +
+        `<g transform="scale(${(size / 48).toFixed(4)})">` +
+        `<path d="${outlinePath}" fill="none" stroke="${ink}" stroke-opacity=".25" stroke-width="1.3" stroke-dasharray="3 3"/>` +
+        '</g></g>'
+      );
+    // The web ink sits in a 64-unit box that overhangs its slot by 2px on a 56px slot.
+    const ink64 = stampGeometry(card.id + ':' + i, shape),
+      k = (size * 60) / 56 / 64;
     return (
       open +
-      `<g transform="scale(${k.toFixed(4)}) rotate(${n(reward ? 0 : tilt)})" filter="url(#lift)">` +
-      `<path d="${outlinePath}" fill="${outline ? bg : 'url(#ink)'}" stroke="${accent}" stroke-width="${outline ? 2.6 : 0}"/>` +
-      `<path d="${shapePath(shape, 17.6)}" fill="none" stroke="${glyphInk}" stroke-opacity=".28" stroke-width="1.1"/>` +
-      glyph(
-        reward ? GIFT : stampIconPaths[icon]!,
-        glyphInk,
-        icon === 'check' && !reward ? 2.8 : 2,
-        reward ? 21 : 22,
-      ) +
+      `<g transform="scale(${k.toFixed(4)}) rotate(${n(ink64.angle)})">` +
+      `<path d="${ink64.outer}" fill="${outline ? 'none' : accent}" stroke="${outline ? accent : 'none'}" stroke-width="${outline ? 2.6 : 0}"/>` +
+      `<path d="${ink64.inner}" fill="none" stroke="${glyphInk}" stroke-opacity=".35" stroke-width="1.2"/>` +
+      glyph(stampIconPaths[icon]!, glyphInk, icon === 'check' ? 2.6 : 1.7, 28) +
+      ink64.specks
+        .map(
+          (p) =>
+            `<circle cx="${n(p.x)}" cy="${n(p.y)}" r="${n(p.r)}" fill="${accent}" opacity=".8"/>`,
+        )
+        .join('') +
       '</g></g>'
     );
   });
-  const defs =
-    '<defs>' +
-    // A soft light behind the stamps that fades to the exact card colour at every edge, so the
-    // strip blends into the pass instead of reading as a pasted box.
-    `<radialGradient id="glow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="${mix(bg, light ? '#ffffff' : accent, light ? 0.45 : 0.1)}"/><stop offset="1" stop-color="${bg}"/></radialGradient>` +
-    `<linearGradient id="ink" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${mix(accent, '#ffffff', 0.18)}"/><stop offset="1" stop-color="${mix(accent, '#000000', 0.1)}"/></linearGradient>` +
-    `<filter id="lift" x="-30%" y="-30%" width="160%" height="160%"><feDropShadow dx="0" dy="1.2" stdDeviation="1.3" flood-color="#000" flood-opacity="${light ? 0.18 : 0.32}"/></filter>` +
-    art.defs +
-    '</defs>';
+  // Flat card colour, exactly the pass background, so the strip has no visible edge.
   return (
     `<svg xmlns="http://www.w3.org/2000/svg" width="${375 * scale}" height="${height * scale}" viewBox="0 0 375 ${height}">` +
-    defs +
-    `<rect width="375" height="${height}" fill="${bg}"/><ellipse cx="187.5" cy="${height / 2}" rx="187.5" ry="${height / 2}" fill="url(#glow)"/>` +
+    `<defs>${GIFT_LIFT}${art.defs}</defs>` +
+    `<rect width="375" height="${height}" fill="${bg}"/>` +
     art.body +
     slots.join('') +
+    '</svg>'
+  );
+}
+
+/**
+ * iOS 27 "Poster Generic" pass: the whole card face is one artwork image (358×448 points).
+ * Wallet draws the logo and the stamp count over the top band and the reward fields over a
+ * material strip at the bottom, so the stamps live in the middle band between them.
+ */
+export const POSTER = { width: 358, height: 448, top: 74, bottom: 300 } as const;
+
+/** Stamp grid for the poster: the web card's column rule, enlarged to fill the middle band. */
+export function posterLayout(total: number, rtl = false) {
+  const padX = 30,
+    gap = 0.3,
+    safeW = POSTER.width - padX * 2,
+    band = POSTER.bottom - POSTER.top - 26; // leave room for the progress line under the stamps
+  const fit = (c: number) => {
+    const r = Math.ceil(total / c);
+    // Filled ink and its specks reach about 20% past the slot, so the grid is fitted with that margin.
+    return {
+      c,
+      r,
+      s: Math.min(safeW / (c + (c - 1) * gap), band / (r + (r - 1) * gap), 72) / 1.22,
+    };
+  };
+  // Same columns as the web card (two rows for 7–10, up to six per row), unless that leaves
+  // the stamps much smaller than another arrangement would.
+  const web = fit(total >= 7 && total <= 10 ? Math.ceil(total / 2) : Math.min(total, 6));
+  let best = web;
+  for (let c = 2; c <= 10; c++) if (fit(c).s > best.s) best = fit(c);
+  const { c: columns, r: rows, s: size } = best.s > web.s * 1.25 ? best : web;
+  const pitch = size * (1 + gap),
+    centreY = POSTER.top + band / 2;
+  return {
+    size,
+    trackY: centreY + (rows * size + (rows - 1) * size * gap) / 2 + 22,
+    slots: Array.from({ length: total }, (_, i) => {
+      const row = Math.floor(i / columns),
+        col = i % columns,
+        offset = (col + 0.5 - columns / 2) * pitch;
+      return {
+        x: POSTER.width / 2 + (rtl ? -offset : offset),
+        y: centreY + (row + 0.5 - rows / 2) * pitch,
+      };
+    }),
+  };
+}
+
+/** The edition's artwork drawn over the whole poster, like the web card. */
+function posterArt(card: WalletCard, theme: WalletTheme, rtl: boolean) {
+  const { kind, color, opacity, rotate, scale, leaf } = theme.art,
+    { width: W, height: H } = POSTER;
+  if (kind === 'none' || opacity <= 0) return { defs: '', body: '' };
+  const n = (value: number) => value.toFixed(2);
+  // The 600×420 web art box, scaled to the poster height and centred.
+  const k = H / 420,
+    dx = (W - 600 * k) / 2;
+  const onCard = (inner: string) =>
+    `<g transform="translate(${n(dx)} 0) scale(${n(k)})${rtl ? ' translate(600 0) scale(-1 1)' : ''} translate(300 210) rotate(${rotate}) scale(${scale}) translate(-300 -210)">${inner}</g>`;
+  const lines = (alpha: number) =>
+    `<g fill="none" stroke="${color}" stroke-opacity="${n(alpha)}" stroke-width="1.6" stroke-linecap="round">${cardArtMarkup[walletArtCategory(card.template)]}</g>`;
+  const leafPath = leaf
+    ? `<path transform="rotate(18 534 290)" d="M367 550A333 517 0 0 1 700 33A333 517 0 0 1 367 550Z" fill="none" stroke="${color}" stroke-opacity="${n(opacity * 1.2)}" stroke-width="1.6"/>`
+    : '';
+  if (kind === 'lines') return { defs: '', body: onCard(lines(opacity) + leafPath) };
+  if (kind === 'mosaic')
+    return {
+      defs: `<pattern id="tiles" width="88" height="88" patternUnits="userSpaceOnUse"><path d="M0 0L44 44L0 88ZM88 0L44 44L88 88Z" fill="${color}" fill-opacity="${n(opacity)}"/></pattern>`,
+      body: `<rect width="${W}" height="${H}" fill="url(#tiles)"/>`,
+    };
+  if (kind === 'ruled')
+    return {
+      defs: `<pattern id="rules" width="50" height="${H}" patternUnits="userSpaceOnUse"><rect x="25" width=".7" height="${H}" fill="${color}" fill-opacity="${n(opacity)}"/></pattern>`,
+      body: `<rect width="${W}" height="${H}" fill="url(#rules)"/>` + onCard(lines(opacity)),
+    };
+  // aurora: two soft accent lights on opposite corners, with the line art barely there.
+  return {
+    defs: `<radialGradient id="aur" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="${theme.stamp}" stop-opacity="${n(opacity * 1.3)}"/><stop offset="1" stop-color="${theme.stamp}" stop-opacity="0"/></radialGradient>`,
+    body:
+      `<ellipse cx="${rtl ? 70 : 290}" cy="120" rx="190" ry="170" fill="url(#aur)"/>` +
+      `<ellipse cx="${rtl ? 290 : 70}" cy="330" rx="180" ry="160" fill="url(#aur)"/>` +
+      onCard(lines(opacity * 0.2)),
+  };
+}
+
+export function posterArtworkSvg(card: WalletCard, scale: number, rtl = false) {
+  const total = Math.max(2, Math.min(50, card.threshold)),
+    filled = Math.max(0, Math.min(total, card.display_balance));
+  const theme = walletTheme(card),
+    { width: W, height: H } = POSTER,
+    accent = theme.stamp,
+    ink = theme.ink,
+    outline = card.stamp_style === 'outline',
+    glyphInk = outline ? accent : theme.stampInk,
+    shape = card.stamp_shape,
+    icon = stampIconPaths[card.stamp_icon] ? card.stamp_icon : 'check',
+    art = posterArt(card, theme, rtl),
+    layout = posterLayout(total, rtl);
+  const n = (value: number) => value.toFixed(2);
+  const glyph = (path: string, stroke: string, width: number, k: number, opacity = 1) =>
+    `<g transform="scale(${(k / 24).toFixed(4)}) translate(-12 -12)" fill="none" stroke="${stroke}" stroke-opacity="${opacity}" stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round"><path d="${path}"/></g>`;
+  const slots = layout.slots.map(({ x, y }, i) => {
+    const open = `<g data-slot="${i + 1}" data-filled="${i < filled}" transform="translate(${n(x)} ${n(y)})">`;
+    if (i === total - 1)
+      return (
+        open +
+        `<g transform="scale(${(layout.size / 48).toFixed(4)})">` +
+        giftSlot(i < filled, { ink, accent, glyphInk, outline, dashOpacity: 0.32 }) +
+        '</g></g>'
+      );
+    if (i >= filled)
+      return (
+        open +
+        `<g transform="scale(${(layout.size / 48).toFixed(4)})">` +
+        `<path d="${shapePath(shape)}" fill="none" stroke="${ink}" stroke-opacity=".28" stroke-width="1.2" stroke-dasharray="3 3"/>` +
+        '</g></g>'
+      );
+    const g = stampGeometry(card.id + ':' + i, shape),
+      k = (layout.size * 60) / 56 / 64;
+    return (
+      open +
+      `<g transform="scale(${k.toFixed(4)}) rotate(${n(g.angle)})">` +
+      `<path d="${g.outer}" fill="${outline ? 'none' : accent}" stroke="${outline ? accent : 'none'}" stroke-width="${outline ? 2.6 : 0}"/>` +
+      `<path d="${g.inner}" fill="none" stroke="${glyphInk}" stroke-opacity=".35" stroke-width="1.2"/>` +
+      glyph(stampIconPaths[icon]!, glyphInk, icon === 'check' ? 2.6 : 1.7, 28) +
+      g.specks
+        .map(
+          (p) =>
+            `<circle cx="${n(p.x)}" cy="${n(p.y)}" r="${n(p.r)}" fill="${accent}" opacity=".8"/>`,
+        )
+        .join('') +
+      '</g></g>'
+    );
+  });
+  // The web card's progress line under the stamps, filled from the reading side.
+  const trackX = 30,
+    trackW = W - 60,
+    done = trackW * (filled / total);
+  const track =
+    `<rect x="${trackX}" y="${n(layout.trackY)}" width="${trackW}" height="2.4" rx="1.2" fill="${ink}" fill-opacity=".14"/>` +
+    (done > 0
+      ? `<rect x="${n(rtl ? trackX + trackW - done : trackX)}" y="${n(layout.trackY)}" width="${n(done)}" height="2.4" rx="1.2" fill="${accent}"/>`
+      : '');
+  return (
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${W * scale}" height="${H * scale}" viewBox="0 0 ${W} ${H}">` +
+    `<defs>${GIFT_LIFT}${art.defs}</defs><rect width="${W}" height="${H}" fill="${theme.background}"/>` +
+    art.body +
+    slots.join('') +
+    track +
     '</svg>'
   );
 }

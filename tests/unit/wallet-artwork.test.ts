@@ -93,3 +93,35 @@ test('Wallet follows the shop card edition: paper editions, Noir and the edition
     stripSvg({ ...card, template: 'minimal', surface_color: '#f6f1e7' }, 1).includes('#f6f1e7'),
   );
 });
+
+test('Poster artwork (iOS 27) is 358×448 and keeps the stamps between the header and the reward fields', async () => {
+  const { posterArtworkSvg, POSTER } = await import('../../apps/api/src/wallet/pass-artwork.js');
+  for (const threshold of [2, 5, 8, 10, 12, 20, 50])
+    for (const rtl of [false, true]) {
+      const svg = posterArtworkSvg(
+        { ...card, threshold, display_balance: Math.floor(threshold / 2) },
+        1,
+        rtl,
+      );
+      assert.equal((svg.match(/data-slot=/g) || []).length, threshold);
+      assert.ok(!/<text|<image|<script|foreignObject/.test(svg));
+      const slots = svg.slice(svg.indexOf('<g data-slot='), svg.lastIndexOf('<rect'));
+      const raster = await sharp(
+        Buffer.from(
+          `<svg xmlns="http://www.w3.org/2000/svg" width="358" height="448">${slots}</svg>`,
+        ),
+      )
+        .ensureAlpha()
+        .raw()
+        .toBuffer({ resolveWithObject: true });
+      for (let y = 0; y < 448; y++)
+        for (let x = 0; x < 358; x++)
+          if (raster.data[(y * 358 + x) * 4 + 3]! > 8)
+            assert.ok(
+              x >= 20 && x < 338 && y >= POSTER.top && y < POSTER.bottom,
+              `${threshold} stamps: pixel outside the poster band at ${x},${y}`,
+            );
+    }
+  const meta = await sharp(Buffer.from(posterArtworkSvg(card, 3))).metadata();
+  assert.deepEqual([meta.width, meta.height], [1074, 1344]);
+});

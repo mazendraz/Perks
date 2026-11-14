@@ -6,7 +6,10 @@ import { readConfig } from '../../apps/api/src/config.js';
 import { buildApp } from '../../apps/api/src/server.js';
 import { seed, ids } from '../../db/seed.js';
 import { key, login } from '../helpers.js';
-import { reminderDefaults } from '../../packages/contracts/src/customer-reminders.js';
+import {
+  reminderDefaults,
+  stampsLeftText,
+} from '../../packages/contracts/src/customer-reminders.js';
 import { deliverCustomerReminder } from '../../apps/worker/src/customer-reminders.js';
 import type { GoogleWallet } from '../../apps/api/src/wallet/google-wallet.js';
 import { passJson, texts, type AppleWalletSigner } from '../../apps/api/src/wallet/apple-pass.js';
@@ -199,7 +202,8 @@ test('settings, customer consent, scheduling, leases, delivery and return tracki
   const apple = jobs.find((job) => job.channel === 'apple'),
     google = jobs.find((job) => job.channel === 'google');
   const card = (await db.query('SELECT wallet_card_json($1) AS card', [membership])).rows[0].card;
-  assert.match(card.reminder_ar, /مريم/);
+  assert.ok(card.reminder_templates?.wallet, 'the pass gets the shop templates');
+  assert.equal(card.reminder_ar, undefined);
   const pass = passJson(card, {
     serial: randomUUID(),
     authToken: 'test',
@@ -208,8 +212,14 @@ test('settings, customer consent, scheduling, leases, delivery and return tracki
   });
   const reminderValue = pass.storeCard.backFields.find((field) => field.key === 'reminder')!.value;
   assert.match(reminderValue, /^reminder_[a-f0-9]+$/);
-  assert.equal((texts(card).ar as Record<string, string>)[reminderValue], card.reminder_ar);
-  assert.equal((texts(card).en as Record<string, string>)[reminderValue], card.reminder_en);
+  const arText = (texts(card).ar as Record<string, string>)[reminderValue]!,
+    left = card.threshold - card.display_balance;
+  // Written for this customer: their name and their own stamps left.
+  assert.match(arText, /مريم/);
+  assert.ok(arText.includes(stampsLeftText(left, 'ar')), arText);
+  assert.ok(
+    (texts(card).en as Record<string, string>)[reminderValue]!.includes(stampsLeftText(left, 'en')),
+  );
   let pushes = 0;
   const appleResult = await deliverCustomerReminder(apple, worker, {
     apple: async () => {
@@ -238,8 +248,9 @@ test('settings, customer consent, scheduling, leases, delivery and return tracki
   const skipped = await deliverCustomerReminder(google, worker, {});
   assert.equal(skipped.outcome, 'skipped');
   assert.equal(
-    (await db.query('SELECT wallet_card_json($1) AS card', [membership])).rows[0].card.reminder_ar,
-    '',
+    (await db.query('SELECT wallet_card_json($1) AS card', [membership])).rows[0].card
+      .reminder_templates,
+    null,
   );
   await consent(true);
   // A lost POST response is reconciled by GET. Duplicate message IDs alone do not deduplicate Google sends.
@@ -282,6 +293,54 @@ test('settings, customer consent, scheduling, leases, delivery and return tracki
     google.id,
     google.lease,
   ]);
+  // The same absence gets the next reminder once cooldownDays pass, up to maxReminders (3).
+  const age = (days: number) =>
+    db.query(
+      `UPDATE customer_reminders SET created_at=created_at-make_interval(days=>$2) WHERE profile_id=$1`,
+      [profile, days],
+    );
+  assert.equal(await schedule(), 0, 'cooldown holds the next reminder');
+  await age(settings.cooldownDays + 1);
+  assert.equal(await schedule(), 2, 'second reminder, one per channel');
+  await age(settings.cooldownDays + 1);
+  assert.equal(await schedule(), 2, 'third reminder');
+  await age(settings.cooldownDays + 1);
+  assert.equal(await schedule(), 0, 'no more than maxReminders per absence');
+  assert.deepEqual(
+    (
+      await db.query(
+        "SELECT array_agg(step ORDER BY step) AS steps FROM customer_reminders WHERE profile_id=$1 AND channel='apple'",
+        [profile],
+      )
+    ).rows[0].steps,
+    [1, 2, 3],
+  );
+  // A visit restarts the absence: the queued third reminder is dropped before it is sent,
+  // and nothing new is scheduled the same day. Collecting a reward counts as a visit too.
+  const operation = (
+    await db.query(
+      "INSERT INTO operations(actor_id,merchant_id,scope,idempotency_key,request_hash) VALUES($1,$2,'reminder.fixture',$3,'fixture') RETURNING id",
+      [ids.ownerA, ids.merchantA, randomUUID()],
+    )
+  ).rows[0].id;
+  await db.query(
+    `INSERT INTO loyalty_transactions(public_reference,merchant_id,membership_id,program_version_id,branch_id,staff_id,operation_id,type,quantity,source)
+    SELECT $1,merchant_id,id,program_version_id,$3,$4,$5,'redeem',0,'redemption' FROM memberships WHERE id=$2`,
+    [randomUUID(), membership, ids.branchA, ids.staffA, operation],
+  );
+  assert.equal(await claim(), null);
+  assert.equal(await claim(), null);
+  assert.deepEqual(
+    (
+      await db.query(
+        'SELECT DISTINCT status FROM customer_reminders WHERE profile_id=$1 AND step=3',
+        [profile],
+      )
+    ).rows,
+    [{ status: 'skipped' }],
+  );
+  await age(settings.cooldownDays + 1);
+  assert.equal(await schedule(), 0, 'no reminder on the day of a visit');
   await purchase('now');
   await schedule();
   assert.equal(
@@ -304,6 +363,6 @@ test('settings, customer consent, scheduling, leases, delivery and return tracki
       [membership],
     )
   ).rows[0].strip;
-  assert.equal(strip.reminder_ar, undefined);
+  assert.equal(strip.reminder_templates, undefined);
   assert.equal(strip.customer_name, undefined);
 });

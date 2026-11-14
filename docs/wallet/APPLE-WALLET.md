@@ -7,6 +7,10 @@ many stamps are left, and updates itself after every stamp with a lock-screen no
 
 - The pass carries **no barcode**. Stamping still uses the short-lived, device-bound QR on the web card
   (D12). The back of the pass links to the web card.
+- iOS gives every pass the same tall shape, so the card face is the top part (logo, stamp strip,
+  reward) and the area where a barcode would sit stays in the card colour.
+- The stamp strip draws the same ink stamps, dashed empty slots and edition artwork as the web card
+  (`apps/api/src/wallet/pass-artwork.ts`, colours from `packages/domain/src/wallet-theme.ts`).
 - The pass carries no customer name or phone, only the business, stamps and reward.
 - `sharingProhibited` is set. A closed or deleted card is pushed one last time as `voided` and its
   device registrations are deleted.

@@ -8,8 +8,10 @@ import type {
   StampIcon,
   StampShape,
 } from '../../../../packages/contracts/src/branding.js';
-import { stripSvg } from './pass-artwork.js';
-import { walletTheme } from '../../../../packages/domain/src/wallet-theme.js';
+import { posterArtworkSvg, stripSvg } from './pass-artwork.js';
+import { mix, walletTheme } from '../../../../packages/domain/src/wallet-theme.js';
+import { templateCategory } from '../../../../packages/contracts/src/branding.js';
+import { walletReminderText } from '../../../../packages/contracts/src/customer-reminders.js';
 export { inkFor, stripSvg } from './pass-artwork.js';
 import { APPLE_SERVICE_PREFIX } from './constants.js';
 import { perksIconSvg } from '../../../../packages/domain/src/brand.js';
@@ -34,8 +36,11 @@ export interface WalletCard {
   reward_terms: string;
   active: boolean;
   earning_active: boolean;
-  reminder_ar?: string;
-  reminder_en?: string;
+  /** The shop's Wallet reminder templates while a reminder is being delivered to this card. */
+  reminder_templates?: {
+    wallet: { ar: string; en: string };
+    walletReady?: { ar: string; en: string } | null;
+  } | null;
 }
 export interface AppleWalletSigner {
   passTypeIdentifier: string;
@@ -99,24 +104,39 @@ const escapeXml = (s: string) => s.replace(/[<>&"']/g, (ch) => '&#' + ch.charCod
 
 const arStamps = (n: number) =>
   n === 1 ? 'ختم واحد' : n === 2 ? 'ختمين' : n <= 10 ? `${n} أختام` : `${n} ختم`;
+// The reminder is written for this customer: stamps left, or the reward waiting for them.
+const reminderTexts = (card: WalletCard) =>
+  card.active && card.reminder_templates
+    ? {
+        ar: walletReminderText(card.reminder_templates, card, 'ar'),
+        en: walletReminderText(card.reminder_templates, card, 'en'),
+      }
+    : null;
 const reminderKey = (card: WalletCard) =>
-  card.active && card.reminder_ar
+  reminderTexts(card)
     ? 'reminder_' +
       createHash('sha256')
-        .update(JSON.stringify([card.reminder_ar, card.reminder_en]))
+        .update(JSON.stringify(reminderTexts(card)))
         .digest('hex')
         .slice(0, 24)
     : '';
+const editionLabels = {
+  cafe: ['عضوية الكافيه', 'Café membership'],
+  restaurant: ['عضوية المطعم', 'Dining membership'],
+  barber: ['عضوية العناية', 'Grooming membership'],
+  general: ['عضوية ولاء', 'Loyalty membership'],
+} as const;
 export function texts(card: WalletCard) {
+  const edition = editionLabels[templateCategory(card.template ?? 'classic')];
   const left = Math.max(0, card.threshold - card.display_balance),
     ready = card.pending_rewards > 0;
   return {
     ar: {
       stamps_label: 'الأختام',
+      edition_value: edition[0],
       reward_label: 'المكافأة',
       member_label: 'باسم',
       member_value: 'عميل Perks',
-      qr_hint: 'امسح الكود يفتح كارتك',
       left_label: ready ? 'مكافأتك' : 'فاضل',
       left_value: !card.active ? 'مقفول' : ready ? 'جاهزة 🎁' : arStamps(left),
       status_label: 'حالة الكارت',
@@ -127,7 +147,7 @@ export function texts(card: WalletCard) {
           : `باقي ${arStamps(left)} على المكافأة`,
       status_change: '%@',
       reminder_label: 'رسالة من المحل',
-      ...(reminderKey(card) ? { [reminderKey(card)]: card.reminder_ar! } : {}),
+      ...(reminderKey(card) ? { [reminderKey(card)]: reminderTexts(card)!.ar } : {}),
       open_label: 'افتح الكارت',
       open_value: 'علشان تاخد ختم، افتح كارتك واعرض الكود للكاشير',
       terms_label: 'الشروط',
@@ -136,10 +156,10 @@ export function texts(card: WalletCard) {
     },
     en: {
       stamps_label: 'Stamps',
+      edition_value: edition[1],
       reward_label: 'Reward',
       member_label: 'Member',
       member_value: 'Perks member',
-      qr_hint: 'Scan to open your card',
       left_label: ready ? 'Your reward' : 'To go',
       left_value: !card.active
         ? 'Closed'
@@ -154,7 +174,7 @@ export function texts(card: WalletCard) {
           : `${left} ${left === 1 ? 'stamp' : 'stamps'} to your reward`,
       status_change: '%@',
       reminder_label: 'A message from the business',
-      ...(reminderKey(card) ? { [reminderKey(card)]: card.reminder_en || card.reminder_ar! } : {}),
+      ...(reminderKey(card) ? { [reminderKey(card)]: reminderTexts(card)!.en } : {}),
       open_label: 'Open your card',
       open_value: 'To get a stamp, open your card and show the code to the cashier',
       terms_label: 'Terms',
@@ -213,16 +233,45 @@ export function passJson(
     backgroundColor: rgb(theme.background),
     foregroundColor: rgb(theme.ink),
     labelColor: rgb(theme.label),
+    // No barcode: the pass is a card face. Stamping uses the live code on the web card.
     sharingProhibited: true,
-    barcodes: [
-      {
-        format: 'PKBarcodeFormatQR',
-        message: cardUrl,
-        messageEncoding: 'iso-8859-1',
-        altText: 'qr_hint',
-      },
-    ],
     ...(card.active ? {} : { voided: true }),
+    // iOS 27+: the whole card face is the shop's edition (artwork.png). Wallet picks this style
+    // when it knows it; older iPhones fall back to the storeCard below.
+    footerBackgroundColor: rgb(mix(theme.background, theme.ink, 0.08)),
+    posterGeneric: {
+      headerFields: [
+        {
+          key: 'stamps',
+          label: 'stamps_label',
+          value: `${Math.min(card.display_balance, card.threshold)}/${card.threshold}`,
+        },
+      ],
+      primaryFields: [
+        // An empty label makes the first primary field the large title.
+        // Centred, so the reward lines sit away from the card edges.
+        {
+          key: 'reward',
+          label: '',
+          value: card.reward_title,
+          textAlignment: 'PKTextAlignmentCenter',
+        },
+        {
+          key: 'left',
+          label: 'left_label',
+          value: 'left_value',
+          textAlignment: 'PKTextAlignmentCenter',
+        },
+      ],
+      footerFields: [
+        {
+          key: 'edition',
+          label: '',
+          value: 'edition_value',
+          textAlignment: 'PKTextAlignmentCenter',
+        },
+      ],
+    },
     storeCard: {
       headerFields: [
         {
@@ -387,6 +436,22 @@ export async function walletLogo(source: Buffer, h: number) {
     .png()
     .toBuffer();
 }
+/**
+ * The poster logo with clear space on the card-edge side, so the logo does not sit tight
+ * against the edge. Wallet places the image; this is the only margin we control.
+ */
+export async function posterLogo(source: Buffer, h: number, rtl: boolean) {
+  const logo = await walletLogo(source, h),
+    edge = Math.round(h * 0.3);
+  return sharp(logo)
+    .extend({
+      left: rtl ? 0 : edge,
+      right: rtl ? edge : 0,
+      background: { r: 0, g: 0, b: 0, alpha: 0 },
+    })
+    .png()
+    .toBuffer();
+}
 export async function buildPkpass(
   card: WalletCard,
   options: {
@@ -409,8 +474,27 @@ export async function buildPkpass(
     ['strip@2x.png', await png(stripSvg(card, 2), 750, 288)],
     ['strip@3x.png', await png(stripSvg(card, 3), 1125, 432)],
   ];
-  if (options.logo)
+  for (const scale of [1, 2, 3]) {
+    const suffix = scale > 1 ? '@' + scale + 'x' : '';
+    files.push(
+      [`artwork${suffix}.png`, await png(posterArtworkSvg(card, scale), 358 * scale, 448 * scale)],
+      [
+        `ar.lproj/artwork${suffix}.png`,
+        await png(posterArtworkSvg(card, scale, true), 358 * scale, 448 * scale),
+      ],
+    );
+  }
+  if (options.logo) {
     for (const [name, h] of logoSizes) files.push([name, await walletLogo(options.logo, h)]);
+    // The poster's logo slot is 30 points tall (up to 126 wide). Arabic puts it on the right.
+    for (const scale of [1, 2, 3]) {
+      const name = `primaryLogo${scale > 1 ? '@' + scale + 'x' : ''}.png`;
+      files.push(
+        [name, await posterLogo(options.logo, 30 * scale, false)],
+        ['ar.lproj/' + name, await posterLogo(options.logo, 30 * scale, true)],
+      );
+    }
+  }
   const t = texts(card);
   // Arabic phones fill the stamps from the right, like the Arabic web card.
   for (const scale of [1, 2, 3])

@@ -7,7 +7,7 @@ import {
   objectId,
   type GoogleWallet,
 } from '../../api/src/wallet/google-wallet.js';
-import { personalizeMessage } from '../../../packages/contracts/src/customer-reminders.js';
+import { walletReminderText } from '../../../packages/contracts/src/customer-reminders.js';
 import { appleWalletPush } from './apple-wallet-push.js';
 
 interface ReminderJob {
@@ -16,7 +16,10 @@ interface ReminderJob {
   channel: 'apple' | 'google';
   reconcileOnly: boolean;
   card: WalletCard;
-  templates: { ar: string; en: string };
+  templates: {
+    wallet: { ar: string; en: string };
+    walletReady?: { ar: string; en: string } | null;
+  };
   objectKey: string | null;
   tokens: string[];
 }
@@ -78,9 +81,7 @@ export async function deliverCustomerReminder(
   if (job.reconcileOnly) return { outcome: 'uncertain', error: 'GOOGLE_DELIVERY_UNCONFIRMED' };
   if (!(await allowed())) return { outcome: 'skipped', error: 'NO_LONGER_ELIGIBLE' };
   const message = (lang: 'ar' | 'en') =>
-    plainHtml(
-      personalizeMessage(job.templates[lang], job.card.customer_name || '', job.card.merchant_name),
-    );
+    plainHtml(walletReminderText(job.templates, job.card, lang));
   try {
     const response = await g.fetch(url + '/addMessage', {
       method: 'POST',

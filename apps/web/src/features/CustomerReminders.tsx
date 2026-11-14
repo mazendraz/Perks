@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { Language } from '../../../../packages/contracts/src/index.js';
 import {
-  personalizeMessage,
+  walletReminderText,
   type ReminderSettings,
   type WhatsAppPurpose,
 } from '../../../../packages/contracts/src/customer-reminders.js';
@@ -32,6 +32,14 @@ export interface ReminderConfig {
     returned_at: string | null;
   }[];
 }
+// Preview data: a customer two stamps away from the reward.
+const sampleCard = (lang: 'ar' | 'en', business: string) => ({
+  customer_name: lang === 'ar' ? 'مريم' : 'Mariam',
+  merchant_name: business,
+  threshold: 8,
+  display_balance: 6,
+  reward_title: lang === 'ar' ? 'قهوة مجانًا' : 'a free coffee',
+});
 export const purposeLabels = (ar: boolean): Record<WhatsAppPurpose, string> => ({
   followup: ar ? 'متابعة الزيارة' : 'Visit follow-up',
   welcome: ar ? 'ترحيب بأول زيارة' : 'First visit welcome',
@@ -115,8 +123,8 @@ export function CustomerReminders({
         </label>
         <p className="muted">
           {ar
-            ? 'التذكير بيتحسب من آخر شراء أو ختم مؤكد، وبيتبعت مرة لكل فترة غياب للعميل الموافق على التذكيرات.'
-            : 'Reminders use the latest confirmed purchase or stamp and send once per absence to customers who opted in.'}
+            ? 'الغياب بيتحسب من آخر شراء أو ختم مؤكد. أول تذكير بيوصل بعد الأيام اللي تختارها، والباقي بينهم المدة اللي تحددها، ولما العميل يرجع بيقف لوحده. بيوصل بس للعملاء الموافقين على التذكيرات.'
+            : 'Absence counts from the latest confirmed purchase or stamp. The first reminder goes after the days you choose, the rest are spaced as you set, and they stop once the customer comes back. Only customers who opted in receive them.'}
         </p>
         {!config.providers.apple && !config.providers.google && (
           <p role="status">
@@ -138,15 +146,28 @@ export function CustomerReminders({
             />
           </label>
           <label>
-            {ar ? 'أقل مدة بين تذكيرين بالأيام' : 'Minimum days between reminders'}
+            {ar ? 'كل كام يوم بعد كده؟' : 'Then every … days'}
             <input
               type="number"
-              min={7}
+              min={2}
               max={365}
               required
               value={settings.cooldownDays}
               onChange={(e) => setSettings({ ...settings, cooldownDays: e.target.valueAsNumber })}
             />
+          </label>
+          <label>
+            {ar ? 'أقصى عدد تذكيرات في الغيبة' : 'Most reminders per absence'}
+            <Select
+              value={String(settings.maxReminders)}
+              onChange={(e) => setSettings({ ...settings, maxReminders: Number(e.target.value) })}
+            >
+              {[1, 2, 3, 4, 5].map((n) => (
+                <option key={n} value={n}>
+                  {n}
+                </option>
+              ))}
+            </Select>
           </label>
           <label>
             {ar ? 'ساعة بدء الإرسال' : 'Start sending at'}
@@ -191,17 +212,40 @@ export function CustomerReminders({
             }
           />
         </label>
+        <p>
+          {walletReminderText(
+            settings,
+            { ...sampleCard(editingLanguage, config.merchantName), pending_rewards: 0 },
+            editingLanguage,
+          )}
+        </p>
+        <label>
+          {ar ? 'رسالة لما المكافأة تكون جاهزة' : 'Message when a reward is waiting'}
+          <textarea
+            dir={editingLanguage === 'ar' ? 'rtl' : 'ltr'}
+            required
+            maxLength={800}
+            rows={3}
+            value={settings.walletReady[editingLanguage]}
+            onChange={(e) =>
+              setSettings({
+                ...settings,
+                walletReady: { ...settings.walletReady, [editingLanguage]: e.target.value },
+              })
+            }
+          />
+        </label>
+        <p>
+          {walletReminderText(
+            settings,
+            { ...sampleCard(editingLanguage, config.merchantName), pending_rewards: 1 },
+            editingLanguage,
+          )}
+        </p>
         <p className="muted">
           {ar
-            ? 'استخدم {name} لاسم العميل و{business} لاسم المحل. الرسالة بتتبعت بلغة العميل.'
-            : 'Use {name} for the customer and {business} for the business. Reminders use the customer’s language.'}
-        </p>
-        <p>
-          {personalizeMessage(
-            settings.wallet[editingLanguage],
-            editingLanguage === 'ar' ? 'مريم' : 'Mariam',
-            config.merchantName,
-          )}
+            ? 'استخدم {name} لاسم العميل، {business} لاسم المحل، {left} للأختام الفاضلة (زي «ختمين»)، و{reward} للمكافأة. كل عميل بيوصله الرسالة بأرقامه هو وبلغته.'
+            : 'Use {name} for the customer, {business} for the business, {left} for the stamps left (like “2 stamps”) and {reward} for the reward. Each customer gets their own numbers, in their language.'}
         </p>
         <h3>{ar ? 'قوالب واتساب' : 'WhatsApp templates'}</h3>
         <label>

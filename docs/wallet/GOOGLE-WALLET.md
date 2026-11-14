@@ -1,7 +1,8 @@
 # Google Wallet (L10, Google part)
 
-Same card as the Apple pass: stamps (`3/8`), reward, how many stamps are left, a link back to the web
-card. No barcode and no customer name (see APPLE-WALLET.md for why).
+Same card as the Apple pass: stamps (`3/8`), how many stamps are left, the reward, a link back to the
+web card. No barcode (see APPLE-WALLET.md for why), so the card stays short like a bank card: logo,
+name, the two numbers and the stamp strip.
 
 ## How it works
 

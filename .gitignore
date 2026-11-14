@@ -8,3 +8,6 @@ coverage/
 test-results/
 playwright-report/
 *.log
+
+# Private review reports; never committed.
+/audits/

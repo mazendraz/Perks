@@ -216,3 +216,78 @@ test(
     ]);
   },
 );
+
+// Security M1: per-user and per-address stream caps, released when a stream closes.
+async function attempt(root: string, path: string, headers: typeof one) {
+  const controller = new AbortController();
+  const response = await fetch(root + path, { headers, signal: controller.signal });
+  return {
+    status: response.status,
+    close: async () => {
+      controller.abort();
+      await response.body?.cancel().catch(() => {});
+    },
+  };
+}
+test('one user cannot hold more than the per-user stream cap; closing a stream frees its slot', async () => {
+  const { app: capped } = await buildApp({
+    APP_ENV: 'test',
+    LOG_LEVEL: 'silent',
+    LIVE_MAX_STREAMS_PER_USER: 2,
+    LIVE_MAX_STREAMS_PER_IP: 50,
+  });
+  const root = await capped.listen({ port: 0, host: '127.0.0.1' });
+  const opened: Awaited<ReturnType<typeof attempt>>[] = [];
+  try {
+    const user = await login(capped, 'live-cap-' + randomUUID() + '@nuqta.test');
+    const other = await login(capped, 'live-cap-' + randomUUID() + '@nuqta.test');
+    for (let n = 0; n < 2; n++) opened.push(await attempt(root, '/api/v1/me/events', user));
+    assert.deepEqual(
+      opened.map((s) => s.status),
+      [200, 200],
+    );
+    const third = await attempt(root, '/api/v1/me/events', user);
+    opened.push(third);
+    assert.equal(third.status, 429);
+    const neighbour = await attempt(root, '/api/v1/me/events', other);
+    opened.push(neighbour);
+    assert.equal(neighbour.status, 200);
+    await opened[0]!.close();
+    await delay(50);
+    const again = await attempt(root, '/api/v1/me/events', user);
+    opened.push(again);
+    assert.equal(again.status, 200);
+  } finally {
+    await Promise.all(opened.map((s) => s.close()));
+    await capped.close();
+  }
+});
+test('one client address cannot exhaust the stream budget across many users', async () => {
+  const { app: capped } = await buildApp({
+    APP_ENV: 'test',
+    LOG_LEVEL: 'silent',
+    LIVE_MAX_STREAMS_PER_USER: 5,
+    LIVE_MAX_STREAMS_PER_IP: 2,
+  });
+  const root = await capped.listen({ port: 0, host: '127.0.0.1' });
+  const opened: Awaited<ReturnType<typeof attempt>>[] = [];
+  try {
+    const users = [];
+    for (let n = 0; n < 3; n++)
+      users.push(await login(capped, 'live-ip-' + randomUUID() + '@nuqta.test'));
+    for (const user of users) opened.push(await attempt(root, '/api/v1/me/events', user));
+    assert.deepEqual(
+      opened.map((s) => s.status),
+      [200, 200, 429],
+    );
+    // A rejected stream must not leak a reserved slot.
+    await opened[0]!.close();
+    await delay(50);
+    const again = await attempt(root, '/api/v1/me/events', users[2]!);
+    opened.push(again);
+    assert.equal(again.status, 200);
+  } finally {
+    await Promise.all(opened.map((s) => s.close()));
+    await capped.close();
+  }
+});

@@ -19,6 +19,10 @@ const schema = z.object({
   MAIL_FILE_ROOT: z.string().min(1).default('.local/mail'),
   STORAGE_ROOT: z.string().min(1).default('.local'),
   TRUSTED_PROXIES: z.string().default(''),
+  // Live update (SSE) stream caps: whole process, per signed-in user, per client address.
+  LIVE_MAX_STREAMS: z.coerce.number().int().min(1).default(200),
+  LIVE_MAX_STREAMS_PER_USER: z.coerce.number().int().min(1).default(6),
+  LIVE_MAX_STREAMS_PER_IP: z.coerce.number().int().min(1).default(40),
   SMTP_HOST: z.string().optional(),
   SMTP_PORT: z.coerce.number().int().min(1).max(65535).optional(),
   SMTP_USER: z.string().optional(),

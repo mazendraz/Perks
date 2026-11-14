@@ -88,15 +88,52 @@ export function liveEventsModule(app: FastifyInstance, pools: Pools, c: Config) 
       )
     ).rowCount;
   }
+  // Security M1: one user or one address cannot exhaust the process-wide stream budget.
+  // The per-address cap stays generous because carrier NAT puts many phones behind one IP.
+  const perUser = new Map<string, number>(),
+    perAddress = new Map<string, number>();
+  let open = 0;
+  function reserve(userId: string, address: string) {
+    requireCondition(open < c.LIVE_MAX_STREAMS, 'LIVE_CAPACITY', 503);
+    requireCondition(
+      (perUser.get(userId) ?? 0) < c.LIVE_MAX_STREAMS_PER_USER &&
+        (perAddress.get(address) ?? 0) < c.LIVE_MAX_STREAMS_PER_IP,
+      'LIVE_STREAM_LIMIT',
+      429,
+    );
+    open++;
+    perUser.set(userId, (perUser.get(userId) ?? 0) + 1);
+    perAddress.set(address, (perAddress.get(address) ?? 0) + 1);
+    let released = false;
+    return () => {
+      if (released) return;
+      released = true;
+      open--;
+      for (const [map, id] of [
+        [perUser, userId],
+        [perAddress, address],
+      ] as const) {
+        const left = (map.get(id) ?? 1) - 1;
+        if (left > 0) map.set(id, left);
+        else map.delete(id);
+      }
+    };
+  }
   async function stream(
     req: FastifyRequest,
     reply: FastifyReply,
     branch?: { id: string; merchantId: string },
   ) {
     const actor = authenticated(req);
-    requireCondition(closers.size < 200, 'LIVE_CAPACITY', 503);
-    await connect();
-    requireCondition(await sessionActive(actor), 'UNAUTHENTICATED', 401);
+    // Reserve the slot before any await so concurrent opens cannot overshoot the caps.
+    const release = reserve(actor.id, req.ip);
+    try {
+      await connect();
+      requireCondition(await sessionActive(actor), 'UNAUTHENTICATED', 401);
+    } catch (error) {
+      release();
+      throw error;
+    }
     reply.hijack();
     for (const [name, value] of Object.entries(reply.getHeaders()))
       if (value !== undefined) reply.raw.setHeader(name, value);
@@ -112,6 +149,7 @@ export function liveEventsModule(app: FastifyInstance, pools: Pools, c: Config) 
     const close = () => {
       if (ended) return;
       ended = true;
+      release();
       subscribers.delete(receive);
       closers.delete(close);
       clearInterval(heartbeat);

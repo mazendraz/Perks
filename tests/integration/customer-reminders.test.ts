@@ -328,7 +328,18 @@ test('settings, customer consent, scheduling, leases, delivery and return tracki
     SELECT $1,merchant_id,id,program_version_id,$3,$4,$5,'redeem',0,'redemption' FROM memberships WHERE id=$2`,
     [randomUUID(), membership, ids.branchA, ids.staffA, operation],
   );
-  assert.equal(await claim(), null);
+  // Steps 2 and 3 were never sent in this fixture, so both are still queued on both channels.
+  // Every due reminder must be dropped, oldest first, without sending anything.
+  const due = Number(
+    (
+      await db.query(
+        "SELECT count(*) AS n FROM customer_reminders WHERE profile_id=$1 AND status='queued'",
+        [profile],
+      )
+    ).rows[0].n,
+  );
+  assert.ok(due >= 2);
+  for (let i = 0; i < due; i++) assert.equal(await claim(), null);
   assert.equal(await claim(), null);
   assert.deepEqual(
     (

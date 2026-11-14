@@ -54,8 +54,10 @@ import {
 import {
   customerRegistrationInput,
   customerLookupInput,
-  customerRecoveryInput,
-  recoveryConsumeInput,
+  customerPairingClaimInput,
+  customerPairingStartInput,
+  customerPairingDecisionInput,
+  deviceNoticeInput,
 } from '../../../packages/contracts/src/customer-identity.js';
 
 type Contract = {
@@ -111,22 +113,42 @@ const contracts: Record<string, Contract> = {
     }),
   },
   'POST /api/v1/merchants/:m/customer-recovery/search': { body: customerLookupInput },
-  'POST /api/v1/merchants/:m/customer-recovery': {
-    body: customerRecoveryInput,
-    key: true,
-    response: z.object({ url: z.url(), expiresAt: z.iso.datetime(), draftOnly: z.literal(true) }),
+  'POST /api/v1/merchants/:m/customer-pairings': {
+    body: customerPairingClaimInput,
+    response: z.object({ id: z.uuid(), status: z.enum(['approved', 'awaiting_approval']) }),
+  },
+  'GET /api/v1/merchants/:m/customer-pairings': {
+    response: z.object({ pending: z.array(z.unknown()), flaggedStaff: z.array(z.unknown()) }),
+  },
+  'POST /api/v1/merchants/:m/customer-pairings/:id/decision': {
+    body: customerPairingDecisionInput,
+    response: z.object({ id: z.uuid(), status: z.enum(['approved', 'rejected']) }),
   },
   'PATCH /api/v1/merchants/:m/customer-recovery-settings': {
     body: z.object({ cashierEnabled: z.boolean() }).strict(),
     revision: true,
   },
-  'GET /api/v1/customer/recoveries/:token': {
-    response: z.object({ merchantName: z.string(), merchantId: z.uuid(), valid: z.literal(true) }),
+  'GET /api/v1/customer/pairing-merchants/:m': {
+    response: z.object({ merchantName: z.string(), merchantId: z.uuid() }),
   },
-  'POST /api/v1/customer/recoveries/:token/consume': {
-    body: recoveryConsumeInput,
-    response: z.object({ membershipId: z.uuid(), csrfToken: z.string() }),
+  'POST /api/v1/customer/pairings': {
+    body: customerPairingStartInput,
+    response: z.object({
+      id: z.uuid(),
+      status: z.string(),
+      code: z.string().optional(),
+      expiresAt: z.iso.datetime(),
+      merchantName: z.string(),
+    }),
   },
+  'GET /api/v1/customer/pairings/:id': {
+    response: z.object({ id: z.uuid(), status: z.string(), expiresAt: z.iso.datetime() }),
+  },
+  'POST /api/v1/customer/pairings/:id/consume': {
+    response: z.object({ membershipId: z.uuid().nullable(), csrfToken: z.string() }),
+  },
+  'GET /api/v1/me/device-notices': { response: z.object({ notices: z.array(z.unknown()) }) },
+  'POST /api/v1/me/device-notices/:id': { body: deviceNoticeInput },
   'POST /api/v1/me/experience': { body: experienceInput, key: true },
   'POST /api/v1/me/stamp-requests': { body: stampRequestInput, key: true },
   'POST /api/v1/me/stamp-collections': { body: stampCollectionInput, key: true },

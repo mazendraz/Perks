@@ -1228,3 +1228,21 @@ button[aria-busy='true']::after {
 .branch-position input[lang='en'] {
   font-family: 'Manrope', system-ui, sans-serif;
 }
+
+/* Security H1 pairing-code recovery. Spacing moves onto shared tokens in the UI pass. */
+.customer-recovery-tool .stack,
+.pairing-approvals .stack {
+  display: grid;
+  gap: 0.75rem;
+  margin-block: 0.75rem;
+}
+.pairing-panel .pairing-code {
+  font-size: 2.5rem;
+  font-weight: 800;
+  text-align: center;
+  margin-block: 1rem;
+  user-select: all;
+}
+.device-notice .form-actions {
+  margin-top: 0.75rem;
+}

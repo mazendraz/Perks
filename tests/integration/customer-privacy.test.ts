@@ -121,16 +121,38 @@ async function proof(u: Awaited<ReturnType<typeof customer>>) {
   assert.equal(r.statusCode, 200, r.body);
   return r.json().token as string;
 }
+// An owner-approved pairing for a fresh device (Security H1 pairing-code recovery).
 async function recovery(u: Awaited<ReturnType<typeof customer>>) {
+  const device = await boot();
+  const started = await app.inject({
+    method: 'POST',
+    url: '/api/v1/customer/pairings',
+    headers: device,
+    payload: { merchantId: ids.merchantA },
+  });
+  assert.equal(started.statusCode, 200, started.body);
   const r = await app.inject({
     method: 'POST',
-    url: '/api/v1/merchants/' + ids.merchantA + '/customer-recovery',
-    headers: { ...owner, ...key() },
-    payload: { customerId: u.uid, branchId: ids.branchA, requestedByCustomer: true },
+    url: '/api/v1/merchants/' + ids.merchantA + '/customer-pairings',
+    headers: owner,
+    payload: {
+      customerId: u.uid,
+      branchId: ids.branchA,
+      code: started.json().code,
+      requestedByCustomer: true,
+    },
   });
   assert.equal(r.statusCode, 200, r.body);
-  return new URL(r.json().url).searchParams.get('text')!.match(/\/r\/([a-f0-9]{64})/)![1]!;
+  assert.equal(r.json().status, 'approved');
+  return { device, id: started.json().id as string };
 }
+const consumePairing = (pairing: Awaited<ReturnType<typeof recovery>>) =>
+  app.inject({
+    method: 'POST',
+    url: '/api/v1/customer/pairings/' + pairing.id + '/consume',
+    headers: pairing.device,
+    payload: {},
+  });
 test('deletion is customer-device only, requires confirmation/CSRF/Origin, and cannot target another identity', async () => {
   const a = await customer(),
     b = await customer();
@@ -303,7 +325,7 @@ test('deletion removes PII across shops, revokes credentials/QR/recovery/exports
     0,
   );
   assert.equal((await app.inject({ url: '/api/v1/session', headers: u.headers })).statusCode, 401);
-  assert.equal((await app.inject('/api/v1/customer/recoveries/' + link)).statusCode, 410);
+  assert.equal((await consumePairing(link)).statusCode, 410);
   assert.equal((await app.inject({ url: download, headers: owner })).statusCode, 404);
   assert.equal(
     (
@@ -422,8 +444,7 @@ test('a queued mutation rechecks revocation after deletion instead of recreating
 });
 test('a recovery queued behind deletion cannot reactivate an old or new device', async () => {
   const u = await customer(),
-    token = await recovery(u),
-    anonymous = await boot(),
+    pairing = await recovery(u),
     lock = new pg.Client({ connectionString: c.DATABASE_MIGRATOR_URL });
   await lock.connect();
   let deletion: Promise<Result> | undefined, consume: Promise<Result> | undefined;
@@ -435,12 +456,7 @@ test('a recovery queued behind deletion cannot reactivate an old or new device',
     ]);
     deletion = remove(u);
     await waiters(pid, 1);
-    consume = app.inject({
-      method: 'POST',
-      url: '/api/v1/customer/recoveries/' + token + '/consume',
-      headers: anonymous,
-      payload: { revokeOldDevices: false },
-    });
+    consume = consumePairing(pairing);
     await waiters(pid, 2);
     await lock.query('COMMIT');
     assert.equal((await deletion).statusCode, 200);

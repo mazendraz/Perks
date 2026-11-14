@@ -52,6 +52,8 @@ export async function transaction<T>(
           .valid
       )
         throw new AppError('UNAUTHENTICATED', 401);
+      // Staff-paired devices only see the merchant(s) they were paired at (Security H1).
+      await db.query('SELECT apply_customer_device_scope($1)', [actor.sessionId]);
     }
     const result = await fn(db);
     await db.query('COMMIT');

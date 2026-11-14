@@ -21,9 +21,18 @@ export const customerRegistrationInput = z
   })
   .strict();
 export const customerLookupInput = z.object({ phone: customerPhone, branchId: z.uuid() }).strict();
-export const customerRecoveryInput = z
-  .object({ customerId: z.uuid(), branchId: z.uuid(), requestedByCustomer: z.literal(true) })
+// Staff-assisted recovery = pairing: the code is shown only on the customer's own phone.
+export const pairingCode = z.string().regex(/^[0-9]{6}$/, 'Enter the 6-digit code');
+export const customerPairingClaimInput = z
+  .object({
+    customerId: z.uuid(),
+    branchId: z.uuid(),
+    code: pairingCode,
+    requestedByCustomer: z.literal(true),
+  })
   .strict();
-export const recoveryConsumeInput = z
-  .object({ revokeOldDevices: z.boolean().default(true) })
-  .strict();
+export const customerPairingStartInput = z.object({ merchantId: z.uuid() }).strict();
+export const customerPairingDecisionInput = z.object({ approve: z.boolean() }).strict();
+export const deviceNoticeInput = z.object({ removeDevice: z.boolean() }).strict();
+export type PairingStatus =
+  'waiting' | 'awaiting_approval' | 'approved' | 'consumed' | 'rejected' | 'cancelled' | 'expired';

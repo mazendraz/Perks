@@ -28,6 +28,7 @@ import type {
 } from '../../../../packages/contracts/src/index.js';
 import { LoyaltyCard } from '../../../../packages/ui/src/LoyaltyCard.js';
 import { api, errorText, ApiError, setCsrf } from '../api.js';
+import { DeviceNotices } from './CustomerRecovery.js';
 import { navigate } from '../useRoute.js';
 interface HolderChallenge {
   id: string;
@@ -642,6 +643,7 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
   }, [holder?.id]);
   return (
     <>
+      <DeviceNotices lang={lang} />
       {holder && (
         <section
           className="panel holder-confirm"
@@ -795,7 +797,11 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
                       <ActionLabel icon="clock">{ar ? 'آخر نشاط' : 'Recent activity'}</ActionLabel>
                     </button>
                   </div>
-                  <WalletPanel membershipId={card.id} lang={lang} onPreferences={() => setTab('preferences')} />
+                  <WalletPanel
+                    membershipId={card.id}
+                    lang={lang}
+                    onPreferences={() => setTab('preferences')}
+                  />
                   {qr && !holder && (
                     <CustomerCode
                       qr={qr}

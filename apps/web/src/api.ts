@@ -142,8 +142,13 @@ const arErrors: Record<string, string> = {
   CUSTOMER_DEVICE_REVOKED: 'الكارت مش على الجهاز ده. اطلب من الكاشير يرجعهولك على واتساب.',
   CUSTOMER_REGISTRATION_LIMIT: 'وصلت لعدد المحاولات المسموح. جرّب بعد ساعة أو اسأل الكاشير.',
   CUSTOMER_SEARCH_LIMIT: 'وصلت لحد البحث في الساعة. اسأل المدير يساعد العميل.',
-  CUSTOMER_RECOVERY_LIMIT: 'وصلنا لحد 10 روابط للعميل النهارده. جرّب بكرة.',
+  CUSTOMER_RECOVERY_LIMIT: 'وصلنا لحد محاولات الاسترجاع النهارده. جرّب بعدين.',
   CASHIER_RECOVERY_DISABLED: 'استرجاع الكروت متاح للمالك أو المدير عندكم. اطلب مساعدتهم.',
+  PAIRING_CODE_INVALID: 'الكود غلط أو انتهى. خلّي العميل يطلب كود جديد من موبايله.',
+  PAIRING_NOT_PENDING: 'الطلب ده اتقرر أو انتهى خلاص.',
+  PAIRING_SELF_APPROVAL: 'مينفعش توافق على طلب إنت اللي عملته. اطلب من حد تاني في الإدارة.',
+  DEVICE_SCOPE_RECOVERY_REQUIRED:
+    'الموبايل ده مربوط بكارت محل واحد بس. علشان تفتح كروت تانية، اطلب استرجاعها من المحل نفسه.',
   RECOVERY_LINK_INVALID: 'الرابط ده اتستخدم أو انتهى. اطلب من الكاشير رابط جديد.',
   DEVICE_ALREADY_BOUND: 'فيه كارت تاني مربوط بالجهاز. اخرج منه الأول أو افتح الرابط في متصفح تاني.',
   CUSTOMER_QR_REQUIRED: 'امسح كود العميل من موبايله الأول، وبعدها اعتمد الطلب.',
@@ -273,9 +278,13 @@ const enErrors: Record<string, string> = {
     'Your card is not on this device. Ask the cashier to restore it on WhatsApp.',
   CUSTOMER_REGISTRATION_LIMIT: 'Too many attempts. Try again in an hour or ask the cashier.',
   CUSTOMER_SEARCH_LIMIT: 'The hourly search limit was reached. Ask a manager to help the customer.',
-  CUSTOMER_RECOVERY_LIMIT:
-    'This customer reached the limit of 10 recovery links today. Try tomorrow.',
+  CUSTOMER_RECOVERY_LIMIT: 'This customer reached today’s recovery limit. Try again later.',
   CASHIER_RECOVERY_DISABLED: 'Ask the owner or manager to restore this customer’s card.',
+  PAIRING_CODE_INVALID: 'Wrong or expired code. Ask the customer to get a new code on their phone.',
+  PAIRING_NOT_PENDING: 'This request was already decided or expired.',
+  PAIRING_SELF_APPROVAL: 'You cannot approve your own request. Ask another owner or manager.',
+  DEVICE_SCOPE_RECOVERY_REQUIRED:
+    'This phone is linked to one shop’s card only. To open other cards, ask that shop to restore them.',
   RECOVERY_LINK_INVALID: 'This link was used or expired. Ask the cashier for a new one.',
   DEVICE_ALREADY_BOUND:
     'This device is linked to another customer. Sign out first or use another browser.',

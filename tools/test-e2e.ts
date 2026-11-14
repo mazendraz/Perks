@@ -7,7 +7,7 @@ import assert from 'node:assert/strict';
 import { readConfig } from '../apps/api/src/config.js';
 import { hashPassword } from '../apps/api/src/passwords.js';
 import { openMfa } from '../apps/api/src/mfa.js';
-import { totp, tokenHash } from '../apps/api/src/crypto.js';
+import { totp } from '../apps/api/src/crypto.js';
 import { runOne } from '../apps/worker/src/runner.js';
 import { buildApp } from '../apps/api/src/server.js';
 
@@ -1628,12 +1628,16 @@ try {
     .filter({ hasText: 'Browser Customer' })
     .waitFor();
   await op.getByLabel('The customer asked to restore their card', { exact: true }).check();
-  await op.getByRole('button', { name: 'Prepare WhatsApp recovery', exact: true }).click();
+  // Security H1: the staff screen offers only the shop's generic restore page, never a credential.
   const recoveryDraft = new URL(
-    (await op.getByRole('link', { name: 'Open WhatsApp', exact: true }).getAttribute('href'))!,
+    (await op
+      .getByRole('link', { name: 'Send the link on WhatsApp', exact: true })
+      .getAttribute('href'))!,
   );
   assert.equal(recoveryDraft.pathname, '/' + customerPhone.slice(1));
-  const recoveryToken = /\/r\/([a-f0-9]{64})/.exec(recoveryDraft.searchParams.get('text')!)![1]!;
+  const draftText = recoveryDraft.searchParams.get('text')!;
+  assert.ok(!/[a-f0-9]{64}/.test(draftText));
+  const restorePath = /\/r\/[0-9a-f-]{36}/.exec(draftText)![0]!;
   const beforeRecovery = (
     await db.query(
       'SELECT balance,revision,cycle_number FROM loyalty_accounts WHERE membership_id=$1',
@@ -1642,21 +1646,17 @@ try {
   ).rows[0];
   const recoveredContext = await context(),
     recoveredPage = await recoveredContext.newPage();
-  await navigateTo(recoveredPage, '/r/' + recoveryToken);
-  await recoveredPage.getByRole('button', { name: 'Open my card', exact: true }).waitFor();
-  assert.equal(
-    (
-      await db.query('SELECT used_at FROM customer_recoveries WHERE token_hash=$1', [
-        tokenHash(recoveryToken),
-      ])
-    ).rows[0].used_at,
-    null,
-  );
-  assert.equal(
-    await recoveredPage.getByLabel('Remove access from old devices', { exact: true }).isChecked(),
-    true,
-  );
-  await recoveredPage.getByRole('button', { name: 'Open my card', exact: true }).click();
+  await navigateTo(recoveredPage, restorePath);
+  const pairingCode = (
+    await recoveredPage.getByLabel('Recovery code', { exact: true }).innerText()
+  ).replace(/\D/g, '');
+  assert.match(pairingCode, /^[0-9]{6}$/);
+  await op.getByLabel('Code on the customer’s phone', { exact: true }).fill(pairingCode);
+  await op.getByRole('button', { name: 'Pair the customer’s phone', exact: true }).click();
+  await op
+    .getByRole('status')
+    .filter({ hasText: 'The card opens on the customer’s phone now.' })
+    .waitFor();
   await recoveredPage.getByRole('progressbar', { name: 'Stamp progress', exact: true }).waitFor();
   assert.equal(new URL(recoveredPage.url()).pathname, '/customer/' + membership);
   assert.deepEqual(
@@ -1668,20 +1668,19 @@ try {
     ).rows[0],
     beforeRecovery,
   );
+  // The customer's own phone keeps working and is told about the new device.
   await reloadPage(up);
-  await up.getByRole('heading', { name: 'Your card is not on this device', exact: true }).waitFor();
-  assert.equal(await up.locator('input[type=email],input[type=password]').count(), 0);
-  await navigateTo(recoveredPage, '/r/' + recoveryToken);
-  await recoveredPage
-    .getByRole('alert')
-    .filter({ hasText: 'This link was used or expired.' })
-    .waitFor();
-  await navigateTo(recoveredPage, '/customer/account');
-  await recoveredPage.getByRole('button', { name: 'Review deletion', exact: true }).click();
-  await recoveredPage
+  await up.getByRole('progressbar', { name: 'Stamp progress', exact: true }).waitFor();
+  await up.getByText('A new phone was added to your card', { exact: true }).waitFor();
+  await up.getByRole('button', { name: 'This was me', exact: true }).click();
+  // Account deletion (all shops) is only possible from the customer's own device.
+  const recoveredAccount = up;
+  await navigateTo(recoveredAccount, '/customer/account');
+  await recoveredAccount.getByRole('button', { name: 'Review deletion', exact: true }).click();
+  await recoveredAccount
     .getByLabel('I understand this deletes access to all my cards and rewards', { exact: true })
     .check();
-  await recoveredPage.route(
+  await recoveredAccount.route(
     '**/api/v1/me/privacy/delete',
     async (route) => {
       const saved = await route.fetch();
@@ -1690,8 +1689,10 @@ try {
     },
     { times: 1 },
   );
-  await recoveredPage.getByRole('button', { name: 'Delete customer account', exact: true }).click();
-  await recoveredPage
+  await recoveredAccount
+    .getByRole('button', { name: 'Delete customer account', exact: true })
+    .click();
+  await recoveredAccount
     .getByRole('heading', { name: 'Customer account deleted', exact: true })
     .waitFor();
   assert.deepEqual(
@@ -1704,7 +1705,7 @@ try {
     beforeRecovery,
   );
   assert.equal(
-    (await recoveredContext.cookies()).filter((cookie) =>
+    (await recoveredAccount.context().cookies()).filter((cookie) =>
       /^(?:__Host-)?nq_device$/.test(cookie.name),
     ).length,
     0,
@@ -1722,7 +1723,7 @@ try {
   );
   await recoveredContext.close();
   ok(
-    'Owner prepares a requested manual WhatsApp recovery; GET leaves it unused, a new browser restores the same stamps once, and the old device loses access without a password screen',
+    'Owner pairs a requested recovery by the code on the customer phone; staff never see a credential, the new browser restores the same stamps, and the old device keeps access and is notified',
   );
   const staffReset = await context(),
     staffResetPage = await staffReset.newPage();

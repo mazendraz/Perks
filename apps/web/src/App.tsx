@@ -17,6 +17,7 @@ import { useCallback, useEffect, useState, lazy, Suspense, type ReactNode } from
 import type { Session, Language } from '../../../packages/contracts/src/index.js';
 import { api, ApiError, errorText, setCsrf } from './api.js';
 import { navigate, useRoute } from './useRoute.js';
+import { SuspendedNotice } from './features/SuspendedNotice.js';
 const PlatformPage = lazy(() =>
   import('./features/PlatformPage.js').then((m) => ({ default: m.PlatformPage })),
 );
@@ -382,7 +383,9 @@ function Workspace({
         </>
       );
     else content = <PlatformPage lang={lang} userId={session.user.id} />;
-  } else if (route === '/merchant' && grant)
+  } else if ((route === '/merchant' || route === '/cashier') && grant?.status === 'suspended')
+    content = <SuspendedNotice grant={grant} lang={lang} />;
+  else if (route === '/merchant' && grant)
     content = <MerchantPage key={grant.id} grant={grant} lang={lang} />;
   else if (route === '/cashier' && grant)
     content = <CashierPage key={grant.id} grant={grant} lang={lang} />;

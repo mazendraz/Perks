@@ -8,6 +8,7 @@ import {
   loadGoogleWallet,
   objectId,
   patchGoogle,
+  putGoogle,
   stripVersion,
   type GoogleWallet,
 } from '../../api/src/wallet/google-wallet.js';
@@ -35,14 +36,14 @@ export async function runGoogleWalletUpdates(
     const object = googleObject(g, card, object_key, c.PUBLIC_APP_ORIGIN, stripVersion(card));
     let status: number;
     try {
-      status = await patchGoogle(g, 'loyaltyObject', objectId(g, object_key), {
+      status = await putGoogle(g, 'loyaltyObject', objectId(g, object_key), {
         ...object,
         // Transient: Google notifies (max 3 per day) when loyaltyPoints.balance changes.
         notifyPreference: 'notifyOnUpdate',
       });
       // Over the notification quota: deliver the update silently.
       if (status === 429)
-        status = await patchGoogle(g, 'loyaltyObject', objectId(g, object_key), object);
+        status = await putGoogle(g, 'loyaltyObject', objectId(g, object_key), object);
     } catch {
       status = 0;
     }
@@ -56,6 +57,7 @@ export async function runGoogleWalletUpdates(
       await patchGoogle(g, 'loyaltyClass', classId(g, card), {
         issuerName: klass.issuerName,
         programName: klass.programName,
+        localizedProgramName: klass.localizedProgramName,
         programLogo: klass.programLogo,
         hexBackgroundColor: klass.hexBackgroundColor,
       });

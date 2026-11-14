@@ -125,3 +125,56 @@ test('Poster artwork (iOS 27) is 358×448 and keeps the stamps between the heade
   const meta = await sharp(Buffer.from(posterArtworkSvg(card, 3))).metadata();
   assert.deepEqual([meta.width, meta.height], [1074, 1344]);
 });
+
+test('the shop logo is drawn large in the Apple poster and Google gets the same card face', async () => {
+  const { posterArtworkSvg, googleHeroSvg, posterLayout, POSTER } =
+    await import('../../apps/api/src/wallet/pass-artwork.js');
+  const { artworkLogo } = await import('../../apps/api/src/wallet/apple-pass.js');
+  const square = await sharp({
+    create: { width: 300, height: 300, channels: 4, background: '#204e43' },
+  })
+    .png()
+    .toBuffer();
+  const logo = await artworkLogo(square);
+  assert.equal(logo.width, logo.height);
+  const svg = posterArtworkSvg(card, 1, false, { logo });
+  assert.equal((svg.match(/data-logo="true"/g) || []).length, 1);
+  // The stamps move down below the logo and stay in the poster band.
+  const firstY = Number(/data-slot="1"[^>]*translate\([\d.]+ ([\d.]+)\)/.exec(svg)![1]);
+  assert.ok(firstY > posterLayout(card.threshold).slots[0]!.y);
+  assert.ok(firstY < POSTER.bottom);
+  const meta = await sharp(Buffer.from(googleHeroSvg(card, 2, true))).metadata();
+  assert.deepEqual([meta.width, meta.height], [1032, 812]);
+  assert.ok(!googleHeroSvg(card, 1).includes('<image'), 'Google shows the logo itself');
+});
+
+test('logos are placed as uploaded: margins trimmed, nothing added behind them', async () => {
+  const { walletLogo, posterLogo, artworkLogo } =
+    await import('../../apps/api/src/wallet/apple-pass.js');
+  const { googleLogoTile } = await import('../../apps/api/src/wallet/google-wallet.js');
+  // A small blue dot in the middle of a large transparent canvas.
+  const source = await sharp(
+    Buffer.from(
+      '<svg xmlns="http://www.w3.org/2000/svg" width="600" height="600"><circle cx="300" cy="300" r="100" fill="#1d4ed8"/></svg>',
+    ),
+  )
+    .png()
+    .toBuffer();
+  for (const png of [await walletLogo(source, 150), await posterLogo(source, 90, true)]) {
+    const { data, info } = await sharp(png)
+      .ensureAlpha()
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+    assert.equal(data[3], 0, 'corner stays transparent: no tile or frame');
+    // Trimmed: the dot fills the logo height instead of a third of it.
+    const middle = (Math.floor(info.height / 2) * info.width + Math.floor(info.height / 2)) * 4;
+    assert.ok(data[middle + 3]! > 200);
+  }
+  const art = await artworkLogo(source);
+  assert.ok(Math.abs(art.width - art.height) <= 2);
+  // Google's circle gets the card colour behind the logo, nothing else.
+  const tile = await sharp(await googleLogoTile(source, '#204e43'))
+    .raw()
+    .toBuffer();
+  assert.deepEqual([...tile.subarray(0, 3)], [0x20, 0x4e, 0x43]);
+});

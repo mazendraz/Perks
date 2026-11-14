@@ -1,10 +1,12 @@
 import { createHash, createSign } from 'node:crypto';
+import sharp from 'sharp';
 import { readFileSync } from 'node:fs';
 import { texts, type WalletCard } from './apple-pass.js';
 import { WALLET_ARTWORK_VERSION } from './pass-artwork.js';
 import { walletTheme } from '../../../../packages/domain/src/wallet-theme.js';
 
 export const GOOGLE_STRIP_PREFIX = '/api/v1/public/wallet/google/strips';
+export const GOOGLE_LOGO_PREFIX = '/api/v1/public/wallet/google/logos';
 export interface GoogleWallet {
   issuerId: string;
   clientEmail: string;
@@ -72,13 +74,25 @@ export function googleClass(
   card: WalletCard & { logo_asset_id?: string | null },
   origin: string,
 ) {
+  // Google crops the logo to a circle: this endpoint centres it on the card colour.
   const logo = card.logo_asset_id
-    ? origin + '/api/v1/public/merchants/' + card.merchant_id + '/logos/' + card.logo_asset_id
+    ? origin +
+      GOOGLE_LOGO_PREFIX +
+      '/' +
+      card.merchant_id +
+      '/' +
+      card.logo_asset_id +
+      '/' +
+      walletTheme(card).background.slice(1) +
+      '.png'
     : origin + '/icons/perks-512.png';
+  const t = texts(card);
   return {
     id: classId(g, card),
     issuerName: card.merchant_name,
-    programName: card.merchant_name,
+    // The shop name is already the header; the big title names the card, like the web card.
+    programName: t.ar.edition_value,
+    localizedProgramName: localized(t.ar.edition_value, t.en.edition_value),
     programLogo: {
       sourceUri: { uri: logo },
       contentDescription: localized('شعار ' + card.merchant_name, card.merchant_name + ' logo'),
@@ -213,6 +227,26 @@ export async function accessToken(g: GoogleWallet) {
   return token.value;
 }
 const api = 'https://walletobjects.googleapis.com/walletobjects/v1';
+/**
+ * PUT replaces the whole saved card, so fields we stopped sending (the old QR code, an old
+ * reminder message) disappear. 404 means the customer never saved the card.
+ */
+export async function putGoogle(
+  g: GoogleWallet,
+  kind: 'loyaltyObject',
+  id: string,
+  body: Record<string, unknown>,
+) {
+  const r = await g.fetch(api + '/' + kind + '/' + encodeURIComponent(id), {
+    method: 'PUT',
+    headers: {
+      authorization: 'Bearer ' + (await accessToken(g)),
+      'content-type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
+  return r.status;
+}
 // PATCH; 404 means the customer never saved the card, which is normal and not an error.
 export async function patchGoogle(
   g: GoogleWallet,
@@ -229,4 +263,27 @@ export async function patchGoogle(
     body: JSON.stringify(body),
   });
   return r.status;
+}
+
+/**
+ * Google crops the program logo to a circle and needs a filled square. The logo, as uploaded, is
+ * centred at 70% on the card's own colour, so nothing new appears behind it.
+ */
+export async function googleLogoTile(source: Buffer, background: string) {
+  const size = 660,
+    inner = Math.round(size * 0.7);
+  let trimmed = source;
+  try {
+    trimmed = await sharp(source).trim({ threshold: 12 }).png().toBuffer();
+  } catch {
+    // Nothing to trim.
+  }
+  const logo = await sharp(trimmed)
+    .resize(inner, inner, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
+    .png()
+    .toBuffer();
+  return sharp({ create: { width: size, height: size, channels: 4, background } })
+    .composite([{ input: logo, gravity: 'centre' }])
+    .png()
+    .toBuffer();
 }

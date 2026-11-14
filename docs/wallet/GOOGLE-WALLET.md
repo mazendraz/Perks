@@ -13,7 +13,7 @@ name, the two numbers and the stamp strip.
 - **Stamp strip:** Google downloads it from
   `/api/v1/public/wallet/google/strips/<key>/<version>.png`. The version changes whenever the stamps
   change, so Google fetches the new picture.
-- **Updates:** the worker checks every 2 seconds for cards whose content changed and `PATCH`es the
+- **Updates:** the worker checks every 2 seconds for cards whose content changed and replaces (`PUT`) the
   object with `notifyPreference: notifyOnUpdate`, so the phone gets a notification when the stamp
   count changes. Google allows at most 3 notifications per pass per day; past that the update is
   sent silently. A 404 means the customer never saved the card. A network error or 5xx is retried.
@@ -29,3 +29,13 @@ name, the two numbers and the stamp strip.
    `GOOGLE_WALLET_SERVICE_ACCOUNT_FILE`.
 5. Until Google approves publishing access, only the test accounts added in the console can save the
    card ("demo mode").
+
+## Card face (Nov 2026)
+
+- The large image is the whole card face (1032×812, `googleHeroSvg` in `apps/api/src/wallet/pass-artwork.ts`):
+  the edition artwork, the stamps and the gift slot, the same drawing as the Apple poster.
+- The title is the membership name ("عضوية الكافيه"); the shop name is already in the header.
+- The logo comes from `/api/v1/public/wallet/google/logos/...`: the shop logo at 70% on a solid square,
+  because Google crops it to a circle.
+- Objects are replaced whole (`PUT`), so fields we no longer send disappear. Migration 018 re-sends every
+  saved card once, which removes the QR code from cards saved before.

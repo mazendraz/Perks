@@ -16,9 +16,11 @@ import {
 } from '../wallet/apple-pass.js';
 import { APPLE_PASS_MIME, APPLE_SERVICE_PREFIX } from '../wallet/constants.js';
 import sharp from 'sharp';
-import { stripSvg } from '../wallet/apple-pass.js';
+import { googleHeroSvg } from '../wallet/pass-artwork.js';
 import {
+  GOOGLE_LOGO_PREFIX,
   GOOGLE_STRIP_PREFIX,
+  googleLogoTile,
   loadGoogleWallet,
   saveUrl,
   stripVersion,
@@ -92,8 +94,9 @@ export function walletModule(app: FastifyInstance, pools: Pools, c: Config) {
     const card = (await pools.pool.query('SELECT google_wallet_strip($1) AS card', [p.data.key]))
       .rows[0].card as WalletCard | null;
     if (!card) return reply.code(404).send();
-    const image = await sharp(Buffer.from(stripSvg(card, 3, 123, true)))
-      .resize(1032, 338)
+    // The whole card face, in the large image size of Google's current pass design.
+    const image = await sharp(Buffer.from(googleHeroSvg(card, 2, true)))
+      .resize(1032, 812)
       .png()
       .toBuffer();
     return reply
@@ -101,6 +104,30 @@ export function walletModule(app: FastifyInstance, pools: Pools, c: Config) {
       .header('X-Content-Type-Options', 'nosniff')
       .header('Cache-Control', 'public, max-age=300')
       .send(image);
+  });
+  // The shop logo for Google's round logo slot. Same publishing rule as the public logo route.
+  // The shop logo for Google's round logo slot, on the card colour. Same publishing rule as
+  // the public logo route.
+  app.get(GOOGLE_LOGO_PREFIX + '/:m/:asset/:bg', async (req, reply) => {
+    const p = z
+      .object({ m: z.uuid(), asset: z.uuid(), bg: z.string().regex(/^[0-9a-f]{6}\.png$/) })
+      .safeParse(req.params);
+    if (!p.success || !google) return reply.code(404).send();
+    const key = (
+      await pools.pool.query('SELECT published_logo($1,$2) AS key', [p.data.m, p.data.asset])
+    ).rows[0]?.key;
+    if (key !== p.data.m + '/' + p.data.asset + '.png') return reply.code(404).send();
+    let source: Buffer;
+    try {
+      source = await files.get(key);
+    } catch {
+      return reply.code(404).send();
+    }
+    return reply
+      .type('image/png')
+      .header('X-Content-Type-Options', 'nosniff')
+      .header('Cache-Control', 'public, max-age=3600')
+      .send(await googleLogoTile(source, '#' + p.data.bg.slice(0, 6)));
   });
   app.get('/api/v1/me/memberships/:id/wallet/apple', async (req, reply) => {
     const actor = authenticated(req),

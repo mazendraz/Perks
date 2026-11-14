@@ -10,7 +10,7 @@ import {
 } from '../../../../packages/domain/src/wallet-theme.js';
 
 // Bump whenever the strip changes, so Google re-fetches it and Apple passes refresh.
-export const WALLET_ARTWORK_VERSION = 'perks-card-8';
+export const WALLET_ARTWORK_VERSION = 'perks-card-9';
 export { inkFor, mix } from '../../../../packages/domain/src/wallet-theme.js';
 
 // Slot outlines in a 48-unit box centred on 0,0, the same frames as the web card's empty slots.
@@ -224,31 +224,60 @@ export function stripSvg(card: WalletCard, scale: number, height = 144, rtl = fa
  * Wallet draws the logo and the stamp count over the top band and the reward fields over a
  * material strip at the bottom, so the stamps live in the middle band between them.
  */
-export const POSTER = { width: 358, height: 448, top: 74, bottom: 300 } as const;
+// Measured on an iOS 27 iPhone: the logo row ends near 45 points and the reward strip starts
+// near 383 points, so the stamps get the band between them.
+export interface CardFace {
+  width: number;
+  height: number;
+  /** The stamps live between top and bottom; the rest is covered by Wallet's own text. */
+  top: number;
+  bottom: number;
+  padX: number;
+  /** Largest stamp, in face units. */
+  maxStamp?: number;
+}
+export const POSTER: CardFace = { width: 358, height: 448, top: 74, bottom: 350, padX: 30 };
+/**
+ * Google Wallet's large card image (1032×812 at 2×). Google writes the shop name and the
+ * numbers above it, so the whole image is the card face.
+ */
+export const GOOGLE_HERO: CardFace = {
+  width: 516,
+  height: 406,
+  top: 34,
+  bottom: 384,
+  padX: 40,
+  maxStamp: 120,
+};
+/** Where the shop logo sits on a poster that carries it, and where the stamps start below it. */
+const LOGO_BOX = { y: 80, height: 58, maxWidth: 190, stampsTop: 152 };
 
 /** Stamp grid for the poster: the web card's column rule, enlarged to fill the middle band. */
-export function posterLayout(total: number, rtl = false) {
-  const padX = 30,
-    gap = 0.3,
-    safeW = POSTER.width - padX * 2,
-    band = POSTER.bottom - POSTER.top - 26; // leave room for the progress line under the stamps
+export function posterLayout(total: number, rtl = false, face: CardFace = POSTER) {
+  const gap = 0.3,
+    safeW = face.width - face.padX * 2,
+    band = face.bottom - face.top - 26; // leave room for the progress line under the stamps
   const fit = (c: number) => {
     const r = Math.ceil(total / c);
     // Filled ink and its specks reach about 20% past the slot, so the grid is fitted with that margin.
     return {
       c,
       r,
-      s: Math.min(safeW / (c + (c - 1) * gap), band / (r + (r - 1) * gap), 72) / 1.22,
+      s:
+        Math.min(safeW / (c + (c - 1) * gap), band / (r + (r - 1) * gap), face.maxStamp ?? 84) /
+        1.22,
     };
   };
   // Same columns as the web card (two rows for 7–10, up to six per row), unless that leaves
   // the stamps much smaller than another arrangement would.
   const web = fit(total >= 7 && total <= 10 ? Math.ceil(total / 2) : Math.min(total, 6));
   let best = web;
-  for (let c = 2; c <= 10; c++) if (fit(c).s > best.s) best = fit(c);
+  // A wide face (Google) never stacks the stamps into more rows than columns.
+  const wide = face.width > face.height;
+  for (let c = 2; c <= 10; c++) if (fit(c).s > best.s && !(wide && fit(c).r > c)) best = fit(c);
   const { c: columns, r: rows, s: size } = best.s > web.s * 1.25 ? best : web;
   const pitch = size * (1 + gap),
-    centreY = POSTER.top + band / 2;
+    centreY = face.top + band / 2;
   return {
     size,
     trackY: centreY + (rows * size + (rows - 1) * size * gap) / 2 + 22,
@@ -257,7 +286,7 @@ export function posterLayout(total: number, rtl = false) {
         col = i % columns,
         offset = (col + 0.5 - columns / 2) * pitch;
       return {
-        x: POSTER.width / 2 + (rtl ? -offset : offset),
+        x: face.width / 2 + (rtl ? -offset : offset),
         y: centreY + (row + 0.5 - rows / 2) * pitch,
       };
     }),
@@ -265,9 +294,9 @@ export function posterLayout(total: number, rtl = false) {
 }
 
 /** The edition's artwork drawn over the whole poster, like the web card. */
-function posterArt(card: WalletCard, theme: WalletTheme, rtl: boolean) {
+function posterArt(card: WalletCard, theme: WalletTheme, rtl: boolean, face: CardFace) {
   const { kind, color, opacity, rotate, scale, leaf } = theme.art,
-    { width: W, height: H } = POSTER;
+    { width: W, height: H } = face;
   if (kind === 'none' || opacity <= 0) return { defs: '', body: '' };
   const n = (value: number) => value.toFixed(2);
   // The 600×420 web art box, scaled to the poster height and centred.
@@ -295,25 +324,40 @@ function posterArt(card: WalletCard, theme: WalletTheme, rtl: boolean) {
   return {
     defs: `<radialGradient id="aur" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="${theme.stamp}" stop-opacity="${n(opacity * 1.3)}"/><stop offset="1" stop-color="${theme.stamp}" stop-opacity="0"/></radialGradient>`,
     body:
-      `<ellipse cx="${rtl ? 70 : 290}" cy="120" rx="190" ry="170" fill="url(#aur)"/>` +
-      `<ellipse cx="${rtl ? 290 : 70}" cy="330" rx="180" ry="160" fill="url(#aur)"/>` +
+      `<ellipse cx="${n(rtl ? W * 0.2 : W * 0.8)}" cy="${n(H * 0.27)}" rx="${n(W * 0.53)}" ry="${n(H * 0.38)}" fill="url(#aur)"/>` +
+      `<ellipse cx="${n(rtl ? W * 0.8 : W * 0.2)}" cy="${n(H * 0.74)}" rx="${n(W * 0.5)}" ry="${n(H * 0.36)}" fill="url(#aur)"/>` +
       onCard(lines(opacity * 0.2)),
   };
 }
 
-export function posterArtworkSvg(card: WalletCard, scale: number, rtl = false) {
+/** A PNG already sized for the logo slot, as a data URL plus its aspect. */
+export interface ArtworkLogo {
+  href: string;
+  width: number;
+  height: number;
+}
+export function posterArtworkSvg(
+  card: WalletCard,
+  scale: number,
+  rtl = false,
+  options: { face?: CardFace; logo?: ArtworkLogo | null } = {},
+) {
+  const face = options.face ?? POSTER,
+    logo = options.logo ?? null,
+    // With the shop logo on the card, the stamps start below it.
+    stampsFace = logo ? { ...face, top: LOGO_BOX.stampsTop } : face;
   const total = Math.max(2, Math.min(50, card.threshold)),
     filled = Math.max(0, Math.min(total, card.display_balance));
   const theme = walletTheme(card),
-    { width: W, height: H } = POSTER,
+    { width: W, height: H } = face,
     accent = theme.stamp,
     ink = theme.ink,
     outline = card.stamp_style === 'outline',
     glyphInk = outline ? accent : theme.stampInk,
     shape = card.stamp_shape,
     icon = stampIconPaths[card.stamp_icon] ? card.stamp_icon : 'check',
-    art = posterArt(card, theme, rtl),
-    layout = posterLayout(total, rtl);
+    art = posterArt(card, theme, rtl, face),
+    layout = posterLayout(total, rtl, stampsFace);
   const n = (value: number) => value.toFixed(2);
   const glyph = (path: string, stroke: string, width: number, k: number, opacity = 1) =>
     `<g transform="scale(${(k / 24).toFixed(4)}) translate(-12 -12)" fill="none" stroke="${stroke}" stroke-opacity="${opacity}" stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round"><path d="${path}"/></g>`;
@@ -351,20 +395,34 @@ export function posterArtworkSvg(card: WalletCard, scale: number, rtl = false) {
     );
   });
   // The web card's progress line under the stamps, filled from the reading side.
-  const trackX = 30,
-    trackW = W - 60,
+  const trackX = face.padX,
+    trackW = W - face.padX * 2,
     done = trackW * (filled / total);
   const track =
     `<rect x="${trackX}" y="${n(layout.trackY)}" width="${trackW}" height="2.4" rx="1.2" fill="${ink}" fill-opacity=".14"/>` +
     (done > 0
       ? `<rect x="${n(rtl ? trackX + trackW - done : trackX)}" y="${n(layout.trackY)}" width="${n(done)}" height="2.4" rx="1.2" fill="${accent}"/>`
       : '');
+  // The shop logo, large and centred under Wallet's own header, like the web card's brand mark.
+  let logoMarkup = '';
+  if (logo) {
+    const k = Math.min(LOGO_BOX.height / logo.height, LOGO_BOX.maxWidth / logo.width),
+      w = logo.width * k,
+      h = logo.height * k;
+    logoMarkup = `<image data-logo="true" x="${n((W - w) / 2)}" y="${n(LOGO_BOX.y + (LOGO_BOX.height - h) / 2)}" width="${n(w)}" height="${n(h)}" href="${logo.href}"/>`;
+  }
   return (
     `<svg xmlns="http://www.w3.org/2000/svg" width="${W * scale}" height="${H * scale}" viewBox="0 0 ${W} ${H}">` +
     `<defs>${GIFT_LIFT}${art.defs}</defs><rect width="${W}" height="${H}" fill="${theme.background}"/>` +
     art.body +
+    logoMarkup +
     slots.join('') +
     track +
     '</svg>'
   );
+}
+
+/** Google Wallet's large card image: the same card face as the Apple poster, in Google's shape. */
+export function googleHeroSvg(card: WalletCard, scale: number, rtl = false) {
+  return posterArtworkSvg(card, scale, rtl, { face: GOOGLE_HERO });
 }

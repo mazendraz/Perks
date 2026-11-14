@@ -8,7 +8,7 @@ import type {
   StampIcon,
   StampShape,
 } from '../../../../packages/contracts/src/branding.js';
-import { posterArtworkSvg, stripSvg } from './pass-artwork.js';
+import { posterArtworkSvg, stripSvg, type ArtworkLogo } from './pass-artwork.js';
 import { mix, walletTheme } from '../../../../packages/domain/src/wallet-theme.js';
 import { templateCategory } from '../../../../packages/contracts/src/branding.js';
 import { walletReminderText } from '../../../../packages/contracts/src/customer-reminders.js';
@@ -401,48 +401,56 @@ const logoSizes = [
 // Wallet shows the logo at up to 160×50 points beside the shop name. A square logo is drawn
 // as a rounded tile (so a white logo background reads as an app-icon, not a pasted box);
 // a wide wordmark keeps its own shape.
-export async function walletLogo(source: Buffer, h: number) {
-  const meta = await sharp(source).metadata(),
+/** The logo without the empty margins around it, so it fills its slot. */
+export async function trimmedLogo(source: Buffer) {
+  try {
+    return await sharp(source).trim({ threshold: 12 }).png().toBuffer();
+  } catch {
+    // A logo with no margins (or a single colour) cannot be trimmed; use it as it is.
+    return source;
+  }
+}
+// Wallet shows the logo at up to 160×50 points beside the shop name. The logo is placed exactly
+// as the shop uploaded it: no tile, frame or background is added behind it.
+export async function walletLogo(source: Buffer, h: number, maxWidth = Math.round(h * 3)) {
+  const logo = await trimmedLogo(source),
+    meta = await sharp(logo).metadata(),
     ratio = (meta.width || 1) / (meta.height || 1),
     inner = Math.round(h * 0.84),
     pad = h - inner;
-  if (ratio > WORDMARK_RATIO)
-    return sharp(source)
-      .resize({ height: inner, width: Math.round(h * 3), fit: 'inside' })
-      .extend({
-        top: Math.ceil(pad / 2),
-        bottom: Math.floor(pad / 2),
-        background: { r: 0, g: 0, b: 0, alpha: 0 },
-      })
-      .png()
-      .toBuffer();
-  const tile = await sharp(source)
-    .resize(inner, inner, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
-    .ensureAlpha()
-    .png()
-    .toBuffer();
-  const mask = Buffer.from(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${inner}" height="${inner}"><rect width="${inner}" height="${inner}" rx="${(inner * 0.24).toFixed(1)}"/></svg>`,
-  );
-  return sharp(tile)
-    .composite([{ input: mask, blend: 'dest-in' }])
+  return sharp(logo)
+    .resize({ height: inner, width: maxWidth, fit: 'inside' })
     .extend({
       top: Math.ceil(pad / 2),
       bottom: Math.floor(pad / 2),
-      left: 0,
-      right: Math.round(pad / 2),
+      // A square logo sits beside the shop name: leave a little space before the text.
+      right: ratio > WORDMARK_RATIO ? 0 : Math.round(pad / 2),
       background: { r: 0, g: 0, b: 0, alpha: 0 },
     })
     .png()
     .toBuffer();
+}
+/** The shop logo for drawing inside the card artwork, as uploaded, with no margins. */
+export async function artworkLogo(source: Buffer): Promise<ArtworkLogo> {
+  const png = await sharp(await trimmedLogo(source))
+    .resize({ height: 240, width: 960, fit: 'inside' })
+    .png()
+    .toBuffer();
+  const out = await sharp(png).metadata();
+  return {
+    href: 'data:image/png;base64,' + png.toString('base64'),
+    width: out.width || 240,
+    height: out.height || 240,
+  };
 }
 /**
  * The poster logo with clear space on the card-edge side, so the logo does not sit tight
  * against the edge. Wallet places the image; this is the only margin we control.
  */
 export async function posterLogo(source: Buffer, h: number, rtl: boolean) {
-  const logo = await walletLogo(source, h),
-    edge = Math.round(h * 0.3);
+  const edge = Math.round(h * 0.3),
+    // The poster slot is 30 points tall and up to 126 wide (4.2×): a wordmark may use it all.
+    logo = await walletLogo(source, h, Math.round(h * 4.2) - edge);
   return sharp(logo)
     .extend({
       left: rtl ? 0 : edge,
@@ -463,7 +471,7 @@ export async function buildPkpass(
   },
 ) {
   const appIcon = Buffer.from(perksIconSvg({ rounded: false, maskable: false }));
-  const logoMeta = options.logo ? await sharp(options.logo).metadata() : null,
+  const logoMeta = options.logo ? await sharp(await trimmedLogo(options.logo)).metadata() : null,
     wordmark = !!logoMeta && (logoMeta.width || 1) / (logoMeta.height || 1) > WORDMARK_RATIO;
   const files: [string, Buffer][] = [
     ['pass.json', Buffer.from(JSON.stringify(passJson(card, { ...options, wordmark })))],
@@ -474,13 +482,19 @@ export async function buildPkpass(
     ['strip@2x.png', await png(stripSvg(card, 2), 750, 288)],
     ['strip@3x.png', await png(stripSvg(card, 3), 1125, 432)],
   ];
+  // The logo slot Wallet gives a poster is only 30 points tall, so the logo is also drawn large
+  // inside the artwork, where people actually see it.
+  const inArt = options.logo ? await artworkLogo(options.logo) : null;
   for (const scale of [1, 2, 3]) {
     const suffix = scale > 1 ? '@' + scale + 'x' : '';
     files.push(
-      [`artwork${suffix}.png`, await png(posterArtworkSvg(card, scale), 358 * scale, 448 * scale)],
+      [
+        `artwork${suffix}.png`,
+        await png(posterArtworkSvg(card, scale, false, { logo: inArt }), 358 * scale, 448 * scale),
+      ],
       [
         `ar.lproj/artwork${suffix}.png`,
-        await png(posterArtworkSvg(card, scale, true), 358 * scale, 448 * scale),
+        await png(posterArtworkSvg(card, scale, true, { logo: inArt }), 358 * scale, 448 * scale),
       ],
     );
   }

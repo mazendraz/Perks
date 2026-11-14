@@ -175,7 +175,7 @@ test('the save link is a signed JWT with the member name and no QR', async () =>
   assert.equal(strip.statusCode, 200);
   assert.equal(strip.headers['content-type'], 'image/png');
   const meta = await sharp(strip.rawPayload).metadata();
-  assert.deepEqual([meta.width, meta.height], [1032, 338]);
+  assert.deepEqual([meta.width, meta.height], [1032, 812]);
   assert.equal(
     (
       await app.inject({
@@ -209,7 +209,9 @@ test('a stamp sends the new balance to Google with a notification, once', async 
     x.url.endsWith('/loyaltyObject/' + encodeURIComponent(object.id)),
   );
   assert.ok(patch);
-  assert.equal(patch.method, 'PATCH');
+  // The whole card is replaced, so fields no longer sent (an old QR code) are removed.
+  assert.equal(patch.method, 'PUT');
+  assert.equal((patch.body as Record<string, unknown>).barcode, undefined);
   const body = patch.body as unknown as Patch;
   assert.equal(body.loyaltyPoints.balance.string, '3/5');
   assert.equal(body.notifyPreference, 'notifyOnUpdate');

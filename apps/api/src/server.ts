@@ -93,7 +93,8 @@ export async function buildApp(
     if (
       (req.url.startsWith('/api/') &&
         req.routeOptions.url !== '/api/v1/public/merchants/:m/logos/:id' &&
-        !req.url.startsWith('/api/v1/public/wallet/google/strips/')) ||
+        !req.url.startsWith('/api/v1/public/wallet/google/strips/') &&
+        !req.url.startsWith('/api/v1/public/wallet/google/logos/')) ||
       req.url.startsWith('/health/')
     )
       reply.header('Cache-Control', 'no-store');

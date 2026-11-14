@@ -254,3 +254,73 @@ test('password recovery is generic, single-use and version-fenced, and revokes p
   assert.ok(hash.startsWith('scrypt$'));
   assert.ok(!hash.includes(next));
 });
+
+const loginFrom = (email: string, address: string, pw = password) =>
+  app.inject({
+    method: 'POST',
+    url: '/api/v1/auth/login',
+    headers: origin,
+    remoteAddress: address,
+    payload: { email, password: pw },
+  });
+test('an account-wide lock from distributed failures does not lock out an address that signed in before', async () => {
+  const email = 'pw-known-' + randomUUID() + '@nuqta.test';
+  await createPasswordUser(db, email, password, 'owner');
+  // The owner's usual address signs in once, then an attacker spreads 20 failures.
+  assert.equal((await loginFrom(email, '198.51.100.7')).statusCode, 200);
+  for (let i = 0; i < 20; i++)
+    assert.equal((await loginFrom(email, '203.0.113.' + (100 + i), 'wrong guess')).statusCode, 401);
+  const guard = (
+    await db.query('SELECT locked_until FROM password_login_guards WHERE email=$1', [email])
+  ).rows[0];
+  assert.ok(guard.locked_until > new Date());
+  // Known address: still allowed with the right password.
+  assert.equal((await loginFrom(email, '198.51.100.7')).statusCode, 200);
+  // Unknown address: the aggregate lock still applies, even with the right password.
+  assert.equal((await loginFrom(email, '198.51.100.8')).statusCode, 401);
+  // The known address keeps its own per-address lock.
+  for (let i = 0; i < 5; i++)
+    assert.equal((await loginFrom(email, '198.51.100.7', 'wrong guess')).statusCode, 401);
+  assert.equal((await loginFrom(email, '198.51.100.7')).statusCode, 401);
+});
+test('password hashing never holds an auth-pool transaction open', async () => {
+  const email = 'pw-pool-' + randomUUID() + '@nuqta.test';
+  await createPasswordUser(db, email, password, 'owner');
+  let held = 0,
+    running = true;
+  // Any auth connection idle inside a transaction for 40 ms+ means work (hashing) happened
+  // between queries while the connection and its row locks were held.
+  const watch = (async () => {
+    while (running) {
+      const row = (
+        await db.query(
+          "SELECT count(*)::int AS n FROM pg_stat_activity WHERE usename='nuqta_auth' AND datname=current_database() AND state='idle in transaction' AND clock_timestamp()-state_change>interval '40 milliseconds'",
+        )
+      ).rows[0];
+      held = Math.max(held, row.n);
+    }
+  })();
+  try {
+    const results = await Promise.all(
+      Array.from({ length: 3 }, (_, i) =>
+        loginFrom(email, '192.0.2.' + (200 + i), i === 0 ? password : 'wrong guess'),
+      ),
+    );
+    assert.deepEqual(
+      results.map((r) => r.statusCode),
+      [200, 401, 401],
+    );
+    const session = headers(results[0]!);
+    const changed = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/password/change',
+      headers: session,
+      payload: { currentPassword: password, password: 'Another memorable phrase 2026!' },
+    });
+    assert.equal(changed.statusCode, 200, changed.body);
+  } finally {
+    running = false;
+    await watch;
+  }
+  assert.equal(held, 0);
+});

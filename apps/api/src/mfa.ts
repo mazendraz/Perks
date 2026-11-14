@@ -112,13 +112,21 @@ export function mfaModule(app: FastifyInstance, pools: Pools, c: Config) {
         .strict()
         .parse(req.body);
       const secret = randomBytes(20).toString('hex');
+      // Hash outside the transaction (Code-review H2); the locked row must still match.
+      const stored = (
+        await pools.authPool.query(
+          "SELECT password_hash FROM users WHERE id=$1 AND status='active'",
+          [actor.id],
+        )
+      ).rows[0]?.password_hash as string | undefined;
+      requireCondition(
+        await verifyPassword(p.currentPassword, stored, c.AUTH_PEPPER),
+        'INVALID_CREDENTIALS',
+        401,
+      );
       await transaction(pools.authPool, async (db) => {
         const u = await lockedUser(db, actor);
-        requireCondition(
-          await verifyPassword(p.currentPassword, u.password_hash, c.AUTH_PEPPER),
-          'INVALID_CREDENTIALS',
-          401,
-        );
+        requireCondition(u.password_hash === stored, 'INVALID_CREDENTIALS', 401);
         if (u.totp_secret)
           requireCondition(
             actor.mfaAt && Date.now() - actor.mfaAt.getTime() < 900000,

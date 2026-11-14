@@ -1,6 +1,6 @@
 import type { FastifyInstance, FastifyReply } from 'fastify';
 import { passwordEnabled, type Config } from './config.js';
-import { transaction, type Pools } from './db.js';
+import { transaction, type DB, type Pools } from './db.js';
 import { authenticated } from './auth.js';
 import { requireCondition } from './errors.js';
 import { keyedHash, opaqueToken, tokenHash } from './crypto.js';
@@ -22,9 +22,13 @@ export function passwordAuth(app: FastifyInstance, pools: Pools, c: Config, issu
     { config: { rateLimit: { max: 10, timeWindow: '1 minute' } } },
     async (req, reply) => {
       enabled();
-      const p = loginInput.parse(req.body);
-      const result = await transaction(pools.authPool, async (db) => {
-        const ipHash = keyedHash('login-ip:' + req.ip, c.AUTH_PEPPER);
+      const p = loginInput.parse(req.body),
+        ipHash = keyedHash('login-ip:' + req.ip, c.AUTH_PEPPER);
+      // Code-review H2: scrypt (~100 ms, 64 MB) must never run while an auth-pool connection
+      // and the guard row lock are held, or a handful of logins stall every device session.
+      // 1) short transaction: guards + read the stored hash, 2) hash with no connection,
+      // 3) short transaction: record the outcome and recheck the credential version.
+      const checked = await transaction(pools.authPool, async (db) => {
         await db.query(
           'INSERT INTO password_login_guards(email) VALUES($1) ON CONFLICT DO NOTHING',
           [p.email],
@@ -59,35 +63,53 @@ export function passwordAuth(app: FastifyInstance, pools: Pools, c: Config, issu
           pair.locked_until = null;
         }
         const delayMs = Math.min(800, 50 * 2 ** Math.min(pair.failures, 4));
-        if (guard.locked_until > new Date() || pair.locked_until > new Date())
-          return { user: null, delayMs };
+        // Security M3: the account-wide lock does not apply to an address that recently
+        // signed in to this account; that address keeps its own per-address lock.
+        const known = guard.locked_until > new Date() && (await knownAddress(db, p.email, ipHash));
+        if ((guard.locked_until > new Date() && !known) || pair.locked_until > new Date())
+          return { blocked: true as const, delayMs };
         const u = (
           await db.query(
-            'SELECT id,password_hash,password_version,status FROM users WHERE email=$1 FOR SHARE',
+            'SELECT id,password_hash,password_version,status FROM users WHERE email=$1',
             [p.email],
           )
-        ).rows[0];
-        const correct = await verifyPassword(p.password, u?.password_hash, c.AUTH_PEPPER);
-        if (!correct || !u || u.status !== 'active') {
-          await db.query(
-            "UPDATE password_login_guards SET failures=failures+1,locked_until=CASE WHEN failures+1>=20 THEN window_started_at+interval '15 minutes' ELSE NULL END,last_attempt_at=clock_timestamp() WHERE email=$1",
-            [p.email],
-          );
-          await db.query(
-            "UPDATE password_login_ip_guards SET failures=failures+1,locked_until=CASE WHEN failures+1>=5 THEN window_started_at+interval '15 minutes' ELSE NULL END,last_attempt_at=clock_timestamp() WHERE email=$1 AND ip_hash=$2",
-            [p.email, ipHash],
-          );
-          return { user: null, delayMs };
-        }
-        await db.query('DELETE FROM password_login_ip_guards WHERE email=$1 AND ip_hash=$2', [
-          p.email,
-          ipHash,
-        ]);
-        const locale = req.headers['x-nuqta-language'];
-        if (locale === 'ar' || locale === 'en')
-          await db.query('UPDATE users SET preferred_locale=$2 WHERE id=$1', [u.id, locale]);
-        return { user: u, delayMs: 0 };
+        ).rows[0] as
+          | { id: string; password_hash: string | null; password_version: number; status: string }
+          | undefined;
+        return { blocked: false as const, delayMs, user: u };
       });
+      const correct =
+        !checked.blocked &&
+        (await verifyPassword(p.password, checked.user?.password_hash, c.AUTH_PEPPER));
+      const result = checked.blocked
+        ? { user: null, delayMs: checked.delayMs }
+        : await transaction(pools.authPool, async (db) => {
+            const u = checked.user;
+            // The account may have changed while hashing: only the same credential counts.
+            const current =
+              correct && u
+                ? (
+                    await db.query(
+                      "SELECT id,password_version FROM users WHERE id=$1 AND status='active' AND password_version=$2 AND password_hash IS NOT DISTINCT FROM $3 FOR SHARE",
+                      [u.id, u.password_version, u.password_hash],
+                    )
+                  ).rows[0]
+                : undefined;
+            if (!current) return failed(db, p.email, ipHash, checked.delayMs);
+            await db.query('DELETE FROM password_login_ip_guards WHERE email=$1 AND ip_hash=$2', [
+              p.email,
+              ipHash,
+            ]);
+            await db.query(
+              `INSERT INTO password_login_known_addresses(email,ip_hash) VALUES($1,$2)
+               ON CONFLICT(email,ip_hash) DO UPDATE SET last_success_at=clock_timestamp()`,
+              [p.email, ipHash],
+            );
+            const locale = req.headers['x-nuqta-language'];
+            if (locale === 'ar' || locale === 'en')
+              await db.query('UPDATE users SET preferred_locale=$2 WHERE id=$1', [u!.id, locale]);
+            return { user: current as { id: string; password_version: number }, delayMs: 0 };
+          });
       if (result.delayMs) await setTimeout(result.delayMs);
       const user = result.user;
       requireCondition(user, 'INVALID_CREDENTIALS', 401);
@@ -98,6 +120,25 @@ export function passwordAuth(app: FastifyInstance, pools: Pools, c: Config, issu
       return issue(reply, user.id, user.password_version);
     },
   );
+  async function knownAddress(db: DB, email: string, ipHash: string) {
+    return !!(
+      await db.query(
+        "SELECT 1 FROM password_login_known_addresses WHERE email=$1 AND ip_hash=$2 AND last_success_at>clock_timestamp()-interval '90 days'",
+        [email, ipHash],
+      )
+    ).rowCount;
+  }
+  async function failed(db: DB, email: string, ipHash: string, delayMs: number) {
+    await db.query(
+      "UPDATE password_login_guards SET failures=failures+1,locked_until=CASE WHEN failures+1>=20 THEN window_started_at+interval '15 minutes' ELSE NULL END,last_attempt_at=clock_timestamp() WHERE email=$1",
+      [email],
+    );
+    await db.query(
+      "UPDATE password_login_ip_guards SET failures=failures+1,locked_until=CASE WHEN failures+1>=5 THEN window_started_at+interval '15 minutes' ELSE NULL END,last_attempt_at=clock_timestamp() WHERE email=$1 AND ip_hash=$2",
+      [email, ipHash],
+    );
+    return { user: null, delayMs };
+  }
   app.post(
     '/api/v1/auth/register',
     { config: { rateLimit: { max: 10, timeWindow: '10 minutes' } } },
@@ -126,6 +167,19 @@ export function passwordAuth(app: FastifyInstance, pools: Pools, c: Config, issu
           'MFA_REQUIRED',
           403,
         );
+      // Verify outside any transaction (Code-review H2), then require the same stored hash
+      // under the row lock so a concurrent change cannot be overwritten.
+      const stored = (
+        await pools.authPool.query(
+          "SELECT password_hash FROM users WHERE id=$1 AND status='active'",
+          [actor.id],
+        )
+      ).rows[0]?.password_hash as string | undefined;
+      requireCondition(
+        await verifyPassword(p.currentPassword, stored, c.AUTH_PEPPER),
+        'INVALID_CREDENTIALS',
+        401,
+      );
       const version = await transaction(pools.authPool, async (db) => {
         const u = (
           await db.query(
@@ -133,11 +187,7 @@ export function passwordAuth(app: FastifyInstance, pools: Pools, c: Config, issu
             [actor.id],
           )
         ).rows[0];
-        requireCondition(
-          await verifyPassword(p.currentPassword, u?.password_hash, c.AUTH_PEPPER),
-          'INVALID_CREDENTIALS',
-          401,
-        );
+        requireCondition(u && u.password_hash === stored, 'INVALID_CREDENTIALS', 401);
         const updated = (
           await db.query(
             'UPDATE users SET password_hash=$1,password_version=password_version+1 WHERE id=$2 RETURNING password_version',

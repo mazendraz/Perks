@@ -427,9 +427,12 @@ export function ResetPassword({ token, lang }: { token: string; lang: Language }
 export function PasswordSettings({
   lang,
   refresh,
+  forced = false,
 }: {
   lang: Language;
   refresh: () => Promise<void>;
+  // Security M4: shown open, with an explanation, when the current password was set by someone else.
+  forced?: boolean;
 }) {
   const ar = lang === 'ar',
     [current, setCurrent] = useState(''),
@@ -438,8 +441,15 @@ export function PasswordSettings({
     [message, setMessage] = useState(''),
     [error, setError] = useState('');
   return (
-    <details className="panel password-settings">
+    <details className="panel password-settings" open={forced || undefined}>
       <summary>{ar ? 'تغيير كلمة المرور' : 'Change password'}</summary>
+      {forced && (
+        <p className="notice" role="status">
+          {ar
+            ? 'الباسورد ده اتعمل لك من الإدارة. اختار باسورد خاص بيك علشان تكمّل.'
+            : 'This password was set for you by an administrator. Choose your own password to continue.'}
+        </p>
+      )}
       <form
         onSubmit={async (e) => {
           e.preventDefault();

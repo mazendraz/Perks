@@ -63,7 +63,7 @@ export function authModule(app: FastifyInstance, pools: Pools, c: Config) {
       raw
         ? (
             await pools.authPool.query(
-              "SELECT u.id,u.email,u.display_name,u.global_role,u.status,u.preferred_locale,s.id AS session_id,s.csrf_hash,s.mfa_at,s.auth_method,s.customer_device_id,s.expires_at,s.created_at,s.portal,password_session_portal(u.id) AS current_portal FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token_hash=$1 AND s.revoked_at IS NULL AND s.expires_at>now() AND s.credential_version=u.password_version AND (s.auth_method<>'device' OR customer_device_active(s.customer_device_id,s.user_id))",
+              "SELECT u.id,u.email,u.display_name,u.global_role,u.status,u.preferred_locale,s.id AS session_id,s.csrf_hash,s.mfa_at,s.auth_method,s.customer_device_id,s.expires_at,s.created_at,s.portal,password_session_portal(u.id) AS current_portal,u.password_must_change FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token_hash=$1 AND s.revoked_at IS NULL AND s.expires_at>now() AND s.credential_version=u.password_version AND (s.auth_method<>'device' OR customer_device_active(s.customer_device_id,s.user_id))",
               [tokenHash(raw)],
             )
           ).rows[0]
@@ -110,6 +110,7 @@ export function authModule(app: FastifyInstance, pools: Pools, c: Config) {
       authMethod: row.auth_method,
       locale: row.preferred_locale,
       mfaRequired: deployed(c) && ['platform_admin', 'platform_support'].includes(row.global_role),
+      passwordChangeRequired: row.auth_method === 'password' && row.password_must_change === true,
       csrfHash: row.csrf_hash,
     };
     // A customer device grants access to its holder's card only, even if that
@@ -150,6 +151,15 @@ export function authModule(app: FastifyInstance, pools: Pools, c: Config) {
         'MFA_REQUIRED',
         403,
       );
+    // Security M4: until an admin/owner-set password is replaced, only the auth routes
+    // (password change, MFA, logout) and the session read are available.
+    requireCondition(
+      !req.actor.passwordChangeRequired ||
+        req.url.startsWith('/api/v1/auth/') ||
+        req.url.split('?')[0] === '/api/v1/session',
+      'PASSWORD_CHANGE_REQUIRED',
+      403,
+    );
     // Existing legacy customer password sessions may finish their original
     // lifetime, but are no longer extended. New customers use a bound device.
   });
@@ -335,6 +345,7 @@ export function authModule(app: FastifyInstance, pools: Pools, c: Config) {
         role: actor.role,
         mfaRequired: actor.mfaRequired || !['password', 'device'].includes(actor.authMethod || ''),
         mfaVerified: !!actor.mfaAt && Date.now() - actor.mfaAt.getTime() < 900_000,
+        passwordChangeRequired: !!actor.passwordChangeRequired,
       },
       csrfToken: req.cookies[req.csrfCookieName] || '',
       grants,

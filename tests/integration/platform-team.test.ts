@@ -6,7 +6,7 @@ import { buildApp } from '../../apps/api/src/server.js';
 import { readConfig } from '../../apps/api/src/config.js';
 import { hashPassword } from '../../apps/api/src/passwords.js';
 import { seed } from '../../db/seed.js';
-import { login, key } from '../helpers.js';
+import { login, key, replaceAssignedPassword } from '../helpers.js';
 test('multiple super admins share the platform; account changes are audited, version fenced and cannot take over existing users or remove every active administrator', async () => {
   const c = readConfig();
   assert.match(new URL(c.DATABASE_MIGRATOR_URL!).pathname, /^\/nuqta_test_\d+$/);
@@ -75,7 +75,8 @@ test('multiple super admins share the platform; account changes are audited, ver
     });
     assert.equal(takeover.statusCode, 409);
     assert.equal(takeover.json().error.code, 'ADMIN_EMAIL_IN_USE');
-    const peer = await signIn(peerEmail);
+    const peerOwn = password + '-peer-own';
+    const peer = await replaceAssignedPassword(app, await signIn(peerEmail), password, peerOwn);
     const ids = async (h: typeof admin) =>
       (await app.inject({ url: '/api/v1/platform/merchants', headers: h }))
         .json()
@@ -111,10 +112,10 @@ test('multiple super admins share the platform; account changes are audited, ver
     const version = async (id: string) =>
       (await db.query('SELECT password_version FROM users WHERE id=$1', [id])).rows[0]
         .password_version;
-    const changed = await command(admin, b, 'password', 1, newPassword);
+    const changed = await command(admin, b, 'password', await version(b), newPassword);
     assert.equal(changed.statusCode, 200, changed.body);
     assert.equal((await app.inject({ url: '/api/v1/session', headers: peer })).statusCode, 401);
-    await signIn(peerEmail, password, 401);
+    await signIn(peerEmail, peerOwn, 401);
     await signIn(peerEmail, newPassword);
     assert.equal((await command(admin, b, 'sessions', 1)).statusCode, 409);
     assert.equal((await command(admin, b, 'disable', await version(b))).statusCode, 200);
@@ -141,7 +142,12 @@ test('multiple super admins share the platform; account changes are audited, ver
     } finally {
       await db.query("UPDATE users SET status='active' WHERE id=ANY($1::uuid[])", [others]);
     }
-    const peerAgain = await signIn(peerEmail, newPassword),
+    const peerAgain = await replaceAssignedPassword(
+        app,
+        await signIn(peerEmail, newPassword),
+        newPassword,
+        newPassword + '-own',
+      ),
       av = await version(a),
       bv = await version(b);
     const races = await Promise.all([

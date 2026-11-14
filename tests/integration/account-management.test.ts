@@ -21,7 +21,9 @@ let admin: Awaited<ReturnType<typeof login>>,
   programId: string,
   versionId: string;
 const original = 'Original-' + randomUUID(),
-  replacement = 'Replacement-' + randomUUID();
+  replacement = 'Replacement-' + randomUUID(),
+  ownerOwn = 'Owner-chosen-' + randomUUID(),
+  cashOwn = 'Cashier-chosen-' + randomUUID();
 let ip = 10;
 async function signIn(email: string, password: string, expected = 200, remoteAddress?: string) {
   const r = await app.inject({
@@ -37,6 +39,30 @@ async function signIn(email: string, password: string, expected = 200, remoteAdd
     cookie: r.cookies.map((c) => c.name + '=' + c.value).join('; '),
     'x-csrf-token': r.json().csrfToken as string,
   };
+}
+// Security M4: a password set by an admin/owner only unlocks the password change itself.
+async function adopt(email: string, assigned: string, own: string) {
+  const forced = await signIn(email, assigned);
+  const session = await app.inject({ url: '/api/v1/session', headers: forced });
+  assert.equal(session.json().user.passwordChangeRequired, true);
+  const blocked = await app.inject({ url: '/api/v1/merchants/' + mid + '/staff', headers: forced });
+  assert.equal(blocked.statusCode, 403);
+  assert.equal(blocked.json().error.code, 'PASSWORD_CHANGE_REQUIRED');
+  const changed = await app.inject({
+    method: 'POST',
+    url: '/api/v1/auth/password/change',
+    headers: forced,
+    payload: { currentPassword: assigned, password: own },
+  });
+  assert.equal(changed.statusCode, 200, changed.body);
+  const headers = {
+    origin: c.PUBLIC_APP_ORIGIN,
+    cookie: changed.cookies.map((c) => c.name + '=' + c.value).join('; '),
+    'x-csrf-token': changed.json().csrfToken as string,
+  };
+  const after = await app.inject({ url: '/api/v1/session', headers });
+  assert.equal(after.json().user.passwordChangeRequired, false);
+  return headers;
 }
 before(async () => {
   await db.connect();
@@ -108,8 +134,8 @@ before(async () => {
   cashId = a.accounts.find((s: { role: string }) => s.role === 'cashier').id;
   programId = a.programId;
   versionId = a.versionId;
-  owner = await signIn(ownerEmail, original);
-  cash = await signIn(cashEmail, original);
+  owner = await adopt(ownerEmail, original, ownerOwn);
+  cash = await adopt(cashEmail, original, cashOwn);
 });
 after(async () => {
   await app.close();
@@ -131,7 +157,7 @@ test('admin and owner reset only authorized credentials; stale versions, replay,
   const before = await security(owner);
   assert.equal(before.find((a) => a.id === ownerId)!.canManageCredentials, false);
   assert.equal(before.find((a) => a.id === cashId)!.canManageCredentials, true);
-  const another = await signIn(cashEmail, original);
+  const another = await signIn(cashEmail, cashOwn);
   for (let i = 0; i < 5; i++) await signIn(cashEmail, 'Wrong-password-value', 401, '192.0.2.60');
   const target = (await security(owner)).find((a) => a.id === cashId)!;
   assert.ok(target.lockedUntil);
@@ -176,10 +202,12 @@ test('admin and owner reset only authorized credentials; stale versions, replay,
   assert.deepEqual(replay.json(), changed.json());
   assert.equal((await app.inject({ url: '/api/v1/session', headers: cash })).statusCode, 401);
   assert.equal((await app.inject({ url: '/api/v1/session', headers: another })).statusCode, 401);
-  await signIn(cashEmail, original, 401);
-  cash = await signIn(cashEmail, replacement);
+  await signIn(cashEmail, cashOwn, 401);
+  // The owner-chosen replacement must be changed before the cashier can work.
+  cash = await adopt(cashEmail, replacement, cashOwn + '-2');
   const current = (await security(owner)).find((a) => a.id === cashId)!;
-  assert.equal(current.credentialVersion, target.credentialVersion + 1);
+  // +1 for the owner reset, +1 for the cashier replacing the owner-set password.
+  assert.equal(current.credentialVersion, target.credentialVersion + 2);
   assert.equal(current.lockedUntil, null);
   assert.equal(
     (
@@ -205,7 +233,7 @@ test('admin and owner reset only authorized credentials; stale versions, replay,
   });
   assert.equal(kick.statusCode, 200, kick.body);
   assert.equal((await app.inject({ url: '/api/v1/session', headers: cash })).statusCode, 401);
-  cash = await signIn(cashEmail, replacement);
+  cash = await signIn(cashEmail, cashOwn + '-2');
   const audit = (
     await db.query(
       "SELECT detail FROM audit_events WHERE merchant_id=$1 AND action LIKE 'staff.security.%'",

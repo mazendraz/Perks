@@ -137,6 +137,19 @@ async function login(page: Page, email: string) {
   await page.getByLabel('Email', { exact: true }).fill(email);
   await page.getByLabel('Password', { exact: true }).fill(password);
   await page.getByRole('button', { name: 'Sign in', exact: true }).click();
+  // Security M4: an admin-set password must be replaced first; keep the same value so the
+  // rest of the scenario can sign in again with it.
+  await page.waitForLoadState('networkidle');
+  const forced = page.getByText(
+    'This password was set for you by an administrator. Choose your own password to continue.',
+    { exact: true },
+  );
+  if (await forced.isVisible()) {
+    await page.getByLabel('Current password', { exact: true }).fill(password);
+    await page.getByLabel('New password', { exact: true }).fill(password);
+    await page.getByRole('button', { name: 'Save password', exact: true }).click();
+    await forced.waitFor({ state: 'detached' });
+  }
 }
 async function watch(context: BrowserContext) {
   await context.addInitScript('window.__name = function(value) { return value; }');

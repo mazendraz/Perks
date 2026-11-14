@@ -190,7 +190,7 @@ export function passwordAuth(app: FastifyInstance, pools: Pools, c: Config, issu
         requireCondition(u && u.password_hash === stored, 'INVALID_CREDENTIALS', 401);
         const updated = (
           await db.query(
-            'UPDATE users SET password_hash=$1,password_version=password_version+1 WHERE id=$2 RETURNING password_version',
+            'UPDATE users SET password_hash=$1,password_version=password_version+1,password_must_change=false WHERE id=$2 RETURNING password_version',
             [hash, actor.id],
           )
         ).rows[0];
@@ -261,7 +261,7 @@ export function passwordAuth(app: FastifyInstance, pools: Pools, c: Config, issu
         ).rows[0];
         requireCondition(row, 'RESET_LINK_INVALID', 410);
         await db.query(
-          'UPDATE users SET password_hash=$1,password_version=password_version+1 WHERE id=$2',
+          'UPDATE users SET password_hash=$1,password_version=password_version+1,password_must_change=false WHERE id=$2',
           [hash, row.user_id],
         );
         await db.query('UPDATE password_reset_tokens SET used_at=clock_timestamp() WHERE id=$1', [

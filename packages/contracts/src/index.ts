@@ -25,6 +25,7 @@ export interface Session {
     role: 'platform_admin' | 'platform_support' | 'customer';
     mfaVerified: boolean;
     mfaRequired?: boolean;
+    passwordChangeRequired?: boolean;
   };
   csrfToken: string;
   grants: Grant[];

@@ -10,6 +10,8 @@ export interface Actor {
   sessionId: string;
   mfaAt: Date | null;
   mfaRequired?: boolean;
+  // Security M4: the password was set by someone else and must be replaced first.
+  passwordChangeRequired?: boolean;
   locale?: 'ar' | 'en';
   authMethod?: 'otp' | 'password' | 'managed' | 'device';
   csrfHash: string;

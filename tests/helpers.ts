@@ -102,3 +102,24 @@ export async function enrollmentTerms(app: FastifyInstance, programId: string) {
   assert.equal(r.statusCode, 200);
   return r.json().termsHash as string;
 }
+
+// Security M4: a password set by an admin/owner must be replaced before any other request.
+export async function replaceAssignedPassword(
+  app: FastifyInstance,
+  headers: { cookie: string; origin: string; 'x-csrf-token': string },
+  assigned: string,
+  own: string,
+) {
+  const changed = await app.inject({
+    method: 'POST',
+    url: '/api/v1/auth/password/change',
+    headers,
+    payload: { currentPassword: assigned, password: own },
+  });
+  assert.equal(changed.statusCode, 200, changed.body);
+  return {
+    origin: headers.origin,
+    cookie: changed.cookies.map((x) => x.name + '=' + x.value).join('; '),
+    'x-csrf-token': changed.json().csrfToken as string,
+  };
+}

@@ -341,6 +341,8 @@ function Workspace({
   const needsMfa =
     platformAccess && session.user.mfaRequired !== false && !session.user.mfaVerified;
   if (portal === 'platform' && needsMfa) content = <PlatformMfa lang={lang} onVerified={refresh} />;
+  else if (session.user.passwordChangeRequired)
+    content = <PasswordSettings lang={lang} refresh={refresh} forced />;
   else if (route === account)
     content = (
       <>

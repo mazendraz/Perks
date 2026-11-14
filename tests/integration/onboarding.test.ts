@@ -6,7 +6,7 @@ import sharp from 'sharp';
 import { decodeQr } from '../../tools/qr-codec.js';
 import { buildApp } from '../../apps/api/src/server.js';
 import { readConfig } from '../../apps/api/src/config.js';
-import { adminLogin, key, login } from '../helpers.js';
+import { adminLogin, key, login, replaceAssignedPassword } from '../helpers.js';
 import { seed } from '../../db/seed.js';
 const c = readConfig(),
   db = new pg.Client({ connectionString: c.DATABASE_MIGRATOR_URL });
@@ -195,8 +195,19 @@ test('onboarding stages private sanitized logos and hashed credentials, activate
     payload: activationBody,
   });
   assert.deepEqual(replay.json(), result);
-  const owner = await passwordLogin(d.staff[0]!.email),
-    cashier = await passwordLogin(d.staff[1]!.email);
+  // Admin-set passwords are replaced by their holders before any other request.
+  const owner = await replaceAssignedPassword(
+      app,
+      await passwordLogin(d.staff[0]!.email),
+      password,
+      password + '-owner-own',
+    ),
+    cashier = await replaceAssignedPassword(
+      app,
+      await passwordLogin(d.staff[1]!.email),
+      password,
+      password + '-cashier-own',
+    );
   assert.equal(
     (await app.inject({ url: '/api/v1/session', headers: owner })).json().grants[0].role,
     'owner',

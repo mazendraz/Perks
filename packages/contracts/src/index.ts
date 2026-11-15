@@ -1,4 +1,11 @@
-import type { CardTemplate, LogoStyle, StampShape, StampIcon, StampStyle } from './branding.js';
+import type {
+  CardTemplate,
+  LogoMarkPosition,
+  LogoStyle,
+  StampShape,
+  StampIcon,
+  StampStyle,
+} from './branding.js';
 export type Language = 'ar' | 'en';
 export interface Branch {
   id: string;
@@ -36,6 +43,9 @@ export interface CardData {
   logo_url?: string;
   logo_style?: LogoStyle;
   logo_size?: number;
+  /** "Your logo" edition placement. */
+  logo_mark_position?: LogoMarkPosition;
+  logo_mark_bleed?: number;
   id: string;
   merchant_id: string;
   merchant_name: string;

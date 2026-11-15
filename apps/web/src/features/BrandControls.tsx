@@ -4,6 +4,9 @@ import { Select } from '../controls/Select.js';
 import { StampFrame, StampSymbol } from '../../../../packages/ui/src/StampSymbol.js';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import {
+  logoMarkPositionNames,
+  LOGO_MARK_MAX_BLEED,
+  type LogoMarkPosition,
   cardTemplates,
   templateNames,
   type CardTemplate,
@@ -13,6 +16,7 @@ import {
   stampIconNames,
   templateCategory,
   categoryNames,
+  templateCategories,
   suggestedStamps,
   type TemplateCategory,
   type StampShape,
@@ -22,6 +26,79 @@ import {
 } from '../../../../packages/contracts/src/branding.js';
 import type { CardData, Language } from '../../../../packages/contracts/src/index.js';
 import { LoyaltyCard, cardInk } from '../../../../packages/ui/src/LoyaltyCard.js';
+/**
+ * "Your logo" edition: where the large logo sits (a 3×3 grid: centre, sides, corners) and how
+ * much of it runs past the card edge.
+ */
+export function LogoMarkControl({
+  lang,
+  position = 'center',
+  bleed = 0,
+  onChange,
+}: {
+  lang: Language;
+  position?: LogoMarkPosition;
+  bleed?: number;
+  onChange: (v: { logo_mark_position: LogoMarkPosition; logo_mark_bleed: number }) => void;
+}) {
+  const ar = lang === 'ar';
+  const grid: LogoMarkPosition[] = [
+    'top-left',
+    'top',
+    'top-right',
+    'left',
+    'center',
+    'right',
+    'bottom-left',
+    'bottom',
+    'bottom-right',
+  ];
+  return (
+    <fieldset className="logo-mark-control">
+      <legend>{ar ? 'مكان اللوجو الكبير' : 'Large logo position'}</legend>
+      <div className="logo-mark-grid" dir="ltr" role="radiogroup">
+        {grid.map((p) => (
+          <button
+            type="button"
+            key={p}
+            role="radio"
+            aria-checked={position === p}
+            aria-label={logoMarkPositionNames[p][lang]}
+            title={logoMarkPositionNames[p][lang]}
+            onClick={() =>
+              onChange({ logo_mark_position: p, logo_mark_bleed: p === 'center' ? 0 : bleed })
+            }
+          >
+            <span />
+          </button>
+        ))}
+      </div>
+      <label>
+        {ar ? 'قد إيه يطلع برا الكارت' : 'How much runs past the edge'}{' '}
+        <b>{position === 'center' ? 0 : bleed}%</b>
+        <input
+          type="range"
+          min={0}
+          max={LOGO_MARK_MAX_BLEED}
+          step={5}
+          value={position === 'center' ? 0 : bleed}
+          disabled={position === 'center'}
+          onChange={(e) =>
+            onChange({ logo_mark_position: position, logo_mark_bleed: e.target.valueAsNumber })
+          }
+        />
+      </label>
+      {position === 'center' && (
+        <small className="muted">
+          {ar
+            ? 'اختار جنب أو ركن علشان جزء منه يطلع برا.'
+            : 'Pick a side or corner to let part of it run off the card.'}
+        </small>
+      )}
+    </fieldset>
+  );
+}
+
 export function LogoStyleControl({
   lang,
   value = 'framed',
@@ -246,7 +323,7 @@ export function TemplatePicker({
         </Select>
       </label>
       <div className="template-filters" aria-label={ar ? 'نوع النشاط' : 'Business category'}>
-        {(['all', 'general', 'cafe', 'restaurant', 'barber'] as const).map((c) => (
+        {(['all', ...templateCategories] as const).map((c) => (
           <button
             type="button"
             key={c}
@@ -278,8 +355,9 @@ export function TemplatePicker({
                   ...card,
                   id: 'template-' + t,
                   template: t,
-                  logo_asset_id: undefined,
-                  logo_url: undefined,
+                  // Only the "Your logo" edition previews the shop's logo in its background.
+                  logo_asset_id: t === 'logomark' ? card.logo_asset_id : undefined,
+                  logo_url: t === 'logomark' ? card.logo_url : undefined,
                   threshold: 5,
                   balance: 2,
                   stamp_shape: suggestedStamps(t)?.stampShape || card.stamp_shape,

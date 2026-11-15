@@ -5,7 +5,16 @@ import { templateCategory, type CardTemplate } from '../../contracts/src/brandin
  * Apple, Google and any future preview read from here, so a colour or template change is made once.
  * Values mirror the web card editions in apps/web/src/design.css.
  */
-export type WalletArtKind = 'lines' | 'mosaic' | 'aurora' | 'ruled' | 'none';
+export type WalletArtKind =
+  | 'lines'
+  | 'mosaic'
+  | 'aurora'
+  | 'ruled'
+  | 'dots'
+  | 'waves'
+  /** The shop's own logo, large and faint behind the stamps. */
+  | 'logo'
+  | 'none';
 export interface WalletTheme {
   /** Pass background, also the strip background, so the strip has no visible edge. */
   background: string;
@@ -53,8 +62,26 @@ const editions: Record<CardTemplate, Edition> = {
   bistro: { surface: true, art: 'lines', opacity: 0.09, brandArt: true },
   barber: { art: 'lines', opacity: 0.2 },
   grooming: { surface: true, art: 'lines', opacity: 0.09, brandArt: true },
+  latte: { surface: true, art: 'lines', opacity: 0.1, brandArt: true },
+  roastery: { art: 'lines', opacity: 0.16, rotate: -8, scale: 1.15 },
+  carwash: { art: 'lines', opacity: 0.18 },
+  detailing: { surface: true, art: 'lines', opacity: 0.1, brandArt: true },
+  confetti: { art: 'dots', opacity: 0.32 },
+  waves: { art: 'waves', opacity: 0.16 },
+  chalkboard: { art: 'lines', opacity: 0.24 },
+  grill: { art: 'lines', opacity: 0.2 },
+  vintage: { surface: true, art: 'lines', opacity: 0.16, brandArt: true },
+  foam: { surface: true, art: 'lines', opacity: 0.16, brandArt: true },
+  logomark: { art: 'logo', opacity: 0.14 },
+  cowork: { art: 'lines', opacity: 0.18 },
+  studio: { surface: true, art: 'lines', opacity: 0.12, brandArt: true },
+  gym: { art: 'lines', opacity: 0.2 },
+  pulse: { art: 'lines', opacity: 0.18 },
+  salon: { surface: true, art: 'lines', opacity: 0.14, brandArt: true },
+  spa: { surface: true, art: 'lines', opacity: 0.14, brandArt: true },
+  bakery: { art: 'lines', opacity: 0.17 },
+  sweets: { surface: true, art: 'lines', opacity: 0.16, brandArt: true },
 };
-const NOIR = { background: '#171c1b', ink: '#f5eedb', gold: '#d4b876' };
 
 export const validHex = (value: string | null | undefined, fallback: string) =>
   value && /^#[0-9a-f]{6}$/i.test(value) ? value.toLowerCase() : fallback;
@@ -101,9 +128,11 @@ export function walletTheme(card: {
     accent = validHex(card.accent_color, '#cbff64');
   let background: string, ink: string, label: string, artColor: string;
   if (template === 'noir') {
-    ({ background, ink } = NOIR);
-    label = NOIR.gold;
-    artColor = NOIR.ink;
+    // The brand colour as a night card; captions in the shop's accent when it reads well.
+    background = brand;
+    ink = inkFor(brand);
+    label = contrast(accent, brand) >= 3 ? accent : quietLabel(ink, brand);
+    artColor = ink;
   } else if (edition.surface) {
     background = validHex(card.surface_color, '#f5f5f1');
     ink = inkFor(background);

@@ -52,6 +52,10 @@ export const stripVersion = (card: WalletCard) =>
         card.stamp_shape,
         card.stamp_icon,
         card.stamp_style,
+        // The "Your logo" edition draws the logo, so a new logo means a new picture.
+        (card as { logo_asset_id?: string | null }).logo_asset_id ?? null,
+        card.logo_mark_position ?? null,
+        card.logo_mark_bleed ?? null,
       ]),
     )
     .digest('hex')
@@ -286,4 +290,43 @@ export async function googleLogoTile(source: Buffer, background: string) {
     .composite([{ input: logo, gravity: 'centre' }])
     .png()
     .toBuffer();
+}
+
+/**
+ * Google keeps a card it already has and ignores the save link's copy of it. So before a customer
+ * (re)adds their card, the stored card and the shop's class are brought up to date: removing a card
+ * from Google Wallet and adding it again then shows the current design, not the old one.
+ * Best effort and bounded in time; a card Google does not have yet (404) is created by the link.
+ */
+export async function refreshSavedGoogleCard(
+  g: GoogleWallet,
+  card: WalletCard & { logo_asset_id?: string | null },
+  key: string,
+  origin: string,
+  version: string,
+  timeoutMs = 4000,
+) {
+  const work = (async () => {
+    const status = await putGoogle(
+      g,
+      'loyaltyObject',
+      objectId(g, key),
+      googleObject(g, card, key, origin, version),
+    );
+    if (status === 200) {
+      const klass = googleClass(g, card, origin);
+      await patchGoogle(g, 'loyaltyClass', classId(g, card), {
+        issuerName: klass.issuerName,
+        programName: klass.programName,
+        localizedProgramName: klass.localizedProgramName,
+        programLogo: klass.programLogo,
+        hexBackgroundColor: klass.hexBackgroundColor,
+      });
+    }
+    return status;
+  })().catch(() => 0);
+  return Promise.race([
+    work,
+    new Promise<number>((resolve) => setTimeout(() => resolve(0), timeoutMs).unref()),
+  ]);
 }

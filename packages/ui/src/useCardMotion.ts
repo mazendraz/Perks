@@ -1,6 +1,7 @@
 import { useLayoutEffect, useEffect, useRef, useState } from 'react';
 import type { CardData } from '../../contracts/src/index.js';
 import { stampMotion, rewardMotion, type MotionRun } from './stamp-motion.js';
+import { haptic, STAMP_HAPTIC, REWARD_HAPTIC } from './haptics.js';
 const revealedCards = new Set<string>();
 export function useCardMotion(
   card: CardData,
@@ -9,6 +10,8 @@ export function useCardMotion(
   experience: boolean,
   waiting: boolean,
   reveal: boolean,
+  /** 'celebrate': stronger haptics for the full-screen stamp moment. 'quiet': no animation. */
+  mode: 'normal' | 'celebrate' | 'quiet' = 'normal',
 ) {
   const article = useRef<HTMLElement>(null),
     layer = useRef<HTMLDivElement>(null),
@@ -60,7 +63,7 @@ export function useCardMotion(
     cancel();
     const element = article.current,
       fx = layer.current;
-    if (!experience || !element || !fx || prev.id !== card.id) {
+    if (!experience || mode === 'quiet' || !element || !fx || prev.id !== card.id) {
       setVisualBalance(balance);
       setBannerReady(!!rewards);
       setKind('');
@@ -74,6 +77,7 @@ export function useCardMotion(
     const celebrate = () => {
       setBannerReady(!!rewards);
       if (!rewards || !banner.current) return;
+      if (mode === 'celebrate') haptic(REWARD_HAPTIC);
       runs.current.push(
         rewardMotion(
           element,
@@ -145,6 +149,7 @@ export function useCardMotion(
             delay: reduced ? 0 : order * 350,
             reduced,
             onImpact: () => setVisualBalance((current) => Math.max(current, target.index + 1)),
+            haptic: mode === 'celebrate' ? STAMP_HAPTIC : 25,
           }),
         );
       }

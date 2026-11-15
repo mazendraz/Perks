@@ -1,8 +1,13 @@
 import { StampFrame, StampSymbol } from './StampSymbol.js';
 import { CardArtwork } from './CardArtwork.js';
-import { templateCategory } from '../../contracts/src/branding.js';
+import {
+  categoryEditions,
+  categorySymbols,
+  templateCategory,
+} from '../../contracts/src/branding.js';
 import { memo, useId, type CSSProperties } from 'react';
 import { StampInk } from './StampInk.js';
+import { stampRandom } from '../../domain/src/stamp-ink.js';
 import { useCardMotion } from './useCardMotion.js';
 import { Icon } from './Icon.js';
 import type { CardData } from '../../contracts/src/index.js';
@@ -43,6 +48,19 @@ const StampSlot = memo(function StampSlot({
     </span>
   );
 });
+/**
+ * Each shop's own arrangement of the edition drawing (same idea as the Wallet artwork): mirrored
+ * or not, a little larger, moved and turned, worked out from the shop's id.
+ */
+export function artTransform(seed: string) {
+  const random = stampRandom('art-layout:' + seed),
+    mirror = random() < 0.5,
+    k = 1.08 + random() * 0.17,
+    dx = (random() - 0.5) * 10,
+    dy = (random() - 0.5) * 8,
+    turn = (random() - 0.5) * 8;
+  return `translate(${dx.toFixed(1)}%, ${dy.toFixed(1)}%) rotate(${turn.toFixed(1)}deg) scale(${(mirror ? -k : k).toFixed(3)}, ${k.toFixed(3)})`;
+}
 export function cardInk(color: string) {
   const rgb = /^#([a-f0-9]{6})$/i.exec(color)?.[1];
   if (!rgb) return '#ffffff';
@@ -59,39 +77,27 @@ export function LoyaltyCard({
   waiting = false,
   reveal = false,
   experience = card.stamp_ink !== undefined,
+  motion: motionMode = 'normal',
 }: {
   card: CardData;
   lang?: 'ar' | 'en';
   waiting?: boolean;
   reveal?: boolean;
   experience?: boolean;
+  /** 'celebrate' for the full-screen stamp moment; 'quiet' shows changes without animating. */
+  motion?: 'normal' | 'celebrate' | 'quiet';
 }) {
   const threshold = Math.max(
       2,
       Math.min(50, Number.isFinite(card.threshold) ? Math.floor(card.threshold) : 5),
     ),
     balance = Math.max(0, Math.min(card.display_balance ?? card.balance, threshold));
-  const motion = useCardMotion(card, balance, threshold, experience, waiting, reveal),
+  const motion = useCardMotion(card, balance, threshold, experience, waiting, reveal, motionMode),
     displayBalance = motion.visualBalance;
   const grainId = 'nq-grain-' + useId().replace(/[^a-zA-Z0-9_-]/g, '');
   const ar = lang === 'ar',
     category = templateCategory(card.template);
-  const edition =
-    category === 'cafe'
-      ? ar
-        ? 'عضوية الكافيه'
-        : 'CAFÉ MEMBERSHIP'
-      : category === 'restaurant'
-        ? ar
-          ? 'عضوية المطعم'
-          : 'DINING MEMBERSHIP'
-        : category === 'barber'
-          ? ar
-            ? 'عضوية العناية'
-            : 'GROOMING MEMBERSHIP'
-          : ar
-            ? 'عضوية ولاء'
-            : 'LOYALTY MEMBERSHIP';
+  const edition = categoryEditions[category][lang].toUpperCase();
   const style = {
     '--logo-size': Math.max(32, Math.min(72, card.logo_size || 43)) + 'px',
     '--brand': card.primary_color,
@@ -100,6 +106,7 @@ export function LoyaltyCard({
     '--card-ink': cardInk(card.primary_color),
     '--accent-ink': cardInk(card.accent_color),
     '--surface-ink': cardInk(card.surface_color),
+    '--art-transform': artTransform(card.merchant_id || card.id),
   } as CSSProperties;
   return (
     <div
@@ -152,7 +159,17 @@ export function LoyaltyCard({
         style={style}
         aria-label={card.merchant_name}
       >
-        <StableArtwork template={card.template} />
+        <StableArtwork
+          template={card.template}
+          position={card.logo_mark_position}
+          bleed={card.logo_mark_bleed}
+          logo={
+            card.template === 'logomark' && (card.logo_asset_id || card.logo_url)
+              ? card.logo_url ||
+                '/api/v1/public/merchants/' + card.merchant_id + '/logos/' + card.logo_asset_id
+              : undefined
+          }
+        />
         <div className="card-overline">
           <span>{edition}</span>
           <span className="card-contactless" aria-hidden="true">
@@ -178,19 +195,10 @@ export function LoyaltyCard({
             <small>{card.program_name}</small>
           </div>
           <span className="card-monogram" aria-hidden="true">
-            {category === 'general' ? (
-              <Icon name="spark" size={25} />
+            {categorySymbols[category] ? (
+              <StampSymbol symbol={categorySymbols[category]!} className="edition-symbol" />
             ) : (
-              <StampSymbol
-                symbol={
-                  category === 'cafe'
-                    ? 'coffee'
-                    : category === 'restaurant'
-                      ? 'utensils'
-                      : 'scissors'
-                }
-                className="edition-symbol"
-              />
+              <Icon name="spark" size={25} />
             )}
           </span>
         </div>

@@ -8,6 +8,7 @@ import { requireCondition } from '../errors.js';
 import { safeEqual, tokenHash } from '../crypto.js';
 import { createFileStore } from '../storage/file-store.js';
 import {
+  artworkLogo,
   buildPkpass,
   loadAppleSigner,
   passAuthToken,
@@ -17,11 +18,13 @@ import {
 import { APPLE_PASS_MIME, APPLE_SERVICE_PREFIX } from '../wallet/constants.js';
 import sharp from 'sharp';
 import { googleHeroSvg } from '../wallet/pass-artwork.js';
+import { walletTheme } from '../../../../packages/domain/src/wallet-theme.js';
 import {
   GOOGLE_LOGO_PREFIX,
   GOOGLE_STRIP_PREFIX,
   googleLogoTile,
   loadGoogleWallet,
+  refreshSavedGoogleCard,
   saveUrl,
   stripVersion,
 } from '../wallet/google-wallet.js';
@@ -74,6 +77,15 @@ export function walletModule(app: FastifyInstance, pools: Pools, c: Config) {
       actor,
     );
     requireCondition(issued, 'NOT_FOUND', 404);
+    // Tests never call Google; everywhere else the stored card is refreshed first.
+    if (c.APP_ENV !== 'test')
+      await refreshSavedGoogleCard(
+        google!,
+        issued.card,
+        issued.object_key,
+        c.PUBLIC_APP_ORIGIN,
+        stripVersion(issued.card),
+      );
     return reply.redirect(
       saveUrl(
         google!,
@@ -92,10 +104,13 @@ export function walletModule(app: FastifyInstance, pools: Pools, c: Config) {
       .safeParse(req.params);
     if (!p.success || !google) return reply.code(404).send();
     const card = (await pools.pool.query('SELECT google_wallet_strip($1) AS card', [p.data.key]))
-      .rows[0].card as WalletCard | null;
+      .rows[0].card as (WalletCard & { logo_asset_id?: string | null }) | null;
     if (!card) return reply.code(404).send();
+    // The "Your logo" edition draws the shop logo behind the stamps.
+    const source = walletTheme(card).art.kind === 'logo' ? await logo(card) : null;
+    const watermark = source ? await artworkLogo(source) : null;
     // The whole card face, in the large image size of Google's current pass design.
-    const image = await sharp(Buffer.from(googleHeroSvg(card, 2, true)))
+    const image = await sharp(Buffer.from(googleHeroSvg(card, 2, true, watermark)))
       .resize(1032, 812)
       .png()
       .toBuffer();

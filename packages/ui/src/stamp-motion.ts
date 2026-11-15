@@ -1,5 +1,6 @@
 import { stampGeometry, stampRandom } from './StampInk.js';
 import type { StampShape } from '../../contracts/src/branding.js';
+import { haptic as vibrate, type HapticPattern } from './haptics.js';
 export interface MotionRun {
   cancel: () => void;
   finished: Promise<void>;
@@ -18,6 +19,7 @@ export function stampMotion({
   reduced = false,
   onImpact,
   position,
+  haptic = 25,
 }: {
   card: HTMLElement;
   slot: HTMLElement;
@@ -29,6 +31,8 @@ export function stampMotion({
   reduced?: boolean;
   onImpact: () => void;
   position?: { x: number; y: number; width: number; height: number };
+  /** Vibration as the stamp lands. */
+  haptic?: HapticPattern;
 }): MotionRun {
   const animations: Animation[] = [],
     nodes: HTMLElement[] = [],
@@ -226,11 +230,7 @@ export function stampMotion({
       layer.append(fragment);
       later(() => {
         onImpact();
-        try {
-          navigator.vibrate?.(25);
-        } catch {
-          /* Optional haptic. */
-        }
+        vibrate(haptic);
       }, delay + 300);
       later(resolveFinished, delay + 650);
       later(() => {

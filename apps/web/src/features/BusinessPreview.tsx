@@ -21,6 +21,8 @@ interface Snapshot {
   } & Pick<
     CardData,
     | 'logo_size'
+    | 'logo_mark_position'
+    | 'logo_mark_bleed'
     | 'logo_style'
     | 'template'
     | 'primary_color'

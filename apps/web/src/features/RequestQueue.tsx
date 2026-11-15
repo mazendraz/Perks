@@ -278,7 +278,14 @@ export function CashierRequests({
         proof.membershipId !== row.membership_id ||
         new Date(proof.expiresAt).getTime() <= Date.now())
     ) {
-      setError(ar ? 'امسح كود العميل الأول.' : 'Scan the customer code first.');
+      setError(
+        ar
+          ? 'امسح كود الـQR اللي على موبايل العميل الأول، وبعدين اضغط اختم.'
+          : 'Scan the QR code on the customer’s phone first, then tap Stamp.',
+      );
+      document
+        .querySelector('.request-scanner')
+        ?.scrollIntoView({ block: 'start', behavior: 'smooth' });
       return;
     }
     setBusy(true);
@@ -466,8 +473,8 @@ export function CashierRequests({
                   ? 'كود العميل اتقري.'
                   : 'Customer code scanned.'
                 : ar
-                  ? 'مستني سكان كود العميل.'
-                  : 'Waiting for the customer code scan.'}
+                  ? 'اطلب من العميل يفتح كود الـQR من الكارت بتاعه وامسحه.'
+                  : 'Ask the customer to open the QR code on their card and scan it.'}
             </p>
             <form onSubmit={(event) => void submit(event, row, true)}>
               <label>
@@ -509,14 +516,20 @@ export function CashierRequests({
               </div>
               <button
                 className="primary full"
+                // Not disabled before the scan: tapping explains what is missing instead.
                 disabled={
-                  busy ||
-                  !matching ||
-                  !row.code ||
-                  (!!pending && (!resumable || pending.request.id !== row.id))
+                  busy || !row.code || (!!pending && (!resumable || pending.request.id !== row.id))
                 }
               >
-                <ActionLabel icon="stamp">{ar ? 'اختم' : 'Stamp request'}</ActionLabel>
+                <ActionLabel icon={matching ? 'stamp' : 'scan'}>
+                  {matching
+                    ? ar
+                      ? 'اختم'
+                      : 'Stamp request'
+                    : ar
+                      ? 'امسح كود العميل الأول'
+                      : 'Scan the customer code first'}
+                </ActionLabel>
               </button>
             </form>
             {!pending && (

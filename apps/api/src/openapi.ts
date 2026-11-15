@@ -2,7 +2,13 @@ import {
   staffSecurityCommand,
   contactPhone,
 } from '../../../packages/contracts/src/account-management.js';
-import { cardTemplate, stampDesign, logoStyles } from '../../../packages/contracts/src/branding.js';
+import {
+  cardTemplate,
+  stampDesign,
+  logoStyles,
+  logoMarkPositions,
+  LOGO_MARK_MAX_BLEED,
+} from '../../../packages/contracts/src/branding.js';
 import {
   platformAdminInput,
   platformAdminCommand,
@@ -236,6 +242,8 @@ const contracts: Record<string, Contract> = {
         template: cardTemplate,
         logoStyle: z.enum(logoStyles).optional(),
         logoSize: z.number().int().min(32).max(72).optional(),
+        logoMarkPosition: z.enum(logoMarkPositions).optional(),
+        logoMarkBleed: z.number().int().min(0).max(LOGO_MARK_MAX_BLEED).optional(),
         stampShape: stampDesign.stampShape.removeDefault().optional(),
         stampIcon: stampDesign.stampIcon.removeDefault().optional(),
         stampStyle: stampDesign.stampStyle.removeDefault().optional(),

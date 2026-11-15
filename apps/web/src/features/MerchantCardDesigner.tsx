@@ -6,6 +6,7 @@ import { Select } from '../controls/Select.js';
 import { useEffect, useState } from 'react';
 import type { CardData, Language } from '../../../../packages/contracts/src/index.js';
 import {
+  type LogoMarkPosition,
   suggestedStamps,
   type CardTemplate,
   type StampShape,
@@ -20,6 +21,7 @@ import {
   TemplatePicker,
   StampControls,
   LogoStyleControl,
+  LogoMarkControl,
 } from './BrandControls.js';
 import { LoyaltyCard } from '../../../../packages/ui/src/LoyaltyCard.js';
 interface Brand {
@@ -36,6 +38,8 @@ interface Brand {
   logo_asset_id: string | null;
   logo_style: LogoStyle;
   logo_size: number;
+  logo_mark_position: LogoMarkPosition;
+  logo_mark_bleed: number;
   terms: string;
   contact_email: string;
   contact_phone: string;
@@ -107,6 +111,8 @@ export function MerchantCardDesigner({
         template: brand.template,
         logo_style: brand.logo_style,
         logo_size: brand.logo_size,
+        logo_mark_position: brand.logo_mark_position,
+        logo_mark_bleed: brand.logo_mark_bleed,
         stamp_shape: brand.stamp_shape,
         stamp_icon: brand.stamp_icon,
         stamp_style: brand.stamp_style,
@@ -160,6 +166,8 @@ export function MerchantCardDesigner({
                   logoAssetId: brand.logo_asset_id,
                   logoStyle: brand.logo_style,
                   logoSize: brand.logo_size,
+                  logoMarkPosition: brand.logo_mark_position,
+                  logoMarkBleed: brand.logo_mark_bleed,
                   terms: brand.terms,
                   contactEmail: brand.contact_email || undefined,
                   contactPhone: brand.contact_phone,
@@ -225,6 +233,14 @@ export function MerchantCardDesigner({
             onSizeChange={(logo_size) => patch({ logo_size })}
             onChange={(logo_style) => patch({ logo_style })}
           />
+          {brand.template === 'logomark' && (
+            <LogoMarkControl
+              lang={lang}
+              position={brand.logo_mark_position}
+              bleed={brand.logo_mark_bleed}
+              onChange={(v) => patch(v)}
+            />
+          )}
           <div className="form-grid">
             {(
               [

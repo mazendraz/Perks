@@ -12,6 +12,7 @@ import { CustomerCode } from './CustomerCode.js';
 import { InstallCard } from './InstallCard.js';
 import { WalletPanel } from './WalletPanel.js';
 import { useCardExperience } from '../useCardExperience.js';
+import { StampCelebration, gainedStamp, type StampMoment } from './StampCelebration.js';
 import {
   useEffect,
   useLayoutEffect,
@@ -542,6 +543,22 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
       setBusy(false);
     }
   };
+  // When the cashier approves (or a sticker visit is awarded), the card comes up full-screen
+  // and the new stamp is pressed in front of the customer.
+  const [moment, setMoment] = useState<StampMoment | null>(null),
+    lastCard = useRef<SavedCard | null>(null);
+  useLayoutEffect(() => {
+    if (!card) return;
+    const before = lastCard.current;
+    lastCard.current = card;
+    if (!before || !gainedStamp(before, card)) return;
+    setMoment((open) =>
+      open && open.to.id === card.id ? { ...open, to: card } : { from: before, to: card },
+    );
+  }, [card]);
+  useEffect(() => {
+    if (moment && moment.to.id !== membershipId) setMoment(null);
+  }, [membershipId]);
   const lastRevision = useRef<{ id: string; revision: number } | null>(null);
   useLayoutEffect(() => {
     if (!card) return;
@@ -569,7 +586,9 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
     void showQr();
   }, [card?.id]);
   useEffect(() => {
-    if (!(waiting && card && new URLSearchParams(location.search).has('code'))) return;
+    // Any open request, from a sticker or from the app, needs the customer's QR in front of
+    // the cashier: the approve button stays locked until it is scanned.
+    if (!(waiting && card)) return;
     const reduce =
       typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
     const delay = firstVisit.current && !reduce ? FIRST_CARD_MOMENT_MS : 0;
@@ -644,6 +663,9 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
   return (
     <>
       <DeviceNotices lang={lang} />
+      {moment && !holder && (
+        <StampCelebration moment={moment} lang={lang} onClose={() => setMoment(null)} />
+      )}
       {holder && (
         <section
           className="panel holder-confirm"
@@ -738,6 +760,7 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
               <LoyaltyCard
                 card={card}
                 lang={lang}
+                motion={moment ? 'quiet' : 'normal'}
                 waiting={waiting}
                 reveal={new URLSearchParams(location.search).get('new') === '1'}
               />
@@ -859,6 +882,7 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
                     card={card}
                     lang={lang}
                     onPending={setWaiting}
+                    onShowCode={() => void showQr()}
                     onAwarded={load}
                     onNotice={setVisitNotice}
                   />

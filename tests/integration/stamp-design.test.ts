@@ -84,7 +84,30 @@ test('business editions and independent stamp artwork persist to holder list/det
     });
   assert.equal((await publish(body, foreign)).statusCode, 404);
   assert.equal((await publish(body, cashier)).statusCode, 403);
-  for (const template of ['cafe', 'espresso', 'restaurant', 'bistro', 'barber', 'grooming']) {
+  for (const template of [
+    'cafe',
+    'espresso',
+    'latte',
+    'roastery',
+    'restaurant',
+    'bistro',
+    'carwash',
+    'detailing',
+    'chalkboard',
+    'grill',
+    'vintage',
+    'foam',
+    'cowork',
+    'studio',
+    'gym',
+    'pulse',
+    'salon',
+    'spa',
+    'bakery',
+    'sweets',
+    'barber',
+    'grooming',
+  ]) {
     const r = await publish({ ...body, template });
     assert.equal(r.statusCode, 200, r.body);
     revision = r.json().merchant.revision;

@@ -82,8 +82,10 @@ test('Wallet follows the shop card edition: paper editions, Noir and the edition
       .stamp,
     '#204e43',
   );
+  // Noir keeps its look but takes the shop's own colours, like every edition.
   const noir = walletTheme({ ...card, template: 'noir' });
-  assert.equal(noir.background, '#171c1b');
+  assert.equal(noir.background, '#204e43');
+  assert.equal(noir.label, walletTheme({ ...card, template: 'noir' }).label);
   assert.equal(walletTheme({ ...card, template: 'classic' }).background, '#204e43');
   assert.equal(walletTheme({ ...card, template: undefined }).background, '#204e43');
   const strips = cardTemplates.map((template) => stripSvg({ ...card, template }, 1));
@@ -177,4 +179,91 @@ test('logos are placed as uploaded: margins trimmed, nothing added behind them',
     .raw()
     .toBuffer();
   assert.deepEqual([...tile.subarray(0, 3)], [0x20, 0x4e, 0x43]);
+});
+
+test('re-adding a Google card first replaces the stored card, so an old QR code cannot come back', async () => {
+  const { refreshSavedGoogleCard } = await import('../../apps/api/src/wallet/google-wallet.js');
+  const { generateKeyPairSync } = await import('node:crypto');
+  const { privateKey } = generateKeyPairSync('rsa', { modulusLength: 2048 });
+  const calls: { method: string; url: string; body: Record<string, unknown> | null }[] = [];
+  const g = {
+    issuerId: '1234',
+    clientEmail: 'test@example.iam.gserviceaccount.com',
+    privateKey: privateKey.export({ type: 'pkcs8', format: 'pem' }).toString(),
+    fetch: (async (url: string, init?: RequestInit) => {
+      calls.push({
+        method: init?.method || 'GET',
+        url,
+        body: init?.body && !String(url).includes('oauth2') ? JSON.parse(String(init.body)) : null,
+      });
+      if (String(url).includes('oauth2'))
+        return new Response(JSON.stringify({ access_token: 't', expires_in: 3600 }));
+      return new Response('{}', { status: 200 });
+    }) as typeof fetch,
+  };
+  const status = await refreshSavedGoogleCard(
+    g,
+    { ...card, template: 'barber' },
+    '00000000-0000-4000-8000-0000000000aa',
+    'https://perks.systems',
+    'v1',
+  );
+  assert.equal(status, 200);
+  const put = calls.find((x) => x.method === 'PUT')!;
+  assert.ok(put.url.includes('/loyaltyObject/'));
+  assert.equal(put.body!.barcode, undefined);
+  const klass = calls.find((x) => x.url.includes('/loyaltyClass/'))!;
+  assert.equal(klass.method, 'PATCH');
+  assert.equal(klass.body!.programName, 'عضوية العناية');
+});
+
+test('two shops on the same template and colours get different drawings; each shop keeps its own', async () => {
+  const { posterArtworkSvg } = await import('../../apps/api/src/wallet/pass-artwork.js');
+  const barber = { ...card, template: 'barber' as const };
+  const shops = Array.from({ length: 20 }, (_, i) =>
+    posterArtworkSvg(
+      { ...barber, merchant_id: '00000000-0000-4000-8000-0000000001' + String(i).padStart(2, '0') },
+      1,
+    ),
+  );
+  assert.equal(new Set(shops).size, 20, 'every shop has its own arrangement');
+  assert.equal(
+    posterArtworkSvg({ ...barber, merchant_id: 'a' }, 1),
+    posterArtworkSvg({ ...barber, merchant_id: 'a' }, 1),
+  );
+});
+
+test('"Your logo": the owner picks the side or corner and how much of the logo runs past the edge', async () => {
+  const { logoMarkBox } = await import('../../packages/contracts/src/branding.js');
+  const { posterArtworkSvg } = await import('../../apps/api/src/wallet/pass-artwork.js');
+  const { artworkLogo } = await import('../../apps/api/src/wallet/apple-pass.js');
+  // Centre: in the middle of the card, never past the edge.
+  const centre = logoMarkBox(600, 420, 'center', 50);
+  assert.equal(centre.x, 300 - centre.size / 2);
+  assert.equal(centre.y, 210 - centre.size / 2);
+  // Right side with 40%: 40% of the logo is past the right edge.
+  const right = logoMarkBox(600, 420, 'right', 40);
+  assert.ok(Math.abs(right.x + right.size - (600 + right.size * 0.4)) < 1e-9);
+  assert.equal(right.y, centre.y);
+  // Bottom-left corner with no bleed touches both edges from inside.
+  const corner = logoMarkBox(600, 420, 'bottom-left', 0);
+  assert.equal(corner.x, 0);
+  assert.ok(Math.abs(corner.y + corner.size - 420) < 1e-9);
+  // Bleed is capped at 60%.
+  assert.deepEqual(logoMarkBox(600, 420, 'left', 99), logoMarkBox(600, 420, 'left', 60));
+  // The Wallet artwork uses the same box.
+  const logo = await artworkLogo(
+    await sharp({ create: { width: 200, height: 200, channels: 4, background: '#204e43' } })
+      .png()
+      .toBuffer(),
+  );
+  const svg = posterArtworkSvg(
+    { ...card, template: 'logomark', logo_mark_position: 'top-right', logo_mark_bleed: 30 },
+    1,
+    false,
+    { watermark: logo },
+  );
+  const box = logoMarkBox(358, 448, 'top-right', 30);
+  const x = Number(/data-watermark="true"[^>]* x="([\d.-]+)"/.exec(svg)![1]);
+  assert.ok(Math.abs(x - box.x) < 0.01);
 });

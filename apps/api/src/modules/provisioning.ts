@@ -6,6 +6,8 @@ import {
   cardTemplate,
   stampDesign,
   logoStyles,
+  logoMarkPositions,
+  LOGO_MARK_MAX_BLEED,
 } from '../../../../packages/contracts/src/branding.js';
 import { draftInput, draftActivationInput } from '../../../../packages/contracts/src/commands.js';
 import type { FastifyInstance } from 'fastify';
@@ -735,6 +737,8 @@ export function provisioningModule(app: FastifyInstance, pools: Pools, c: Config
           template: cardTemplate,
           logoStyle: z.enum(logoStyles).optional(),
           logoSize: z.number().int().min(32).max(72).optional(),
+          logoMarkPosition: z.enum(logoMarkPositions).optional(),
+          logoMarkBleed: z.number().int().min(0).max(LOGO_MARK_MAX_BLEED).optional(),
           stampShape: stampDesign.stampShape.removeDefault().optional(),
           stampIcon: stampDesign.stampIcon.removeDefault().optional(),
           stampStyle: stampDesign.stampStyle.removeDefault().optional(),
@@ -751,7 +755,7 @@ export function provisioningModule(app: FastifyInstance, pools: Pools, c: Config
         else await merchantGrant(db, actor, m, ['owner']);
         const row = (
           await db.query(
-            'UPDATE merchants SET name=$1,primary_color=$2,accent_color=$3,surface_color=$4,template=$5,terms=$6,logo_asset_id=coalesce($7,logo_asset_id),stamp_shape=coalesce($10,stamp_shape),stamp_icon=coalesce($11,stamp_icon),stamp_style=coalesce($12,stamp_style),contact_email=coalesce($13,contact_email),contact_phone=coalesce($14,contact_phone),logo_style=coalesce($15,logo_style),logo_size=coalesce($16,logo_size),revision=revision+1 WHERE id=$8 AND revision=$9 RETURNING *',
+            'UPDATE merchants SET name=$1,primary_color=$2,accent_color=$3,surface_color=$4,template=$5,terms=$6,logo_asset_id=coalesce($7,logo_asset_id),stamp_shape=coalesce($10,stamp_shape),stamp_icon=coalesce($11,stamp_icon),stamp_style=coalesce($12,stamp_style),contact_email=coalesce($13,contact_email),contact_phone=coalesce($14,contact_phone),logo_style=coalesce($15,logo_style),logo_size=coalesce($16,logo_size),logo_mark_position=coalesce($17,logo_mark_position),logo_mark_bleed=coalesce($18,logo_mark_bleed),revision=revision+1 WHERE id=$8 AND revision=$9 RETURNING *',
             [
               body.name,
               body.primaryColor,
@@ -769,6 +773,8 @@ export function provisioningModule(app: FastifyInstance, pools: Pools, c: Config
               body.contactPhone ?? null,
               body.logoStyle ?? null,
               body.logoSize ?? null,
+              body.logoMarkPosition ?? null,
+              body.logoMarkBleed ?? null,
             ],
           )
         ).rows[0];

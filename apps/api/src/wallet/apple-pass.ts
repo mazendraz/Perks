@@ -5,12 +5,13 @@ import forge from 'node-forge';
 import sharp from 'sharp';
 import type {
   CardTemplate,
+  LogoMarkPosition,
   StampIcon,
   StampShape,
 } from '../../../../packages/contracts/src/branding.js';
 import { posterArtworkSvg, stripSvg, type ArtworkLogo } from './pass-artwork.js';
 import { mix, walletTheme } from '../../../../packages/domain/src/wallet-theme.js';
-import { templateCategory } from '../../../../packages/contracts/src/branding.js';
+import { categoryEditions, templateCategory } from '../../../../packages/contracts/src/branding.js';
 import { walletReminderText } from '../../../../packages/contracts/src/customer-reminders.js';
 export { inkFor, stripSvg } from './pass-artwork.js';
 import { APPLE_SERVICE_PREFIX } from './constants.js';
@@ -29,6 +30,9 @@ export interface WalletCard {
   accent_color: string;
   surface_color?: string;
   template?: CardTemplate;
+  /** "Your logo" edition: where the large logo sits and how much runs past the edge. */
+  logo_mark_position?: LogoMarkPosition;
+  logo_mark_bleed?: number;
   stamp_shape: StampShape;
   stamp_icon: StampIcon;
   stamp_style: 'solid' | 'outline';
@@ -120,20 +124,16 @@ const reminderKey = (card: WalletCard) =>
         .digest('hex')
         .slice(0, 24)
     : '';
-const editionLabels = {
-  cafe: ['عضوية الكافيه', 'Café membership'],
-  restaurant: ['عضوية المطعم', 'Dining membership'],
-  barber: ['عضوية العناية', 'Grooming membership'],
-  general: ['عضوية ولاء', 'Loyalty membership'],
-} as const;
+const editionLabels = categoryEditions;
 export function texts(card: WalletCard) {
   const edition = editionLabels[templateCategory(card.template ?? 'classic')];
+  const editionPair = [edition.ar, edition.en] as const;
   const left = Math.max(0, card.threshold - card.display_balance),
     ready = card.pending_rewards > 0;
   return {
     ar: {
       stamps_label: 'الأختام',
-      edition_value: edition[0],
+      edition_value: editionPair[0],
       reward_label: 'المكافأة',
       member_label: 'باسم',
       member_value: 'عميل Perks',
@@ -156,7 +156,7 @@ export function texts(card: WalletCard) {
     },
     en: {
       stamps_label: 'Stamps',
-      edition_value: edition[1],
+      edition_value: editionPair[1],
       reward_label: 'Reward',
       member_label: 'Member',
       member_value: 'Perks member',
@@ -473,28 +473,32 @@ export async function buildPkpass(
   const appIcon = Buffer.from(perksIconSvg({ rounded: false, maskable: false }));
   const logoMeta = options.logo ? await sharp(await trimmedLogo(options.logo)).metadata() : null,
     wordmark = !!logoMeta && (logoMeta.width || 1) / (logoMeta.height || 1) > WORDMARK_RATIO;
+  // The logo, drawn inside the artwork: large at the top, or as the faint background of the
+  // "Your logo" edition (then not repeated at the top).
+  const inArt = options.logo ? await artworkLogo(options.logo) : null,
+    logoEdition = walletTheme(card).art.kind === 'logo',
+    art = { logo: logoEdition ? null : inArt, watermark: logoEdition ? inArt : null };
   const files: [string, Buffer][] = [
     ['pass.json', Buffer.from(JSON.stringify(passJson(card, { ...options, wordmark })))],
     ['icon.png', await png(appIcon, 29)],
     ['icon@2x.png', await png(appIcon, 58)],
     ['icon@3x.png', await png(appIcon, 87)],
-    ['strip.png', await png(stripSvg(card, 1), 375, 144)],
-    ['strip@2x.png', await png(stripSvg(card, 2), 750, 288)],
-    ['strip@3x.png', await png(stripSvg(card, 3), 1125, 432)],
+    ['strip.png', await png(stripSvg(card, 1, 144, false, art.watermark), 375, 144)],
+    ['strip@2x.png', await png(stripSvg(card, 2, 144, false, art.watermark), 750, 288)],
+    ['strip@3x.png', await png(stripSvg(card, 3, 144, false, art.watermark), 1125, 432)],
   ];
   // The logo slot Wallet gives a poster is only 30 points tall, so the logo is also drawn large
   // inside the artwork, where people actually see it.
-  const inArt = options.logo ? await artworkLogo(options.logo) : null;
   for (const scale of [1, 2, 3]) {
     const suffix = scale > 1 ? '@' + scale + 'x' : '';
     files.push(
       [
         `artwork${suffix}.png`,
-        await png(posterArtworkSvg(card, scale, false, { logo: inArt }), 358 * scale, 448 * scale),
+        await png(posterArtworkSvg(card, scale, false, art), 358 * scale, 448 * scale),
       ],
       [
         `ar.lproj/artwork${suffix}.png`,
-        await png(posterArtworkSvg(card, scale, true, { logo: inArt }), 358 * scale, 448 * scale),
+        await png(posterArtworkSvg(card, scale, true, art), 358 * scale, 448 * scale),
       ],
     );
   }
@@ -514,7 +518,7 @@ export async function buildPkpass(
   for (const scale of [1, 2, 3])
     files.push([
       `ar.lproj/strip${scale > 1 ? '@' + scale + 'x' : ''}.png`,
-      await png(stripSvg(card, scale, 144, true), 375 * scale, 144 * scale),
+      await png(stripSvg(card, scale, 144, true, art.watermark), 375 * scale, 144 * scale),
     ]);
   files.push(
     ['ar.lproj/pass.strings', stringsFile(t.ar)],

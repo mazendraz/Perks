@@ -1,5 +1,5 @@
-import type { StampShape } from '../../../../packages/contracts/src/branding.js';
-import { stampGeometry } from '../../../../packages/domain/src/stamp-ink.js';
+import { logoMarkBox, type StampShape } from '../../../../packages/contracts/src/branding.js';
+import { stampGeometry, stampRandom } from '../../../../packages/domain/src/stamp-ink.js';
 import { stampIconPaths } from '../../../../packages/domain/src/stamp-glyphs.js';
 import type { WalletCard } from './apple-pass.js';
 import { cardArtMarkup } from '../../../../packages/domain/src/card-art.js';
@@ -114,6 +114,43 @@ export function stripLayout(total: number, height = 144, rtl = false) {
 }
 
 /**
+ * Pattern editions drawn over a whole W×H area: confetti pieces in the shop's two colours, or
+ * soft horizontal waves. The same seed gives the same confetti every time.
+ */
+function patternArt(
+  kind: 'dots' | 'waves',
+  W: number,
+  H: number,
+  color: string,
+  accent: string,
+  opacity: number,
+  seed = '',
+) {
+  const n = (value: number) => value.toFixed(2);
+  if (kind === 'waves') {
+    const step = 26,
+      amp = 6;
+    return Array.from({ length: Math.ceil(H / step) + 1 }, (_, i) => {
+      const y = i * step;
+      let d = `M-20 ${y}`;
+      for (let x = -20; x < W + 40; x += 60) d += `q15 -${amp} 30 0t30 0`;
+      return `<path d="${d}" fill="none" stroke="${color}" stroke-opacity="${n(opacity)}" stroke-width="1.6"/>`;
+    }).join('');
+  }
+  const random = stampRandom('confetti:' + seed + W + 'x' + H),
+    count = Math.round((W * H) / 2600);
+  return Array.from({ length: count }, (_, i) => {
+    const x = random() * W,
+      y = random() * H,
+      fill = i % 3 === 0 ? color : accent,
+      alpha = n(i % 3 === 0 ? opacity * 0.8 : opacity * 1.3);
+    return i % 2
+      ? `<circle cx="${n(x)}" cy="${n(y)}" r="${n(2 + random() * 3)}" fill="${fill}" fill-opacity="${alpha}"/>`
+      : `<rect x="${n(x)}" y="${n(y)}" width="${n(4 + random() * 6)}" height="2.6" rx="1.3" transform="rotate(${n(random() * 180)} ${n(x)} ${n(y)})" fill="${fill}" fill-opacity="${alpha}"/>`;
+  }).join('');
+}
+
+/**
  * The card edition's own drawing (the same line art as the web card), placed as if the strip were
  * the middle band of the card. It fades out at the top and bottom so it melts into the pass colour.
  */
@@ -145,6 +182,8 @@ function artLayer(card: WalletCard, theme: WalletTheme, height: number, rtl: boo
     // Espresso: fine vertical rules in the brand colour, plus the café drawing.
     defs += `<pattern id="rules" width="50" height="${height}" patternUnits="userSpaceOnUse"><rect x="25" width=".7" height="${height}" fill="${color}" fill-opacity="${n(opacity)}"/></pattern>`;
     body = `<rect width="375" height="${height}" fill="url(#rules)"/>` + onCard(lines(opacity));
+  } else if (kind === 'dots' || kind === 'waves') {
+    body = patternArt(kind, 375, height, color, theme.stamp, opacity, card.merchant_id);
   } else if (kind === 'aurora') {
     // Two soft accent lights on opposite sides, fading out inside the strip, with the line art barely there.
     defs += `<radialGradient id="aur" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="${theme.stamp}" stop-opacity="${n(opacity * 1.4)}"/><stop offset="1" stop-color="${theme.stamp}" stop-opacity="0"/></radialGradient>`;
@@ -156,7 +195,32 @@ function artLayer(card: WalletCard, theme: WalletTheme, height: number, rtl: boo
   return { defs, body: `<g mask="url(#fade)">${body}</g>` };
 }
 
-export function stripSvg(card: WalletCard, scale: number, height = 144, rtl = false) {
+/**
+ * The shop logo as a large, faint mark: the "Your logo" edition. The owner picks the corner or
+ * side and how much runs past the edge; the same box is used on the web card (logoMarkBox).
+ */
+function watermarkMarkup(
+  logo: ArtworkLogo | null | undefined,
+  card: WalletCard,
+  W: number,
+  H: number,
+  opacity: number,
+) {
+  if (!logo) return '';
+  const box = logoMarkBox(W, H, card.logo_mark_position, card.logo_mark_bleed ?? 0),
+    k = Math.min(box.size / logo.width, box.size / logo.height),
+    w = logo.width * k,
+    h = logo.height * k;
+  return `<image data-watermark="true" opacity="${opacity.toFixed(2)}" x="${(box.x + (box.size - w) / 2).toFixed(2)}" y="${(box.y + (box.size - h) / 2).toFixed(2)}" width="${w.toFixed(2)}" height="${h.toFixed(2)}" href="${logo.href}"/>`;
+}
+
+export function stripSvg(
+  card: WalletCard,
+  scale: number,
+  height = 144,
+  rtl = false,
+  watermark: ArtworkLogo | null = null,
+) {
   const total = Math.max(2, Math.min(50, card.threshold)),
     filled = Math.max(0, Math.min(total, card.display_balance));
   const theme = walletTheme(card),
@@ -214,6 +278,9 @@ export function stripSvg(card: WalletCard, scale: number, height = 144, rtl = fa
     `<defs>${GIFT_LIFT}${art.defs}</defs>` +
     `<rect width="375" height="${height}" fill="${bg}"/>` +
     art.body +
+    (theme.art.kind === 'logo'
+      ? watermarkMarkup(watermark, card, 375, height, theme.art.opacity)
+      : '') +
     slots.join('') +
     '</svg>'
   );
@@ -233,10 +300,19 @@ export interface CardFace {
   top: number;
   bottom: number;
   padX: number;
+  /** Where Wallet's own reward strip starts, if it covers the bottom of the image. */
+  visibleHeight?: number;
   /** Largest stamp, in face units. */
   maxStamp?: number;
 }
-export const POSTER: CardFace = { width: 358, height: 448, top: 74, bottom: 350, padX: 30 };
+export const POSTER: CardFace = {
+  width: 358,
+  height: 448,
+  top: 74,
+  bottom: 350,
+  padX: 30,
+  visibleHeight: 383,
+};
 /**
  * Google Wallet's large card image (1032×812 at 2×). Google writes the shop name and the
  * numbers above it, so the whole image is the card face.
@@ -293,11 +369,327 @@ export function posterLayout(total: number, rtl = false, face: CardFace = POSTER
   };
 }
 
+/**
+ * The business type, drawn so it reads at a glance on a Wallet card: coffee beans and a cup for
+ * cafés, a barber pole and scissors for barbers, a plate and cutlery for restaurants, bubbles and
+ * a car for car washes. Drawn left-to-right; Arabic cards mirror it.
+ */
+function categoryMotif(
+  category: ReturnType<typeof walletArtCategory>,
+  template: string,
+  theme: WalletTheme,
+  face: CardFace,
+  rtl: boolean,
+  seed = '',
+) {
+  const { width: W, height: H } = face,
+    c = theme.art.color,
+    a = Math.min(0.3, Math.max(0.15, theme.art.opacity * 1.5)),
+    n = (v: number) => v.toFixed(2),
+    line = `fill="none" stroke="${c}" stroke-opacity="${n(a)}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"`,
+    // A drawing made in a 100-unit box, placed at (x, y) with width w.
+    at = (x: number, y: number, w: number, inner: string) =>
+      `<g transform="translate(${n(x)} ${n(y)}) scale(${n(w / 100)})">${inner}</g>`,
+    icon = (x: number, y: number, w: number, d: string) =>
+      `<g transform="translate(${n(x)} ${n(y)}) scale(${n(w / 24)})"><path d="${d}" ${line}/></g>`;
+  // back: pieces fixed to the card (poles, frames, grids); body: the drawing each shop arranges.
+  let body = '',
+    back = '',
+    defs = '';
+  if (category === 'cafe') {
+    const bean = (x: number, y: number, r: number, size: number) =>
+      `<g transform="translate(${n(x)} ${n(y)}) rotate(${r}) scale(${n(size / 24)})"><path d="${stampIconPaths.bean}" ${line}/></g>`;
+    if (template === 'chalkboard') {
+      // A café menu board: a chalk frame, a steaming cup and a few beans, all in chalk strokes.
+      back = `<rect x="${n(W * 0.04)}" y="${n(H * 0.04)}" width="${n(W * 0.92)}" height="${n(H * 0.92)}" rx="10" ${line} stroke-dasharray="7 4"/>`;
+      body =
+        `<g stroke-dasharray="7 4">` +
+        at(
+          W * 0.6,
+          H * 0.5,
+          W * 0.36,
+          `<path d="M10 30h60v18c0 18-13 30-30 30S10 66 10 48Z M70 37h6a10 10 0 0 1 0 20h-7 M2 86h84 M28 22c-6-6 6-10 0-18 M42 22c-6-6 6-10 0-18 M56 22c-6-6 6-10 0-18" ${line}/>`,
+        ) +
+        bean(W * 0.14, H * 0.2, -25, Math.min(W, H) * 0.09) +
+        bean(W * 0.86, H * 0.16, 30, Math.min(W, H) * 0.07) +
+        '</g>';
+    } else if (template === 'latte')
+      // A latte seen from above: the cup rim, the saucer and a heart in the foam.
+      body = at(
+        W * 0.5,
+        H * 0.44,
+        W * 0.62,
+        `<circle cx="40" cy="40" r="38" ${line}/><circle cx="40" cy="40" r="30" ${line}/><circle cx="40" cy="40" r="50" ${line} stroke-dasharray="2 6"/><path d="M78 34h10a8 8 0 0 1 0 16H78 M40 54C26 44 24 34 32 29c4-2 7 0 8 3 1-3 4-5 8-3 8 5 6 15-8 25Z" ${line}/>`,
+      );
+    else if (template === 'roastery')
+      // Roasted beans spread over the whole card.
+      body = Array.from({ length: 30 }, (_, i) => {
+        const col = i % 5,
+          row = Math.floor(i / 5);
+        return bean(
+          W * (0.1 + col * 0.2 + (row % 2) * 0.1),
+          H * (0.08 + row * 0.16),
+          ((i * 47) % 90) - 45,
+          Math.min(W, H) * 0.08,
+        );
+      }).join('');
+    else
+      body =
+        [
+          [0.1, 0.2, -30],
+          [0.24, 0.12, 25],
+          [0.07, 0.42, 55],
+          [0.88, 0.2, -15],
+          [0.76, 0.1, 35],
+          [0.16, 0.66, -20],
+        ]
+          .map(([x, y, r]) => bean(W * x!, H * y!, r!, Math.min(W, H) * 0.09))
+          .join('') +
+        at(
+          W * 0.58,
+          H * 0.5,
+          W * 0.44,
+          `<path d="M10 30h60v18c0 18-13 30-30 30S10 66 10 48Z M70 37h6a10 10 0 0 1 0 20h-7 M2 86h84 M28 22c-6-6 6-10 0-18 M42 22c-6-6 6-10 0-18 M56 22c-6-6 6-10 0-18" ${line}/>`,
+        );
+  } else if (category === 'barber' && template === 'vintage') {
+    // Old-school barber shop: a double frame, slim poles on both sides and scissors.
+    defs = `<pattern id="pole" width="18" height="18" patternUnits="userSpaceOnUse" patternTransform="rotate(38)"><rect width="6" height="18" fill="${theme.stamp}" fill-opacity=".5"/></pattern>`;
+    const band = W * 0.035;
+    back =
+      `<rect x="0" width="${n(band)}" height="${H}" fill="url(#pole)"/><rect x="${n(W - band)}" width="${n(band)}" height="${H}" fill="url(#pole)"/>` +
+      `<rect x="${n(W * 0.07)}" y="${n(H * 0.05)}" width="${n(W * 0.86)}" height="${n(H * 0.9)}" rx="6" ${line}/>` +
+      `<rect x="${n(W * 0.095)}" y="${n(H * 0.07)}" width="${n(W * 0.81)}" height="${n(H * 0.86)}" rx="4" ${line} stroke-dasharray="1 5"/>`;
+    body = icon(W * 0.4, H * 0.6, W * 0.2, stampIconPaths.scissors);
+  } else if (category === 'barber') {
+    // The barber pole: red, white and blue stripes along the leading edge.
+    defs = `<pattern id="pole" width="26" height="26" patternUnits="userSpaceOnUse" patternTransform="rotate(38)"><rect width="9" height="26" fill="${theme.stamp}" fill-opacity=".55"/><rect x="13" width="9" height="26" fill="${c}" fill-opacity="${n(a * 0.9)}"/></pattern>`;
+    const bandW = template === 'grooming' ? 0 : W * 0.075;
+    if (bandW)
+      back =
+        `<rect x="0" y="0" width="${n(bandW)}" height="${H}" fill="url(#pole)"/>` +
+        `<path d="M${n(bandW)} 0V${H}" ${line}/>`;
+    body =
+      (bandW
+        ? ''
+        : // Grooming studio: a straight razor in place of the pole.
+          at(
+            W * 0.04,
+            H * 0.56,
+            W * 0.4,
+            `<path d="M4 40h52l8-8h30v10H64l-8 8H4Z M10 40v10" ${line}/>`,
+          )) +
+      icon(W * 0.62, H * 0.5, W * 0.3, stampIconPaths.scissors) +
+      at(
+        W * 0.66,
+        H * 0.16,
+        W * 0.26,
+        `<path d="M4 20h92v14H4Z M10 34v24 M20 34v24 M30 34v24 M40 34v24 M50 34v24 M60 34v24 M70 34v24 M80 34v24 M90 34v24" ${line}/>`,
+      );
+  } else if (category === 'restaurant' && template === 'grill') {
+    // Grill house: the marks of a grill across the card and flames along the bottom.
+    body =
+      Array.from(
+        { length: 9 },
+        (_, i) =>
+          `<path d="M${n(-W * 0.2 + i * W * 0.17)} ${n(H * 0.06)}l${n(W * 0.5)} ${n(H * 0.5)}" ${line}/>`,
+      ).join('') +
+      [0.12, 0.34, 0.56, 0.78]
+        .map((x) => icon(W * x, H * 0.62, W * 0.13, stampIconPaths.flame))
+        .join('');
+  } else if (category === 'restaurant') {
+    const cx = W * 0.82,
+      cy = H * 0.6,
+      r = Math.min(W, H) * 0.3;
+    body =
+      `<circle cx="${n(cx)}" cy="${n(cy)}" r="${n(r)}" ${line}/>` +
+      `<circle cx="${n(cx)}" cy="${n(cy)}" r="${n(r * 0.78)}" ${line}/>` +
+      `<circle cx="${n(cx)}" cy="${n(cy)}" r="${n(r * 0.62)}" ${line} stroke-dasharray="2 7"/>` +
+      icon(W * 0.04, H * 0.18, W * 0.26, stampIconPaths.utensils);
+    back =
+      (template === 'bistro'
+        ? Array.from(
+            { length: 12 },
+            (_, i) =>
+              `<rect x="${n((W / 12) * i)}" y="0" width="${n(W / 24)}" height="${n(H * 0.05)}" fill="${c}" fill-opacity="${n(a * 0.8)}"/>`,
+          ).join('')
+        : '') +
+      `<path d="M${n(W * 0.06)} ${n(H * 0.08)}H${n(W * 0.94)}" ${line} stroke-dasharray="1 8"/>`;
+  } else if (category === 'carwash') {
+    const bubble = (x: number, y: number, r: number) =>
+      `<circle cx="${n(x)}" cy="${n(y)}" r="${n(r)}" ${line}/><path d="M${n(x - r * 0.55)} ${n(y - r * 0.15)}a${n(r * 0.6)} ${n(r * 0.6)} 0 0 1 ${n(r * 0.45)} -${n(r * 0.45)}" ${line}/>`;
+    const u = Math.min(W, H),
+      sparkle = (x: number, y: number, r: number) =>
+        `<path d="M${n(x)} ${n(y - r)}Q${n(x)} ${n(y)} ${n(x + r)} ${n(y)}Q${n(x)} ${n(y)} ${n(x)} ${n(y + r)}Q${n(x)} ${n(y)} ${n(x - r)} ${n(y)}Q${n(x)} ${n(y)} ${n(x)} ${n(y - r)}Z" ${line}/>`;
+    if (template === 'foam') {
+      // Foam: bubbles of every size all over the card.
+      const random = stampRandom('foam:' + seed + W + 'x' + H);
+      body = Array.from({ length: 26 }, () =>
+        bubble(random() * W, random() * H, u * (0.02 + random() * 0.07)),
+      ).join('');
+    } else if (template === 'detailing')
+      // Detailing: a polished shine, sparkles and long reflection lines.
+      body =
+        [
+          [0.14, 0.18, 0.06],
+          [0.27, 0.1, 0.03],
+          [0.86, 0.22, 0.05],
+          [0.9, 0.42, 0.03],
+        ]
+          .map(([x, y, r]) => sparkle(W * x!, H * y!, u * r!))
+          .join('') +
+        [0.62, 0.68, 0.74]
+          .map(
+            (y, i) => `<path d="M${n(W * (0.08 + i * 0.1))} ${n(H * y)}H${n(W * 0.92)}" ${line}/>`,
+          )
+          .join('') +
+        icon(W * 0.6, H * 0.46, W * 0.3, stampIconPaths.car);
+    else
+      body =
+        [
+          [0.12, 0.2, 0.07],
+          [0.26, 0.1, 0.035],
+          [0.84, 0.16, 0.06],
+          [0.72, 0.08, 0.03],
+          [0.92, 0.38, 0.035],
+          [0.06, 0.48, 0.045],
+        ]
+          .map(([x, y, r]) => bubble(W * x!, H * y!, u * r!))
+          .join('') +
+        icon(W * 0.36, H * 0.48, W * 0.62, stampIconPaths.car) +
+        `<path d="M0 ${n(H * 0.8)}c${n(W * 0.17)} -${n(H * 0.04)} ${n(W * 0.33)} ${n(H * 0.04)} ${n(W * 0.5)} 0s${n(W * 0.33)} ${n(H * 0.04)} ${n(W * 0.5)} 0" ${line}/>`;
+  }
+  if (category === 'workspace') {
+    // Workspace: grid paper (or a dotted blueprint for Studio), a laptop and a desk lamp.
+    const grid = template === 'studio' ? 'dots' : 'lines';
+    defs =
+      grid === 'dots'
+        ? `<pattern id="grid" width="22" height="22" patternUnits="userSpaceOnUse"><circle cx="11" cy="11" r="1.3" fill="${c}" fill-opacity="${n(a)}"/></pattern>`
+        : `<pattern id="grid" width="24" height="24" patternUnits="userSpaceOnUse"><path d="M24 0H0V24" fill="none" stroke="${c}" stroke-opacity="${n(a * 0.45)}" stroke-width="1"/></pattern>`;
+    back = `<rect width="${W}" height="${H}" fill="url(#grid)"/>`;
+    body =
+      icon(W * 0.56, H * 0.52, W * 0.4, stampIconPaths.laptop) +
+      at(
+        W * 0.06,
+        H * 0.5,
+        W * 0.3,
+        `<path d="M20 96V40l40-16M60 24c0 14 16 22 28 12M4 96h40" ${line}/>`,
+      );
+  } else if (category === 'gym') {
+    if (template === 'pulse')
+      // Pulse: a heart-rate line across the card and a heart.
+      body =
+        `<path d="M0 ${n(H * 0.72)}H${n(W * 0.3)}l${n(W * 0.06)} -${n(H * 0.12)} ${n(W * 0.08)} ${n(H * 0.24)} ${n(W * 0.07)} -${n(H * 0.18)} ${n(W * 0.05)} ${n(H * 0.06)}H${W}" ${line}/>` +
+        icon(W * 0.72, H * 0.08, W * 0.22, stampIconPaths.heart);
+    else
+    // Power: bold diagonal stripes in a corner and a big dumbbell.
+    {
+      back = Array.from(
+        { length: 6 },
+        (_, i) =>
+          `<path d="M${n(W * (0.55 + i * 0.08))} 0L${n(W)} ${n(H * (0.45 - i * 0.08))}" stroke="${theme.stamp}" stroke-opacity=".35" stroke-width="7"/>`,
+      ).join('');
+      body = icon(W * 0.1, H * 0.5, W * 0.5, stampIconPaths.dumbbell);
+    }
+  } else if (category === 'beauty') {
+    const leaves = at(
+      W * 0.62,
+      H * 0.42,
+      W * 0.38,
+      `<path d="M30 98C30 60 50 30 90 14M30 70c-14-6-20-20-16-34 14 4 20 18 16 34M44 46c4-14 18-20 32-16-4 14-18 20-32 16" ${line}/>`,
+    );
+    body =
+      template === 'spa'
+        ? // Spa: stacked stones and leaves.
+          leaves +
+          at(
+            W * 0.08,
+            H * 0.52,
+            W * 0.34,
+            `<ellipse cx="50" cy="88" rx="40" ry="10" ${line}/><ellipse cx="50" cy="68" rx="30" ry="9" ${line}/><ellipse cx="50" cy="51" rx="21" ry="7" ${line}/><ellipse cx="50" cy="38" rx="13" ry="5" ${line}/>`,
+          )
+        : // Salon: sparkles and a hand mirror.
+          leaves +
+          [
+            [0.12, 0.16, 0.12],
+            [0.3, 0.08, 0.07],
+            [0.86, 0.12, 0.09],
+          ]
+            .map(([x, y, w]) => icon(W * x!, H * y!, W * w!, stampIconPaths.sparkle))
+            .join('') +
+          at(
+            W * 0.08,
+            H * 0.5,
+            W * 0.22,
+            `<circle cx="40" cy="34" r="30" ${line}/><circle cx="40" cy="34" r="22" ${line}/><path d="M40 64v34" ${line}/>`,
+          );
+  } else if (category === 'bakery') {
+    if (template === 'sweets') {
+      // Sweets: cupcakes and sprinkles.
+      const random = stampRandom('sweets:' + seed + W + 'x' + H);
+      body =
+        Array.from({ length: 34 }, (_, i) => {
+          const x = random() * W,
+            y = random() * H;
+          return `<rect x="${n(x)}" y="${n(y)}" width="7" height="2.6" rx="1.3" transform="rotate(${n(random() * 180)} ${n(x)} ${n(y)})" fill="${i % 2 ? theme.stamp : c}" fill-opacity="${n(i % 2 ? a * 1.6 : a)}"/>`;
+        }).join('') +
+        icon(W * 0.62, H * 0.5, W * 0.3, stampIconPaths.cupcake) +
+        icon(W * 0.06, H * 0.12, W * 0.18, stampIconPaths.cupcake);
+    } else
+      // Bakery: wheat stalks and a croissant.
+      body =
+        at(
+          W * 0.74,
+          H * 0.06,
+          W * 0.2,
+          `<path d="M50 160V10M50 40c-14-8-20-22-16-36 14 4 20 18 16 36M50 40c14-8 20-22 16-36-14 4-20 18-16 36M50 74c-14-8-20-22-16-36 14 4 20 18 16 36M50 74c14-8 20-22 16-36-14 4-20 18-16 36M50 108c-14-8-20-22-16-36 14 4 20 18 16 36M50 108c14-8 20-22 16-36-14 4-20 18-16 36" ${line}/>`,
+        ) +
+        at(
+          W * 0.08,
+          H * 0.56,
+          W * 0.46,
+          `<path d="M6 60C14 22 86 22 94 60c-20-10-34-10-44 0-10-10-24-10-44 0Z M30 34l8 22M50 30v24M70 34l-8 22" ${line}/>`,
+        );
+  }
+  if (!body && !back) return { defs: '', back: '', body: '' };
+  const mirror = (x: string) =>
+    rtl && x ? `<g transform="translate(${W} 0) scale(-1 1)">${x}</g>` : x;
+  return { defs, back: mirror(back), body: mirror(body) };
+}
+
 /** The edition's artwork drawn over the whole poster, like the web card. */
+/**
+ * Each shop gets its own arrangement of the edition's drawing, worked out from the shop's id:
+ * mirrored or not, a little larger or smaller, moved and turned. Two shops on the same template and colours
+ * still get different cards; one shop always gets the same card.
+ */
+export function artVariation(seed: string, W: number, H: number) {
+  const random = stampRandom('art-layout:' + seed),
+    mirror = random() < 0.5,
+    // Small enough that the drawing always stays recognisable on the card.
+    k = 0.92 + random() * 0.16,
+    dx = (random() - 0.5) * 0.14 * W,
+    dy = (random() - 0.5) * 0.1 * H,
+    turn = (random() - 0.5) * 12;
+  const n = (v: number) => v.toFixed(2);
+  return `translate(${n(W / 2 + dx)} ${n(H / 2 + dy)}) rotate(${n(turn)}) scale(${n(mirror ? -k : k)} ${n(k)}) translate(${n(-W / 2)} ${n(-H / 2)})`;
+}
 function posterArt(card: WalletCard, theme: WalletTheme, rtl: boolean, face: CardFace) {
+  const art = posterArtBase(card, theme, rtl, face),
+    seed = card.merchant_id || card.id || 'perks';
+  return {
+    defs: art.defs,
+    body:
+      art.back +
+      (art.body
+        ? `<g data-variation="true" transform="${artVariation(seed, face.width, face.height)}">${art.body}</g>`
+        : ''),
+  };
+}
+function posterArtBase(card: WalletCard, theme: WalletTheme, rtl: boolean, face: CardFace) {
   const { kind, color, opacity, rotate, scale, leaf } = theme.art,
     { width: W, height: H } = face;
-  if (kind === 'none' || opacity <= 0) return { defs: '', body: '' };
+  // The "Your logo" edition draws only the logo (watermarkMarkup), no edition drawing.
+  if (kind === 'none' || kind === 'logo' || opacity <= 0) return { defs: '', back: '', body: '' };
   const n = (value: number) => value.toFixed(2);
   // The 600×420 web art box, scaled to the poster height and centred.
   const k = H / 420,
@@ -306,22 +698,46 @@ function posterArt(card: WalletCard, theme: WalletTheme, rtl: boolean, face: Car
     `<g transform="translate(${n(dx)} 0) scale(${n(k)})${rtl ? ' translate(600 0) scale(-1 1)' : ''} translate(300 210) rotate(${rotate}) scale(${scale}) translate(-300 -210)">${inner}</g>`;
   const lines = (alpha: number) =>
     `<g fill="none" stroke="${color}" stroke-opacity="${n(alpha)}" stroke-width="1.6" stroke-linecap="round">${cardArtMarkup[walletArtCategory(card.template)]}</g>`;
+  const rules = {
+    defs: `<pattern id="rules" width="50" height="${H}" patternUnits="userSpaceOnUse"><rect x="25" width=".7" height="${H}" fill="${color}" fill-opacity="${n(opacity)}"/></pattern>`,
+    body: `<rect width="${W}" height="${H}" fill="url(#rules)"/>`,
+  };
+  // Business templates draw their business, large enough to recognise on the phone.
+  const category = walletArtCategory(card.template);
+  if (category !== 'general') {
+    const motif = categoryMotif(
+      category,
+      card.template ?? 'classic',
+      theme,
+      face,
+      rtl,
+      card.merchant_id || card.id || '',
+    );
+    return kind === 'ruled'
+      ? { defs: rules.defs + motif.defs, back: rules.body + motif.back, body: motif.body }
+      : motif;
+  }
   const leafPath = leaf
     ? `<path transform="rotate(18 534 290)" d="M367 550A333 517 0 0 1 700 33A333 517 0 0 1 367 550Z" fill="none" stroke="${color}" stroke-opacity="${n(opacity * 1.2)}" stroke-width="1.6"/>`
     : '';
-  if (kind === 'lines') return { defs: '', body: onCard(lines(opacity) + leafPath) };
+  if (kind === 'lines') return { defs: '', back: '', body: onCard(lines(opacity) + leafPath) };
+  // Full-card patterns stay in place; confetti is scattered differently for every shop.
+  if (kind === 'dots' || kind === 'waves')
+    return {
+      defs: '',
+      back: patternArt(kind, W, H, color, theme.stamp, opacity, card.merchant_id || card.id),
+      body: '',
+    };
   if (kind === 'mosaic')
     return {
       defs: `<pattern id="tiles" width="88" height="88" patternUnits="userSpaceOnUse"><path d="M0 0L44 44L0 88ZM88 0L44 44L88 88Z" fill="${color}" fill-opacity="${n(opacity)}"/></pattern>`,
-      body: `<rect width="${W}" height="${H}" fill="url(#tiles)"/>`,
+      back: `<rect width="${W}" height="${H}" fill="url(#tiles)"/>`,
+      body: '',
     };
-  if (kind === 'ruled')
-    return {
-      defs: `<pattern id="rules" width="50" height="${H}" patternUnits="userSpaceOnUse"><rect x="25" width=".7" height="${H}" fill="${color}" fill-opacity="${n(opacity)}"/></pattern>`,
-      body: `<rect width="${W}" height="${H}" fill="url(#rules)"/>` + onCard(lines(opacity)),
-    };
+  if (kind === 'ruled') return { defs: rules.defs, back: rules.body, body: onCard(lines(opacity)) };
   // aurora: two soft accent lights on opposite corners, with the line art barely there.
   return {
+    back: '',
     defs: `<radialGradient id="aur" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="${theme.stamp}" stop-opacity="${n(opacity * 1.3)}"/><stop offset="1" stop-color="${theme.stamp}" stop-opacity="0"/></radialGradient>`,
     body:
       `<ellipse cx="${n(rtl ? W * 0.2 : W * 0.8)}" cy="${n(H * 0.27)}" rx="${n(W * 0.53)}" ry="${n(H * 0.38)}" fill="url(#aur)"/>` +
@@ -340,7 +756,7 @@ export function posterArtworkSvg(
   card: WalletCard,
   scale: number,
   rtl = false,
-  options: { face?: CardFace; logo?: ArtworkLogo | null } = {},
+  options: { face?: CardFace; logo?: ArtworkLogo | null; watermark?: ArtworkLogo | null } = {},
 ) {
   const face = options.face ?? POSTER,
     logo = options.logo ?? null,
@@ -415,6 +831,15 @@ export function posterArtworkSvg(
     `<svg xmlns="http://www.w3.org/2000/svg" width="${W * scale}" height="${H * scale}" viewBox="0 0 ${W} ${H}">` +
     `<defs>${GIFT_LIFT}${art.defs}</defs><rect width="${W}" height="${H}" fill="${theme.background}"/>` +
     art.body +
+    (theme.art.kind === 'logo'
+      ? watermarkMarkup(
+          options.watermark,
+          card,
+          face.width,
+          face.visibleHeight ?? face.height,
+          theme.art.opacity,
+        )
+      : '') +
     logoMarkup +
     slots.join('') +
     track +
@@ -423,6 +848,11 @@ export function posterArtworkSvg(
 }
 
 /** Google Wallet's large card image: the same card face as the Apple poster, in Google's shape. */
-export function googleHeroSvg(card: WalletCard, scale: number, rtl = false) {
-  return posterArtworkSvg(card, scale, rtl, { face: GOOGLE_HERO });
+export function googleHeroSvg(
+  card: WalletCard,
+  scale: number,
+  rtl = false,
+  watermark: ArtworkLogo | null = null,
+) {
+  return posterArtworkSvg(card, scale, rtl, { face: GOOGLE_HERO, watermark });
 }

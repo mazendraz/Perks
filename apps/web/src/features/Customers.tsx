@@ -4,6 +4,7 @@ import { Select } from '../controls/Select.js';
 import { useEffect, useState, useRef } from 'react';
 import type { Grant, Language } from '../../../../packages/contracts/src/index.js';
 import { api, errorText } from '../api.js';
+import { CardReset, type ResettableMembership } from './CardReset.js';
 interface Customer {
   id: string;
   alias: string;
@@ -37,7 +38,7 @@ export function Customers({ grant, lang }: { grant: Grant; lang: Language }) {
     [exports, setExports] = useState<Export[]>([]),
     [detail, setDetail] = useState<{
       customer: Customer;
-      memberships: { id: string; name: string; balance: number; threshold: number }[];
+      memberships: (ResettableMembership & { threshold: number })[];
       activity: { public_reference: string; type: string; quantity: number; at: string }[];
     } | null>(null),
     [error, setError] = useState(''),
@@ -347,11 +348,19 @@ export function Customers({ grant, lang }: { grant: Grant; lang: Language }) {
             </div>
             <bdi>{detail.customer.contact_email}</bdi>
             {detail.memberships.map((ms) => (
-              <div className="list-row" key={ms.id}>
-                <strong>{ms.name}</strong>
-                <span>
-                  {ms.balance}/{ms.threshold}
-                </span>
+              <div key={ms.id}>
+                <div className="list-row">
+                  <strong>{ms.name}</strong>
+                  <span>
+                    {ms.balance}/{ms.threshold}
+                  </span>
+                </div>
+                <CardReset
+                  grant={grant}
+                  membership={ms}
+                  lang={lang}
+                  onDone={() => open(detail.customer.id)}
+                />
               </div>
             ))}
             <h3>{ar ? 'العمليات المصرح بها' : 'Authorized activity'}</h3>

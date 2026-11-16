@@ -52,6 +52,7 @@ import {
   cardResetOutput,
   autoCollectBlockInput,
   autoCollectBlockOutput,
+  autoStampFeedOutput,
 } from '../../../packages/contracts/src/commands.js';
 import { provisioningInput } from '../../../packages/contracts/src/provisioning.js';
 import { experienceInput } from './modules/experience.js';
@@ -336,6 +337,7 @@ const contracts: Record<string, Contract> = {
     response: requestDecisionOutput,
     key: true,
   },
+  'GET /api/v1/merchants/:m/auto-stamps': { response: autoStampFeedOutput },
   'POST /api/v1/merchants/:m/auto-stamps/:txId/revoke': {
     body: autoStampRevokeInput,
     response: autoStampRevokeOutput,

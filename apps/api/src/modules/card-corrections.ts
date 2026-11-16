@@ -12,9 +12,66 @@ import { expectedRevision, idempotencyKey, operation } from '../operations.js';
 import { emitOutbox } from '../outbox.js';
 import { merchantGrant } from '../policy.js';
 
+// Automatic and welcome stamps given at one branch, newest first. Branch scope is enforced twice:
+// the caller must hold a grant for the branch, and every row is filtered with branch_access().
+// "revocableUntil" is for this caller's role and is null once the stamp can no longer be revoked.
+export const AUTO_STAMP_FEED_SQL = `SELECT t.id AS "transactionId",t.public_reference AS reference,t.membership_id AS "membershipId",
+ p.alias,t.at,t.quantity,t.source,
+ (SELECT sum(b.amount)::int FROM ledger_entries b WHERE b.membership_id=t.membership_id
+   AND b.sequence<=(SELECT max(e.sequence) FROM ledger_entries e WHERE e.transaction_id=t.id)) AS "balanceAfter",
+ EXISTS(SELECT 1 FROM reward_grants r WHERE r.earned_transaction_id=t.id) AS "rewardEarned",
+ EXISTS(SELECT 1 FROM correction_requests c WHERE c.original_transaction_id=t.id AND c.status='applied') AS revoked,
+ CASE WHEN EXISTS(SELECT 1 FROM correction_requests c WHERE c.original_transaction_id=t.id AND c.status='applied')
+   OR EXISTS(SELECT 1 FROM loyalty_transactions r WHERE r.membership_id=t.membership_id AND r.source='reset' AND r.sequence>t.sequence)
+   OR ($4::boolean AND EXISTS(SELECT 1 FROM reward_grants r WHERE r.earned_transaction_id=t.id AND r.status='redeemed'))
+   OR t.at+(CASE WHEN $4::boolean THEN s.revoke_window_minutes*interval '1 minute' ELSE interval '7 days' END)<=clock_timestamp()
+  THEN NULL ELSE t.at+(CASE WHEN $4::boolean THEN s.revoke_window_minutes*interval '1 minute' ELSE interval '7 days' END) END AS "revocableUntil"
+FROM loyalty_transactions t JOIN memberships ms ON ms.id=t.membership_id AND ms.merchant_id=t.merchant_id
+ JOIN tenant_customer_profiles p ON p.id=ms.profile_id AND p.merchant_id=ms.merchant_id
+ JOIN stamp_collection_settings s ON s.merchant_id=t.merchant_id
+WHERE t.merchant_id=$1 AND t.branch_id=$2 AND branch_access($1,t.branch_id)
+ AND t.type='award' AND t.source IN ('auto','welcome') AND t.at>=$3
+ORDER BY t.sequence DESC LIMIT 100`;
+
 // Staff tools for stamps nobody approved. The rules (window, branch, redeemed rewards, revision)
 // live in the database functions; the checks here give the usual 403/404 answers first.
 export function cardCorrectionsModule(app: FastifyInstance, pools: Pools) {
+  app.get('/api/v1/merchants/:m/auto-stamps', async (req) => {
+    const actor = authenticated(req),
+      { m } = z.object({ m: z.uuid() }).parse(req.params),
+      q = z
+        .object({
+          branchId: z.uuid(),
+          since: z.iso.datetime({ offset: true }).optional(),
+        })
+        .parse(req.query);
+    return transaction(
+      pools.pool,
+      async (db) => {
+        const staff = await merchantGrant(
+          db,
+          actor,
+          m,
+          ['owner', 'manager', 'cashier'],
+          q.branchId,
+        );
+        // At most the last 7 days (the longest anyone can revoke); 12 hours when not asked.
+        const now = (await db.query('SELECT clock_timestamp() AS at')).rows[0].at as Date,
+          floor = now.getTime() - 7 * 86_400_000,
+          since = new Date(
+            Math.max(floor, q.since ? Date.parse(q.since) : now.getTime() - 12 * 3_600_000),
+          );
+        return {
+          serverTime: now,
+          stamps: (
+            await db.query(AUTO_STAMP_FEED_SQL, [m, q.branchId, since, staff.role === 'cashier'])
+          ).rows,
+        };
+      },
+      actor,
+    );
+  });
+
   app.post('/api/v1/merchants/:m/auto-stamps/:txId/revoke', async (req) => {
     const actor = authenticated(req),
       { m, txId } = z.object({ m: z.uuid(), txId: z.uuid() }).parse(req.params),

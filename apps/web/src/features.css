@@ -1254,3 +1254,48 @@ button[aria-busy='true']::after {
 .device-notice .form-actions {
   margin-top: 0.75rem;
 }
+
+/* Automatic stamp feed (cashier) and card reset (customer detail). */
+.auto-stamp-feed .activity-row.revoked {
+  opacity: 0.55;
+}
+.auto-stamp-feed .revoke-link {
+  color: #b42318;
+  min-height: 44px;
+  padding-inline: 0;
+}
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-block: 4px 10px;
+}
+.stamp-toast {
+  position: fixed;
+  inset-inline: 16px;
+  bottom: max(16px, env(safe-area-inset-bottom));
+  z-index: 60;
+  display: grid;
+  gap: 2px;
+  max-width: 420px;
+  margin-inline: auto;
+  padding: 14px 18px;
+  border-radius: 14px;
+  background: var(--ink);
+  color: white;
+  box-shadow: 0 18px 50px #152d2440;
+  animation: nuqta-feedback 200ms ease-out both;
+}
+.stamp-toast strong {
+  color: var(--lime);
+}
+@media (prefers-reduced-motion: reduce) {
+  .stamp-toast {
+    animation: none;
+  }
+}
+.card-reset {
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+}

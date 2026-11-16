@@ -71,7 +71,7 @@ export function customersModule(app: FastifyInstance, pools: Pools, c: Config) {
           customer,
           memberships: (
             await db.query(
-              'SELECT ms.id,p.name,v.threshold,a.balance,a.revision,ms.status FROM memberships ms JOIN programs p ON p.id=ms.program_id JOIN program_versions v ON v.id=ms.program_version_id JOIN loyalty_accounts a ON a.membership_id=ms.id WHERE ms.profile_id=$1 AND ms.merchant_id=$2 AND (($3::uuid IS NULL AND owner_full_customer_scope($2)) OR (branch_access($2,ms.origin_branch_id) AND ($3::uuid IS NULL OR ms.origin_branch_id=$3)) OR EXISTS(SELECT 1 FROM loyalty_transactions t WHERE t.membership_id=ms.id AND branch_access($2,t.branch_id) AND ($3::uuid IS NULL OR t.branch_id=$3)))',
+              'SELECT ms.id,p.name,v.threshold,a.balance,a.revision,ms.status,ms.auto_collect_blocked_at IS NOT NULL AS auto_blocked FROM memberships ms JOIN programs p ON p.id=ms.program_id JOIN program_versions v ON v.id=ms.program_version_id JOIN loyalty_accounts a ON a.membership_id=ms.id WHERE ms.profile_id=$1 AND ms.merchant_id=$2 AND (($3::uuid IS NULL AND owner_full_customer_scope($2)) OR (branch_access($2,ms.origin_branch_id) AND ($3::uuid IS NULL OR ms.origin_branch_id=$3)) OR EXISTS(SELECT 1 FROM loyalty_transactions t WHERE t.membership_id=ms.id AND branch_access($2,t.branch_id) AND ($3::uuid IS NULL OR t.branch_id=$3)))',
               [id, m, q.branchId || null],
             )
           ).rows,

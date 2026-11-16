@@ -257,6 +257,13 @@ const arErrors: Record<string, string> = {
   PASSWORD_AUTH_NOT_CONFIGURED: 'الدخول مش متاح دلوقتي. كلم الدعم.',
   INVALID_STORAGE_KEY: 'الملف مش متاح.',
   UNSAFE_STORAGE_PATH: 'الملف مش متاح.',
+  ALREADY_REVERSED: 'الختم ده اتلغى قبل كده.',
+  REVOKE_WINDOW_CLOSED: 'عدّى وقت إلغاء الختم ده. كلم المدير.',
+  REWARD_ALREADY_REDEEMED: 'المكافأة اللي جت من الختم ده اتصرفت. الإلغاء محتاج المدير.',
+  BALANCE_TOO_LOW: 'رصيد الكارت مايكفيش لإلغاء الختم. ممكن تصفير الكارت بدل كده.',
+  CARD_RESET_SINCE: 'الكارت اتصفّر بعد الختم ده، فمفيش حاجة تتلغي.',
+  NOT_AUTOMATIC_STAMP: 'الختم ده اتسجل بالكاشير. اطلب تصحيح بدل الإلغاء.',
+  REASON_REQUIRED: 'اكتب سبب واضح (٤ حروف على الأقل).',
 };
 const enErrors: Record<string, string> = {
   SUBSCRIPTION_INACTIVE:
@@ -397,6 +404,13 @@ const enErrors: Record<string, string> = {
   INTERNAL_ERROR: 'Something went wrong. Share the request reference with support.',
   NETWORK_UNCERTAIN: 'The result is not confirmed yet. We will check the same operation.',
   REQUEST_TIMEOUT: 'Loading is taking longer than expected. Try again.',
+  ALREADY_REVERSED: 'This stamp was already revoked.',
+  REVOKE_WINDOW_CLOSED: 'The time to revoke this stamp has passed. Ask a manager.',
+  REWARD_ALREADY_REDEEMED: 'The reward from this stamp was redeemed. A manager must revoke it.',
+  BALANCE_TOO_LOW: 'The card balance is too low to take this stamp back. Reset the card instead.',
+  CARD_RESET_SINCE: 'The card was reset after this stamp, so there is nothing to revoke.',
+  NOT_AUTOMATIC_STAMP: 'A cashier gave this stamp. Request a correction instead.',
+  REASON_REQUIRED: 'Write a clear reason (at least 4 characters).',
 };
 export function errorText(error: unknown, lang: 'ar' | 'en' = 'ar') {
   if (error instanceof ApiError)

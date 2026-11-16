@@ -606,3 +606,128 @@ test('a reset can block automatic collection in the same step', async () => {
   assert.equal(r.json().autoCollectBlocked, true);
   assert.equal((await collect(who)).json().reason, 'cashier_required');
 });
+
+test('the cashier feed lists automatic stamps of their own branch only, with revoke state', async () => {
+  await configure({ welcomeStamps: 4 });
+  const here = await customer(),
+    there = await customer();
+  const completing = await autoStamp(here); // completes the five-stamp card
+  const elsewhere = await autoStamp(there, ids.branchA2);
+  const feed = async (as: Headers, branch: string) =>
+    app.inject({ url: merchantUrl + '/auto-stamps?branchId=' + branch, headers: as });
+  const own = await feed(cashier, ids.branchA);
+  assert.equal(own.statusCode, 200, own.body);
+  const rows = own.json().stamps as Record<string, unknown>[];
+  assert.ok(rows.every((r) => r.transactionId !== elsewhere));
+  const row = rows.find((r) => r.transactionId === completing)!;
+  assert.equal(row.alias, 'Revoked');
+  assert.equal(row.source, 'auto');
+  assert.equal(row.balanceAfter, 0);
+  assert.equal(row.rewardEarned, true);
+  assert.equal(row.revoked, false);
+  // A cashier's window is the shop setting (30 minutes); the owner's is 7 days.
+  const cashierUntil = Date.parse(row.revocableUntil as string) - Date.parse(row.at as string);
+  assert.equal(cashierUntil, 30 * 60_000);
+  const ownerRow = (
+    (await feed(owner, ids.branchA)).json().stamps as Record<string, unknown>[]
+  ).find((r) => r.transactionId === completing)!;
+  assert.equal(
+    Date.parse(ownerRow.revocableUntil as string) - Date.parse(ownerRow.at as string),
+    7 * 86_400_000,
+  );
+  // The welcome stamps of the same card are listed too.
+  assert.ok(rows.some((r) => r.membershipId === here.membership && r.source === 'welcome'));
+  // Branch B is refused outright, not filtered to an empty list.
+  const other = await feed(cashier, ids.branchA2);
+  assert.equal(other.statusCode, 403);
+  assert.equal(errorCode(other), 'BRANCH_UNAUTHORIZED');
+  // After a revoke the row stays, marked revoked and no longer revocable.
+  assert.equal((await revoke(cashier, completing)).statusCode, 200);
+  const after = (
+    (await feed(cashier, ids.branchA)).json().stamps as Record<string, unknown>[]
+  ).find((r) => r.transactionId === completing)!;
+  assert.deepEqual([after.revoked, after.revocableUntil], [true, null]);
+  await configure();
+});
+
+test('the branch stream announces an automatic stamp to that branch only', async () => {
+  await configure();
+  const base = await app.listen({ host: '127.0.0.1', port: 0 });
+  type Event = { type: string; data: Record<string, string> };
+  const streams: { events: Event[]; stop: () => void }[] = [];
+  const open = async (as: Headers, branch: string) => {
+    const controller = new AbortController();
+    const response = await fetch(base + '/api/v1/branches/' + branch + '/events', {
+      headers: as,
+      signal: controller.signal,
+    });
+    if (response.status !== 200) {
+      controller.abort();
+      return response.status;
+    }
+    const events: Event[] = [],
+      reader = response.body!.getReader(),
+      decoder = new TextDecoder();
+    void (async () => {
+      let buffer = '';
+      try {
+        for (;;) {
+          const chunk = await reader.read();
+          if (chunk.done) break;
+          buffer += decoder.decode(chunk.value, { stream: true });
+          let split: number;
+          while ((split = buffer.indexOf('\n\n')) >= 0) {
+            const block = buffer.slice(0, split);
+            buffer = buffer.slice(split + 2);
+            const type = /^event: ([^\n]+)/m.exec(block)?.[1],
+              data = /^data: (.+)/m.exec(block)?.[1];
+            if (type && data) events.push({ type, data: JSON.parse(data) });
+          }
+        }
+      } catch {
+        /* aborted */
+      }
+    })();
+    const stream = { events, stop: () => controller.abort() };
+    streams.push(stream);
+    return stream;
+  };
+  const until = async (check: () => boolean) => {
+    const end = Date.now() + 3000;
+    while (!check() && Date.now() < end) await new Promise((r) => setTimeout(r, 20));
+  };
+  try {
+    // The cashier cannot even open branch B's stream.
+    assert.equal(await open(cashier, ids.branchA2), 403);
+    const cashierA = (await open(cashier, ids.branchA)) as Exclude<
+      Awaited<ReturnType<typeof open>>,
+      number
+    >;
+    const ownerB = (await open(owner, ids.branchA2)) as typeof cashierA;
+    await until(() => [cashierA, ownerB].every((s) => s.events.some((e) => e.type === 'sync')));
+    const who = await customer();
+    const atB = await autoStamp(who, ids.branchA2);
+    await until(() => ownerB.events.some((e) => e.type === 'auto-stamp'));
+    assert.deepEqual(
+      ownerB.events.filter((e) => e.type === 'auto-stamp').map((e) => e.data.transactionId),
+      [atB],
+    );
+    const atA = await autoStamp(who);
+    await until(() => cashierA.events.some((e) => e.type === 'auto-stamp'));
+    const seenByCashier = cashierA.events
+      .filter((e) => e.type === 'auto-stamp')
+      .map((e) => e.data.transactionId);
+    assert.deepEqual(seenByCashier, [atA]);
+    assert.ok(
+      cashierA.events.every(
+        (e) => e.data.branchId === undefined || e.data.branchId === ids.branchA,
+      ),
+    );
+    // A revoke is ordinary activity: the list refreshes, nothing is announced as a new stamp.
+    assert.equal((await revoke(cashier, atA)).statusCode, 200);
+    await until(() => cashierA.events.filter((e) => e.type === 'activity').length >= 2);
+    assert.equal(cashierA.events.filter((e) => e.type === 'auto-stamp').length, 1);
+  } finally {
+    for (const s of streams) s.stop();
+  }
+});

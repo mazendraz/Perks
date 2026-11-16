@@ -38,6 +38,7 @@ export function subscribeLiveRefresh(url: string, refresh: Refresh) {
       });
       stream.addEventListener('sync', update);
       stream.addEventListener('activity', update);
+      stream.addEventListener('auto-stamp', update);
     };
     const restored = () => {
       // REST recovery has already validated the device and committed new

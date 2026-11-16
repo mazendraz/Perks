@@ -3,6 +3,7 @@ import { ActionLabel, Icon } from '../../../../packages/ui/src/Icon.js';
 import { FieldErrors, fieldProps } from '../FieldErrors.js';
 import { CashierRequests } from './StampRequests.js';
 import { TeamCustomerRecovery } from './CustomerRecovery.js';
+import { AutoStampFeed } from './AutoStampFeed.js';
 import { useEffect, useState, type FormEvent, type CSSProperties } from 'react';
 import { CameraScanner } from './CameraScanner.js';
 import type {
@@ -443,6 +444,12 @@ export function CashierPage({ grant, lang }: { grant: Grant; lang: Language }) {
             branch={branch}
             lang={lang}
             onCommitted={() => void refreshRecent()}
+          />
+          <AutoStampFeed
+            grant={grant}
+            branch={branch}
+            lang={lang}
+            onChanged={() => void refreshRecent()}
           />
           <TeamCustomerRecovery
             key={grant.id + ':' + branch}

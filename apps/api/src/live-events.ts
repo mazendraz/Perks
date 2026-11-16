@@ -162,15 +162,19 @@ export function liveEventsModule(app: FastifyInstance, pools: Pools, c: Config) 
       )
         close();
     };
-    const authorized = async (event?: Activity) => {
-      if (!(await sessionActive(actor))) return false;
+    // Resolves to null when the recipient may not see the event (or the stream), otherwise to
+    // what may be sent. An automatic stamp is named only on branch streams, never to customers.
+    const authorized = async (
+      event?: Activity,
+    ): Promise<{ autoStampTransactionId?: string } | null> => {
+      if (!(await sessionActive(actor))) return null;
       return transaction(
         pools.pool,
         async (db) => {
           if (branch) await merchantGrant(db, actor, branch.merchantId, undefined, branch.id);
-          if (!event) return true;
+          if (!event) return {};
           if (event.kind === 'challenge')
-            return !!(
+            return (
               await db.query(
                 'SELECT 1 FROM redemption_challenges WHERE id=$1 AND merchant_id=$2 AND membership_id=$3 AND branch_id=$4 AND ($5::uuid IS NULL OR holder_user_id=$5)',
                 [
@@ -181,9 +185,11 @@ export function liveEventsModule(app: FastifyInstance, pools: Pools, c: Config) 
                   branch ? null : actor.id,
                 ],
               )
-            ).rowCount;
+            ).rowCount
+              ? {}
+              : null;
           if (event.kind === 'request')
-            return !!(
+            return (
               await db.query(
                 'SELECT 1 FROM stamp_requests WHERE id=$1 AND merchant_id=$2 AND membership_id=$3 AND branch_id=$4 AND ($5::uuid IS NULL OR user_id=$5)',
                 [
@@ -194,10 +200,12 @@ export function liveEventsModule(app: FastifyInstance, pools: Pools, c: Config) 
                   branch ? null : actor.id,
                 ],
               )
-            ).rowCount;
-          return !!(
+            ).rowCount
+              ? {}
+              : null;
+          const entry = (
             await db.query(
-              'SELECT 1 FROM ledger_entries e JOIN memberships m ON m.id=e.membership_id AND m.merchant_id=e.merchant_id JOIN loyalty_transactions t ON t.id=e.transaction_id AND t.merchant_id=e.merchant_id WHERE e.id=$1 AND e.merchant_id=$2 AND e.membership_id=$3 AND t.branch_id=$4 AND ($5::uuid IS NULL OR m.user_id=$5)',
+              "SELECT t.id,e.type='earn' AND t.type='award' AND t.source IN ('auto','welcome') AS automatic FROM ledger_entries e JOIN memberships m ON m.id=e.membership_id AND m.merchant_id=e.merchant_id JOIN loyalty_transactions t ON t.id=e.transaction_id AND t.merchant_id=e.merchant_id WHERE e.id=$1 AND e.merchant_id=$2 AND e.membership_id=$3 AND t.branch_id=$4 AND ($5::uuid IS NULL OR m.user_id=$5)",
               [
                 event.id,
                 event.merchantId,
@@ -206,7 +214,9 @@ export function liveEventsModule(app: FastifyInstance, pools: Pools, c: Config) 
                 branch ? null : actor.id,
               ],
             )
-          ).rowCount;
+          ).rows[0];
+          if (!entry) return null;
+          return branch && entry.automatic ? { autoStampTransactionId: entry.id as string } : {};
         },
         actor,
       );
@@ -221,7 +231,8 @@ export function liveEventsModule(app: FastifyInstance, pools: Pools, c: Config) 
       }
       busy = true;
       try {
-        if (!(await authorized(event))) {
+        const allowed = await authorized(event);
+        if (!allowed) {
           close();
           return;
         }
@@ -231,6 +242,12 @@ export function liveEventsModule(app: FastifyInstance, pools: Pools, c: Config) 
           membershipId: event.membershipId,
           branchId: event.branchId,
         });
+        if (allowed.autoStampTransactionId)
+          send('auto-stamp', {
+            transactionId: allowed.autoStampTransactionId,
+            membershipId: event.membershipId,
+            branchId: event.branchId,
+          });
         if (dirty) {
           dirty = false;
           send('sync', {});

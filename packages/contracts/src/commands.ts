@@ -311,3 +311,21 @@ export const autoCollectBlockOutput = z.object({
   changed: z.boolean(),
   operationId: z.uuid(),
 });
+export const autoStampFeedItem = z.object({
+  transactionId: z.uuid(),
+  reference: z.string(),
+  membershipId: z.uuid(),
+  alias: z.string(),
+  at: z.string(),
+  quantity: z.number().int(),
+  source: z.enum(['auto', 'welcome']),
+  balanceAfter: z.number().int(),
+  rewardEarned: z.boolean(),
+  revoked: z.boolean(),
+  revocableUntil: z.string().nullable(),
+});
+export type AutoStampFeedItem = z.infer<typeof autoStampFeedItem>;
+export const autoStampFeedOutput = z.object({
+  serverTime: z.string(),
+  stamps: z.array(autoStampFeedItem),
+});

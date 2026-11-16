@@ -52,7 +52,8 @@ export function StampCelebration({
   }, [moment.to]);
   const reward = (moment.to.pending_rewards ?? 0) > (moment.from.pending_rewards ?? 0),
     added = Math.max(1, shownBalance(moment.to) - shownBalance(moment.from)),
-    left = Math.max(0, moment.to.threshold - shownBalance(moment.to));
+    left = Math.max(0, moment.to.threshold - shownBalance(moment.to)),
+    balance = Math.max(0, Math.min(shownBalance(moment.to), moment.to.threshold));
   const dismiss = () => {
     if (leaving) return;
     if (reduced) return close.current();
@@ -96,9 +97,12 @@ export function StampCelebration({
                   ? 'اتضافلك ' + stampsLeft(added, true) + '!'
                   : added + ' new stamps!'
                 : ar
-                  ? 'ختم جديد!'
-                  : 'New stamp!'}
+                  ? 'تم إضافة ختم'
+                  : 'Stamp added'}
           </h2>
+          <p className="stamp-moment-balance" dir="ltr">
+            {balance}/{moment.to.threshold}
+          </p>
           <p>
             {reward
               ? (moment.to.reward_title ?? '') +

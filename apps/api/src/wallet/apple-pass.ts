@@ -133,6 +133,7 @@ export function texts(card: WalletCard) {
   return {
     ar: {
       stamps_label: 'الأختام',
+      stamp_change: 'تم إضافة ختم %@',
       edition_value: editionPair[0],
       reward_label: 'المكافأة',
       member_label: 'باسم',
@@ -156,6 +157,7 @@ export function texts(card: WalletCard) {
     },
     en: {
       stamps_label: 'Stamps',
+      stamp_change: 'Stamp added %@',
       edition_value: editionPair[1],
       reward_label: 'Reward',
       member_label: 'Member',
@@ -245,6 +247,7 @@ export function passJson(
           key: 'stamps',
           label: 'stamps_label',
           value: `${Math.min(card.display_balance, card.threshold)}/${card.threshold}`,
+          changeMessage: 'stamp_change',
         },
       ],
       primaryFields: [
@@ -279,6 +282,7 @@ export function passJson(
           label: 'stamps_label',
           value: `${Math.min(card.display_balance, card.threshold)}/${card.threshold}`,
           textAlignment: 'PKTextAlignmentRight',
+          changeMessage: 'stamp_change',
         },
       ],
       secondaryFields: [{ key: 'reward', label: 'reward_label', value: card.reward_title }],

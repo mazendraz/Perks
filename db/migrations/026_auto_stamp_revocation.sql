@@ -94,7 +94,8 @@ BEGIN
  SELECT * INTO account FROM loyalty_accounts WHERE membership_id=t.membership_id FOR UPDATE;
  IF EXISTS(SELECT 1 FROM correction_requests WHERE original_transaction_id=t.id AND status='applied') THEN RAISE EXCEPTION 'NQ:ALREADY_REVERSED';END IF;
  SELECT * INTO s FROM stamp_collection_settings WHERE merchant_id=t.merchant_id;
- IF clock_timestamp()>t.at+CASE WHEN staff.role='cashier' THEN s.revoke_window_minutes*interval '1 minute' ELSE interval '7 days' END
+ -- Parenthesised: PL/pgSQL ends an IF condition at the first THEN outside parentheses, CASE included.
+ IF clock_timestamp()>t.at+(CASE WHEN staff.role='cashier' THEN s.revoke_window_minutes*interval '1 minute' ELSE interval '7 days' END)
   THEN RAISE EXCEPTION 'NQ:REVOKE_WINDOW_CLOSED';END IF;
  -- A reset after this stamp already took it away.
  IF EXISTS(SELECT 1 FROM loyalty_transactions r WHERE r.membership_id=t.membership_id AND r.source='reset' AND r.sequence>t.sequence)

@@ -9,6 +9,7 @@ import {
 import assert from 'node:assert/strict';
 import { webShellPlugin } from '../../tools/web-shell-plugin.js';
 import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 assert.deepEqual(
   [...cspHashes].sort(),
   [...legacyScriptHashes].sort(),
@@ -35,5 +36,17 @@ export default defineConfig({
     strictPort: true,
     proxy: { '/api': 'http://127.0.0.1:4100', '/health': 'http://127.0.0.1:4100' },
   },
-  build: { outDir: 'dist', sourcemap: false, cssTarget: ['safari13', 'chrome80'] },
+  build: {
+    outDir: 'dist',
+    sourcemap: false,
+    cssTarget: ['safari13', 'chrome80'],
+    // The shop-owner landing page is its own entry so it never loads the app bundle.
+    rollupOptions: {
+      input: {
+        // Keep the key "index": the service worker precaches the app entry by its index-legacy name.
+        index: fileURLToPath(new URL('./index.html', import.meta.url)),
+        business: fileURLToPath(new URL('./business/index.html', import.meta.url)),
+      },
+    },
+  },
 });

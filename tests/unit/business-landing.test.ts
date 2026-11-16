@@ -1,0 +1,70 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { readFile, stat } from 'node:fs/promises';
+import {
+  LINES,
+  CLIP_SECONDS,
+  PLAN_LINE,
+  SUPPORT_PHONE,
+} from '../../apps/web/src/business/lines.js';
+import { publicPlanCatalog } from '../../packages/contracts/src/plan-catalog.js';
+
+const htmlPath = 'apps/web/business/index.html';
+
+test('every guide line has its recording and a known length', async () => {
+  for (const [key, line] of Object.entries(LINES)) {
+    const file = 'apps/web/public/business/voice/' + line.clip + '.m4a';
+    assert.ok((await stat(file)).size > 1000, key + ' recording is missing or empty');
+    assert.ok((CLIP_SECONDS[line.clip] ?? 0) > 0.5, key + ' has no clip length');
+  }
+  for (const plan of publicPlanCatalog)
+    assert.ok(PLAN_LINE[plan.key] in LINES, plan.key + ' has no line');
+});
+
+test('without JavaScript each bubble already shows the same words the voice says', async () => {
+  const html = await readFile(htmlPath, 'utf8');
+  const bubbles = [
+    ...html.matchAll(
+      /data-guide="(\d)"[\s\S]*?<span data-typed aria-hidden="true">([^<]*)<\/span>/g,
+    ),
+  ];
+  assert.equal(bubbles.length, 7);
+  const firstLine = [
+    'hero',
+    'problem',
+    'demoStart',
+    'cards',
+    'owner',
+    'plansAsk',
+    'close',
+  ] as const;
+  for (const [, stop, text] of bubbles) assert.equal(text, LINES[firstLine[Number(stop)]!].text);
+});
+
+test('the landing page is CSP-safe and external links cannot reach back into the page', async () => {
+  const html = await readFile(htmlPath, 'utf8');
+  for (const m of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g)) {
+    assert.match(m[1]!, /\bsrc=/, 'inline scripts are blocked by the site CSP');
+    assert.equal(m[2]!.trim(), '');
+  }
+  assert.doesNotMatch(html, /\son[a-z]+=/i, 'no inline event handlers');
+  assert.doesNotMatch(html, /style="/, 'no inline styles');
+  for (const m of html.matchAll(/<a\b[^>]*target="_blank"[^>]*>/g))
+    assert.match(m[0], /rel="noopener noreferrer"/);
+  for (const m of html.matchAll(/https?:\/\/[^"'\s<]+/g))
+    assert.ok(m[0].startsWith('https://wa.me/' + SUPPORT_PHONE), 'unexpected external URL ' + m[0]);
+});
+
+test('every image on the landing page exists and declares its size', async () => {
+  const html = await readFile(htmlPath, 'utf8');
+  const imgs = [...html.matchAll(/<img\b[^>]*>/g)].map((m) => m[0]);
+  assert.ok(imgs.length >= 6);
+  for (const img of imgs) {
+    const src = /src="([^"]+)"/.exec(img)?.[1];
+    assert.ok(src?.startsWith('/'), 'local image expected: ' + img);
+    assert.match(img, /\swidth="\d+"/);
+    assert.match(img, /\sheight="\d+"/);
+    assert.match(img, /\salt="/);
+    await stat('apps/web/public' + src);
+  }
+});

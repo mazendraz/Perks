@@ -30,13 +30,15 @@ export function webShellPlugin(): Plugin {
       out = resolve(root, config.build.outDir);
     },
     async closeBundle() {
-      const html = await readFile(resolve(out, 'index.html'), 'utf8');
-      for (const match of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g)) {
-        if (/(?:^|\s)src\s*=/.test(match[1]!) || !match[2]!.trim()) continue;
-        assert.ok(
-          legacyScriptHashes.includes(createHash('sha256').update(match[2]!).digest('base64')),
-          'An unapproved inline script would violate CSP.',
-        );
+      for (const page of ['index.html', 'business/index.html']) {
+        const html = await readFile(resolve(out, page), 'utf8');
+        for (const match of html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g)) {
+          if (/(?:^|\s)src\s*=/.test(match[1]!) || !match[2]!.trim()) continue;
+          assert.ok(
+            legacyScriptHashes.includes(createHash('sha256').update(match[2]!).digest('base64')),
+            'An unapproved inline script in ' + page + ' would violate CSP.',
+          );
+        }
       }
       await writePerksIcons(resolve(out, 'icons'));
       const files: string[] = [];

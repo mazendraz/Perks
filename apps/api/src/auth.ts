@@ -369,6 +369,34 @@ export function authModule(app: FastifyInstance, pools: Pools, c: Config) {
         sameSite: 'lax',
       });
     }
+    // One phone, one sign-out: leaving any portal also ends the customer card this browser
+    // holds (the device link and its sessions), so a shared home-screen app never reopens
+    // someone's card after staff sign out. The holder restores it through the cashier.
+    const device = req.cookies[deviceCookie(c)],
+      customer = portalCookies(c, 'customer'),
+      customerToken = req.cookies[customer.session];
+    if (device && /^[A-Za-z0-9_-]{43}$/.test(device)) {
+      await pools.authPool.query(
+        'UPDATE sessions SET revoked_at=now() WHERE revoked_at IS NULL AND customer_device_id IN (SELECT id FROM customer_devices WHERE token_hash=$1)',
+        [tokenHash(device)],
+      );
+      await pools.authPool.query(
+        'UPDATE customer_devices SET revoked_at=clock_timestamp() WHERE token_hash=$1 AND revoked_at IS NULL',
+        [tokenHash(device)],
+      );
+    }
+    if (customerToken)
+      await pools.authPool.query(
+        'UPDATE sessions SET revoked_at=now() WHERE token_hash=$1 AND revoked_at IS NULL',
+        [tokenHash(customerToken)],
+      );
+    if (device || customerToken) {
+      const lax = { path: '/', secure: c.COOKIE_SECURE === 'true', sameSite: 'lax' as const };
+      reply
+        .clearCookie(deviceCookie(c), { ...lax, httpOnly: true })
+        .clearCookie(customer.session, { ...lax, httpOnly: true })
+        .clearCookie(customer.csrf, lax);
+    }
     if (req.cookies[sessionCookie] === req.cookies[req.sessionCookieName]) {
       reply.clearCookie(sessionCookie, cookieOptions).clearCookie(csrfCookie, cookieOptions);
     }

@@ -18,6 +18,17 @@ import type { Session, Language } from '../../../packages/contracts/src/index.js
 import { api, ApiError, errorText, setCsrf } from './api.js';
 import { navigate, useRoute } from './useRoute.js';
 import { SuspendedNotice } from './features/SuspendedNotice.js';
+
+// Where "/" leads someone without a staff session: their card when this device holds one
+// (the customer session is restored from the device cookie), otherwise the sign-in page.
+async function customerHome() {
+  try {
+    await api<Session>('/session', { workspace: 'customer' }, false);
+    return '/customer';
+  } catch {
+    return '/login';
+  }
+}
 const PlatformPage = lazy(() =>
   import('./features/PlatformPage.js').then((m) => ({ default: m.PlatformPage })),
 );
@@ -72,15 +83,26 @@ export function App() {
       setCsrf(s.csrfToken);
       setSession(s);
     } catch (e) {
-      if (!(e instanceof ApiError) || e.status !== 401) setNotice(errorText(e, lang));
+      const signedOut = e instanceof ApiError && e.status === 401;
+      if (!signedOut) setNotice(errorText(e, lang));
       setSession(null);
       // A customer without a session may already have the anonymous bootstrap
       // CSRF token. A language refresh must not erase it before registration.
       if (portal !== 'customer') setCsrf('');
-    } finally {
-      setSessionPortal(portal);
-      setLoading(false);
+      // The home-screen app opens "/". A staff session was found above and is routed to its
+      // portal; otherwise a card linked to this device opens the card, and anyone else signs in.
+      if (signedOut && !portal && location.pathname === '/') {
+        const home = await customerHome();
+        if (location.pathname === '/') {
+          history.replaceState({}, '', home);
+          window.dispatchEvent(new PopStateEvent('popstate'));
+          // The route change re-runs this refresh for the new page; keep the loading screen.
+          return;
+        }
+      }
     }
+    setSessionPortal(portal);
+    setLoading(false);
   }, [lang, portal]);
   useEffect(() => {
     void refresh();

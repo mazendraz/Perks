@@ -687,3 +687,55 @@ test('a customer returning a week later with only the device cookie is recognise
     );
   }
 });
+
+test('staff sign in on a phone that holds a customer card, and signing out ends that card on the device', async () => {
+  const holder = await register('01087654329');
+  assert.equal(holder.result.statusCode, 200, holder.result.body);
+  const device = holder.result.cookies.find((item) => item.name === '__Host-nq_device')!.value;
+  const customerJar = holder.headers.cookie + '; ' + cookie(holder.result);
+  // The cashier signs in from the same home-screen app: the device cookie is still sent.
+  const staff = await login(app, 'cashier@bunn.test', origin);
+  const shared = customerJar + '; ' + staff.cookie;
+  const home = await app.inject({ url: '/api/v1/session', headers: { cookie: shared } });
+  assert.equal(home.statusCode, 200, home.body);
+  assert.equal(home.json().user.email, 'cashier@bunn.test');
+  assert.ok(home.json().grants.some((g: { role: string }) => g.role === 'cashier'));
+  const cashier = await app.inject({
+    url: '/api/v1/session',
+    headers: { cookie: shared, 'x-nuqta-workspace': 'cashier' },
+  });
+  assert.equal(cashier.statusCode, 200, cashier.body);
+  assert.equal(cashier.json().user.email, 'cashier@bunn.test');
+  const out = await app.inject({
+    method: 'POST',
+    url: '/api/v1/auth/logout',
+    headers: { cookie: shared, origin, 'x-csrf-token': staff['x-csrf-token'] },
+  });
+  assert.equal(out.statusCode, 204, out.body);
+  const cleared = new Set(
+    out.cookies.filter((item) => item.value === '' || item.maxAge === 0).map((item) => item.name),
+  );
+  for (const name of ['__Host-nq_device', '__Host-nq_session_customer', '__Host-nq_session'])
+    assert.ok(cleared.has(name), name + ' is cleared');
+  const link = (
+    await db.query('SELECT revoked_at FROM customer_devices WHERE token_hash=$1', [
+      tokenHash(device),
+    ])
+  ).rows[0];
+  assert.ok(link.revoked_at, 'the device link is revoked');
+  assert.equal(
+    (
+      await db.query(
+        'SELECT count(*)::int AS n FROM sessions s JOIN customer_devices d ON d.id=s.customer_device_id WHERE d.token_hash=$1 AND s.revoked_at IS NULL',
+        [tokenHash(device)],
+      )
+    ).rows[0].n,
+    0,
+  );
+  // A browser that kept the old cookies cannot reopen the card.
+  const again = await app.inject({
+    url: '/api/v1/session',
+    headers: { cookie: customerJar, 'x-nuqta-workspace': 'customer' },
+  });
+  assert.equal(again.statusCode, 401);
+});

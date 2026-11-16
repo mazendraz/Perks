@@ -20,6 +20,17 @@ export function CustomerDeviceHelp({ lang }: { lang: Language }) {
             ? 'افتح كارتك من سكان كود المحل، أو اطلب من الكاشير يرجّعهولك بكود يظهر على موبايلك. مش محتاج إيميل أو باسورد.'
             : 'Scan the shop code to open your card, or ask the cashier to restore it with a code shown on your phone. You do not need an email or password.'}
         </p>
+        {/* Staff open the same home-screen app; without this they have no way to their sign-in. */}
+        <a
+          className="staff-sign-in"
+          href="/login"
+          onClick={(e) => {
+            e.preventDefault();
+            navigate('/login');
+          }}
+        >
+          {ar ? 'دخول الموظفين' : 'Staff sign in'}
+        </a>
       </section>
     </main>
   );

@@ -81,6 +81,8 @@ export const collectionSettingsInput = z
     welcomeStamps: z.number().int().min(0).max(10),
     autoBranchHourlyCap: z.number().int().min(1).max(1000),
     openCollectionAcknowledged: z.boolean(),
+    // Optional so older clients keep working; omitted means "leave as is".
+    revokeWindowMinutes: z.number().int().min(5).max(1440).optional(),
   })
   .strict()
   .superRefine((v, ctx) => {
@@ -261,4 +263,51 @@ export const preferenceOutput = z.object({
     revision: z.number().int(),
     updated_at: z.string(),
   }),
+});
+
+// Taking back automatic stamps and resetting a card. The reason is kept in the correction history.
+const correctionReason = z.string().trim().min(4).max(1000);
+export const autoStampRevokeInput = z.object({ reason: correctionReason }).strict();
+export const autoStampRevokeOutput = z.object({
+  status: z.literal('applied'),
+  correctionId: z.uuid(),
+  originalTransactionId: z.uuid(),
+  transactionId: z.uuid(),
+  reference: z.string(),
+  membershipId: z.uuid(),
+  quantity: z.number().int(),
+  balanceAfter: z.number().int(),
+  accountRevision: z.number().int(),
+  voidedRewards: z.array(z.uuid()),
+  operationId: z.uuid(),
+});
+export const cardResetInput = z
+  .object({ reason: correctionReason, blockAutoCollect: z.boolean().default(false) })
+  .strict();
+export const cardResetOutput = z.object({
+  status: z.literal('applied'),
+  correctionId: z.uuid(),
+  transactionId: z.uuid(),
+  reference: z.string(),
+  membershipId: z.uuid(),
+  previousBalance: z.number().int(),
+  balanceAfter: z.literal(0),
+  accountRevision: z.number().int(),
+  voidedRewards: z.array(z.uuid()),
+  autoCollectBlocked: z.boolean(),
+  operationId: z.uuid(),
+});
+export const autoCollectBlockInput = z
+  .object({ blocked: z.boolean(), reason: correctionReason.optional() })
+  .strict()
+  .refine((v) => !v.blocked || v.reason !== undefined, {
+    path: ['reason'],
+    message: 'Blocking needs a reason.',
+  });
+export const autoCollectBlockOutput = z.object({
+  membershipId: z.uuid(),
+  autoCollectBlocked: z.boolean(),
+  blockedAt: z.string().nullable(),
+  changed: z.boolean(),
+  operationId: z.uuid(),
 });

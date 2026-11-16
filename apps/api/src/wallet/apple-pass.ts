@@ -133,7 +133,7 @@ export function texts(card: WalletCard) {
   return {
     ar: {
       stamps_label: 'الأختام',
-      stamp_change: 'تم إضافة ختم %@',
+      stamp_change: 'الأختام: %@',
       edition_value: editionPair[0],
       reward_label: 'المكافأة',
       member_label: 'باسم',
@@ -157,7 +157,7 @@ export function texts(card: WalletCard) {
     },
     en: {
       stamps_label: 'Stamps',
-      stamp_change: 'Stamp added %@',
+      stamp_change: 'Stamps: %@',
       edition_value: editionPair[1],
       reward_label: 'Reward',
       member_label: 'Member',

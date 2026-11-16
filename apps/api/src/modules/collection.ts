@@ -20,7 +20,7 @@ import { platform } from '../policy.js';
 import { createStampRequest } from './requests.js';
 
 const columns =
-  'require_location AS "requireLocation",require_cashier AS "requireCashier",max_accuracy_m AS "maxAccuracy",collections_per_day AS "collectionsPerDay",stamps_per_day AS "stampsPerDay",limit_window AS "limitWindow",cooldown_minutes AS "cooldownMinutes",default_stamps AS "defaultStamps",allow_multiple AS "allowMultiple",max_stamps_per_collection AS "maxStampsPerCollection",welcome_stamps AS "welcomeStamps",auto_branch_hourly_cap AS "autoBranchHourlyCap",open_collection_acknowledged AS "openCollectionAcknowledged",revision';
+  'require_location AS "requireLocation",require_cashier AS "requireCashier",max_accuracy_m AS "maxAccuracy",collections_per_day AS "collectionsPerDay",stamps_per_day AS "stampsPerDay",limit_window AS "limitWindow",cooldown_minutes AS "cooldownMinutes",default_stamps AS "defaultStamps",allow_multiple AS "allowMultiple",max_stamps_per_collection AS "maxStampsPerCollection",welcome_stamps AS "welcomeStamps",auto_branch_hourly_cap AS "autoBranchHourlyCap",open_collection_acknowledged AS "openCollectionAcknowledged",revoke_window_minutes AS "revokeWindowMinutes",revision';
 // Follows a Google Maps share link to the full link holding the coordinates.
 // Only Google's own hosts are contacted, at most four hops, with a short timeout.
 export async function resolveShortMapsLink(url: string, fetchImpl: typeof fetch = fetch) {
@@ -117,7 +117,7 @@ export function collectionModule(
           );
         const settings = (
           await db.query(
-            'UPDATE stamp_collection_settings SET require_location=$2,require_cashier=$3,max_accuracy_m=$4,collections_per_day=$5,stamps_per_day=$6,limit_window=$7,cooldown_minutes=$8,default_stamps=$9,allow_multiple=$10,max_stamps_per_collection=$11,welcome_stamps=$12,auto_branch_hourly_cap=$13,open_collection_acknowledged=$14,revision=revision+1,updated_at=clock_timestamp(),updated_by=$15 WHERE merchant_id=$1 AND revision=$16 RETURNING ' +
+            'UPDATE stamp_collection_settings SET require_location=$2,require_cashier=$3,max_accuracy_m=$4,collections_per_day=$5,stamps_per_day=$6,limit_window=$7,cooldown_minutes=$8,default_stamps=$9,allow_multiple=$10,max_stamps_per_collection=$11,welcome_stamps=$12,auto_branch_hourly_cap=$13,open_collection_acknowledged=$14,revoke_window_minutes=coalesce($17,revoke_window_minutes),revision=revision+1,updated_at=clock_timestamp(),updated_by=$15 WHERE merchant_id=$1 AND revision=$16 RETURNING ' +
               columns,
             [
               m,
@@ -136,6 +136,7 @@ export function collectionModule(
               p.openCollectionAcknowledged,
               actor.id,
               revision,
+              p.revokeWindowMinutes ?? null,
             ],
           )
         ).rows[0];
@@ -185,6 +186,7 @@ export function collectionModule(
           latitude: number | null;
           longitude: number | null;
           radius: number;
+          autoBlocked: boolean;
           eligibility: { eligible: boolean; reason?: string; nextAt?: string };
         };
         await db.query('SELECT customer_merchant_guard($1)', [context.merchantId]);
@@ -239,6 +241,11 @@ export function collectionModule(
             nextAt: context.eligibility.nextAt,
           };
         }
+        // A card staff stopped from collecting on its own is sent to the cashier, without saying why.
+        if (!context.requireCashier && context.autoBlocked) {
+          await record('blocked');
+          return { outcome: 'not_eligible' as const, reason: 'cashier_required' };
+        }
         let distance: number | undefined, accuracy: number | undefined;
         if (context.requireLocation) {
           if (!p.location) return { outcome: 'location_required' as const };
@@ -288,18 +295,21 @@ export function collectionModule(
             ).rows[0].value as Record<string, unknown>,
         );
         if (!result.eligible) {
+          const blocked = result.reason === 'blocked';
           await record(
-            result.reason === 'busy'
-              ? 'busy'
-              : result.reason === 'cooldown'
-                ? 'cooldown'
-                : 'limit_reached',
+            blocked
+              ? 'blocked'
+              : result.reason === 'busy'
+                ? 'busy'
+                : result.reason === 'cooldown'
+                  ? 'cooldown'
+                  : 'limit_reached',
             distance,
             accuracy,
           );
           return {
             outcome: 'not_eligible' as const,
-            reason: result.reason as string,
+            reason: blocked ? 'cashier_required' : (result.reason as string),
             nextAt: result.nextAt as string | undefined,
           };
         }

@@ -46,6 +46,12 @@ import {
   redemptionDecisionOutput,
   requestDecisionOutput,
   preferenceOutput,
+  autoStampRevokeInput,
+  autoStampRevokeOutput,
+  cardResetInput,
+  cardResetOutput,
+  autoCollectBlockInput,
+  autoCollectBlockOutput,
 } from '../../../packages/contracts/src/commands.js';
 import { provisioningInput } from '../../../packages/contracts/src/provisioning.js';
 import { experienceInput } from './modules/experience.js';
@@ -328,6 +334,22 @@ const contracts: Record<string, Contract> = {
   'POST /api/v1/merchants/:m/stamp-requests/:id/decision': {
     body: requestDecisionInput,
     response: requestDecisionOutput,
+    key: true,
+  },
+  'POST /api/v1/merchants/:m/auto-stamps/:txId/revoke': {
+    body: autoStampRevokeInput,
+    response: autoStampRevokeOutput,
+    key: true,
+  },
+  'POST /api/v1/merchants/:m/memberships/:id/reset': {
+    body: cardResetInput,
+    response: cardResetOutput,
+    key: true,
+    revision: true,
+  },
+  'POST /api/v1/merchants/:m/memberships/:id/auto-block': {
+    body: autoCollectBlockInput,
+    response: autoCollectBlockOutput,
     key: true,
   },
   'PATCH /api/v1/me/merchants/:m/preferences': {

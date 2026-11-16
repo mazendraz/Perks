@@ -31,7 +31,7 @@ const signer = {
   teamIdentifier: 'TEAM123456',
 } as AppleWalletSigner;
 
-test('the stamps field announces each new stamp in both pass styles and both languages', () => {
+test('the stamps field announces every stamp change, added or taken back, in neutral words', () => {
   const pass = passJson(card, {
     serial: card.id,
     authToken: 'x'.repeat(32),
@@ -48,8 +48,8 @@ test('the stamps field announces each new stamp in both pass styles and both lan
     assert.equal(stamps.changeMessage, 'stamp_change', style + ' stamps changeMessage');
   }
   const strings = texts(card);
-  assert.equal(strings.ar.stamp_change, 'تم إضافة ختم %@');
-  assert.equal(strings.en.stamp_change, 'Stamp added %@');
+  assert.equal(strings.ar.stamp_change, 'الأختام: %@');
+  assert.equal(strings.en.stamp_change, 'Stamps: %@');
   // Apple requires the placeholder, or the notification is not shown.
   for (const lang of ['ar', 'en'] as const) assert.ok(strings[lang].stamp_change.includes('%@'));
 });

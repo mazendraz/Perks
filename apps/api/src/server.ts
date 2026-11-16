@@ -27,6 +27,7 @@ import { provisioningModule } from './modules/provisioning.js';
 import { enrollmentModule } from './modules/enrollment.js';
 import { loyaltyModule } from './modules/loyalty.js';
 import { rewardsModule } from './modules/rewards.js';
+import { cardCorrectionsModule } from './modules/card-corrections.js';
 import { reportingModule } from './modules/reporting.js';
 import { collectionModule } from './modules/collection.js';
 import { requestsModule } from './modules/requests.js';
@@ -157,6 +158,7 @@ export async function buildApp(
   enrollmentModule(app, pools, c);
   loyaltyModule(app, pools);
   rewardsModule(app, pools, c);
+  cardCorrectionsModule(app, pools);
   reportingModule(app, pools);
   requestsModule(app, pools, c);
   collectionModule(app, pools, c, options.mapsFetch);

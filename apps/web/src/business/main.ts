@@ -170,6 +170,8 @@ function syncLine(g: Guide, restart: boolean) {
 /* ------------------------------------------------------------------- voice */
 
 let audio: HTMLAudioElement | null = null;
+// The guide waits until two seconds after the page is ready, then speaks his first line.
+let introPending = true;
 let clipStartedAt = 0;
 let clipSeconds = 0;
 const heroSound = one<HTMLButtonElement>('[data-hero-sound]');
@@ -193,6 +195,11 @@ function speak(stop: number) {
     try {
       audio = new Audio();
       audio.preload = 'auto';
+      audio.addEventListener('ended', () => {
+        clipSeconds = 0;
+        // A short breath between sentences.
+        window.setTimeout(flushPending, 350);
+      });
     } catch {
       return;
     }
@@ -227,6 +234,38 @@ function speak(stop: number) {
     clipSeconds = 0;
   }
 }
+/* A demo step changes what the guide should say. He never cuts himself off: if he is still
+   talking (or still typing), the newest line waits and he says it when he finishes. */
+let pendingStop: number | null = null;
+function busy(stop: number) {
+  const g = guides.find((x) => x.stop === stop);
+  const talking = !!audio && !audio.paused && !audio.ended && clipSeconds > 0;
+  return talking || (!!g && g.shown < g.glyphs.length);
+}
+function sayUpdate(stop: number) {
+  const g = guides.find((x) => x.stop === stop);
+  if (!g) return;
+  if (state.active === stop && busy(stop)) {
+    pendingStop = stop;
+    return;
+  }
+  if (syncLine(g, false) && state.active === stop) speak(stop);
+}
+function flushPending() {
+  if (pendingStop === null) return;
+  const stop = pendingStop;
+  if (stop !== state.active) {
+    // The visitor moved on; the line is updated quietly for when they come back.
+    pendingStop = null;
+    const g = guides.find((x) => x.stop === stop);
+    if (g) syncLine(g, false);
+    return;
+  }
+  if (busy(stop)) return;
+  pendingStop = null;
+  sayUpdate(stop);
+}
+
 function stopVoice() {
   try {
     audio?.pause();
@@ -238,6 +277,7 @@ function stopVoice() {
 
 /** Re-says the active stop's line from the start (typing and voice together). */
 function replay(stop: number) {
+  introPending = false;
   state.active = stop;
   const g = guides.find((x) => x.stop === stop);
   if (!g) return;
@@ -275,7 +315,7 @@ function frameTick() {
   const reduce = prefersReducedMotion();
   for (const g of guides) {
     let col = 0;
-    if (g.stop === state.active && g.shown < g.glyphs.length) {
+    if (g.stop === state.active && g.shown < g.glyphs.length && !introPending) {
       const fallbackPerTick = 2;
       if (state.soundOn && clipSeconds > 0) {
         const progress = Math.min(1, (performance.now() - clipStartedAt) / (clipSeconds * 1000));
@@ -284,6 +324,7 @@ function frameTick() {
       g.typed.textContent = g.glyphs.slice(0, g.shown).join('');
       const talking = g.shown < g.glyphs.length;
       g.typed.classList.toggle('typing', talking);
+      if (!talking && pendingStop === g.stop) window.setTimeout(flushPending, 350);
       if (talking && !reduce) col = 1 + (Math.floor(tick / 2) % 6);
     } else if (!reduce && (tick + g.stop * 9) % 46 < 2) col = 7;
     setFrame(g, col);
@@ -342,8 +383,7 @@ function renderStamps(newIndex = -1) {
   pendingEl.hidden = !state.pending;
   scanBtn.hidden = done || state.pending;
   resetBtn.hidden = !done;
-  const g = guides.find((x) => x.stop === 2);
-  if (g && syncLine(g, false) && state.active === 2) speak(2);
+  sayUpdate(2);
 }
 scanBtn.addEventListener('click', () => {
   if (state.pending || state.stamps >= STAMP_GOAL) return;
@@ -589,8 +629,7 @@ function renderPlans() {
           ' موظفين';
     }
   }
-  const g = guides.find((x) => x.stop === 5);
-  if (g && syncLine(g, false) && state.active === 5) speak(5);
+  sayUpdate(5);
   for (const link of all<HTMLAnchorElement>('[data-wa]')) {
     const kind = link.dataset.wa;
     link.href = whatsapp(
@@ -628,7 +667,6 @@ renderStamps();
 renderTheme();
 renderPlans();
 renderSoundUi();
-speak(state.active);
 window.setInterval(frameTick, TICK_MS);
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) stopVoice();
@@ -641,6 +679,11 @@ const lift = () => {
   if (lifted) return;
   lifted = true;
   document.documentElement.classList.add('ready');
+  // Two seconds after the page shows, the guide starts talking (typing and voice together).
+  // If the browser blocks sound before a first touch, "دوس هنا عشان تسمعني" shows instead.
+  window.setTimeout(() => {
+    if (introPending) replay(state.active);
+  }, 2000);
 };
 mascotArt.onload = lift;
 mascotArt.onerror = lift;

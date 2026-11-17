@@ -1108,3 +1108,22 @@ html.ready .boot {
     transition: none;
   }
 }
+
+/* When the browser holds the voice until a first touch, the "tap to hear me" button asks gently. */
+[data-hero-sound]:not([hidden]) {
+  animation: hear-me 1.6s ease-in-out infinite;
+}
+@keyframes hear-me {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(203, 255, 100, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(203, 255, 100, 0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-hero-sound]:not([hidden]) {
+    animation: none;
+  }
+}

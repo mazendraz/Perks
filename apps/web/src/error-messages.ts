@@ -201,6 +201,30 @@ const messages: Record<string, Line> = {
     'الباقة الجديدة أصغر من اللي بتستخدمه دلوقتي. اختار اللي يفضل شغال، ومفيش بيانات هتتمسح.',
     'The new plan is smaller than what you use now. Choose what stays active; no data is deleted.',
   ],
+  BRANCH_LOCKED: [
+    'الفرع ده مقفول مؤقتًا لأنه برّه باقة المحل. كلّم صاحب المحل.',
+    'This branch is locked because it is outside the shop’s plan. Ask the shop owner.',
+  ],
+  STAFF_LOCKED: [
+    'حسابك مقفول مؤقتًا لأن عدد الموظفين أكبر من باقة المحل. كلّم صاحب المحل.',
+    'Your account is locked because the shop has more staff than its plan allows. Ask the shop owner.',
+  ],
+  ADDON_NOT_IN_PLAN: [
+    'الإضافة دي مش متاحة في الباقة دي. غيّر الباقة الأول.',
+    'This add-on is not available on this plan. Change the plan first.',
+  ],
+  ADDON_CAP_REACHED: [
+    'العدد ده أكتر من أقصى حد للإضافة في الباقة دي. لو محتاج أكتر، اعمل عرض Enterprise.',
+    'That is more than this plan allows for the add-on. For more, set up an Enterprise deal.',
+  ],
+  NO_BILLING_PERIOD: [
+    'المحل معندوش ميعاد تجديد لسه. سجّل دفعة الأول أو غيّر الباقة دلوقتي.',
+    'This shop has no renewal date yet. Record a payment first, or change the plan now.',
+  ],
+  PLAN_PRICE_MISSING: [
+    'الباقة دي ملهاش سعر للمدة دي. حط السعر في كتالوج الباقات الأول.',
+    'This plan has no price for that billing period. Add it in the plans catalog first.',
+  ],
   MERCHANT_PAUSED: [
     'الحساب متوقف مؤقتًا. كلّم Perks على 01006111380.',
     'This account is paused. Contact Perks on 01006111380.',
@@ -563,6 +587,10 @@ const customerMessages: Record<string, Line> = {
   ],
   SUBSCRIPTION_GRACE: ['جرّب تاني بعد شوية.', 'Try again in a little while.'],
   PLAN_LIMIT_REACHED: ['جرّب تاني بعد شوية.', 'Try again in a little while.'],
+  BRANCH_LOCKED: [
+    'الفرع ده مش بيستقبل أختام دلوقتي. أختامك محفوظة.',
+    'This branch is not taking stamps right now. Your stamps are safe.',
+  ],
   FEATURE_NOT_IN_PLAN: ['الخطوة دي مش متاحة دلوقتي.', 'This is not available right now.'],
 };
 

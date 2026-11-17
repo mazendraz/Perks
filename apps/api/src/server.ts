@@ -11,6 +11,7 @@ import { customerIdentityModule } from './modules/customer-identity.js';
 import { customerRecoveryModule } from './modules/customer-recovery.js';
 import { customerPrivacyModule } from './modules/customer-privacy.js';
 import { subscriptionsModule } from './modules/subscriptions.js';
+import { billingModule } from './modules/billing.js';
 import { walletModule } from './modules/wallet.js';
 import Fastify, { LogController, type FastifyBaseLogger } from 'fastify';
 import cookie from '@fastify/cookie';
@@ -173,6 +174,7 @@ export async function buildApp(
   customerRecoveryModule(app, pools, c);
   customerPrivacyModule(app, pools, c);
   subscriptionsModule(app, pools);
+  billingModule(app, pools);
   walletModule(app, pools, c);
   customersModule(app, pools, c);
   materialsModule(app, pools, c);

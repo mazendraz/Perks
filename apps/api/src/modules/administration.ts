@@ -98,7 +98,8 @@ export function administrationModule(app: FastifyInstance, pools: Pools) {
           );
         const b = (
           await db.query(
-            'UPDATE branches SET name=$1,address=$2,status=$3,revision=revision+1 WHERE merchant_id=$4 AND id=$5 AND revision=$6 RETURNING *',
+            // An owner's own change clears any plan lock on the branch.
+            'UPDATE branches SET name=$1,address=$2,status=$3,locked_at=NULL,revision=revision+1 WHERE merchant_id=$4 AND id=$5 AND revision=$6 RETURNING *',
             [p.name, p.address, p.status, m, id, revision],
           )
         ).rows[0];

@@ -1299,3 +1299,252 @@ button[aria-busy='true']::after {
   gap: 8px;
   margin-top: 8px;
 }
+
+/* ---- Super Admin: plan and billing */
+.plan-billing {
+  display: grid;
+  gap: 16px;
+  margin-block-end: 24px;
+}
+.plan-billing > .panel,
+.billing-page .panel {
+  margin: 0;
+}
+.plan-summary-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.plan-summary-head > div:first-child {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.plan-name {
+  font-size: 22px;
+}
+.plan-price {
+  display: grid;
+  justify-items: end;
+  font-size: 20px;
+  font-weight: 700;
+}
+.plan-price small {
+  font-size: 12px;
+  font-weight: 400;
+}
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.status-pill.success {
+  background: #eff5e6;
+  color: #426035;
+}
+.status-pill.warning {
+  background: #fff4dc;
+  color: #7a4b00;
+}
+.status-pill.danger {
+  background: #fdecea;
+  color: #8a1c12;
+}
+.notice.warning {
+  background: #fff4dc;
+  border-color: #f2d9a0;
+  color: #7a4b00;
+}
+.plan-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin: 16px 0 0;
+}
+.plan-facts dt {
+  color: var(--muted);
+  font-size: 12px;
+}
+.plan-facts dd {
+  margin: 2px 0 0;
+  font-weight: 600;
+}
+.plan-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-block-start: 16px;
+}
+.usage-meters {
+  display: grid;
+  gap: 14px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.usage-label {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 14px;
+  margin-block-end: 6px;
+}
+.usage-label bdi {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.usage-bar {
+  height: 8px;
+  border-radius: 999px;
+  background: #e9eaef;
+  overflow: hidden;
+}
+.usage-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--brand);
+  transition: inline-size 0.3s ease;
+}
+.usage-bar.near > span {
+  background: #c98a00;
+}
+.usage-bar.full > span {
+  background: #b42318;
+}
+@media (prefers-reduced-motion: reduce) {
+  .usage-bar > span {
+    transition: none;
+  }
+}
+.plan-features {
+  margin-block-start: 16px;
+}
+.plan-features summary,
+.billing-history summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.billing-history summary h3 {
+  display: inline;
+  margin: 0;
+  font-size: inherit;
+}
+.plan-features ul,
+.locked-list,
+.list-plain {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.plan-features li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  padding-block: 6px;
+  border-block-end: 1px solid var(--border);
+  font-size: 14px;
+}
+.locked-list li {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.timeline {
+  display: grid;
+  gap: 12px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.timeline li {
+  display: grid;
+  gap: 2px;
+  padding-inline-start: 14px;
+  border-inline-start: 2px solid var(--border);
+}
+.timeline p {
+  margin: 4px 0 0;
+  font-size: 14px;
+}
+.choice-group {
+  display: grid;
+  gap: 6px;
+  border: 0;
+  margin: 12px 0;
+  padding: 0;
+}
+.choice-group legend {
+  font-weight: 600;
+  margin-block-end: 4px;
+}
+.plan-catalog {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+}
+.plan-catalog .panel {
+  margin: 0;
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+.plan-limits {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 14px;
+}
+.plan-limits li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+.plan-limits bdi {
+  font-weight: 700;
+}
+.plan-card-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.plan-editor h3 {
+  margin-block: 20px 8px;
+}
+.plan-toggles,
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 8px;
+  margin-block: 12px;
+}
+.limit-field {
+  display: grid;
+  gap: 8px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px;
+  margin: 0;
+}
+.limit-field legend {
+  font-weight: 600;
+  padding-inline: 4px;
+}
+.confirm-list {
+  display: grid;
+  gap: 6px;
+  padding-inline-start: 18px;
+}

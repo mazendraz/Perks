@@ -229,8 +229,22 @@ export function provisioningModule(app: FastifyInstance, pools: Pools, c: Config
         );
         const d = provisioningInput.parse(draft.data),
           limits = planLimits[d.plan];
+        // The new shop starts on the real plan from the catalog; the draft must fit it.
+        const planRow = (
+          await db.query(
+            `SELECT
+              (SELECT CASE value_type WHEN 'unlimited' THEN NULL ELSE int_value END FROM plan_entitlements e WHERE e.plan_id=p.id AND e.key='max_branches') AS branches,
+              (SELECT CASE value_type WHEN 'unlimited' THEN NULL ELSE int_value END FROM plan_entitlements e WHERE e.plan_id=p.id AND e.key='max_staff') AS staff,
+              (SELECT value_type='unlimited' FROM plan_entitlements e WHERE e.plan_id=p.id AND e.key='max_staff') AS staff_unlimited
+             FROM plans p WHERE p.key=$1 AND p.is_active`,
+            [d.plan],
+          )
+        ).rows[0];
+        requireCondition(planRow, 'ENTITLEMENTS_NOT_CONFIGURED', 409);
         requireCondition(
-          d.branches.length <= limits.branches && d.staff.length <= limits.staff,
+          d.branches.length <= planRow.branches &&
+            (planRow.staff_unlimited ||
+              d.staff.filter((s) => s.role !== 'owner').length <= planRow.staff),
           'PLAN_LIMIT',
           409,
         );
@@ -271,6 +285,28 @@ export function provisioningModule(app: FastifyInstance, pools: Pools, c: Config
                 limits.programs,
                 limits.customers,
                 deployed(c),
+              ],
+            );
+            // New shops start a 14-day trial on the chosen plan at its list price (not the legacy plan).
+            await db.query(
+              'UPDATE entitlement_overrides SET revoked_at=clock_timestamp(),revoked_by=$2 WHERE merchant_id=$1 AND revoked_at IS NULL',
+              [m.id, actor.id],
+            );
+            await db.query(
+              `UPDATE merchant_subscriptions s SET plan_id=p.id,status='trialing',trial_ends_at=clock_timestamp()+interval '14 days',
+                price_minor=coalesce((SELECT amount_minor FROM plan_prices x WHERE x.plan_id=p.id AND x.currency=s.currency AND x.billing_period='monthly' AND x.is_active),0),
+                revision=s.revision+1,updated_at=clock_timestamp()
+               FROM plans p WHERE p.key=$2 AND s.merchant_id=$1`,
+              [m.id, d.plan],
+            );
+            await db.query(
+              'INSERT INTO subscription_events(merchant_id,actor_id,event_type,after,reason) VALUES($1,$2,$3,$4,$5)',
+              [
+                m.id,
+                actor.id,
+                'subscription.trial_started',
+                JSON.stringify({ status: 'trialing', plan: d.plan, days: 14 }),
+                'New shop activated',
               ],
             );
             const branches: { id: string; name: string }[] = [];
@@ -637,6 +673,13 @@ export function provisioningModule(app: FastifyInstance, pools: Pools, c: Config
         ).rows[0];
         requireCondition(target, 'NOT_FOUND', 404);
         requireCondition(target.revision === rev, 'REVISION_CONFLICT', 409);
+        // Becoming an active non-owner takes a staff slot of the plan (re-enabling, or an owner stepping down).
+        if (
+          body.status === 'active' &&
+          body.role !== 'owner' &&
+          (target.status !== 'active' || target.role === 'owner')
+        )
+          await assertCan(db, m, 'max_staff');
         requireCondition(
           target.user_id !== actor.id || (body.status === 'active' && body.role === 'owner'),
           'SELF_ESCALATION_FORBIDDEN',
@@ -664,7 +707,7 @@ export function provisioningModule(app: FastifyInstance, pools: Pools, c: Config
         requireCondition(count === body.branchIds.length, 'BRANCH_UNAUTHORIZED', 403);
         const s = (
           await db.query(
-            'UPDATE staff_memberships SET role=$1,status=$2,max_qty=$3,name=coalesce($5,name),revision=revision+1 WHERE id=$4 RETURNING *',
+            'UPDATE staff_memberships SET role=$1,status=$2,max_qty=$3,name=coalesce($5,name),locked_at=NULL,revision=revision+1 WHERE id=$4 RETURNING *',
             [body.role, body.status, body.maxQty, id, body.name || null],
           )
         ).rows[0];
@@ -1006,7 +1049,10 @@ export function provisioningModule(app: FastifyInstance, pools: Pools, c: Config
               );
             }
             const status = p.enabled ? 'active' : 'ended';
-            await db.query('UPDATE programs SET status=$1 WHERE id=$2', [status, id]);
+            await db.query('UPDATE programs SET status=$1,locked_at=NULL WHERE id=$2', [
+              status,
+              id,
+            ]);
             await audit(db, actor, 'program.earning', m, id, p);
             return { id, status };
           },

@@ -41,6 +41,7 @@ const MerchantPage = lazy(() =>
 const OwnerView = lazy(() =>
   import('./features/OwnerView.js').then((m) => ({ default: m.OwnerView })),
 );
+const Billing = lazy(() => import('./features/Billing.js').then((m) => ({ default: m.Billing })));
 const PlatformTeam = lazy(() =>
   import('./features/PlatformTeam.js').then((m) => ({ default: m.PlatformTeam })),
 );
@@ -345,7 +346,14 @@ function Workspace({
       : []),
     { path: account, label: ar ? 'حسابي' : 'My account', icon: 'people' },
     ...(portal === 'platform' && session.user.role === 'platform_admin'
-      ? [{ path: '/platform/team', label: ar ? 'فريق الإدارة' : 'Platform team', icon: 'people' }]
+      ? [
+          {
+            path: '/platform/billing',
+            label: ar ? 'الاشتراكات والباقات' : 'Billing and plans',
+            icon: 'chart',
+          },
+          { path: '/platform/team', label: ar ? 'فريق الإدارة' : 'Platform team', icon: 'people' },
+        ]
       : []),
   ];
   let content: ReactNode = (
@@ -397,6 +405,8 @@ function Workspace({
   else if (portal === 'platform' && platformAccess) {
     if (route === '/platform/team' && session.user.role === 'platform_admin')
       content = <PlatformTeam lang={lang} />;
+    else if (route === '/platform/billing' && session.user.role === 'platform_admin')
+      content = <Billing lang={lang} />;
     else if (route === '/platform/operations' || session.user.role === 'platform_support')
       content = (
         <>

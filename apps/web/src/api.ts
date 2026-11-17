@@ -130,14 +130,19 @@ export async function api<T>(
     csrf = '';
     window.dispatchEvent(new Event('nuqta:session-expired'));
   }
-  if (!response.ok)
-    throw new ApiError(
+  if (!response.ok) {
+    const error = new ApiError(
       body.error?.code || 'REQUEST_FAILED',
       response.status,
       body.error?.requestId,
       body.error?.fields,
       planDetails(body.error),
     );
+    // A shop action hit the plan: the merchant workspace opens the limit sheet with the ways out.
+    if (error.details?.options?.length && (options.method || 'GET') !== 'GET')
+      window.dispatchEvent(new CustomEvent('perks:plan-limit', { detail: error }));
+    throw error;
+  }
   return body;
 }
 /** Shown text for any failure: plain words, the cause and the fix (see error-messages.ts). */

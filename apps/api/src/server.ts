@@ -12,6 +12,8 @@ import { customerRecoveryModule } from './modules/customer-recovery.js';
 import { customerPrivacyModule } from './modules/customer-privacy.js';
 import { subscriptionsModule } from './modules/subscriptions.js';
 import { billingModule } from './modules/billing.js';
+import { ownerPlanModule } from './modules/owner-plan.js';
+import { readOnlyGuard } from './read-only.js';
 import { walletModule } from './modules/wallet.js';
 import Fastify, { LogController, type FastifyBaseLogger } from 'fastify';
 import cookie from '@fastify/cookie';
@@ -154,6 +156,7 @@ export async function buildApp(
     });
   });
   authModule(app, pools, c);
+  readOnlyGuard(app, pools);
   ownerPreviewModule(app, pools);
   platformTeamModule(app, pools, c);
   provisioningModule(app, pools, c);
@@ -175,6 +178,7 @@ export async function buildApp(
   customerPrivacyModule(app, pools, c);
   subscriptionsModule(app, pools);
   billingModule(app, pools);
+  ownerPlanModule(app, pools, c);
   walletModule(app, pools, c);
   customersModule(app, pools, c);
   materialsModule(app, pools, c);

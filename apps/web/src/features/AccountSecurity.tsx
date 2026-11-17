@@ -1,6 +1,7 @@
 import { Select } from '../controls/Select.js';
 import { useEffect, useState } from 'react';
 import type { Language } from '../../../../packages/contracts/src/index.js';
+import { LockedBadge } from './LockedBadge.js';
 import { api, ApiError, errorText } from '../api.js';
 import { Icon } from '../../../../packages/ui/src/Icon.js';
 import { staffRoleLabel, staffStatusLabel } from '../business-labels.js';
@@ -28,12 +29,17 @@ export function AccountSecurity({
   lang,
   branches,
   refreshKey = '',
+  lockedIds = [],
+  onOpenPlan,
   onChanged,
 }: {
   merchantId: string;
   lang: Language;
   branches: { id: string; name: string }[];
   refreshKey?: string;
+  /** Staff accounts the plan locked after a downgrade (owner view only). */
+  lockedIds?: string[];
+  onOpenPlan?: () => void;
   onChanged?: () => Promise<void>;
 }) {
   const ar = lang === 'ar',
@@ -123,7 +129,11 @@ export function AccountSecurity({
                   <small>{a.branches.join(' · ')}</small>
                 </td>
                 <td data-label={ar ? 'الحالة' : 'Status'}>
-                  <span className="badge">{staffStatusLabel(a.status, lang)}</span>
+                  {lockedIds.includes(a.id) ? (
+                    <LockedBadge lang={lang} onOpenPlan={onOpenPlan} />
+                  ) : (
+                    <span className="badge">{staffStatusLabel(a.status, lang)}</span>
+                  )}
                   {a.lockedUntil && (
                     <small>
                       {ar

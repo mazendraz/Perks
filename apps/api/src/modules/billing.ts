@@ -63,6 +63,12 @@ async function billingState(db: DB, mid: string) {
        ORDER BY locked_at,name`,
     [mid],
   );
+  const requests = await db.query(
+    `SELECT r.id,r.kind,r.plan_key,r.billing_period,r.addon_key,r.quantity,r.note,r.status,r.created_at,r.closed_at,r.close_reason,
+      u.display_name AS requested_by_name
+     FROM plan_requests r LEFT JOIN users u ON u.id=r.requested_by WHERE r.merchant_id=$1 ORDER BY r.created_at DESC LIMIT 10`,
+    [mid],
+  );
   return {
     subscription: {
       plan: s.plan_key,
@@ -84,6 +90,7 @@ async function billingState(db: DB, mid: string) {
     overrides: overrides.rows,
     events: events.rows,
     locked: locked.rows,
+    requests: requests.rows,
   };
 }
 
@@ -114,6 +121,61 @@ async function bump(db: DB, mid: string) {
     'UPDATE merchant_subscriptions SET revision=revision+1,updated_at=clock_timestamp() WHERE merchant_id=$1',
     [mid],
   );
+}
+
+/** Sets one add-on's quantity within the plan's offer and cap, then rebalances locked items. */
+async function setAddon(
+  db: DB,
+  actor: Actor,
+  m: string,
+  s: Record<string, unknown>,
+  key: 'extra_branch' | 'extra_staff',
+  quantity: number,
+  reason: string,
+) {
+  const before = (
+    await db.query('SELECT quantity FROM subscription_addons WHERE merchant_id=$1 AND key=$2', [
+      m,
+      key,
+    ])
+  ).rows[0];
+  if (quantity === 0)
+    await db.query('DELETE FROM subscription_addons WHERE merchant_id=$1 AND key=$2', [m, key]);
+  else {
+    const offer = (
+      await db.query(
+        `SELECT a.unit_amount_minor,a.max_total,e.int_value AS base,e.value_type FROM plan_addons a
+       LEFT JOIN plan_entitlements e ON e.plan_id=a.plan_id AND e.key=CASE a.key WHEN 'extra_branch' THEN 'max_branches' ELSE 'max_staff' END
+       WHERE a.plan_id=$1 AND a.key=$2 AND a.currency=$3 AND a.is_active`,
+        [s.plan_id, key, s.currency],
+      )
+    ).rows[0];
+    requireCondition(offer, 'ADDON_NOT_IN_PLAN', 409);
+    requireCondition(
+      offer.max_total === null ||
+        offer.value_type !== 'int' ||
+        offer.base + quantity <= offer.max_total,
+      'ADDON_CAP_REACHED',
+      409,
+    );
+    await db.query(
+      `INSERT INTO subscription_addons(merchant_id,key,quantity,unit_amount_minor) VALUES($1,$2,$3,$4)
+     ON CONFLICT(merchant_id,key) DO UPDATE SET quantity=excluded.quantity,updated_at=clock_timestamp()`,
+      [m, key, quantity, offer.unit_amount_minor],
+    );
+  }
+  await bump(db, m);
+  const result = (await db.query('SELECT rebalance_plan_items($1) AS r', [m])).rows[0].r;
+  await event(
+    db,
+    actor,
+    m,
+    'subscription.addon_changed',
+    { key, quantity: before?.quantity ?? 0 },
+    { key, quantity: quantity, ...result },
+    reason,
+  );
+  return result;
 }
 
 export function billingModule(app: FastifyInstance, pools: Pools) {
@@ -199,49 +261,83 @@ export function billingModule(app: FastifyInstance, pools: Pools) {
     'billing.addon',
     async (db, actor, m, b, s, req) => {
       const { key } = z.object({ key: z.enum(['extra_branch', 'extra_staff']) }).parse(req.params);
-      const before = (
-        await db.query('SELECT quantity FROM subscription_addons WHERE merchant_id=$1 AND key=$2', [
-          m,
-          key,
-        ])
+      const result = await setAddon(db, actor, m, s, key, b.quantity, b.reason);
+      return { result };
+    },
+  );
+
+  // An owner's request: approving applies it (upgrades now, downgrades at the billing date).
+  merchantWrite(
+    '/requests/:id/approve',
+    'POST',
+    reasonInput,
+    'billing.request.approve',
+    async (db, actor, m, b, s, req) => {
+      const { id } = z.object({ id: z.uuid() }).parse(req.params);
+      const r = (
+        await db.query(
+          "SELECT * FROM plan_requests WHERE merchant_id=$1 AND id=$2 AND status='open' FOR UPDATE",
+          [m, id],
+        )
       ).rows[0];
-      if (b.quantity === 0)
-        await db.query('DELETE FROM subscription_addons WHERE merchant_id=$1 AND key=$2', [m, key]);
-      else {
-        const offer = (
+      requireCondition(r, 'NOT_FOUND', 404);
+      let result: unknown;
+      if (r.kind === 'change_plan') {
+        const order = (
           await db.query(
-            `SELECT a.unit_amount_minor,a.max_total,e.int_value AS base,e.value_type FROM plan_addons a
-           LEFT JOIN plan_entitlements e ON e.plan_id=a.plan_id AND e.key=CASE a.key WHEN 'extra_branch' THEN 'max_branches' ELSE 'max_staff' END
-           WHERE a.plan_id=$1 AND a.key=$2 AND a.currency=$3 AND a.is_active`,
-            [s.plan_id, key, s.currency],
+            'SELECT (SELECT sort_order FROM plans WHERE id=$1) AS current,(SELECT sort_order FROM plans WHERE key=$2) AS target',
+            [s.plan_id, r.plan_key],
           )
         ).rows[0];
-        requireCondition(offer, 'ADDON_NOT_IN_PLAN', 409);
-        requireCondition(
-          offer.max_total === null ||
-            offer.value_type !== 'int' ||
-            offer.base + b.quantity <= offer.max_total,
-          'ADDON_CAP_REACHED',
-          409,
-        );
-        await db.query(
-          `INSERT INTO subscription_addons(merchant_id,key,quantity,unit_amount_minor) VALUES($1,$2,$3,$4)
-         ON CONFLICT(merchant_id,key) DO UPDATE SET quantity=excluded.quantity,updated_at=clock_timestamp()`,
-          [m, key, b.quantity, offer.unit_amount_minor],
+        requireCondition(order.target !== null, 'NOT_FOUND', 404);
+        const effective =
+          order.target > order.current || !s.current_period_end ? 'now' : 'period_end';
+        result = (
+          await db.query('SELECT change_merchant_plan($1,$2,$3,$4,$5) AS r', [
+            m,
+            r.plan_key,
+            r.billing_period,
+            effective,
+            b.reason,
+          ])
+        ).rows[0].r;
+      } else {
+        const current = (
+          await db.query(
+            'SELECT quantity FROM subscription_addons WHERE merchant_id=$1 AND key=$2',
+            [m, r.addon_key],
+          )
+        ).rows[0];
+        result = await setAddon(
+          db,
+          actor,
+          m,
+          s,
+          r.addon_key,
+          (current?.quantity ?? 0) + r.quantity,
+          b.reason,
         );
       }
-      await bump(db, m);
-      const result = (await db.query('SELECT rebalance_plan_items($1) AS r', [m])).rows[0].r;
-      await event(
-        db,
-        actor,
-        m,
-        'subscription.addon_changed',
-        { key, quantity: before?.quantity ?? 0 },
-        { key, quantity: b.quantity, ...result },
-        b.reason,
+      await db.query(
+        "UPDATE plan_requests SET status='approved',closed_by=$3,closed_at=clock_timestamp(),close_reason=$4 WHERE id=$2 AND merchant_id=$1",
+        [m, id, actor.id, b.reason],
       );
       return { result };
+    },
+  );
+  merchantWrite(
+    '/requests/:id/decline',
+    'POST',
+    reasonInput,
+    'billing.request.decline',
+    async (db, actor, m, b, s, req) => {
+      const { id } = z.object({ id: z.uuid() }).parse(req.params);
+      const r = await db.query(
+        "UPDATE plan_requests SET status='declined',closed_by=$3,closed_at=clock_timestamp(),close_reason=$4 WHERE merchant_id=$1 AND id=$2 AND status='open'",
+        [m, id, actor.id, b.reason],
+      );
+      requireCondition(r.rowCount, 'NOT_FOUND', 404);
+      return {};
     },
   );
 

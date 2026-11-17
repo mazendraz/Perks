@@ -85,6 +85,18 @@ interface BillingState {
     actor_name: string | null;
   }[];
   locked: { kind: 'branch' | 'program' | 'staff'; id: string; name: string; locked_at: string }[];
+  requests: {
+    id: string;
+    kind: 'change_plan' | 'addon';
+    plan_key: string | null;
+    billing_period: string | null;
+    addon_key: string | null;
+    quantity: number | null;
+    note: string | null;
+    status: string;
+    created_at: string;
+    requested_by_name: string | null;
+  }[];
 }
 type Action =
   | { kind: 'plan' }
@@ -94,7 +106,9 @@ type Action =
   | { kind: 'trial' }
   | { kind: 'cancel' }
   | { kind: 'reactivate' }
-  | { kind: 'price' };
+  | { kind: 'price' }
+  | { kind: 'approve'; id: string; label: string }
+  | { kind: 'decline'; id: string; label: string };
 
 const overrideKeys = [...limitKeys, ...booleanFeatureKeys, ...Object.keys(enumFeatures)];
 const isLimit = (k: string) => (limitKeys as readonly string[]).includes(k);
@@ -229,6 +243,12 @@ export function PlanBilling({ merchantId, lang }: { merchantId: string; lang: La
       case 'reactivate':
         path = '/reactivate';
         break;
+      case 'approve':
+        path = '/requests/' + action.id + '/approve';
+        break;
+      case 'decline':
+        path = '/requests/' + action.id + '/decline';
+        break;
       case 'price': {
         const minor = moneyMinor(price);
         if (minor === null) {
@@ -312,6 +332,53 @@ export function PlanBilling({ merchantId, lang }: { merchantId: string; lang: La
           {success}
         </p>
       )}
+
+      {data.requests
+        .filter((r) => r.status === 'open')
+        .map((r) => {
+          const label =
+            r.kind === 'addon'
+              ? addonLabel(r.addon_key || '', lang) + ' × ' + r.quantity
+              : (ar ? 'باقة ' : 'Plan ') +
+                planName(r.plan_key) +
+                ' · ' +
+                (r.billing_period === 'annual'
+                  ? ar
+                    ? 'سنوي'
+                    : 'annual'
+                  : ar
+                    ? 'شهري'
+                    : 'monthly');
+          return (
+            <div className="panel plan-request open" key={r.id}>
+              <strong>{ar ? 'طلب من صاحب المحل' : 'Request from the owner'}</strong>
+              <p>
+                {label}
+                <small className="muted">
+                  {' '}
+                  · {day(r.created_at, lang)} · {r.requested_by_name}
+                </small>
+              </p>
+              {r.note && <p className="muted">«{r.note}»</p>}
+              <div className="plan-actions">
+                <button
+                  className="primary small"
+                  disabled={busy}
+                  onClick={() => open({ kind: 'approve', id: r.id, label })}
+                >
+                  {ar ? 'وافق ونفّذ' : 'Approve and apply'}
+                </button>
+                <button
+                  className="secondary small"
+                  disabled={busy}
+                  onClick={() => open({ kind: 'decline', id: r.id, label })}
+                >
+                  {ar ? 'ارفض' : 'Decline'}
+                </button>
+              </div>
+            </div>
+          );
+        })}
 
       <div className="panel plan-summary">
         <div className="plan-summary-head">
@@ -433,7 +500,13 @@ export function PlanBilling({ merchantId, lang }: { merchantId: string; lang: La
                 <div className="usage-label">
                   <span>{limitLabel(k, lang)}</span>
                   <bdi>
-                    {used} / {limit === null ? (ar ? 'مفتوح' : 'Unlimited') : limit}
+                    {limit === null
+                      ? ar
+                        ? `${used} · من غير حد`
+                        : `${used} · unlimited`
+                      : ar
+                        ? `${used} من ${limit}`
+                        : `${used} of ${limit}`}
                   </bdi>
                 </div>
                 <div
@@ -615,25 +688,33 @@ export function PlanBilling({ merchantId, lang }: { merchantId: string; lang: La
                     ? ar
                       ? 'استثناء لحد أو ميزة'
                       : 'Override a limit or feature'
-                    : action.kind === 'revoke'
+                    : action.kind === 'approve'
                       ? ar
-                        ? 'شيل الاستثناء'
-                        : 'Remove override'
-                      : action.kind === 'trial'
+                        ? 'الموافقة على الطلب'
+                        : 'Approve request'
+                      : action.kind === 'decline'
                         ? ar
-                          ? 'تجربة مجانية'
-                          : 'Free trial'
-                        : action.kind === 'cancel'
+                          ? 'رفض الطلب'
+                          : 'Decline request'
+                        : action.kind === 'revoke'
                           ? ar
-                            ? 'إلغاء الاشتراك'
-                            : 'Cancel subscription'
-                          : action.kind === 'reactivate'
+                            ? 'شيل الاستثناء'
+                            : 'Remove override'
+                          : action.kind === 'trial'
                             ? ar
-                              ? 'رجّع الاشتراك'
-                              : 'Reactivate subscription'
-                            : ar
-                              ? 'سعر متفق عليه'
-                              : 'Agreed price'}
+                              ? 'تجربة مجانية'
+                              : 'Free trial'
+                            : action.kind === 'cancel'
+                              ? ar
+                                ? 'إلغاء الاشتراك'
+                                : 'Cancel subscription'
+                              : action.kind === 'reactivate'
+                                ? ar
+                                  ? 'رجّع الاشتراك'
+                                  : 'Reactivate subscription'
+                                : ar
+                                  ? 'سعر متفق عليه'
+                                  : 'Agreed price'}
             </h2>
 
             {action.kind === 'plan' && (
@@ -840,6 +921,24 @@ export function PlanBilling({ merchantId, lang }: { merchantId: string; lang: La
             )}
 
             {action.kind === 'revoke' && <p>{action.label}</p>}
+            {action.kind === 'approve' && (
+              <>
+                <p>{action.label}</p>
+                <p className="muted">
+                  {ar
+                    ? 'الترقية بتتطبق دلوقتي، والتخفيض يوم التجديد. سجّل الدفعة من قسم المدفوعات تحت.'
+                    : 'Upgrades apply now, downgrades on the renewal date. Record the payment in Payments below.'}
+                </p>
+              </>
+            )}
+            {action.kind === 'decline' && (
+              <>
+                <p>{action.label}</p>
+                <p className="muted">
+                  {ar ? 'السبب بيظهر لصاحب المحل.' : 'The owner sees the reason.'}
+                </p>
+              </>
+            )}
 
             {action.kind === 'trial' && (
               <div className="form-grid">

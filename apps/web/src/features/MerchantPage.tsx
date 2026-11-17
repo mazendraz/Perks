@@ -1,16 +1,15 @@
 import { PhoneInput } from '../controls/PhoneInput.js';
-import {
-  staffRoleLabel,
-  statusLabel,
-  subscriptionPlanLabel,
-  transactionTypeLabel,
-} from '../business-labels.js';
+import { staffRoleLabel, statusLabel, transactionTypeLabel } from '../business-labels.js';
 import { portalAssetUrl } from '../portals.js';
 import { saveLogo } from '../controls/save-logo.js';
 import { FileUpload } from '../controls/FileUpload.js';
 import { Select } from '../controls/Select.js';
 import { CustomerOutreach } from './CustomerOutreach.js';
 import { Subscriptions } from './Subscriptions.js';
+import { MyPlan, PlanBanners, type PlanState } from './MyPlan.js';
+import { WalletMessages } from './WalletMessages.js';
+import { LimitSheet } from './LimitSheet.js';
+import { LockedBadge } from './LockedBadge.js';
 import { TeamCustomerRecovery, RecoveryPolicy, PairingApprovals } from './CustomerRecovery.js';
 import { AccountSecurity } from './AccountSecurity.js';
 import {
@@ -76,6 +75,7 @@ interface Program {
   reward_terms: string;
   validity_days: number;
   ends_at: string | null;
+  locked_at?: string | null;
 }
 interface Staff {
   id: string;
@@ -156,12 +156,6 @@ export function MerchantPage({ grant, lang }: { grant: Grant; lang: Language }) 
         at: string;
       }[]
     >([]),
-    [entitlement, setEntitlement] = useState<{
-      plan: string;
-      max_branches: number;
-      max_staff: number;
-      max_customers: number;
-    } | null>(null),
     [invite, setInvite] = useState<{
       email: string;
       password: string;
@@ -183,19 +177,27 @@ export function MerchantPage({ grant, lang }: { grant: Grant; lang: Language }) 
       reason: string;
       key: string;
     } | null>(null),
-    [programBranches, setProgramBranches] = useState<string[]>([]);
+    [programBranches, setProgramBranches] = useState<string[]>([]),
+    [planState, setPlanState] = useState<PlanState | null>(null);
   const base = '/merchants/' + grant.merchant_id;
+  const owner = grant.role === 'owner';
+  const loadPlan = () => {
+    if (owner)
+      api<PlanState>(base + '/plan')
+        .then(setPlanState)
+        .catch(() => setPlanState(null));
+  };
+  useEffect(loadPlan, [grant.merchant_id, owner]);
   const load = async () => {
     try {
       const [m, p, t, cs] = await Promise.all([
-        api<{ merchant: Merchant; entitlements: typeof entitlement }>(base),
+        api<{ merchant: Merchant }>(base),
         api<{ programs: Program[] }>(base + '/programs'),
         api<{ transactions: typeof recent }>(base + '/transactions'),
         api<{ corrections: Correction[] }>(base + '/corrections'),
       ]);
       setMerchant(m.merchant);
       setBrand((b) => b || m.merchant);
-      setEntitlement(m.entitlements);
       setPrograms(p.programs);
       setRecent(t.transactions);
       setCorrections(cs.corrections);
@@ -425,6 +427,7 @@ export function MerchantPage({ grant, lang }: { grant: Grant; lang: Language }) 
     ['overview', ar ? 'الرئيسية' : 'Overview'],
     ['customers', ar ? 'العملاء والشرائح' : 'Customers and segments'],
     ['outreach', ar ? 'تواصل واتساب' : 'WhatsApp contact'],
+    ...(grant.role === 'owner' ? [['messages', ar ? 'رسايل Wallet' : 'Wallet messages']] : []),
     ['materials', ar ? 'QR وNFC' : 'QR and NFC'],
     ['programs', ar ? 'البرامج' : 'Programs'],
     ['branches', ar ? 'الفروع' : 'Branches'],
@@ -432,7 +435,7 @@ export function MerchantPage({ grant, lang }: { grant: Grant; lang: Language }) 
       ? [
           ['team', ar ? 'الفريق' : 'Team'],
           ['brand', ar ? 'الهوية' : 'Branding'],
-          ['subscription', ar ? 'الاشتراك' : 'Subscription'],
+          ['subscription', ar ? 'باقتي' : 'My plan'],
           ['support', ar ? 'الدعم' : 'Support'],
         ]
       : []),
@@ -442,6 +445,7 @@ export function MerchantPage({ grant, lang }: { grant: Grant; lang: Language }) 
     overview: 'chart',
     customers: 'people',
     outreach: 'message',
+    messages: 'message',
     materials: 'qr',
     programs: 'gift',
     branches: 'branch',
@@ -457,7 +461,7 @@ export function MerchantPage({ grant, lang }: { grant: Grant; lang: Language }) 
       id: 'customers',
       label: ar ? 'العملاء' : 'Customers',
       icon: 'people',
-      tabs: ['customers', 'outreach'],
+      tabs: ['customers', 'outreach', 'messages'],
     },
     {
       id: 'loyalty',
@@ -492,6 +496,15 @@ export function MerchantPage({ grant, lang }: { grant: Grant; lang: Language }) 
           <ActionLabel icon="qr">{ar ? 'افتح التسجيل' : 'Open enrollment'}</ActionLabel>
         </a>
       </div>
+      {planState && (
+        <PlanBanners
+          state={planState}
+          lang={lang}
+          kind="billing"
+          merchantId={grant.merchant_id}
+          onOpen={tab === 'subscription' ? undefined : () => setTab('subscription')}
+        />
+      )}
       <nav className="owner-sections" aria-label={ar ? 'أقسام المحل' : 'Business sections'}>
         {sections.map((s) => (
           <button
@@ -529,6 +542,8 @@ export function MerchantPage({ grant, lang }: { grant: Grant; lang: Language }) 
           </button>
         </div>
       )}
+      <LimitSheet merchantId={grant.merchant_id} lang={lang} owner={owner} onRequested={loadPlan} />
+      {tab === 'messages' && owner && <WalletMessages merchantId={grant.merchant_id} lang={lang} />}
       {tab === 'overview' && (
         <>
           <section className="business-welcome">
@@ -752,9 +767,16 @@ export function MerchantPage({ grant, lang }: { grant: Grant; lang: Language }) 
           <div className="cards-grid">
             {programs.map((p) => (
               <section className="panel" key={p.id}>
-                <span className="badge">
-                  v{p.version} · {statusLabel(p.status, lang)}
-                </span>
+                {p.locked_at ? (
+                  <LockedBadge
+                    lang={lang}
+                    onOpenPlan={owner ? () => setTab('subscription') : undefined}
+                  />
+                ) : (
+                  <span className="badge">
+                    v{p.version} · {statusLabel(p.status, lang)}
+                  </span>
+                )}
                 <h2>{p.name}</h2>
                 <p>
                   {p.threshold}→{p.reward_title}
@@ -805,7 +827,9 @@ export function MerchantPage({ grant, lang }: { grant: Grant; lang: Language }) 
           </div>
         </>
       )}
-      {tab === 'branches' && <Branches grant={grant} lang={lang} />}
+      {tab === 'branches' && (
+        <Branches grant={grant} lang={lang} onOpenPlan={() => setTab('subscription')} />
+      )}
       {tab === 'team' && (
         <section className="panel">
           {grant.role === 'owner' && (
@@ -834,6 +858,10 @@ export function MerchantPage({ grant, lang }: { grant: Grant; lang: Language }) 
             lang={lang}
             branches={grant.branches}
             refreshKey={staff.map((s) => s.id + ':' + s.revision).join('|')}
+            onOpenPlan={() => setTab('subscription')}
+            lockedIds={(planState?.items || [])
+              .filter((i) => i.kind === 'staff' && i.locked)
+              .map((i) => i.id)}
             onChanged={load}
           />
           <h3>{ar ? 'الدعوات' : 'Invitations'}</h3>
@@ -1071,21 +1099,7 @@ export function MerchantPage({ grant, lang }: { grant: Grant; lang: Language }) 
       )}
       {tab === 'subscription' && (
         <>
-          <section className="panel">
-            <h2>
-              {ar ? 'الخطة الحالية' : 'Current plan'}:{' '}
-              {entitlement?.plan ? subscriptionPlanLabel(entitlement.plan, lang) : '—'}
-            </h2>
-            <p>
-              {entitlement?.max_branches} {ar ? 'فروع' : 'branches'} ·{entitlement?.max_staff}{' '}
-              {ar ? 'موظفين' : 'staff'} ·{entitlement?.max_customers} {ar ? 'عميل' : 'customers'}
-            </p>
-            <p className="muted">
-              {ar
-                ? 'فريق Perks بيسجل المدفوعات المتفق عليها، وتقدر تتابع التغطية والسجل هنا.'
-                : 'The Perks team records agreed payments. You can follow coverage and payment history here.'}
-            </p>
-          </section>
+          <MyPlan merchantId={grant.merchant_id} lang={lang} onState={setPlanState} />
           <Subscriptions
             key={grant.merchant_id}
             merchantId={grant.merchant_id}

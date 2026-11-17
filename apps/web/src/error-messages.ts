@@ -225,6 +225,22 @@ const messages: Record<string, Line> = {
     'الباقة دي ملهاش سعر للمدة دي. حط السعر في كتالوج الباقات الأول.',
     'This plan has no price for that billing period. Add it in the plans catalog first.',
   ],
+  SUBSCRIPTION_READ_ONLY: [
+    'الاشتراك اتلغى، فالحساب بقى للعرض بس. تقدر تنزّل عملاءك CSV لمدة 30 يوم من الإلغاء. عايز ترجع؟ كلّمنا على 01006111380.',
+    'The subscription ended, so the account is view-only. You can export customers as CSV for 30 days. Want to come back? Call 01006111380.',
+  ],
+  PLAN_REQUEST_OPEN: [
+    'عندك طلب مفتوح مع فريق Perks. استنى ردنا أو الغيه من باقتي.',
+    'You already have an open request with the Perks team. Wait for our reply or withdraw it in My plan.',
+  ],
+  NO_RECIPIENTS: [
+    'مفيش عملاء توصلهم الرسالة دي دلوقتي. اختار مجموعة تانية، واللي وصلتله رسالة النهارده مش هيتبعتله تاني.',
+    'Nobody would get this message right now. Pick another group; anyone messaged today is skipped.',
+  ],
+  WALLET_MESSAGES_UNAVAILABLE: [
+    'رسايل Wallet لسه متفعلتش. كلّم Perks على 01006111380.',
+    'Wallet messages are not switched on yet. Contact Perks on 01006111380.',
+  ],
   MERCHANT_PAUSED: [
     'الحساب متوقف مؤقتًا. كلّم Perks على 01006111380.',
     'This account is paused. Contact Perks on 01006111380.',

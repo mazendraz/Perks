@@ -12,7 +12,7 @@ const limits: Record<LimitKey, Pair> = {
   max_branches: ['الفروع', 'Branches'],
   max_staff: ['الموظفين', 'Staff'],
   max_active_programs: ['برامج الأختام الشغالة', 'Active stamp programs'],
-  manual_messages_per_month: ['رسايل Wallet اليدوية في الشهر', 'Manual Wallet messages a month'],
+  manual_messages_per_month: ['رسايل Wallet في الشهر', 'Manual Wallet messages a month'],
 };
 const features: Record<string, Pair> = {
   merchant_branding: ['لوجو وألوان المحل', 'Shop logo and colours'],
@@ -21,7 +21,7 @@ const features: Record<string, Pair> = {
   web_card: ['كارت الويب', 'Web card'],
   qr_enrollment: ['التسجيل بـ QR', 'QR sign-up'],
   nfc_enrollment: ['التسجيل بـ NFC', 'NFC sign-up'],
-  data_export_csv: ['تصدير العملاء CSV', 'Customer CSV export'],
+  data_export_csv: ['تنزيل العملاء CSV', 'Customer CSV export'],
   customer_segments: ['تقسيم العملاء', 'Customer segments'],
   custom_card_template: ['تصميم كارت خاص', 'Custom card template'],
   reminders: ['التذكيرات', 'Reminders'],

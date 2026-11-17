@@ -75,7 +75,13 @@ export async function transaction<T>(
       const name = message.slice(3);
       throw new AppError(
         name,
-        name === 'NOT_FOUND' ? 404 : name === 'UNAUTHENTICATED' ? 401 : 409,
+        name === 'NOT_FOUND'
+          ? 404
+          : name === 'UNAUTHENTICATED'
+            ? 401
+            : name === 'VALIDATION_FAILED'
+              ? 422
+              : 409,
         false,
         undefined,
         entitlementErrorDetail(name, (error as { detail?: string }).detail),

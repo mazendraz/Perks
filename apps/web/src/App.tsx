@@ -84,7 +84,10 @@ export function App() {
       setSession(s);
     } catch (e) {
       const signedOut = e instanceof ApiError && e.status === 401;
-      if (!signedOut) setNotice(errorText(e, lang));
+      // Offline is already shown by the connection banner; do not stack a second message.
+      const offline =
+        e instanceof ApiError && (e.code === 'NETWORK_UNCERTAIN' || e.code === 'REQUEST_TIMEOUT');
+      if (!signedOut && !offline) setNotice(errorText(e, lang));
       setSession(null);
       // A customer without a session may already have the anonymous bootstrap
       // CSRF token. A language refresh must not erase it before registration.

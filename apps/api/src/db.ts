@@ -1,6 +1,7 @@
 import pg from 'pg';
 import type { Config } from './config.js';
 import { AppError } from './errors.js';
+import { planLimitDetail, featureDetail } from '../../../packages/contracts/src/entitlements.js';
 export type DB = pg.PoolClient;
 export interface Actor {
   id: string;
@@ -72,11 +73,33 @@ export async function transaction<T>(
     const message = error instanceof Error ? error.message : '';
     if (code === 'P0001' && /^NQ:[A-Z_]+$/.test(message)) {
       const name = message.slice(3);
-      throw new AppError(name, name === 'NOT_FOUND' ? 404 : name === 'UNAUTHENTICATED' ? 401 : 409);
+      throw new AppError(
+        name,
+        name === 'NOT_FOUND' ? 404 : name === 'UNAUTHENTICATED' ? 401 : 409,
+        false,
+        undefined,
+        entitlementErrorDetail(name, (error as { detail?: string }).detail),
+      );
     }
     throw error;
   } finally {
     db.release();
+  }
+}
+/** Only the plan-limit errors carry details, and only after they match their schema. */
+function entitlementErrorDetail(name: string, detail: string | undefined) {
+  const schema =
+    name === 'PLAN_LIMIT_REACHED'
+      ? planLimitDetail
+      : name === 'FEATURE_NOT_IN_PLAN'
+        ? featureDetail
+        : null;
+  if (!schema || !detail) return undefined;
+  try {
+    const parsed = schema.safeParse(JSON.parse(detail));
+    return parsed.success ? parsed.data : undefined;
+  } catch {
+    return undefined;
   }
 }
 export async function audit(

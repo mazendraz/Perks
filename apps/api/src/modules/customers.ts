@@ -5,6 +5,7 @@ import type { Config } from '../config.js';
 import { authenticated } from '../auth.js';
 import { audit, transaction, type Pools } from '../db.js';
 import { merchantGrant } from '../policy.js';
+import { assertCan } from '../entitlements.js';
 import { idempotencyKey, operation } from '../operations.js';
 import { emitOutbox } from '../outbox.js';
 import { requireCondition } from '../errors.js';
@@ -95,6 +96,7 @@ export function customersModule(app: FastifyInstance, pools: Pools, c: Config) {
       pools.pool,
       async (db) => {
         await merchantGrant(db, actor, m, ['owner'], p.branchId);
+        await assertCan(db, m, 'data_export_csv');
         return operation(
           db,
           actor,
@@ -226,6 +228,7 @@ export function customersModule(app: FastifyInstance, pools: Pools, c: Config) {
       pools.pool,
       async (db) => {
         await merchantGrant(db, actor, m, ['owner', 'manager'], p.branchId);
+        await assertCan(db, m, 'customer_segments');
         return operation(
           db,
           actor,

@@ -32,6 +32,7 @@ async function main() {
         await pool.query('SELECT sweep_expired_rewards()');
         await pool.query('SELECT sweep_expired_requests()');
         await pool.query('SELECT sweep_expired_sessions()');
+        await pool.query('SELECT advance_subscription_states()');
         await cleanupExports(pool, createFileStore(c));
         await pool.query('SELECT schedule_customer_reminders($1,$2)', [
           c.APPLE_WALLET_ENABLED === 'true',

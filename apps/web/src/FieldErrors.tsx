@@ -23,6 +23,24 @@ const labels: Record<string, [string, string]> = {
   branches: ['بيانات الفروع', 'Branch details'],
   staff: ['بيانات الفريق', 'Team details'],
 };
+/** Turns a validation code into what is actually wrong with the field. */
+function fieldProblem(code: string, ar: boolean) {
+  switch (code) {
+    case 'too_small':
+      return ar ? 'ناقص أو أقصر من المطلوب.' : 'missing or too short.';
+    case 'too_big':
+      return ar ? 'أطول أو أكبر من المسموح.' : 'too long or too large.';
+    case 'invalid_format':
+    case 'invalid_string':
+      return ar ? 'مكتوب بشكل مش مظبوط.' : 'not in the right format.';
+    case 'invalid_type':
+    case 'invalid_value':
+    case 'invalid_enum_value':
+      return ar ? 'لسه متختارش أو متكتبش.' : 'not filled in yet.';
+    default:
+      return ar ? 'محتاج يتراجع.' : 'needs a second look.';
+  }
+}
 export function fieldProps(error: ApiError | null, path: string) {
   const invalid = error?.fields.some((f) => f.path === path || f.path === 'data.' + path);
   return {
@@ -82,10 +100,7 @@ export function FieldErrors({
                 });
               }}
             >
-              {label}:{' '}
-              {lang === 'ar'
-                ? 'راجع القيمة المطلوبة وحدودها.'
-                : 'Check the required value and its limits.'}
+              {label}: {fieldProblem(field.code, lang === 'ar')}
             </button>
           </li>
         );

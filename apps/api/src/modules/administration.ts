@@ -1,4 +1,5 @@
 import type { FastifyInstance } from 'fastify';
+import { assertCan } from '../entitlements.js';
 import { z } from 'zod';
 import { authenticated } from '../auth.js';
 import { audit, transaction, type Pools } from '../db.js';
@@ -76,6 +77,12 @@ export function administrationModule(app: FastifyInstance, pools: Pools) {
       async (db) => {
         await merchantGrant(db, actor, m, ['owner']);
         await db.query('SELECT id FROM merchants WHERE id=$1 FOR UPDATE', [m]);
+        const current = (
+          await db.query('SELECT status FROM branches WHERE merchant_id=$1 AND id=$2', [m, id])
+        ).rows[0];
+        // Re-opening a disabled branch takes a branch slot of the plan again.
+        if (current && current.status !== 'active' && p.status === 'active')
+          await assertCan(db, m, 'max_branches');
         if (p.status === 'disabled')
           requireCondition(
             Number(

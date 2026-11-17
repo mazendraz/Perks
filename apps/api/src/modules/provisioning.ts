@@ -1,4 +1,5 @@
 import { contactPhone } from '../../../../packages/contracts/src/account-management.js';
+import { assertCan } from '../entitlements.js';
 import { enrollmentPlacementLabel } from '../../../../packages/domain/src/placement-labels.js';
 import { publishDraftLogo } from './onboarding.js';
 import { hashPassword } from '../passwords.js';
@@ -526,21 +527,8 @@ export function provisioningModule(app: FastifyInstance, pools: Pools, c: Config
           async () => {
             if (passwordHash)
               return { account: await createAccount(db, actor, m, body, passwordHash) };
-            const limits = (
-              await db.query('SELECT * FROM feature_entitlements WHERE merchant_id=$1 FOR UPDATE', [
-                m,
-              ])
-            ).rows[0];
-            requireCondition(limits, 'ENTITLEMENTS_NOT_CONFIGURED', 409);
-            const used = Number(
-              (
-                await db.query(
-                  "SELECT (SELECT count(*) FROM staff_memberships WHERE merchant_id=$1)+(SELECT count(*) FROM invitations WHERE merchant_id=$1 AND status='pending' AND expires_at>now()) AS n",
-                  [m],
-                )
-              ).rows[0].n,
-            );
-            requireCondition(used < limits.max_staff, 'PLAN_LIMIT', 409);
+            // Owners do not count against the staff limit; pending invitations do.
+            if (body.role !== 'owner') await assertCan(db, m, 'max_staff');
             const count = (
               await db.query(
                 "SELECT count(*)::int AS n FROM branches WHERE merchant_id=$1 AND id=ANY($2) AND status='active'",
@@ -931,24 +919,7 @@ export function provisioningModule(app: FastifyInstance, pools: Pools, c: Config
           actor,
           { scope: 'program.create:' + m, key, payload: p, merchantId: m },
           async () => {
-            const limits = (
-              await db.query('SELECT * FROM feature_entitlements WHERE merchant_id=$1 FOR UPDATE', [
-                m,
-              ])
-            ).rows[0];
-            requireCondition(limits, 'ENTITLEMENTS_NOT_CONFIGURED', 409);
-            requireCondition(
-              Number(
-                (
-                  await db.query(
-                    "SELECT count(*) AS n FROM programs WHERE merchant_id=$1 AND status='active'",
-                    [m],
-                  )
-                ).rows[0].n,
-              ) < limits.max_programs,
-              'PLAN_LIMIT',
-              409,
-            );
+            await assertCan(db, m, 'max_active_programs');
             requireCondition(
               (
                 await db.query(
@@ -1017,34 +988,16 @@ export function provisioningModule(app: FastifyInstance, pools: Pools, c: Config
           actor,
           { scope: 'program.earning:' + id, key, payload: p, merchantId: m },
           async () => {
-            const limits = (
-                await db.query(
-                  'SELECT * FROM feature_entitlements WHERE merchant_id=$1 FOR UPDATE',
-                  [m],
-                )
-              ).rows[0],
-              program = (
-                await db.query(
-                  'SELECT p.*,v.starts_at,v.ends_at FROM programs p JOIN program_versions v ON v.id=p.current_version_id WHERE p.merchant_id=$1 AND p.id=$2 FOR UPDATE OF p',
-                  [m, id],
-                )
-              ).rows[0];
+            const program = (
+              await db.query(
+                'SELECT p.*,v.starts_at,v.ends_at FROM programs p JOIN program_versions v ON v.id=p.current_version_id WHERE p.merchant_id=$1 AND p.id=$2 FOR UPDATE OF p',
+                [m, id],
+              )
+            ).rows[0];
             requireCondition(program, 'NOT_FOUND', 404);
             if (p.enabled) {
-              requireCondition(limits, 'ENTITLEMENTS_NOT_CONFIGURED', 409);
-              if (program.status !== 'active')
-                requireCondition(
-                  Number(
-                    (
-                      await db.query(
-                        "SELECT count(*) AS n FROM programs WHERE merchant_id=$1 AND status='active'",
-                        [m],
-                      )
-                    ).rows[0].n,
-                  ) < limits.max_programs,
-                  'PLAN_LIMIT',
-                  409,
-                );
+              // Turning a program back on re-uses a slot of the plan.
+              if (program.status !== 'active') await assertCan(db, m, 'max_active_programs');
               const clock = (await db.query('SELECT clock_timestamp() AS at')).rows[0].at;
               requireCondition(
                 program.starts_at <= clock && (!program.ends_at || program.ends_at > clock),

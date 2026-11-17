@@ -130,9 +130,14 @@ export async function buildApp(
       return;
     }
     if (error instanceof AppError) {
-      reply
-        .code(error.status)
-        .send({ error: { code: error.code, requestId: req.id, retryable: error.retryable } });
+      reply.code(error.status).send({
+        error: {
+          ...error.details,
+          code: error.code,
+          requestId: req.id,
+          retryable: error.retryable,
+        },
+      });
       return;
     }
     const status =

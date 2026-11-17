@@ -55,6 +55,11 @@ before(async () => {
       ['store-' + randomUUID()],
     )
   ).rows[0].id;
+  // Every real shop is provisioned with a plan; the fixture does the same.
+  await db.query(
+    "INSERT INTO feature_entitlements(merchant_id,plan,max_branches,max_staff,max_programs,max_customers) VALUES($1,'growth',3,10,3,3000)",
+    [merchant],
+  );
   const branch = (
     await db.query("INSERT INTO branches(merchant_id,name) VALUES($1,'Main') RETURNING id", [
       merchant,

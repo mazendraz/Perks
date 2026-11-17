@@ -169,7 +169,8 @@ test('only authorized admins with MFA/CSRF can record immutable idempotent payme
     body = paymentBody(),
     k = key();
   assert.equal(initial.billingRequired, true);
-  assert.equal(initial.earningAllowed, false);
+  // Billing never stops customers: earning stays on whether or not a payment is recorded.
+  assert.equal(initial.earningAllowed, true);
   assert.equal((await payment(t, body, initial.revision, key(), t.owner)).statusCode, 403);
   const unverifiedEmail = 'billing-unverified-' + randomUUID() + '@nuqta.test';
   await db.query(
@@ -252,7 +253,7 @@ test('only authorized admins with MFA/CSRF can record immutable idempotent payme
   });
   assert.equal(voided.statusCode, 200, voided.body);
   current = await state(t);
-  assert.equal(current.earningAllowed, false);
+  assert.equal(current.earningAllowed, true);
   assert.ok(current.payments[0].voided_at);
   const corrected = await payment(t, { ...body, amountMinor: 100000 }, current.revision);
   assert.equal(corrected.statusCode, 200, corrected.body);
@@ -270,7 +271,7 @@ test('only authorized admins with MFA/CSRF can record immutable idempotent payme
   );
 });
 
-test('an expired manual subscription blocks new awards/requests but preserves viewing and holder-confirmed redemption of an earned reward', async () => {
+test('an expired payment never blocks customers; only an explicit admin pause stops new awards/requests, and earned rewards still redeem', async () => {
   const t = await tenant(false),
     m = await member(t),
     earned = await award(t, m, 2);
@@ -278,6 +279,17 @@ test('an expired manual subscription blocks new awards/requests but preserves vi
   const reward = earned.json().rewardGrants[0].id;
   const expired = await payment(t, paymentBody({ periodStart: date(-30), periodEnd: date(-1) }));
   assert.equal(expired.statusCode, 200, expired.body);
+  assert.equal((await state(t)).earningAllowed, true);
+  const stillEarning = await award(t, m);
+  assert.equal(stillEarning.statusCode, 200, stillEarning.body);
+  const s = await state(t);
+  const paused = await app.inject({
+    method: 'PATCH',
+    url: base(t),
+    headers: { ...admin, ...key(), 'if-match': String(s.revision) },
+    payload: { earningPaused: true, reason: 'Synthetic explicit pause' },
+  });
+  assert.equal(paused.statusCode, 200, paused.body);
   assert.equal((await state(t)).earningAllowed, false);
   const blocked = await award(t, m);
   assert.equal(blocked.statusCode, 409);
@@ -331,11 +343,11 @@ test('an expired manual subscription blocks new awards/requests but preserves vi
   );
 });
 
-test('future coverage never fills an unpaid gap, and manual pause/re-enable remains revision-fenced without suspending the shop', async () => {
+test('payments and gaps never change customer earning, and manual pause/re-enable remains revision-fenced without suspending the shop', async () => {
   const t = await tenant(),
     future = await payment(t, paymentBody({ periodStart: date(10), periodEnd: date(40) }));
   assert.equal(future.statusCode, 200, future.body);
-  assert.equal((await state(t)).earningAllowed, false);
+  assert.equal((await state(t)).earningAllowed, true);
   const current = await payment(t, paymentBody({ periodEnd: date() }));
   assert.equal(current.statusCode, 200, current.body);
   assert.equal((await state(t)).earningAllowed, true);
@@ -365,14 +377,14 @@ test('future coverage never fills an unpaid gap, and manual pause/re-enable rema
     payload: { reason: 'Synthetic removal of present coverage' },
   });
   assert.equal(voided.statusCode, 200, voided.body);
-  assert.equal((await state(t)).earningAllowed, false);
+  assert.equal((await state(t)).earningAllowed, true);
   assert.equal(
     (await db.query('SELECT status FROM merchants WHERE id=$1', [t.mid])).rows[0].status,
     'active',
   );
 });
 
-test('award rechecks the database clock after waiting for the account lock and cannot cross subscription expiry', async () => {
+test('award rechecks earning after waiting for the account lock and cannot cross an admin pause', async () => {
   const t = await tenant(false),
     m = await member(t),
     lock = new pg.Client({ connectionString: c.DATABASE_MIGRATOR_URL });
@@ -383,10 +395,6 @@ test('award rechecks the database clock after waiting for the account lock and c
     await lock.query(
       'SELECT membership_id FROM loyalty_accounts WHERE membership_id=$1 FOR UPDATE',
       [m.id],
-    );
-    await db.query(
-      "UPDATE feature_entitlements SET expires_at=clock_timestamp()+interval '2 seconds' WHERE merchant_id=$1",
-      [t.mid],
     );
     pending = award(t, m);
     const pid = (await lock.query('SELECT pg_backend_pid() AS pid')).rows[0].pid,
@@ -403,29 +411,10 @@ test('award rechecks the database clock after waiting for the account lock and c
       await new Promise((r) => setTimeout(r, 25));
     }
     assert.equal(blocked, true, 'the actual award must be waiting on the account');
-    assert.equal(
-      (
-        await db.query(
-          'SELECT expires_at>clock_timestamp() AS live FROM feature_entitlements WHERE merchant_id=$1',
-          [t.mid],
-        )
-      ).rows[0].live,
-      true,
-      'the subscription must still be live when the award blocks',
-    );
-    const deadline = Date.now() + 5000;
-    while (Date.now() < deadline) {
-      if (
-        (
-          await db.query(
-            'SELECT expires_at<=clock_timestamp() AS expired FROM feature_entitlements WHERE merchant_id=$1',
-            [t.mid],
-          )
-        ).rows[0].expired
-      )
-        break;
-      await new Promise((r) => setTimeout(r, 25));
-    }
+    // The pause lands while the award waits; the award must see it after the lock.
+    await db.query('UPDATE feature_entitlements SET earning_paused=true WHERE merchant_id=$1', [
+      t.mid,
+    ]);
     await lock.query('COMMIT');
     const result = await pending;
     assert.equal(result.statusCode, 409, result.body);

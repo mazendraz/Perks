@@ -20,8 +20,15 @@
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/icons/perks-180.png" />
     <link rel="preload" href="/business/mascot.png" as="image" />
+    <!-- A real stylesheet, so the page never paints unstyled while the script loads. -->
+    <link rel="stylesheet" href="/business/business.css" />
   </head>
   <body class="biz">
+    <!-- Loading screen: covers the page until it is ready, and never stays more than a few seconds. -->
+    <div class="boot" aria-hidden="true">
+      <img src="/brand/perks-logo-dark.svg" alt="" width="160" height="60" />
+      <span class="boot-dots"><i></i><i></i><i></i></span>
+    </div>
     <a class="skip" href="#main">تخطّى للمحتوى</a>
     <header class="topbar">
       <div class="wrap topbar-row">

@@ -1,4 +1,3 @@
-import './business.css';
 import {
   publicPlanCatalog,
   annualPaidMonths,
@@ -634,3 +633,17 @@ window.setInterval(frameTick, TICK_MS);
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) stopVoice();
 });
+
+// Lift the loading screen once the mascot is in (or after 2.5 s, whatever happens).
+const mascotArt = new Image();
+let lifted = false;
+const lift = () => {
+  if (lifted) return;
+  lifted = true;
+  document.documentElement.classList.add('ready');
+};
+mascotArt.onload = lift;
+mascotArt.onerror = lift;
+mascotArt.src = '/business/mascot.png';
+if (mascotArt.complete) lift();
+window.setTimeout(lift, 2500);

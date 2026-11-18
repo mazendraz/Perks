@@ -1,8 +1,15 @@
 import { Select } from './controls/Select.js';
 import { ControlLocale } from './controls/locale.js';
-import { portalForPath, defaultPortal, portalInfo, type Portal } from './portals.js';
+import {
+  portalForPath,
+  defaultPortal,
+  portalInfo,
+  applyPortalManifest,
+  type Portal,
+} from './portals.js';
 import { initialLanguage } from './locale.js';
 import { PwaStatus } from './pwa.js';
+import { unlinkPushDevice } from './push.js';
 import { networkUnavailable } from './network.js';
 import { Icon } from '../../../packages/ui/src/Icon.js';
 import { Login, ResetPassword, PasswordSettings } from './features/Auth.js';
@@ -62,6 +69,10 @@ export function App() {
         : initialLanguage();
     });
   const portal = portalForPath(route);
+  useEffect(
+    () => applyPortalManifest(route.startsWith('/cashier') ? 'cashier' : portal),
+    [route, portal],
+  );
   const [sessionPortal, setSessionPortal] = useState<Portal | undefined>(portal);
   const [session, setSession] = useState<Session | null>(null),
     [loading, setLoading] = useState(true),
@@ -170,6 +181,8 @@ export function App() {
   const ar = lang === 'ar';
   const logout = async () => {
     try {
+      // Unlink this device's notifications while the session is still valid to say so.
+      await unlinkPushDevice();
       await api('/auth/logout', { method: 'POST' });
       setSession(null);
       setCsrf('');

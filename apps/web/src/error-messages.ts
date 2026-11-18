@@ -464,6 +464,11 @@ const messages: Record<string, Line> = {
     'الصفحة دي مفتوحة في أماكن كتير. اقفل التابات الزيادة.',
     'This page is open in too many places. Close extra tabs.',
   ],
+  PUSH_NOT_ENABLED: ['الإشعارات مش متاحة دلوقتي.', 'Notifications are not available right now.'],
+  PUSH_NOT_DELIVERED: [
+    'الإشعار ماوصلش للجهاز. جرّب تفعّل الإشعارات تاني.',
+    'The notification did not reach this device. Try turning notifications on again.',
+  ],
   LOGO_NOT_FOUND: ['اللوجو مش موجود. ارفعه تاني.', 'The logo is missing. Upload it again.'],
   ASSET_TOO_LARGE: [
     'الصورة أكبر من 2 ميجا. صغّرها وارفعها تاني.',

@@ -6,6 +6,7 @@ import { tokenHash } from '../../api/src/crypto.js';
 import { createMailer, MailFailure } from '../../api/src/mail/mailer.js';
 import { mailTemplate } from '../../api/src/mail/templates.js';
 import { runAuthMail } from './auth-mail.js';
+import { runCashierPushJob } from './cashier-push.js';
 export interface ClaimedJob {
   job_id: string;
   merchant_id: string;
@@ -113,6 +114,8 @@ export async function runOne(pool: pg.Pool, c: ServiceConfig): Promise<boolean> 
           db.release();
         }
       }
+    } else if (claim.kind === 'cashier_push') {
+      ({ outcome, error } = await runCashierPushJob(pool, c, claim));
     } else if (claim.kind === 'domain_event') {
       // Records internal processing only. Never marks external delivery as successful.
     } else {

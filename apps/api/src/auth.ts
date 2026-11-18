@@ -357,6 +357,9 @@ export function authModule(app: FastifyInstance, pools: Pools, c: Config) {
     await pools.authPool.query('UPDATE sessions SET revoked_at=now() WHERE id=$1', [
       actor.sessionId,
     ]);
+    // Unlink this session's notification devices. Best effort: the revoked session already stops
+    // every push (targets require a live session), so a failure here must not block signing out.
+    await pools.authPool.query('SELECT push_unlink_session($1)', [actor.sessionId]).catch(() => {});
     if (actor.authMethod === 'device') {
       await pools.authPool.query(
         'UPDATE customer_devices SET revoked_at=clock_timestamp() WHERE id=(SELECT customer_device_id FROM sessions WHERE id=$1 AND user_id=$2)',

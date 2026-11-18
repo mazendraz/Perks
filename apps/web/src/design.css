@@ -4524,3 +4524,54 @@ input.nq-phone-input {
     animation: none;
   }
 }
+
+/* One calm look for anything that did not work: soft card, a small "!" badge, plain sentence. */
+.notice.error,
+p.error-text,
+div.error-text {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #fdf3f1;
+  border: 1px solid #f4d6d1;
+  color: #7c2419;
+  font-size: 14px;
+  line-height: 1.75;
+  text-align: start;
+}
+.notice.error::before,
+p.error-text::before,
+div.error-text::before {
+  content: '!';
+  flex: none;
+  width: 22px;
+  height: 22px;
+  margin-top: 2px;
+  border-radius: 50%;
+  background: #c8473a;
+  color: #fff;
+  font:
+    800 13px/22px 'Manrope',
+    sans-serif;
+  text-align: center;
+}
+.notice.error > .text-button {
+  margin-inline-start: auto;
+  flex: none;
+  color: #7c2419;
+  font-weight: 700;
+}
+.field-errors {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: #fdf3f1;
+  border: 1px solid #f4d6d1;
+  color: #7c2419;
+}
+.field-errors li + li {
+  margin-top: 4px;
+}

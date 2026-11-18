@@ -9,6 +9,7 @@ import {
 import { moneyMinor } from '../../../../packages/domain/src/subscriptions.js';
 import { api, ApiError, errorText } from '../api.js';
 import { DateField } from '../controls/DateField.js';
+import { methodLabel, paymentMethods } from './billing-labels.js';
 import { Select } from '../controls/Select.js';
 type Attempt = {
   kind: 'payment' | 'pause' | 'void';
@@ -187,19 +188,13 @@ export function Subscriptions({
       body: parsed.data,
     });
   };
-  const methodName = (value: string) =>
-    ({
-      instapay: ar ? 'إنستاباي' : 'InstaPay',
-      cash: ar ? 'كاش' : 'Cash',
-      bank_transfer: ar ? 'تحويل بنكي' : 'Bank transfer',
-      vodafone_cash: ar ? 'فودافون كاش' : 'Vodafone Cash',
-    })[value] || value;
+  const methodName = (value: string) => methodLabel(value, lang);
   return (
     <section className="subscription-panel">
       <div className="page-heading">
         <div>
-          <span className="eyebrow">{ar ? 'اشتراك المحل' : 'SHOP SUBSCRIPTION'}</span>
-          <h2>{ar ? 'الاشتراك والمدفوعات' : 'Subscription and payments'}</h2>
+          <span className="eyebrow">{ar ? 'المدفوعات' : 'PAYMENTS'}</span>
+          <h2>{ar ? 'المدفوعات وجمع الأختام' : 'Payments and stamp earning'}</h2>
         </div>
         {!readOnly && (
           <button
@@ -239,35 +234,18 @@ export function Subscriptions({
       {data ? (
         <div className="panel subscription-summary">
           <strong>
-            {!data.billingRequired
+            {data.earningPaused
               ? ar
-                ? 'تشغيل تجريبي — الاشتراك التجاري مش مضبوط'
-                : 'Test mode — commercial subscription is not configured'
-              : data.earningAllowed
-                ? ar
-                  ? 'الاشتراك ساري'
-                  : 'Subscription active'
-                : ar
-                  ? 'جمع الأختام متوقف'
-                  : 'Stamp earning paused'}
+                ? 'جمع الأختام موقوف يدويًا'
+                : 'Stamp earning is paused manually'
+              : ar
+                ? 'جمع الأختام شغال'
+                : 'Stamp earning is on'}
           </strong>
           <p className="muted">
             {ar
-              ? 'انتهاء الاشتراك أو إيقاف جمع الأختام ما بيمنعش عرض الكارت أو صرف مكافأة مكتسبة سارية.'
-              : 'Expiry or an earning pause keeps cards visible and valid earned rewards redeemable.'}
-          </p>
-          <p>
-            {ar ? 'موعد انتهاء التغطية: ' : 'Coverage ends: '}
-            {data.expiresAt
-              ? new Intl.DateTimeFormat(ar ? 'ar-EG' : 'en', {
-                  year: 'numeric',
-                  month: 'short',
-                  day: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit',
-                  timeZone: data.timeZone,
-                }).format(new Date(data.expiresAt))
-              : '—'}
+              ? 'إيقاف جمع الأختام بيفضل يعرض الكروت، والمكافآت المكتسبة بتفضل تتصرف عادي.'
+              : 'Pausing stamp earning keeps cards visible and earned rewards redeemable.'}
           </p>
           {!readOnly && (
             <button
@@ -291,8 +269,8 @@ export function Subscriptions({
                     ? 'موقوف يدويًا'
                     : 'Manually paused'
                   : ar
-                    ? 'مسموح مع اشتراك ساري'
-                    : 'Allowed with active coverage'}
+                    ? 'مسموح'
+                    : 'Allowed'}
               </span>
             </button>
           )}
@@ -305,8 +283,8 @@ export function Subscriptions({
           <h3>{ar ? 'تسجيل دفع يدوي' : 'Record a manual payment'}</h3>
           <p className="muted">
             {ar
-              ? 'اكتب المبلغ اللي اتفقتم عليه واتحصل فعلًا. أسعار الديمو مش أسعار بيع معتمدة.'
-              : 'Record the agreed amount actually received. Demo prices are not approved selling prices.'}
+              ? 'اكتب المبلغ اللي اتحصل فعلًا. تسجيل الدفعة بيمدّ ميعاد التجديد وبيشيل التأخير لو موجود.'
+              : 'Record the amount actually received. It moves the renewal date and clears any past-due state.'}
           </p>
           <div className="form-grid">
             <label>
@@ -328,7 +306,7 @@ export function Subscriptions({
                 disabled={busy || !!attempt}
                 onChange={(e) => setMethod(e.target.value as typeof method)}
               >
-                {['instapay', 'cash', 'bank_transfer', 'vodafone_cash'].map((v) => (
+                {paymentMethods.map((v) => (
                   <option key={v} value={v}>
                     {methodName(v)}
                   </option>

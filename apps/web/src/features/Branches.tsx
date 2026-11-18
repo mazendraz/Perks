@@ -2,6 +2,7 @@ import { Select } from '../controls/Select.js';
 import { statusLabel } from '../business-labels.js';
 import { useEffect, useState, type FormEvent } from 'react';
 import type { Grant, Language } from '../../../../packages/contracts/src/index.js';
+import { LockedBadge } from './LockedBadge.js';
 import { api, errorText } from '../api.js';
 interface Branch {
   id: string;
@@ -9,8 +10,17 @@ interface Branch {
   address: string;
   status: string;
   revision: number;
+  locked_at?: string | null;
 }
-export function Branches({ grant, lang }: { grant: Grant; lang: Language }) {
+export function Branches({
+  grant,
+  lang,
+  onOpenPlan,
+}: {
+  grant: Grant;
+  lang: Language;
+  onOpenPlan?: () => void;
+}) {
   const ar = lang === 'ar',
     base = '/merchants/' + grant.merchant_id,
     [rows, setRows] = useState<Branch[]>([]),
@@ -74,8 +84,19 @@ export function Branches({ grant, lang }: { grant: Grant; lang: Language }) {
           <div>
             <strong>{b.name}</strong>
             <small>{b.address}</small>
+            {b.locked_at && (
+              <LockedBadge
+                lang={lang}
+                part="reason"
+                onOpenPlan={grant.role === 'owner' ? onOpenPlan : undefined}
+              />
+            )}
           </div>
-          <span className="badge">{statusLabel(b.status, lang)}</span>
+          {b.locked_at ? (
+            <LockedBadge lang={lang} part="pill" />
+          ) : (
+            <span className="badge">{statusLabel(b.status, lang)}</span>
+          )}
           {grant.role === 'owner' && (
             <button
               className="text-button"

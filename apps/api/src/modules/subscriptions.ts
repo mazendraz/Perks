@@ -95,7 +95,7 @@ export function subscriptionsModule(app: FastifyInstance, pools: Pools) {
             const paid = (
               await db.query(
                 `INSERT INTO subscription_payments(merchant_id,amount_minor,method,period_start,period_end,starts_at,ends_at,payment_reference,reason,recorded_by,operation_id)
-        VALUES($1,$2,$3,$4::date,$5::date,$4::date::timestamp AT TIME ZONE $6,($5::date+1)::timestamp AT TIME ZONE $6,$7,$8,$9,$10) RETURNING id,ends_at`,
+        VALUES($1,$2,$3,$4::date,$5::date,$4::date::timestamp AT TIME ZONE $6,($5::date+1)::timestamp AT TIME ZONE $6,$7,$8,$9,$10) RETURNING id,starts_at,ends_at`,
                 [
                   m,
                   p.amountMinor,
@@ -114,6 +114,44 @@ export function subscriptionsModule(app: FastifyInstance, pools: Pools) {
               'UPDATE feature_entitlements SET billing_required=true,earning_paused=CASE WHEN $2 THEN false ELSE earning_paused END,expires_at=greatest(expires_at,$3),revision=revision+1 WHERE merchant_id=$1',
               [m, p.resumeEarning, paid.ends_at],
             );
+            // A recorded payment moves the billing date forward and clears past due / grace.
+            const sub = (
+              await db.query(
+                'SELECT status,current_period_end FROM merchant_subscriptions WHERE merchant_id=$1 FOR UPDATE',
+                [m],
+              )
+            ).rows[0];
+            if (sub) {
+              const after = (
+                await db.query(
+                  `UPDATE merchant_subscriptions SET
+                    status=CASE WHEN status IN ('past_due','grace','trialing') THEN 'active' ELSE status END,
+                    past_due_since=CASE WHEN status IN ('past_due','grace','trialing') THEN NULL ELSE past_due_since END,
+                    current_period_start=CASE WHEN current_period_end IS NULL OR $2>current_period_end THEN $3 ELSE current_period_start END,
+                    current_period_end=greatest(coalesce(current_period_end,$2),$2),
+                    revision=revision+1,updated_at=clock_timestamp()
+                   WHERE merchant_id=$1 RETURNING status,current_period_end`,
+                  [m, paid.ends_at, paid.starts_at],
+                )
+              ).rows[0];
+              await db.query(
+                'INSERT INTO subscription_events(merchant_id,actor_id,event_type,before,after,reason) VALUES($1,$2,$3,$4,$5,$6)',
+                [
+                  m,
+                  actor.id,
+                  'subscription.payment_recorded',
+                  JSON.stringify({ status: sub.status, currentPeriodEnd: sub.current_period_end }),
+                  JSON.stringify({
+                    status: after.status,
+                    currentPeriodEnd: after.current_period_end,
+                    paymentId: paid.id,
+                    amountMinor: p.amountMinor,
+                    method: p.method,
+                  }),
+                  p.reason,
+                ],
+              );
+            }
             await audit(db, actor, 'subscription.payment.recorded', m, paid.id, {
               amountMinor: p.amountMinor,
               currency: 'EGP',
@@ -198,6 +236,26 @@ export function subscriptionsModule(app: FastifyInstance, pools: Pools) {
               `UPDATE feature_entitlements SET expires_at=(SELECT max(ends_at) FROM subscription_payments p WHERE p.merchant_id=$1 AND NOT EXISTS(SELECT 1 FROM subscription_payment_voids v WHERE v.payment_id=p.id)),revision=revision+1 WHERE merchant_id=$1`,
               [m],
             );
+            // The billing date falls back to the latest payment still standing.
+            const voided = (
+              await db.query(
+                `UPDATE merchant_subscriptions s SET current_period_end=(SELECT max(p.ends_at) FROM subscription_payments p WHERE p.merchant_id=$1
+                  AND NOT EXISTS(SELECT 1 FROM subscription_payment_voids v WHERE v.payment_id=p.id)),revision=revision+1,updated_at=clock_timestamp()
+                 WHERE s.merchant_id=$1 RETURNING current_period_end`,
+                [m],
+              )
+            ).rows[0];
+            if (voided)
+              await db.query(
+                'INSERT INTO subscription_events(merchant_id,actor_id,event_type,after,reason) VALUES($1,$2,$3,$4,$5)',
+                [
+                  m,
+                  actor.id,
+                  'subscription.payment_voided',
+                  JSON.stringify({ paymentId: id, currentPeriodEnd: voided.current_period_end }),
+                  p.reason,
+                ],
+              );
             await audit(db, actor, 'subscription.payment.voided', m, id, { reason: p.reason });
             return { subscription: await state(db, m) };
           },

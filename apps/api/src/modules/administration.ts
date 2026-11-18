@@ -1,4 +1,5 @@
 import type { FastifyInstance } from 'fastify';
+import { assertCan } from '../entitlements.js';
 import { z } from 'zod';
 import { authenticated } from '../auth.js';
 import { audit, transaction, type Pools } from '../db.js';
@@ -76,6 +77,12 @@ export function administrationModule(app: FastifyInstance, pools: Pools) {
       async (db) => {
         await merchantGrant(db, actor, m, ['owner']);
         await db.query('SELECT id FROM merchants WHERE id=$1 FOR UPDATE', [m]);
+        const current = (
+          await db.query('SELECT status FROM branches WHERE merchant_id=$1 AND id=$2', [m, id])
+        ).rows[0];
+        // Re-opening a disabled branch takes a branch slot of the plan again.
+        if (current && current.status !== 'active' && p.status === 'active')
+          await assertCan(db, m, 'max_branches');
         if (p.status === 'disabled')
           requireCondition(
             Number(
@@ -91,7 +98,8 @@ export function administrationModule(app: FastifyInstance, pools: Pools) {
           );
         const b = (
           await db.query(
-            'UPDATE branches SET name=$1,address=$2,status=$3,revision=revision+1 WHERE merchant_id=$4 AND id=$5 AND revision=$6 RETURNING *',
+            // An owner's own change clears any plan lock on the branch.
+            'UPDATE branches SET name=$1,address=$2,status=$3,locked_at=NULL,revision=revision+1 WHERE merchant_id=$4 AND id=$5 AND revision=$6 RETURNING *',
             [p.name, p.address, p.status, m, id, revision],
           )
         ).rows[0];

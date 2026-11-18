@@ -33,6 +33,7 @@ export function Icon({ name, size = 20 }: { name: string; size?: number }) {
     support: 'M4 13v-1a8 8 0 0 1 16 0v1M4 12H3v6h4v-6ZM20 12h1v6h-4v-6ZM20 18v1a2 2 0 0 1-2 2h-4',
     save: 'M5 3h12l4 4v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2ZM7 3v6h9V3M7 21v-7h10v7',
     shield: 'm12 3 8 3v6c0 4-4 7-8 9-4-2-8-5-8-9V6zM8 12l3 3 5-6',
+    lock: 'M5 11h14v10H5zM8 11V7a4 4 0 0 1 8 0v4m-4 4v2',
     arrow: 'M5 12h14m-6-6 6 6-6 6',
     spark: 'm12 2 3 7 7 3-7 3-3 7-3-7-7-3 7-3z',
     gift: 'M3 9h18v4H3zM5 13v8h14v-8M12 9v12M12 9H8a3 3 0 1 1 3-3l1 3Zm0 0h4a3 3 0 1 0-3-3l-1 3Z',

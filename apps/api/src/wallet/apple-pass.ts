@@ -13,6 +13,7 @@ import { posterArtworkSvg, stripSvg, type ArtworkLogo } from './pass-artwork.js'
 import { mix, walletTheme } from '../../../../packages/domain/src/wallet-theme.js';
 import { categoryEditions, templateCategory } from '../../../../packages/contracts/src/branding.js';
 import { walletReminderText } from '../../../../packages/contracts/src/customer-reminders.js';
+import { fillWalletMessage } from '../../../../packages/contracts/src/owner-plan.js';
 export { inkFor, stripSvg } from './pass-artwork.js';
 import { APPLE_SERVICE_PREFIX } from './constants.js';
 import { perksIconSvg } from '../../../../packages/domain/src/brand.js';
@@ -45,6 +46,8 @@ export interface WalletCard {
     wallet: { ar: string; en: string };
     walletReady?: { ar: string; en: string } | null;
   } | null;
+  /** A message the shop sent by hand, while it is being delivered to this card. */
+  manual_message?: { id: string; ar: string; en: string } | null;
 }
 export interface AppleWalletSigner {
   passTypeIdentifier: string;
@@ -109,13 +112,30 @@ const escapeXml = (s: string) => s.replace(/[<>&"']/g, (ch) => '&#' + ch.charCod
 const arStamps = (n: number) =>
   n === 1 ? 'ختم واحد' : n === 2 ? 'ختمين' : n <= 10 ? `${n} أختام` : `${n} ختم`;
 // The reminder is written for this customer: stamps left, or the reward waiting for them.
+// A manual message from the shop takes the same place on the back of the pass; the newer one
+// of the two is the only one in the card (wallet_card_json picks it).
 const reminderTexts = (card: WalletCard) =>
-  card.active && card.reminder_templates
-    ? {
-        ar: walletReminderText(card.reminder_templates, card, 'ar'),
-        en: walletReminderText(card.reminder_templates, card, 'en'),
-      }
-    : null;
+  !card.active
+    ? null
+    : card.manual_message
+      ? {
+          ar: fillWalletMessage(
+            card.manual_message.ar,
+            card.customer_name ?? '',
+            card.merchant_name,
+          ),
+          en: fillWalletMessage(
+            card.manual_message.en,
+            card.customer_name ?? '',
+            card.merchant_name,
+          ),
+        }
+      : card.reminder_templates
+        ? {
+            ar: walletReminderText(card.reminder_templates, card, 'ar'),
+            en: walletReminderText(card.reminder_templates, card, 'en'),
+          }
+        : null;
 const reminderKey = (card: WalletCard) =>
   reminderTexts(card)
     ? 'reminder_' +

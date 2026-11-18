@@ -498,6 +498,10 @@ test('every SECURITY DEFINER function that trusts customer ownership also checks
     'resolve_device_notice',
     'customer_pairing_queue',
     'decide_customer_pairing',
+    // Staff-side role checks (owner/active staff of a merchant), like tenant_access above.
+    'acting_staff',
+    'is_active_owner',
+    'merchant_owner',
   ]);
   const rows = (
     await db.query(

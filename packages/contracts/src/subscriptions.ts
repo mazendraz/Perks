@@ -2,7 +2,7 @@ import { z } from 'zod';
 export const subscriptionPaymentInput = z
   .object({
     amountMinor: z.number().int().min(1).max(1000000000),
-    method: z.enum(['instapay', 'cash', 'bank_transfer', 'vodafone_cash']),
+    method: z.enum(['instapay', 'cash', 'bank_transfer', 'vodafone_cash', 'wallet', 'card_link']),
     periodStart: z.iso.date(),
     periodEnd: z.iso.date(),
     reference: z.string().trim().max(100).default(''),

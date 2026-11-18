@@ -14,6 +14,7 @@ export interface StaffGrant {
   role: 'owner' | 'manager' | 'cashier';
   max_qty: number;
   status: string;
+  locked_at?: Date | null;
 }
 export async function merchantGrant(
   db: DB,
@@ -24,12 +25,14 @@ export async function merchantGrant(
   write = false,
 ): Promise<StaffGrant> {
   const r = await db.query<StaffGrant>(
-    'SELECT id,role,max_qty,status FROM staff_memberships WHERE merchant_id=$1 AND user_id=$2' +
+    'SELECT id,role,max_qty,status,locked_at FROM staff_memberships WHERE merchant_id=$1 AND user_id=$2' +
       (actor.preview ? '' : ' FOR SHARE'),
     [merchantId, actor.id],
   );
   const s = r.rows[0];
   requireCondition(s, 'NOT_FOUND', 404);
+  // Locked by the shop's plan (not by the owner): say so, without any plan details.
+  requireCondition(s.status === 'active' || !s.locked_at, 'STAFF_LOCKED', 403);
   requireCondition(s.status === 'active', 'STAFF_DISABLED', 403);
   requireCondition(roles.includes(s.role), 'FORBIDDEN', 403);
   if (branchId) {
@@ -37,6 +40,13 @@ export async function merchantGrant(
       'SELECT b.id FROM branches b JOIN staff_branch_grants g ON g.branch_id=b.id AND g.merchant_id=b.merchant_id WHERE b.merchant_id=$1 AND b.id=$2 AND g.staff_id=$3 AND b.status=$4',
       [merchantId, branchId, s.id, 'active'],
     );
+    if (!b.rowCount) {
+      const locked = await db.query(
+        'SELECT 1 FROM branches WHERE merchant_id=$1 AND id=$2 AND locked_at IS NOT NULL',
+        [merchantId, branchId],
+      );
+      requireCondition(!locked.rowCount, 'BRANCH_LOCKED', 409);
+    }
     requireCondition(b.rowCount, 'BRANCH_UNAUTHORIZED', 403);
   }
   if (write) {

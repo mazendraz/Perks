@@ -9,6 +9,10 @@ async function main() {
   if (existsSync(assets)) {
     await app.register(fastifyStatic, { root: assets });
     app.setNotFoundHandler((req, reply) => {
+      const path = req.url.split('?')[0];
+      // The shop-owner landing page is a separate HTML entry; "/" stays the customers' app.
+      if (path === '/business' || path === '/business/')
+        return reply.header('Cache-Control', 'no-cache').sendFile('business/index.html');
       if (
         req.url.startsWith('/api/') ||
         req.url.startsWith('/health/') ||

@@ -1,0 +1,303 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <meta name="theme-color" content="#181B38" />
+    <title>Perks — كارت الولاء بتاع محلك على موبايل الزبون</title>
+    <meta
+      name="description"
+      content="كارت ولاء ديجيتال للكافيهات والمحلات جوه Apple Wallet وGoogle Wallet. الزبون يعمل سكان، ياخد ختم، ويرجعلك تاني."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="ar_EG" />
+    <meta property="og:title" content="Perks — زبونك ييجي مرة… خلّيه يرجعلك تاني" />
+    <meta
+      property="og:description"
+      content="كارت ولاء ديجيتال لمحلك جوه Apple Wallet وGoogle Wallet، من غير أبلكيشن ومن غير كروت ورق."
+    />
+    <meta property="og:image" content="/icons/perks-512.png" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/icons/perks-180.png" />
+    <link rel="preload" href="/business/mascot.png" as="image" />
+    <!-- A real stylesheet, so the page never paints unstyled while the script loads. -->
+    <link rel="stylesheet" href="/business/business.css" />
+  </head>
+  <body class="biz">
+    <!-- Loading screen: covers the page until it is ready, and never stays more than a few seconds. -->
+    <div class="boot" aria-hidden="true">
+      <img src="/brand/perks-logo-dark.svg" alt="" width="160" height="60" />
+      <span class="boot-dots"><i></i><i></i><i></i></span>
+    </div>
+    <a class="skip" href="#main">تخطّى للمحتوى</a>
+    <header class="topbar">
+      <div class="wrap topbar-row">
+        <a href="/business/" class="brand" aria-label="Perks — الصفحة الرئيسية">
+          <img src="/brand/perks-logo-wordmark.svg" alt="Perks" width="115" height="40" />
+        </a>
+        <nav class="topnav" aria-label="روابط الصفحة">
+          <a href="#how">بيشتغل إزاي</a>
+          <a href="#cards">شكل الكارت</a>
+          <a href="#plans">الباقات</a>
+          <a href="#faq">أسئلة</a>
+        </nav>
+        <div class="topbar-actions">
+          <button type="button" class="btn ghost sm" data-sound-toggle aria-pressed="true" hidden>
+            <svg class="ico" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 9v6h4l5 4V5L8 9z"></path>
+              <path data-sound-wave d="M16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"></path>
+              <path data-sound-mute hidden d="M17 9l5 6M22 9l-5 6"></path>
+            </svg>
+            <span data-sound-label>اقفل الصوت</span>
+          </button>
+          <a class="btn navy sm" data-wa="general" href="https://wa.me/201006111380" target="_blank" rel="noopener noreferrer">كلّمنا على واتساب</a>
+        </div>
+      </div>
+    </header>
+
+    <main id="main">
+      <section class="hero" data-stop="0" aria-labelledby="hero-title">
+        <div class="blob blob-hero" aria-hidden="true"></div>
+        <div class="wrap row row-hero">
+          <div class="col-main">
+            <p class="pill">كارت ولاء ديجيتال للكافيهات والمحلات</p>
+            <h1 id="hero-title">زبونك ييجي مرة…<br /><span class="hl">خلّيه يرجعلك تاني</span></h1>
+            <p class="lead">
+              Perks بيحط كارت الولاء بتاع محلك على موبايل الزبون، جوه Apple Wallet وGoogle Wallet. يعمل سكان، ياخد ختم، يكمّل الكارت، وياخد هديته.
+            </p>
+            <div class="actions">
+              <a class="btn lime" href="#how">ورّيني إزاي</a>
+              <a class="btn ghost" data-wa="general" href="https://wa.me/201006111380" target="_blank" rel="noopener noreferrer">ابعتلنا رسالة</a>
+            </div>
+            <ul class="ticks">
+              <li>من غير أبلكيشن ينزّله</li>
+              <li>من غير كروت ورق بتضيع</li>
+              <li>شغال على آيفون وأندرويد</li>
+            </ul>
+          </div>
+          <div class="guide" data-guide="0">
+            <p class="bubble"><span class="sr-only" data-full></span><span data-typed aria-hidden="true">لو عندك كافيه أو محل… ركّز معايا دقيقة.</span></p>
+            <button type="button" class="mascot mascot-lg" data-mascot data-row="0" aria-label="شخصية Perks بتسلّم عليك. دوس عشان يعيد الكلام"></button>
+            <button type="button" class="btn lime sm" data-hero-sound hidden>دوس هنا عشان تسمعني</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="band navy-band" data-stop="1" aria-labelledby="problem-title">
+        <div class="wrap row">
+          <div class="guide" data-guide="1">
+            <p class="bubble"><span class="sr-only" data-full></span><span data-typed aria-hidden="true">الزبون بييجي مرة، وبعدين يروح لغيرك. مش عشان مش عاجبه… عشان مفيش حاجة تفكّره بيك.</span></p>
+            <button type="button" class="mascot" data-mascot data-row="2" aria-label="شخصية Perks محتارة. دوس عشان يعيد الكلام"></button>
+            <span class="tap" aria-hidden="true">دوس عليّ وأنا أعيد</span>
+          </div>
+          <div class="col-main">
+            <h2 id="problem-title">الكارت الورق بيضيع…<br /><span class="lime-text">والزبون بينسى</span></h2>
+            <div class="grid-3">
+              <article class="pain">
+                <img class="px" src="/business/paper.png" alt="" width="80" height="60" />
+                <p>الكارت الورق بيتنسي في البيت، أو بيتغسل في الهدوم.</p>
+              </article>
+              <article class="pain">
+                <img class="px" src="/business/shop.png" alt="" width="80" height="77" />
+                <p>الزبون مش فاكر فاضله كام ختم، فمش فارق معاه يرجع.</p>
+              </article>
+              <article class="pain">
+                <img class="px" src="/business/chat.png" alt="" width="80" height="60" />
+                <p>وانت مش عارف مين زبونك الدايم، ومين جه مرة واختفى.</p>
+              </article>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="how" class="band" data-stop="2" aria-labelledby="how-title">
+        <div class="blob blob-how" aria-hidden="true"></div>
+        <div class="wrap">
+          <p class="kicker">الجولة · المحطة 1</p>
+          <h2 id="how-title">3 خطوات، والزبون <span class="hl">مش محتاج يتعلم حاجة</span></h2>
+          <ol class="steps">
+            <li><span class="num">1</span><div><strong>يعمل سكان</strong><p>للكود اللي عند الكاشير، أو يقرّب موبايله من ستيكر NFC.</p></div></li>
+            <li><span class="num">2</span><div><strong>الكاشير يوافق</strong><p>دوسة واحدة، والختم ينزل على كارت الزبون قدامه.</p></div></li>
+            <li><span class="num">3</span><div><strong>يكمّل وياخد هديته</strong><p>ولما يغيب، الكارت نفسه يفكّره إن فاضله ختمتين.</p></div></li>
+          </ol>
+          <div class="row">
+            <div class="guide" data-guide="2">
+              <p class="bubble"><span class="sr-only" data-full></span><span data-typed aria-hidden="true">جرّب بنفسك. دوس الزرار كأنك زبون.</span></p>
+              <button type="button" class="mascot" data-mascot data-row="3" aria-label="شخصية Perks بتشاور على الكارت. دوس عشان يعيد الكلام"></button>
+              <span class="tap" aria-hidden="true">دوس عليّ وأنا أعيد</span>
+            </div>
+            <div class="col-main center">
+              <div class="phone">
+                <div class="phone-screen">
+                  <div class="phone-head"><span>كارتك في قهوة ركن</span><span class="latin">Perks</span></div>
+                  <div class="demo-card" aria-label="كارت تجريبي فيه 6 أختام">
+                    <div class="demo-card-top"><strong>قهوة ركن</strong><span>كافيه</span></div>
+                    <div class="stamps" data-stamps>
+                      <span class="stamp on"></span><span class="stamp on"></span><span class="stamp"></span><span class="stamp"></span><span class="stamp"></span><span class="stamp"></span>
+                    </div>
+                    <div class="demo-card-foot"><span data-stamp-line>فاضلك 4 على قهوة مجانية</span><span class="latin" data-stamp-count>2/6</span></div>
+                  </div>
+                  <div class="gift" data-gift hidden>
+                    <img class="px" src="/business/gift.png" alt="" width="52" height="59" />
+                    <div><strong>مبروك! قهوتك الجاية علينا</strong><p>وريّ الكارت للكاشير وخد هديتك.</p></div>
+                  </div>
+                  <p class="pending" data-pending role="status" hidden>مستني الكاشير يوافق…</p>
+                  <button type="button" class="btn lime wide" data-scan hidden>اعمل سكان واطلب ختم</button>
+                  <button type="button" class="btn ghost wide" data-reset hidden>ابدأ كارت جديد</button>
+                  <p class="note">ده ديمو. في المحل الحقيقي الكاشير هو اللي بيوافق من موبايله.</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="cards" class="band white-band" data-stop="3" aria-labelledby="cards-title">
+        <div class="wrap row row-cards">
+          <div class="col-main">
+            <p class="kicker">الجولة · المحطة 2</p>
+            <h2 id="cards-title">كارت شكله <span class="hl">شكل محلك</span></h2>
+            <p class="lead">لوجو محلك وألوانه، بمقاس كارت البنك، جوه Apple Wallet وGoogle Wallet. ومحدش من جيرانك هياخد نفس الكارت.</p>
+            <div class="chips" role="group" aria-label="نوع المحل" data-themes hidden></div>
+            <ul class="ticks">
+              <li>يتحفظ في الـ Wallet بدوسة</li>
+              <li>يتحدّث لوحده بعد كل ختم</li>
+              <li>ينفع يتفتح من لينك كمان</li>
+            </ul>
+          </div>
+          <div class="cards-side">
+            <div class="guide" data-guide="3">
+              <p class="bubble"><span class="sr-only" data-full></span><span data-typed aria-hidden="true">اختار نوع محلك… وشوف الكارت.</span></p>
+              <button type="button" class="mascot mascot-sm" data-mascot data-row="7" aria-label="شخصية Perks لابسة نضارة شمس. دوس عشان يعيد الكلام"></button>
+            </div>
+            <div class="theme-card" data-theme-card>
+              <div class="theme-card-top">
+                <div><strong data-theme-name>قهوة ركن</strong><span data-theme-type>كافيه</span></div>
+                <span class="theme-initial" data-theme-initial>ق</span>
+              </div>
+              <div class="theme-dots" data-theme-dots>
+                <span class="on"></span><span class="on"></span><span class="on"></span><span class="on"></span><span class="on"></span><span class="on"></span><span></span><span></span><span></span><span></span>
+              </div>
+              <div class="theme-card-foot"><span data-theme-reward>الكوباية العاشرة علينا</span><span class="latin">6/10</span></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="band" data-stop="4" aria-labelledby="owner-title">
+        <div class="blob blob-owner" aria-hidden="true"></div>
+        <div class="wrap row">
+          <div class="guide" data-guide="4">
+            <p class="bubble"><span class="sr-only" data-full></span><span data-typed aria-hidden="true">انت مشغول في محلك، وإحنا بنفكّر الزبون إن فاضله ختمتين.</span></p>
+            <button type="button" class="mascot" data-mascot data-row="5" aria-label="شخصية Perks رافعة صباعها. دوس عشان يعيد الكلام"></button>
+            <span class="tap" aria-hidden="true">دوس عليّ وأنا أعيد</span>
+          </div>
+          <div class="col-main">
+            <p class="kicker">الجولة · المحطة 3 · ليك انت</p>
+            <h2 id="owner-title">وانت قاعد… <span class="hl">Perks بيفكّر زبونك يرجع</span></h2>
+            <div class="grid-3">
+              <article class="feat">
+                <div class="mock"><span class="mock-avatar">ق</span><p><strong>قهوة ركن</strong><br />فاضلك ختمتين على قهوتك المجانية</p></div>
+                <p><strong>تذكير بيوصل على الموبايل</strong> لما الزبون يغيب. انت اللي بتحدد بعد كام يوم.</p>
+              </article>
+              <article class="feat">
+                <div class="mock mock-split"><p><strong>سارة طالبة ختم</strong><br />فرع التجمع · دلوقتي</p><span class="mock-approve">وافق</span></div>
+                <p><strong>كل ختم متسجّل</strong> باسم الكاشير والفرع والوقت. مفيش أختام بتتوزع على الصحاب.</p>
+              </article>
+              <article class="feat">
+                <div class="mock mock-center"><img class="px" src="/business/chart.png" alt="" width="84" height="68" /></div>
+                <p><strong>تعرف زباينك</strong>: مين الدايم، ومين بطّل ييجي، وأنهي فرع شغال أكتر.</p>
+              </article>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="plans" class="band navy-band" data-stop="5" aria-labelledby="plans-title">
+        <div class="wrap">
+          <div class="row row-plans">
+            <div class="col-main">
+              <p class="kicker lime-text">الجولة · المحطة 4 · الباقات</p>
+              <h2 id="plans-title">قولّي عندك كام فرع،<br /><span class="lime-text">وأنا أقولك تاخد إيه</span></h2>
+              <div class="pickers" data-pickers hidden>
+                <div class="picker">
+                  <span id="lb-br">عدد الفروع</span>
+                  <div class="stepper" role="group" aria-labelledby="lb-br">
+                    <button type="button" class="btn step" data-step="br" data-dir="-1" aria-label="فرع أقل">−</button>
+                    <output data-br aria-live="polite">2</output>
+                    <button type="button" class="btn step plus" data-step="br" data-dir="1" aria-label="فرع زيادة">+</button>
+                  </div>
+                </div>
+                <div class="picker">
+                  <span id="lb-st">عدد الموظفين والكاشير</span>
+                  <div class="stepper" role="group" aria-labelledby="lb-st">
+                    <button type="button" class="btn step" data-step="st" data-dir="-1" aria-label="موظف أقل">−</button>
+                    <output data-st aria-live="polite">4</output>
+                    <button type="button" class="btn step plus" data-step="st" data-dir="1" aria-label="موظف زيادة">+</button>
+                  </div>
+                </div>
+                <div class="picker">
+                  <span id="lb-bill">الدفع</span>
+                  <div class="seg" role="group" aria-labelledby="lb-bill">
+                    <button type="button" data-bill="monthly" aria-pressed="true">شهري</button>
+                    <button type="button" data-bill="annual" aria-pressed="false">سنوي · شهرين ببلاش</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="guide" data-guide="5">
+              <p class="bubble"><span class="sr-only" data-full></span><span data-typed aria-hidden="true">قولّي عندك كام فرع، وأنا أقولك تاخد إيه.</span></p>
+              <button type="button" class="mascot mascot-sm" data-mascot data-row="6" aria-label="شخصية Perks بتسألك. دوس عشان يعيد الكلام"></button>
+            </div>
+          </div>
+          <div class="plans" data-plans></div>
+          <noscript><p class="lead">كلّمنا على واتساب على 01006111380 ونبعتلك الأسعار وتفاصيل كل باقة.</p></noscript>
+          <div class="enterprise">
+            <div><strong>Enterprise · أكتر من 10 فروع؟</strong><p>سلسلة كبيرة أو اتفاق خاص؟ كلّمنا ونعملك باقة على مقاسك.</p></div>
+            <a class="btn lime" data-wa="enterprise" href="https://wa.me/201006111380" target="_blank" rel="noopener noreferrer">كلّمنا</a>
+          </div>
+          <div class="table-box" data-compare-box hidden>
+            <table>
+              <caption class="sr-only">مقارنة كل الباقات</caption>
+              <thead><tr><th scope="col">المقارنة الكاملة</th><th scope="col">Starter</th><th scope="col">Growth</th><th scope="col">Pro</th><th scope="col">Scale</th></tr></thead>
+              <tbody data-compare></tbody>
+            </table>
+          </div>
+          <p class="fine" data-fine>الأسعار بالجنيه المصري ومن غير ضريبة القيمة المضافة. رسوم تجهيز 500 جنيه للفرع في الاشتراك الشهري، ومجانًا في السنوي.</p>
+        </div>
+      </section>
+
+      <section id="faq" class="band" data-stop="6" aria-labelledby="faq-title">
+        <div class="wrap row row-faq">
+          <div class="col-main">
+            <h2 id="faq-title">أسئلة <span class="hl">بتتسأل كتير</span></h2>
+            <details><summary>الزبون لازم ينزّل أبلكيشن؟</summary><p>لأ. أول مرة بيكتب اسمه ورقمه بس، والكارت يتحفظ في Apple Wallet أو Google Wallet، أو يفتحه من لينك على موبايله.</p></details>
+            <details><summary>لو الزبون غيّر موبايله أو الكارت اتمسح؟</summary><p>انت أو الكاشير تبعتوله الكارت تاني على واتساب، وأختامه زي ما هي.</p></details>
+            <details><summary>إزاي أضمن إن الكاشير مش بيوزّع أختام على صحابه؟</summary><p>كل ختم بيتسجل باسم الكاشير والفرع والوقت، وانت شايف كله من الداشبورد. وتقدر تحدد ختم واحد في اليوم لكل زبون.</p></details>
+            <details><summary>لو محلي كبر وعديت حدود الباقة؟</summary><p>هتعرف قبلها. تقدر تضيف فرع أو موظف لوحده من غير ما تغيّر باقتك، أو تطلّع باقة أعلى وتشتغل على طول. وعمرنا ما هنمسح حاجة من بياناتك.</p></details>
+            <details><summary>بدفع إزاي؟</summary><p>InstaPay أو محفظة أو تحويل بنكي أو كاش. شهري أو سنوي، والسنوي بتدفع فيه 10 شهور وتاخد 12.</p></details>
+            <details><summary>لو حبيت ألغي؟</summary><p>الاشتراك بيكمل لآخر المدة اللي دفعتها، وتقدر تنزّل بيانات زباينك كلها في ملف CSV.</p></details>
+          </div>
+          <aside class="close-card">
+            <div class="guide" data-guide="6">
+              <p class="bubble"><span class="sr-only" data-full></span><span data-typed aria-hidden="true">ابعتلنا رسالة… ونجهّزلك كارت محلك.</span></p>
+              <button type="button" class="mascot mascot-sm" data-mascot data-row="9" aria-label="شخصية Perks رافعة صباعين. دوس عشان يعيد الكلام"></button>
+            </div>
+            <p>قولّنا اسم المحل ونوعه وعندك كام فرع، وهنجهّزلك تجربة 14 يوم.</p>
+            <a class="btn navy wide" data-wa="close" href="https://wa.me/201006111380" target="_blank" rel="noopener noreferrer">ابعتلنا على واتساب</a>
+            <span class="latin phone-no" dir="ltr">01006111380</span>
+          </aside>
+        </div>
+      </section>
+    </main>
+
+    <footer class="foot">
+      <div class="wrap foot-row">
+        <img src="/brand/perks-logo-dark.svg" alt="Perks — Loyalty Cards in Your Wallet" width="148" height="56" />
+        <nav aria-label="روابط قانونية"><a href="/privacy">الخصوصية</a> · <a href="/terms">الشروط</a></nav>
+        <span>© 2026 Perks</span>
+      </div>
+    </footer>
+    <script type="module" src="/src/business/main.ts"></script>
+  </body>
+</html>

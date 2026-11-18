@@ -4,6 +4,8 @@ export class AppError extends Error {
     public status = 400,
     public retryable = false,
     options?: ErrorOptions,
+    /** Safe, schema-checked extra fields sent to the client (e.g. plan limit options). */
+    public details?: Record<string, unknown>,
   ) {
     super(code, options);
   }

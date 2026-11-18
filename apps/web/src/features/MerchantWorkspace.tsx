@@ -15,6 +15,7 @@ import type { Language } from '../../../../packages/contracts/src/index.js';
 import { api, errorText } from '../api.js';
 import { Support } from './Support.js';
 import { EnrollmentCodes } from './EnrollmentCodes.js';
+import { PlanBilling } from './PlanBilling.js';
 import { Subscriptions } from './Subscriptions.js';
 interface Workspace {
   merchant: {
@@ -145,7 +146,10 @@ export function MerchantWorkspace({
         ))}
       </nav>
       {tab === 'subscription' && (
-        <Subscriptions key={merchantId} merchantId={merchantId} viewerId={viewerId} lang={lang} />
+        <>
+          <PlanBilling key={'plan-' + merchantId} merchantId={merchantId} lang={lang} />
+          <Subscriptions key={merchantId} merchantId={merchantId} viewerId={viewerId} lang={lang} />
+        </>
       )}
       {data && tab === 'overview' && (
         <>

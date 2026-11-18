@@ -41,6 +41,7 @@ const MerchantPage = lazy(() =>
 const OwnerView = lazy(() =>
   import('./features/OwnerView.js').then((m) => ({ default: m.OwnerView })),
 );
+const Billing = lazy(() => import('./features/Billing.js').then((m) => ({ default: m.Billing })));
 const PlatformTeam = lazy(() =>
   import('./features/PlatformTeam.js').then((m) => ({ default: m.PlatformTeam })),
 );
@@ -84,7 +85,10 @@ export function App() {
       setSession(s);
     } catch (e) {
       const signedOut = e instanceof ApiError && e.status === 401;
-      if (!signedOut) setNotice(errorText(e, lang));
+      // Offline is already shown by the connection banner; do not stack a second message.
+      const offline =
+        e instanceof ApiError && (e.code === 'NETWORK_UNCERTAIN' || e.code === 'REQUEST_TIMEOUT');
+      if (!signedOut && !offline) setNotice(errorText(e, lang));
       setSession(null);
       // A customer without a session may already have the anonymous bootstrap
       // CSRF token. A language refresh must not erase it before registration.
@@ -342,7 +346,14 @@ function Workspace({
       : []),
     { path: account, label: ar ? 'حسابي' : 'My account', icon: 'people' },
     ...(portal === 'platform' && session.user.role === 'platform_admin'
-      ? [{ path: '/platform/team', label: ar ? 'فريق الإدارة' : 'Platform team', icon: 'people' }]
+      ? [
+          {
+            path: '/platform/billing',
+            label: ar ? 'الاشتراكات والباقات' : 'Billing and plans',
+            icon: 'chart',
+          },
+          { path: '/platform/team', label: ar ? 'فريق الإدارة' : 'Platform team', icon: 'people' },
+        ]
       : []),
   ];
   let content: ReactNode = (
@@ -394,6 +405,8 @@ function Workspace({
   else if (portal === 'platform' && platformAccess) {
     if (route === '/platform/team' && session.user.role === 'platform_admin')
       content = <PlatformTeam lang={lang} />;
+    else if (route === '/platform/billing' && session.user.role === 'platform_admin')
+      content = <Billing lang={lang} />;
     else if (route === '/platform/operations' || session.user.role === 'platform_support')
       content = (
         <>

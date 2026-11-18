@@ -23,19 +23,49 @@ interface ReminderJob {
   objectKey: string | null;
   tokens: string[];
 }
-type Outcome = 'accepted' | 'retry' | 'failed' | 'skipped' | 'uncertain';
+export type Outcome = 'accepted' | 'retry' | 'failed' | 'skipped' | 'uncertain';
 let google: GoogleWallet | null | undefined;
 const plainHtml = (text: string) =>
   text.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;');
+
+export interface WalletNoticeJob {
+  id: string;
+  lease: string;
+  channel: 'apple' | 'google';
+  reconcileOnly: boolean;
+  card: WalletCard;
+  objectKey: string | null;
+  tokens: string[];
+}
+export type WalletProviders = {
+  apple?: (token: string) => Promise<number>;
+  google?: GoogleWallet;
+};
 
 // Exported to exercise both providers with injected transports, without sending real notifications.
 export async function deliverCustomerReminder(
   job: ReminderJob,
   pool: pg.Pool,
-  providers: { apple?: (token: string) => Promise<number>; google?: GoogleWallet },
+  providers: WalletProviders,
+): Promise<{ outcome: Outcome; error: string | null }> {
+  return deliverWalletNotice(job, pool, providers, 'reminder_dispatch_allowed', (lang) =>
+    walletReminderText(job.templates, job.card, lang),
+  );
+}
+
+/**
+ * One notice to one card. Apple: the pass already carries the text, APNs asks the phone to
+ * fetch it. Google: the text is added as a card message (reconciled by id, never sent twice).
+ */
+export async function deliverWalletNotice(
+  job: WalletNoticeJob,
+  pool: pg.Pool,
+  providers: WalletProviders,
+  allowedFunction: 'reminder_dispatch_allowed' | 'wallet_message_dispatch_allowed',
+  text: (lang: 'ar' | 'en') => string,
 ): Promise<{ outcome: Outcome; error: string | null }> {
   const allowed = async () =>
-    (await pool.query('SELECT reminder_dispatch_allowed($1,$2) AS allowed', [job.id, job.lease]))
+    (await pool.query('SELECT ' + allowedFunction + '($1,$2) AS allowed', [job.id, job.lease]))
       .rows[0].allowed;
   if (!(await allowed())) return { outcome: 'skipped', error: 'NO_LONGER_ELIGIBLE' };
   if (job.channel === 'apple') {
@@ -80,8 +110,7 @@ export async function deliverCustomerReminder(
   // Google message IDs are not idempotency keys. A lost response is reconciled by GET only.
   if (job.reconcileOnly) return { outcome: 'uncertain', error: 'GOOGLE_DELIVERY_UNCONFIRMED' };
   if (!(await allowed())) return { outcome: 'skipped', error: 'NO_LONGER_ELIGIBLE' };
-  const message = (lang: 'ar' | 'en') =>
-    plainHtml(walletReminderText(job.templates, job.card, lang));
+  const message = (lang: 'ar' | 'en') => plainHtml(text(lang));
   try {
     const response = await g.fetch(url + '/addMessage', {
       method: 'POST',

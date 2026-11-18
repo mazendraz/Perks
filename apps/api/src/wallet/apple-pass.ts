@@ -9,7 +9,7 @@ import type {
   StampIcon,
   StampShape,
 } from '../../../../packages/contracts/src/branding.js';
-import { posterArtworkSvg, stripSvg, type ArtworkLogo } from './pass-artwork.js';
+import { appleStripSvg, posterArtworkSvg, type ArtworkLogo } from './pass-artwork.js';
 import { mix, walletTheme } from '../../../../packages/domain/src/wallet-theme.js';
 import { categoryEditions, templateCategory } from '../../../../packages/contracts/src/branding.js';
 import { walletReminderText } from '../../../../packages/contracts/src/customer-reminders.js';
@@ -259,7 +259,8 @@ export function passJson(
     sharingProhibited: true,
     ...(card.active ? {} : { voided: true }),
     // iOS 27+: the whole card face is the shop's edition (artwork.png). Wallet picks this style
-    // when it knows it; older iPhones fall back to the storeCard below.
+    // when it knows it; iOS 26 and earlier fall back to the storeCard below, whose strip is the
+    // same card face in the strip shape (Apple has no way to show the poster before iOS 27).
     footerBackgroundColor: rgb(mix(theme.background, theme.ink, 0.08)),
     posterGeneric: {
       headerFields: [
@@ -507,9 +508,11 @@ export async function buildPkpass(
     ['icon.png', await png(appIcon, 29)],
     ['icon@2x.png', await png(appIcon, 58)],
     ['icon@3x.png', await png(appIcon, 87)],
-    ['strip.png', await png(stripSvg(card, 1, 144, false, art.watermark), 375, 144)],
-    ['strip@2x.png', await png(stripSvg(card, 2, 144, false, art.watermark), 750, 288)],
-    ['strip@3x.png', await png(stripSvg(card, 3, 144, false, art.watermark), 1125, 432)],
+    // iOS 26 and earlier cannot show the poster: their strip is the same card face (edition
+    // drawing, stamps, progress line), cut to the strip shape.
+    ['strip.png', await png(appleStripSvg(card, 1, false, art.watermark), 375, 144)],
+    ['strip@2x.png', await png(appleStripSvg(card, 2, false, art.watermark), 750, 288)],
+    ['strip@3x.png', await png(appleStripSvg(card, 3, false, art.watermark), 1125, 432)],
   ];
   // The logo slot Wallet gives a poster is only 30 points tall, so the logo is also drawn large
   // inside the artwork, where people actually see it.
@@ -542,7 +545,7 @@ export async function buildPkpass(
   for (const scale of [1, 2, 3])
     files.push([
       `ar.lproj/strip${scale > 1 ? '@' + scale + 'x' : ''}.png`,
-      await png(stripSvg(card, scale, 144, true, art.watermark), 375 * scale, 144 * scale),
+      await png(appleStripSvg(card, scale, true, art.watermark), 375 * scale, 144 * scale),
     ]);
   files.push(
     ['ar.lproj/pass.strings', stringsFile(t.ar)],

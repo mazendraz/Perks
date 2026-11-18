@@ -1,4 +1,9 @@
-import { logoMarkBox, type StampShape } from '../../../../packages/contracts/src/branding.js';
+import { createHash } from 'node:crypto';
+import {
+  cardTemplates,
+  logoMarkBox,
+  type StampShape,
+} from '../../../../packages/contracts/src/branding.js';
 import { stampGeometry, stampRandom } from '../../../../packages/domain/src/stamp-ink.js';
 import { stampIconPaths } from '../../../../packages/domain/src/stamp-glyphs.js';
 import type { WalletCard } from './apple-pass.js';
@@ -9,7 +14,8 @@ import {
   type WalletTheme,
 } from '../../../../packages/domain/src/wallet-theme.js';
 
-// Bump whenever the strip changes, so Google re-fetches it and Apple passes refresh.
+// Part of the design fingerprint (artworkSignature). Saved cards refresh by themselves whenever the
+// drawing code changes, so bumping this is only needed to force a resend with no visible change.
 export const WALLET_ARTWORK_VERSION = 'perks-card-9';
 export { inkFor, mix } from '../../../../packages/domain/src/wallet-theme.js';
 
@@ -324,6 +330,19 @@ export const GOOGLE_HERO: CardFace = {
   bottom: 384,
   padX: 40,
   maxStamp: 120,
+};
+/**
+ * Apple Wallet strip (375×144 points) for iPhones before iOS 27, which cannot show the poster.
+ * It is the same card face as the poster, cut to the strip shape: the same edition drawing,
+ * stamps and progress line, so older iPhones show the new design, not a plain stamp row.
+ */
+export const APPLE_STRIP: CardFace = {
+  width: 375,
+  height: 144,
+  top: 4,
+  bottom: 144,
+  padX: 30,
+  maxStamp: 60,
 };
 /** Where the shop logo sits on a poster that carries it, and where the stamps start below it. */
 const LOGO_BOX = { y: 80, height: 58, maxWidth: 190, stampsTop: 152 };
@@ -855,4 +874,58 @@ export function googleHeroSvg(
   watermark: ArtworkLogo | null = null,
 ) {
   return posterArtworkSvg(card, scale, rtl, { face: GOOGLE_HERO, watermark });
+}
+
+/** The storeCard strip for iOS 26 and earlier: the poster's card face in the strip shape. */
+export function appleStripSvg(
+  card: WalletCard,
+  scale: number,
+  rtl = false,
+  watermark: ArtworkLogo | null = null,
+) {
+  return posterArtworkSvg(card, scale, rtl, { face: APPLE_STRIP, watermark });
+}
+
+let artworkSignatureCache: string | null = null;
+/**
+ * A fingerprint of how the Wallet artwork is drawn today: every edition, in both reading
+ * directions, on the iOS 27 poster, the older-iPhone strip and the Google card. Any change to the
+ * drawing code changes it, with no version number to remember to bump. Cards already saved in
+ * Wallet are re-sent when it changes, and Google gets a new image address.
+ */
+export function artworkSignature() {
+  if (artworkSignatureCache) return artworkSignatureCache;
+  const hash = createHash('sha256').update(WALLET_ARTWORK_VERSION);
+  for (const template of cardTemplates)
+    for (const [threshold, balance] of [
+      [8, 3],
+      [12, 12],
+    ] as const) {
+      const card: WalletCard = {
+        id: '00000000-0000-4000-8000-00000000d351',
+        merchant_id: '00000000-0000-4000-8000-00000000d352',
+        merchant_name: 'Perks',
+        program_name: 'Perks',
+        threshold,
+        display_balance: balance,
+        pending_rewards: balance >= threshold ? 1 : 0,
+        primary_color: '#204E43',
+        accent_color: '#D4B56A',
+        template,
+        stamp_shape: 'seal',
+        stamp_icon: 'coffee',
+        stamp_style: 'solid',
+        reward_title: 'Perks',
+        reward_terms: '',
+        active: true,
+        earning_active: true,
+      };
+      for (const rtl of [false, true])
+        hash
+          .update(posterArtworkSvg(card, 1, rtl))
+          .update(appleStripSvg(card, 1, rtl))
+          .update(googleHeroSvg(card, 1, rtl))
+          .update(stripSvg(card, 1, 144, rtl));
+    }
+  return (artworkSignatureCache = hash.digest('hex').slice(0, 16));
 }

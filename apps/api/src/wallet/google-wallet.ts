@@ -2,7 +2,7 @@ import { createHash, createSign } from 'node:crypto';
 import sharp from 'sharp';
 import { readFileSync } from 'node:fs';
 import { texts, type WalletCard } from './apple-pass.js';
-import { WALLET_ARTWORK_VERSION } from './pass-artwork.js';
+import { artworkSignature } from './pass-artwork.js';
 import { walletTheme } from '../../../../packages/domain/src/wallet-theme.js';
 
 export const GOOGLE_STRIP_PREFIX = '/api/v1/public/wallet/google/strips';
@@ -36,12 +36,12 @@ export function loadGoogleWallet(
   };
 }
 
-// Changes whenever the strip art changes, so Google re-fetches the image.
+// Changes whenever the card face or its drawing code changes, so Google re-fetches the image.
 export const stripVersion = (card: WalletCard) =>
   createHash('sha1')
     .update(
       JSON.stringify([
-        WALLET_ARTWORK_VERSION,
+        artworkSignature(),
         card.threshold,
         card.display_balance,
         card.primary_color,

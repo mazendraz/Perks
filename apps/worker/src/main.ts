@@ -9,6 +9,7 @@ import { runAppleWalletPushes } from './apple-wallet-push.js';
 import { runGoogleWalletUpdates } from './google-wallet-updates.js';
 import { runCustomerReminders } from './customer-reminders.js';
 import { runWalletMessages } from './wallet-messages.js';
+import { syncWalletDesign } from './wallet-design-sync.js';
 import { createFileStore } from '../../api/src/storage/file-store.js';
 import { operationalLog } from '../../../packages/domain/src/operational-log.js';
 async function main() {
@@ -41,6 +42,8 @@ async function main() {
         ]);
         lastSweep = Date.now();
       }
+      // A new Wallet design reaches cards that are already saved, before their next update.
+      await syncWalletDesign(pool, c);
       await runCustomerReminders(pool, c);
       await runWalletMessages(pool, c);
       await runAppleWalletPushes(pool, c);

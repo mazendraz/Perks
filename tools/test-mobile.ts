@@ -528,7 +528,7 @@ try {
       }
       await route.continue();
     };
-    await page.route('**/api/v1/me/stamp-requests', interruptRequest);
+    await page.route('**/api/v1/me/stamp-collections', interruptRequest);
     await page.addInitScript(() => {
       (window as unknown as { placementClicks: number }).placementClicks = 0;
       document.addEventListener('click', () => {
@@ -570,7 +570,7 @@ try {
         0,
       );
     }
-    await page.unroute('**/api/v1/me/stamp-requests', interruptRequest);
+    await page.unroute('**/api/v1/me/stamp-collections', interruptRequest);
     assert.equal(lostRequest, true);
     assert.ok(autoKeys.length >= 4);
     assert.equal(autoKeys[0], autoKeys[1]);
@@ -613,14 +613,14 @@ try {
           value = await response.json();
         firstToken = value.token;
         await route.fulfill({
-          response,
+          status: response.status(),
           json: { ...value, expiresAt: new Date(Date.now() + 21000).toISOString() },
         });
       },
       { times: 1 },
     );
     await page.getByRole('button', { name: 'Show my code', exact: true }).click();
-    await page.locator('.qr-panel code').waitFor();
+    await page.locator('.qr-panel code').waitFor({ state: 'attached' });
     assert.notEqual(firstToken, '');
     await page.waitForFunction((old) => {
       const code = document.querySelector('.qr-panel code')?.textContent;
@@ -1007,9 +1007,10 @@ try {
       assert.equal(apiResponse.cache, 'no-store');
       const cdp = await customer.newCDPSession(page);
       await cdp.send('Page.enable');
+      // Test browsers run every context in incognito; that says nothing about the app itself.
       report.installabilityErrors = (
         await cdp.send('Page.getInstallabilityErrors')
-      ).installabilityErrors;
+      ).installabilityErrors.filter((e) => e.errorId !== 'in-incognito');
       assert.deepEqual(report.installabilityErrors, []);
       assert.equal(
         await page.locator('meta[name="mobile-web-app-capable"]').getAttribute('content'),
@@ -1095,7 +1096,7 @@ try {
     try {
       await db.query("UPDATE branches SET status='disabled' WHERE id=$1", [branch]);
       await page.goto(origin + '/p/' + placement.public_code + '?src=nfc');
-      await page.getByRole('alert').filter({ hasText: 'This shop code is unavailable.' }).waitFor();
+      await page.getByRole('alert').filter({ hasText: 'This code is not working now.' }).waitFor();
       assert.ok(
         !/[A-Z]{3,}_|[a-f0-9]{8}-[a-f0-9]{4}-/.test(await page.getByRole('alert').innerText()),
       );
@@ -1104,7 +1105,7 @@ try {
         placement.public_code,
       ]);
       await page.reload({ waitUntil: 'domcontentloaded' });
-      await page.getByRole('alert').filter({ hasText: 'This shop code was replaced.' }).waitFor();
+      await page.getByRole('alert').filter({ hasText: 'This code was replaced.' }).waitFor();
       assert.ok(
         !/[A-Z]{3,}_|[a-f0-9]{8}-[a-f0-9]{4}-/.test(await page.getByRole('alert').innerText()),
       );
@@ -1209,6 +1210,7 @@ try {
       .replace(/NQP:[a-f0-9]+/g, '[presentation]');
   console.error('HTTP error counts ' + JSON.stringify(errorStatusCounts));
   console.error(report.reason);
+  if (process.env.NUQTA_DEBUG_STACK) console.error((error as Error).stack);
   process.exitCode = 1;
 } finally {
   await Promise.allSettled(browsers.map((browser) => browser.close()));

@@ -22,7 +22,8 @@ export async function auditCustomerLoading(page: Page, project: string, director
     await page.locator('.card-open').first().waitFor({ timeout: 2500 });
     await page.screenshot({ path: directory + '/customer-independent-list-' + project + '.png' });
     await page.locator('.card-open').first().click();
-    await page.locator('.wallet-panel').waitFor({ timeout: 2500 });
+    // The open card itself (the wallet panel only shows when a wallet provider is set up).
+    await page.locator('.loyalty-card').first().waitFor({ timeout: 2500 });
     await page.screenshot({ path: directory + '/customer-independent-wallet-' + project + '.png' });
   } catch (error) {
     await page.screenshot({ path: directory + '/customer-missing-card-' + project + '.png' });

@@ -783,7 +783,7 @@ try {
   );
   const membership = new URL(up.url()).pathname.split('/').at(-1)!;
   await up.getByRole('button', { name: 'Show my code', exact: true }).click();
-  await up.locator('.qr-panel code').waitFor();
+  await up.locator('.qr-panel code').waitFor({ state: 'attached' });
   let token = (await up.locator('.qr-panel code').textContent())!;
   await up.getByRole('button', { name: 'Close code', exact: true }).click();
   assert.match(token, /^NQP:/);
@@ -1498,6 +1498,7 @@ try {
   await ap.getByRole('button', { name: 'Trace operation', exact: true }).click();
   await ap.getByLabel('Transaction or receipt reference', { exact: true }).fill(reference);
   await ap.getByRole('button', { name: 'Find operation', exact: true }).click();
+  await ap.getByText('Technical details', { exact: true }).click();
   await ap.locator('.operation-json').waitFor();
   assert.ok((await ap.locator('.operation-json').textContent())!.includes(reference));
   ok('Platform UI searches the committed redemption by reference');
@@ -1823,8 +1824,8 @@ try {
   );
   await ap.getByRole('button', { name: 'Save payment', exact: true }).click();
   await ap.getByRole('button', { name: 'Retry same change', exact: true }).waitFor();
+  // The open business stays in the address (?merchant=), so a reload returns straight to it.
   await reloadPage(ap);
-  await businessRow.getByRole('button', { name: 'Open workspace', exact: true }).click();
   await ap.getByRole('button', { name: 'Subscription', exact: true }).click();
   const replay = ap.waitForRequest(
     (request) => request.method() === 'POST' && request.url().endsWith('/subscription/payments'),

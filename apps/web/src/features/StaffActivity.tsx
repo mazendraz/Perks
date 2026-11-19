@@ -42,7 +42,7 @@ export function StaffActivity({ merchantId, lang }: { merchantId: string; lang: 
       <div className="section-heading">
         <h2>{ar ? 'شغل الفريق' : 'Team activity'}</h2>
         <label className="inline-select">
-          <span className="sr-only">{ar ? 'الفترة' : 'Period'}</span>
+          <span className="sr-only">{ar ? 'فترة شغل الفريق' : 'Team activity period'}</span>
           <Select value={String(days)} onChange={(e) => setDays(Number(e.target.value))}>
             <option value="1">{ar ? 'آخر 24 ساعة' : 'Last 24 hours'}</option>
             <option value="7">{ar ? 'آخر 7 أيام' : 'Last 7 days'}</option>

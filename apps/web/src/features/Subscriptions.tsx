@@ -11,6 +11,7 @@ import { api, ApiError, errorText } from '../api.js';
 import { DateField } from '../controls/DateField.js';
 import { methodLabel, paymentMethods } from './billing-labels.js';
 import { Select } from '../controls/Select.js';
+import { intlLocale } from '../locale.js';
 type Attempt = {
   kind: 'payment' | 'pause' | 'void';
   key: string;
@@ -405,7 +406,7 @@ export function Subscriptions({
                     <tr key={p.id}>
                       <td>
                         <bdi>
-                          {new Intl.NumberFormat(ar ? 'ar-EG' : 'en', {
+                          {new Intl.NumberFormat(intlLocale(ar ? 'ar' : 'en'), {
                             style: 'currency',
                             currency: 'EGP',
                           }).format(p.amount_minor / 100)}

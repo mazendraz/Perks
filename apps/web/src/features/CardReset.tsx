@@ -86,7 +86,7 @@ export function CardReset({
       )}
       {!open ? (
         <button
-          className="secondary small"
+          className="danger-outline small"
           onClick={() => {
             setKey(crypto.randomUUID());
             setOpen(true);

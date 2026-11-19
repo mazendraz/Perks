@@ -485,6 +485,48 @@ export async function posterLogo(source: Buffer, h: number, rtl: boolean) {
     .png()
     .toBuffer();
 }
+interface LogoAssets {
+  wordmark: boolean;
+  artwork: ArtworkLogo;
+  files: [string, Buffer][];
+}
+// The logo files depend only on the shop's logo, not on the card, so each logo is processed once
+// and reused for every pass of that shop. This was most of the work of building a pass.
+const LOGO_CACHE_SIZE = 300;
+const logoCache = new Map<string, Promise<LogoAssets>>();
+async function makeLogoAssets(source: Buffer): Promise<LogoAssets> {
+  const meta = await sharp(await trimmedLogo(source)).metadata();
+  const files: [string, Buffer][] = [];
+  for (const [name, h] of logoSizes) files.push([name, await walletLogo(source, h)]);
+  // The poster's logo slot is 30 points tall (up to 126 wide). Arabic puts it on the right.
+  for (const scale of [1, 2, 3]) {
+    const name = `primaryLogo${scale > 1 ? '@' + scale + 'x' : ''}.png`;
+    files.push(
+      [name, await posterLogo(source, 30 * scale, false)],
+      ['ar.lproj/' + name, await posterLogo(source, 30 * scale, true)],
+    );
+  }
+  return {
+    wordmark: (meta.width || 1) / (meta.height || 1) > WORDMARK_RATIO,
+    artwork: await artworkLogo(source),
+    files,
+  };
+}
+export function logoAssets(source: Buffer) {
+  const key = createHash('sha256').update(source).digest('hex');
+  let entry = logoCache.get(key);
+  if (entry) {
+    // Most recently used last, so the oldest logo is the one dropped.
+    logoCache.delete(key);
+    logoCache.set(key, entry);
+    return entry;
+  }
+  entry = makeLogoAssets(source);
+  entry.catch(() => logoCache.delete(key));
+  logoCache.set(key, entry);
+  if (logoCache.size > LOGO_CACHE_SIZE) logoCache.delete(logoCache.keys().next().value!);
+  return entry;
+}
 export async function buildPkpass(
   card: WalletCard,
   options: {
@@ -496,11 +538,11 @@ export async function buildPkpass(
   },
 ) {
   const appIcon = Buffer.from(perksIconSvg({ rounded: false, maskable: false }));
-  const logoMeta = options.logo ? await sharp(await trimmedLogo(options.logo)).metadata() : null,
-    wordmark = !!logoMeta && (logoMeta.width || 1) / (logoMeta.height || 1) > WORDMARK_RATIO;
+  const logo = options.logo ? await logoAssets(options.logo) : null,
+    wordmark = !!logo?.wordmark;
   // The logo, drawn inside the artwork: large at the top, or as the faint background of the
   // "Your logo" edition (then not repeated at the top).
-  const inArt = options.logo ? await artworkLogo(options.logo) : null,
+  const inArt = logo?.artwork ?? null,
     logoEdition = walletTheme(card).art.kind === 'logo',
     art = { logo: logoEdition ? null : inArt, watermark: logoEdition ? inArt : null };
   const files: [string, Buffer][] = [
@@ -529,17 +571,7 @@ export async function buildPkpass(
       ],
     );
   }
-  if (options.logo) {
-    for (const [name, h] of logoSizes) files.push([name, await walletLogo(options.logo, h)]);
-    // The poster's logo slot is 30 points tall (up to 126 wide). Arabic puts it on the right.
-    for (const scale of [1, 2, 3]) {
-      const name = `primaryLogo${scale > 1 ? '@' + scale + 'x' : ''}.png`;
-      files.push(
-        [name, await posterLogo(options.logo, 30 * scale, false)],
-        ['ar.lproj/' + name, await posterLogo(options.logo, 30 * scale, true)],
-      );
-    }
-  }
+  if (logo) files.push(...logo.files);
   const t = texts(card);
   // Arabic phones fill the stamps from the right, like the Arabic web card.
   for (const scale of [1, 2, 3])

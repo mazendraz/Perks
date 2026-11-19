@@ -59,7 +59,12 @@ test('platform readiness verifies restricted runtime schema; support can read sa
   assert.equal(status.statusCode, 200);
   assert.equal(
     status.json().providers.find((x: { id: string }) => x.id === 'payments').status,
-    'not_configured',
+    'manual_only',
+  );
+  // Statuses come from this server's configuration, not hard-coded values.
+  assert.equal(
+    status.json().providers.find((x: { id: string }) => x.id === 'apple_wallet').status,
+    c.APPLE_WALLET_ENABLED === 'true' ? 'configured' : 'not_configured',
   );
   assert.ok(!status.body.includes(c.AUTH_PEPPER));
   assert.equal(

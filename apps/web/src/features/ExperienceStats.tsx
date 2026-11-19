@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { Language } from '../../../../packages/contracts/src/index.js';
 import { api, errorText } from '../api.js';
+import { intlLocale } from '../locale.js';
 interface Stats {
   cardOpen: { samples: number; p95Ms: number | null };
   requests: {
@@ -50,7 +51,8 @@ export function ExperienceStats({
   const seconds = (ms: number | null) =>
     ms === null
       ? '—'
-      : (ms / 1000).toLocaleString(lang, { maximumFractionDigits: 1 }) + (ar ? ' ث' : ' s');
+      : (ms / 1000).toLocaleString(intlLocale(lang), { maximumFractionDigits: 1 }) +
+        (ar ? ' ث' : ' s');
   return (
     <section className="panel experience-stats">
       <h2>{ar ? 'رحلة العميل' : 'Customer experience'}</h2>
@@ -61,13 +63,20 @@ export function ExperienceStats({
       )}
       {stats ? (
         <>
+          {(stats.requests.closedWithoutApprovalRate ?? 0) >= 30 && (
+            <p className="notice warning" role="status">
+              {ar
+                ? `${stats.requests.closedWithoutApprovalRate}% من طلبات الأختام خلصت من غير ما الكاشير يوافق. اتأكد إن موبايل الكاشير مفتوح على صفحة الكاشير والصوت شغال.`
+                : `${stats.requests.closedWithoutApprovalRate}% of stamp requests ended without the cashier approving. Make sure the cashier keeps the cashier page open with sound on.`}
+            </p>
+          )}
           <dl className="experience-metrics">
             <div>
-              <dt>{ar ? 'من السكان للكارت · p95' : 'Scan to card · p95'}</dt>
+              <dt>{ar ? 'وقت فتح الكارت بعد المسح' : 'Time to open the card after a scan'}</dt>
               <dd>{seconds(stats.cardOpen.p95Ms)}</dd>
             </div>
             <div>
-              <dt>{ar ? 'من الطلب للاعتماد · p95' : 'Request to approval · p95'}</dt>
+              <dt>{ar ? 'وقت موافقة الكاشير' : 'Time for the cashier to approve'}</dt>
               <dd>{seconds(stats.requests.approval_p95_ms)}</dd>
             </div>
             <div>
@@ -75,14 +84,14 @@ export function ExperienceStats({
               <dd>
                 {stats.requests.closedWithoutApprovalRate === null
                   ? '—'
-                  : stats.requests.closedWithoutApprovalRate.toLocaleString(lang) + '%'}
+                  : stats.requests.closedWithoutApprovalRate.toLocaleString(intlLocale(lang)) + '%'}
               </dd>
             </div>
           </dl>
           <p className="muted">
             {ar
-              ? 'وقت فتح الكارت من قياس جهاز العميل، ووقت الاعتماد من السيرفر. الطلبات اللي لسه مفتوحة مش داخلة في نسبة الانتهاء.'
-              : 'Card opening is reported by the customer device; approval time comes from the server. Pending requests are excluded from the closed-request rate.'}
+              ? 'الأوقات دي لـ 95% من الحالات (أغلب العملاء خدوا وقت أقل). الطلبات اللي لسه مفتوحة مش داخلة في النسبة.'
+              : 'Times cover 95% of cases (most customers took less). Requests still open are not counted in the rate.'}
           </p>
           <small>
             {ar ? 'عينات فتح الكارت: ' : 'Card opening samples: '}

@@ -1,8 +1,10 @@
 import { useEffect, useRef } from 'react';
 import { ActionLabel } from '../../../../packages/ui/src/Icon.js';
 import type { Language } from '../../../../packages/contracts/src/index.js';
+import { intlLocale } from '../locale.js';
 export interface CustomerQr {
   token: string;
+  shortCode?: string;
   qrDataUrl: string;
   expiresAt: string;
 }
@@ -74,10 +76,19 @@ export function CustomerCode({
             : 'Show this code to the cashier. Your card appears when the stamp is saved.'}
         </p>
         <img src={qr.qrDataUrl} alt={ar ? 'QR العضوية للكاشير' : 'Membership QR for the cashier'} />
-        <code dir="ltr">{qr.token}</code>
+        {qr.shortCode && (
+          <p className="short-code">
+            <small>
+              {ar ? 'لو الكاميرا مش بتقرا، قول للكاشير:' : 'Camera not reading? Tell the cashier:'}
+            </small>
+            <strong dir="ltr" aria-label={qr.shortCode.split('').join(' ')}>
+              {qr.shortCode.slice(0, 3)} {qr.shortCode.slice(3)}
+            </strong>
+          </p>
+        )}
         <small>
           {ar ? 'صالح لحد ' : 'Valid until '}
-          {new Date(qr.expiresAt).toLocaleTimeString(lang, {
+          {new Date(qr.expiresAt).toLocaleTimeString(intlLocale(lang), {
             hour: '2-digit',
             minute: '2-digit',
             second: '2-digit',

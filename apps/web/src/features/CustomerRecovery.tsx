@@ -581,7 +581,7 @@ export function DeviceNotices({ lang }: { lang: Language }) {
           <strong>{ar ? 'اتضاف موبايل جديد لكارتك' : 'A new phone was added to your card'}</strong>
           <p>
             {ar
-              ? `${notice.merchantName} ربط جهاز (${notice.deviceFamily}) بكارتك في ${new Date(notice.createdAt).toLocaleString('ar-EG')}. لو مش إنت، شيله.`
+              ? `${notice.merchantName} ربط جهاز (${notice.deviceFamily}) بكارتك في ${new Date(notice.createdAt).toLocaleString('ar-EG-u-nu-latn')}. لو مش إنت، شيله.`
               : `${notice.merchantName} linked a device (${notice.deviceFamily}) to your card on ${new Date(notice.createdAt).toLocaleString('en-GB')}. If this wasn’t you, remove it.`}
           </p>
           {error && (

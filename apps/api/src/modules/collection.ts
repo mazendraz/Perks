@@ -81,8 +81,17 @@ export function collectionModule(
           )
         ).rows[0];
         requireCondition(settings, 'NOT_FOUND', 404);
+        // The programs' own per-purchase caps also apply; shown so the admin sees the real limit.
+        const programCap = (
+          await db.query(
+            `SELECT min(v.max_per_tx)::int AS cap FROM programs p JOIN program_versions v ON v.id=p.current_version_id
+             WHERE p.merchant_id=$1 AND p.status='active'`,
+            [m],
+          )
+        ).rows[0]?.cap as number | null;
         return {
           settings,
+          programMaxPerPurchase: programCap ?? null,
           branches: (
             await db.query(
               'SELECT id,name,address,status,latitude,longitude,geofence_radius_m AS "radius" FROM branches WHERE merchant_id=$1 ORDER BY name',

@@ -251,3 +251,50 @@ test('cancel versus approve has one final outcome and five wrong matching attemp
     final.status === 'approved' ? 2 : 1,
   );
 });
+
+test('the customer can read out a 6-digit code instead of the QR; wrong digits are capped', async () => {
+  const qr = await app.inject({
+    method: 'POST',
+    url: '/api/v1/me/memberships/' + ms + '/presentation-tokens',
+    headers: { ...cu, ...key() },
+    payload: {},
+  });
+  assert.equal(qr.statusCode, 200);
+  const short = qr.json().shortCode as string;
+  assert.match(short, /^\d{6}$/);
+  const resolved = await app.inject({
+    method: 'POST',
+    url: '/api/v1/cashier/scans/resolve',
+    headers: ca,
+    payload: {
+      merchantId: ids.merchantA,
+      branchId: ids.branchA,
+      token: short.slice(0, 3) + ' ' + short.slice(3),
+    },
+  });
+  assert.equal(resolved.statusCode, 200, resolved.body);
+  assert.equal(resolved.json().membership.id, ms);
+  // The same digits mean nothing at another shop.
+  const other = await app.inject({
+    method: 'POST',
+    url: '/api/v1/cashier/scans/resolve',
+    headers: foreign,
+    payload: { merchantId: ids.merchantB, branchId: ids.branchB, token: short },
+  });
+  assert.notEqual(other.statusCode, 200);
+  const wrong = String((Number(short) + 1) % 1_000_000).padStart(6, '0');
+  const statuses: number[] = [];
+  for (let i = 0; i < 9; i++)
+    statuses.push(
+      (
+        await app.inject({
+          method: 'POST',
+          url: '/api/v1/cashier/scans/resolve',
+          headers: ca,
+          payload: { merchantId: ids.merchantA, branchId: ids.branchA, token: wrong },
+        })
+      ).statusCode,
+    );
+  assert.equal(statuses[0], 410);
+  assert.equal(statuses.at(-1), 429);
+});

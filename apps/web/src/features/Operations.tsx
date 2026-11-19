@@ -1,8 +1,14 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import { statusLabel } from '../business-labels.js';
+import {
+  statusLabel,
+  integrationLabel,
+  integrationStatusLabel,
+  auditLabel,
+} from '../business-labels.js';
 import type { Language } from '../../../../packages/contracts/src/index.js';
 import { api, errorText } from '../api.js';
 import { Support } from './Support.js';
+import { intlLocale } from '../locale.js';
 interface Job {
   id: string;
   merchant_name: string;
@@ -181,7 +187,7 @@ export function Operations({ lang, admin }: { lang: Language; admin: boolean }) 
             ))}
           </div>
           <p className="muted">
-            {new Date(health.at).toLocaleString(lang)} ·
+            {new Date(health.at).toLocaleString(intlLocale(lang))} ·
             {ar ? 'عمر أقدم مهمة معلقة: ' : 'Oldest pending job: '}
             {Math.round(health.oldestPendingSeconds || 0)}s
           </p>
@@ -207,7 +213,8 @@ export function Operations({ lang, admin }: { lang: Language; admin: boolean }) 
           {jobs.map((j) => (
             <details className="subpanel" key={j.id}>
               <summary>
-                {j.merchant_name} · {j.kind} · {statusLabel(j.status, lang)} · {j.attempts}
+                {j.merchant_name} · {auditLabel(j.kind, lang)} · {statusLabel(j.status, lang)} ·{' '}
+                {j.attempts}
               </summary>
               <p>{j.last_error || '—'}</p>
               <small>
@@ -218,7 +225,7 @@ export function Operations({ lang, admin }: { lang: Language; admin: boolean }) 
                   <span>
                     {a.outcome} ·{a.error_code}
                   </span>
-                  <small>{new Date(a.started_at).toLocaleString(lang)}</small>
+                  <small>{new Date(a.started_at).toLocaleString(intlLocale(lang))}</small>
                 </div>
               ))}
               {admin && j.status === 'failed' && j.attempts < 5 && (
@@ -247,8 +254,10 @@ export function Operations({ lang, admin }: { lang: Language; admin: boolean }) 
         <section className="panel">
           {providers.map((p) => (
             <div className="list-row" key={p.id}>
-              <strong>{p.id}</strong>
-              <span className="badge">{statusLabel(p.status, lang)}</span>
+              <strong>{integrationLabel(p.id, lang)}</strong>
+              <span className={'badge' + (p.status === 'not_configured' ? ' warning' : '')}>
+                {integrationStatusLabel(p.status, lang)}
+              </span>
             </div>
           ))}
         </section>
@@ -278,9 +287,72 @@ export function Operations({ lang, admin }: { lang: Language; admin: boolean }) 
             <button className="primary">{ar ? 'بحث' : 'Find operation'}</button>
           </form>
           {trace && (
-            <pre className="operation-json" dir="ltr">
-              {JSON.stringify(trace, null, 2)}
-            </pre>
+            <>
+              {(() => {
+                const tx = trace.transaction as
+                  | {
+                      public_reference: string;
+                      alias: string;
+                      merchant_name: string;
+                      branch_name: string;
+                      type: string;
+                      quantity: number;
+                      source: string;
+                      receipt?: string | null;
+                      at: string;
+                    }
+                  | undefined;
+                if (!tx) return null;
+                // The answer in one sentence; the raw record stays one tap away.
+                return (
+                  <dl className="trace-summary">
+                    <div>
+                      <dt>{ar ? 'العملية' : 'Operation'}</dt>
+                      <dd>
+                        {tx.type === 'redeem'
+                          ? ar
+                            ? 'صرف مكافأة'
+                            : 'Reward redeemed'
+                          : ar
+                            ? `${tx.quantity} ختم`
+                            : `${tx.quantity} stamp${tx.quantity === 1 ? '' : 's'}`}
+                        {tx.source === 'welcome' ? (ar ? ' (ترحيب)' : ' (welcome)') : ''}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>{ar ? 'العميل' : 'Customer'}</dt>
+                      <dd>
+                        <bdi>{tx.alias}</bdi>
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>{ar ? 'المحل والفرع' : 'Business and branch'}</dt>
+                      <dd>
+                        <bdi>{tx.merchant_name}</bdi> · <bdi>{tx.branch_name}</bdi>
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>{ar ? 'الوقت' : 'Time'}</dt>
+                      <dd>{new Date(tx.at).toLocaleString(intlLocale(lang))}</dd>
+                    </div>
+                    {tx.receipt && (
+                      <div>
+                        <dt>{ar ? 'رقم الإيصال' : 'Receipt'}</dt>
+                        <dd>
+                          <bdi>{tx.receipt}</bdi>
+                        </dd>
+                      </div>
+                    )}
+                  </dl>
+                );
+              })()}
+              <details>
+                <summary>{ar ? 'تفاصيل تقنية' : 'Technical details'}</summary>
+                <pre className="operation-json" dir="ltr">
+                  {JSON.stringify(trace, null, 2)}
+                </pre>
+              </details>
+            </>
           )}
         </section>
       )}
@@ -289,13 +361,13 @@ export function Operations({ lang, admin }: { lang: Language; admin: boolean }) 
           {audit.map((e) => (
             <div className="list-row" key={e.id}>
               <div>
-                <strong>{e.action}</strong>
+                <strong title={e.action}>{auditLabel(e.action, lang)}</strong>
                 <small>{e.actor_name || e.actor_email || (ar ? 'النظام' : 'System')}</small>
                 <small>
                   <bdi>{e.target_id}</bdi>
                 </small>
               </div>
-              <small>{new Date(e.at).toLocaleString(lang)}</small>
+              <small>{new Date(e.at).toLocaleString(intlLocale(lang))}</small>
             </div>
           ))}
         </section>

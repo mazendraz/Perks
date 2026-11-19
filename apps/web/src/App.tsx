@@ -227,14 +227,20 @@ export function App() {
           >
             {ar ? 'English' : 'العربية'}
           </button>
-          {session && route !== '/' && route !== '/portals' && route !== '/login' && (
-            <>
-              <bdi className="signed-in">{session.user.email || session.user.displayName}</bdi>
-              <button className="secondary small" onClick={() => void logout()}>
-                {ar ? 'خروج' : 'Sign out'}
-              </button>
-            </>
-          )}
+          {/* Customers have no password: signing out from the header could look like losing the
+              card, so for them it lives in My account with a warning. */}
+          {session &&
+            portal !== 'customer' &&
+            route !== '/' &&
+            route !== '/portals' &&
+            route !== '/login' && (
+              <>
+                <bdi className="signed-in">{session.user.email || session.user.displayName}</bdi>
+                <button className="secondary small" onClick={() => void logout()}>
+                  {ar ? 'خروج' : 'Sign out'}
+                </button>
+              </>
+            )}
         </div>
       </header>
       {notice && (
@@ -291,7 +297,13 @@ export function App() {
           }}
         />
       ) : (
-        <Workspace session={session} lang={lang} route={route} refresh={refresh} />
+        <Workspace
+          session={session}
+          lang={lang}
+          route={route}
+          refresh={refresh}
+          onLogout={logout}
+        />
       )}
       <footer className="footer">
         {ar ? 'Perks · كارت الولاء بتاعك على موبايلك' : 'Perks · Loyalty cards in your wallet'}
@@ -308,11 +320,13 @@ function Workspace({
   lang,
   route,
   refresh,
+  onLogout,
 }: {
   session: Session;
   lang: Language;
   route: string;
   refresh: () => Promise<void>;
+  onLogout: () => Promise<void>;
 }) {
   const ar = lang === 'ar',
     portal = portalForPath(route) || defaultPortal(session);
@@ -408,6 +422,17 @@ function Workspace({
                 ? 'كارتك مربوط بالجهاز ده. لو غيرت الموبايل، اطلب من الكاشير يرجعهولك على واتساب. مش محتاج باسورد.'
                 : 'Your card is linked to this device. If you change phones, ask the cashier to restore it on WhatsApp. You do not need a password.'}
             </p>
+            <section className="panel">
+              <h2>{ar ? 'الخروج من الجهاز ده' : 'Sign out on this device'}</h2>
+              <p className="muted">
+                {ar
+                  ? 'كروتك مش هتضيع، بس عشان ترجع لها على الجهاز ده هتحتاج الكاشير يرجعهالك على واتساب.'
+                  : 'Your cards are kept, but to see them on this device again the cashier will need to restore them on WhatsApp.'}
+              </p>
+              <button className="danger-outline" onClick={() => void onLogout()}>
+                {ar ? 'خروج' : 'Sign out'}
+              </button>
+            </section>
             <DeleteCustomerAccount lang={lang} />
           </>
         ) : (

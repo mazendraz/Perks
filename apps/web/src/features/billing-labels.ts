@@ -3,6 +3,7 @@ import type {
   LimitKey,
   SubscriptionStatus,
 } from '../../../../packages/contracts/src/entitlements.js';
+import { intlLocale } from '../locale.js';
 
 type Pair = [ar: string, en: string];
 const pick = (pair: Pair | undefined, lang: Language, fallback: string) =>
@@ -95,7 +96,7 @@ export const paymentMethods = Object.keys(methods);
 
 /** Whole pounds without decimals when the amount is round (900 not 900.00). */
 export function money(minor: number, currency: string, lang: Language) {
-  return new Intl.NumberFormat(lang === 'ar' ? 'ar-EG' : 'en', {
+  return new Intl.NumberFormat(intlLocale(lang), {
     style: 'currency',
     currency,
     maximumFractionDigits: minor % 100 ? 2 : 0,
@@ -103,7 +104,7 @@ export function money(minor: number, currency: string, lang: Language) {
 }
 export function day(value: string | null | undefined, lang: Language) {
   if (!value) return '—';
-  return new Intl.DateTimeFormat(lang === 'ar' ? 'ar-EG' : 'en', {
+  return new Intl.DateTimeFormat(intlLocale(lang), {
     year: 'numeric',
     month: 'short',
     day: 'numeric',

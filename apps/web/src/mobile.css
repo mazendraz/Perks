@@ -79,6 +79,17 @@
   label {
     min-height: 44px;
   }
+  /* Bigger boxes on phones; the whole label stays the tap target. */
+  input[type='checkbox'],
+  input[type='radio'] {
+    width: 22px;
+    height: 22px;
+    min-height: 22px;
+    flex-basis: 22px;
+  }
+  summary {
+    padding-block: 11px;
+  }
   .nq-color-swatches {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }

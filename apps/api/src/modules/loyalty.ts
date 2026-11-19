@@ -409,7 +409,8 @@ export function loyaltyModule(app: FastifyInstance, pools: Pools) {
         return {
           transactions: (
             await db.query(
-              'SELECT t.id,t.public_reference,t.type,t.quantity,t.at,t.source,t.branch_id,p.alias,b.name AS branch_name FROM loyalty_transactions t JOIN memberships ms ON ms.id=t.membership_id JOIN tenant_customer_profiles p ON p.id=ms.profile_id JOIN branches b ON b.id=t.branch_id AND b.merchant_id=t.merchant_id WHERE t.merchant_id=$1 AND branch_access(t.merchant_id,t.branch_id) ORDER BY t.at DESC LIMIT 100',
+              // Who gave each stamp, so the owner can see each cashier's work.
+              'SELECT t.id,t.public_reference,t.type,t.quantity,t.at,t.source,t.branch_id,p.alias,b.name AS branch_name,s.name AS staff_name FROM loyalty_transactions t JOIN memberships ms ON ms.id=t.membership_id JOIN tenant_customer_profiles p ON p.id=ms.profile_id JOIN branches b ON b.id=t.branch_id AND b.merchant_id=t.merchant_id LEFT JOIN staff_memberships s ON s.id=t.staff_id AND s.merchant_id=t.merchant_id WHERE t.merchant_id=$1 AND branch_access(t.merchant_id,t.branch_id) ORDER BY t.at DESC LIMIT 100',
               [m],
             )
           ).rows,

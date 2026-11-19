@@ -13,6 +13,26 @@ import { acceptedLegal } from '../legal.js';
 export function readPresentationToken(value: string) {
   return value.replace(/^NQP:/, '');
 }
+/** The 6 digits a customer can read out instead of showing the QR. Derived from the QR token. */
+function shortCode(token: string, pepper: string) {
+  return (parseInt(keyedHash('short:' + token, pepper).slice(0, 12), 16) % 1_000_000)
+    .toString()
+    .padStart(6, '0');
+}
+const shortCodeHash = (merchantId: string, code: string, pepper: string) =>
+  keyedHash('short-code:' + merchantId + ':' + code, pepper);
+// Failed short-code attempts per cashier session, so the 6 digits cannot be guessed.
+const shortFailures = new Map<string, number[]>();
+function shortCodeAllowed(sessionId: string) {
+  const now = Date.now(),
+    recent = (shortFailures.get(sessionId) || []).filter((t) => now - t < 10 * 60_000);
+  shortFailures.set(sessionId, recent);
+  return recent.length < 8;
+}
+function shortCodeFailed(sessionId: string) {
+  shortFailures.set(sessionId, [...(shortFailures.get(sessionId) || []), Date.now()]);
+}
+
 export function enrollmentModule(app: FastifyInstance, pools: Pools, c: Config) {
   app.get('/api/v1/public/programs/:id/terms', async (req) => {
     const { id } = z.object({ id: z.uuid() }).parse(req.params),
@@ -140,8 +160,15 @@ export function enrollmentModule(app: FastifyInstance, pools: Pools, c: Config) 
             const token = keyedHash('presentation:' + operationId + ':' + actor.id, c.AUTH_PEPPER);
             const p = (
               await db.query(
-                "INSERT INTO presentation_tokens(merchant_id,membership_id,created_by,purpose,token_hash,session_id,expires_at) VALUES($1,$2,$3,'customer_presentation',$4,$5,clock_timestamp()+interval '90 seconds') RETURNING id,expires_at",
-                [member.merchant_id, id, actor.id, tokenHash(token), actor.sessionId],
+                "INSERT INTO presentation_tokens(merchant_id,membership_id,created_by,purpose,token_hash,session_id,expires_at,short_code_hash) VALUES($1,$2,$3,'customer_presentation',$4,$5,clock_timestamp()+interval '90 seconds',$6) RETURNING id,expires_at",
+                [
+                  member.merchant_id,
+                  id,
+                  actor.id,
+                  tokenHash(token),
+                  actor.sessionId,
+                  shortCodeHash(member.merchant_id, shortCode(token, c.AUTH_PEPPER), c.AUTH_PEPPER),
+                ],
               )
             ).rows[0];
             return { presentationId: p.id, expiresAt: p.expires_at.toISOString() as string };
@@ -154,6 +181,7 @@ export function enrollmentModule(app: FastifyInstance, pools: Pools, c: Config) 
     return {
       ...issued,
       token: 'NQP:' + token,
+      shortCode: shortCode(token, c.AUTH_PEPPER),
       qrDataUrl: await QRCode.toDataURL('NQP:' + token, {
         errorCorrectionLevel: 'M',
         margin: 4,
@@ -167,8 +195,11 @@ export function enrollmentModule(app: FastifyInstance, pools: Pools, c: Config) 
         .object({ merchantId: z.uuid(), branchId: z.uuid(), token: z.string().max(200) })
         .strict()
         .parse(req.body),
-      token = readPresentationToken(body.token);
-    requireCondition(/^[a-f0-9]{64}$/.test(token), 'TOKEN_INVALID', 422);
+      token = readPresentationToken(body.token.replace(/[\s-]/g, '')),
+      isShort = /^\d{6}$/.test(token);
+    requireCondition(isShort || /^[a-f0-9]{64}$/.test(token), 'TOKEN_INVALID', 422);
+    if (isShort)
+      requireCondition(shortCodeAllowed(actor.sessionId), 'MATCH_ATTEMPTS_EXHAUSTED', 429);
     return transaction(
       pools.pool,
       async (db) => {
@@ -179,12 +210,20 @@ export function enrollmentModule(app: FastifyInstance, pools: Pools, c: Config) 
           ['owner', 'manager', 'cashier'],
           body.branchId,
         );
-        const r = (
+        const rows = (
           await db.query(
-            'SELECT t.id,t.source_presentation_id,t.expires_at,t.purpose,t.created_by,t.session_id,t.branch_id,m.id AS membership_id,m.status,m.program_version_id,p.alias,a.balance,a.revision,v.threshold,v.reward_title,least(v.max_per_tx,CASE WHEN cs.allow_multiple THEN cs.max_stamps_per_collection ELSE cs.default_stamps END) AS max_per_tx,cs.default_stamps,cs.allow_multiple FROM presentation_tokens t JOIN stamp_collection_settings cs ON cs.merchant_id=t.merchant_id JOIN memberships m ON m.id=t.membership_id AND m.merchant_id=t.merchant_id JOIN tenant_customer_profiles p ON p.id=m.profile_id JOIN loyalty_accounts a ON a.membership_id=m.id JOIN program_versions v ON v.id=m.program_version_id WHERE t.token_hash=$1 AND t.merchant_id=$2 AND t.expires_at>clock_timestamp()',
-            [tokenHash(token), body.merchantId],
+            "SELECT t.id,t.source_presentation_id,t.expires_at,t.purpose,t.created_by,t.session_id,t.branch_id,m.id AS membership_id,m.status,m.program_version_id,p.alias,a.balance,a.revision,v.threshold,v.reward_title,least(v.max_per_tx,CASE WHEN cs.allow_multiple THEN cs.max_stamps_per_collection ELSE cs.default_stamps END) AS max_per_tx,cs.default_stamps,cs.allow_multiple FROM presentation_tokens t JOIN stamp_collection_settings cs ON cs.merchant_id=t.merchant_id JOIN memberships m ON m.id=t.membership_id AND m.merchant_id=t.merchant_id JOIN tenant_customer_profiles p ON p.id=m.profile_id JOIN loyalty_accounts a ON a.membership_id=m.id JOIN program_versions v ON v.id=m.program_version_id WHERE (CASE WHEN $3::text IS NULL THEN t.token_hash=$1 ELSE t.short_code_hash=$3 AND t.purpose='customer_presentation' END) AND t.merchant_id=$2 AND t.expires_at>clock_timestamp() ORDER BY t.created_at DESC LIMIT 2",
+            [
+              isShort ? null : tokenHash(token),
+              body.merchantId,
+              isShort ? shortCodeHash(body.merchantId, token, c.AUTH_PEPPER) : null,
+            ],
           )
-        ).rows[0];
+        ).rows;
+        // Two live codes with the same 6 digits: ask for the QR instead of guessing.
+        if (isShort && rows.length !== 1) shortCodeFailed(actor.sessionId);
+        requireCondition(rows.length < 2, 'CUSTOMER_QR_REQUIRED', 409);
+        const r = rows[0];
         requireCondition(r, 'TOKEN_INVALID_OR_EXPIRED', 410);
         requireCondition(r.status === 'active', 'MEMBERSHIP_DISABLED', 403);
         requireCondition(r.purpose !== 'cashier_lookup', 'CUSTOMER_QR_REQUIRED', 403);

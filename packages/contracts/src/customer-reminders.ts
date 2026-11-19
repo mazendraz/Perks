@@ -8,7 +8,7 @@ export const reminderDefaults = {
   sendHour: 12,
   wallet: {
     ar: 'يا {name}، فاضلك {left} وتاخد {reward} من {business} 🎁 مستنيينك!',
-    en: 'Hi {name}, just {left} to go for your {reward} at {business} 🎁 See you soon!',
+    en: 'Hi {name}, just {left} to go and {reward} is yours at {business} 🎁 See you soon!',
   },
   // Sent instead of the message above when the customer already has a reward waiting.
   walletReady: {

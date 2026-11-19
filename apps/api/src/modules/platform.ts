@@ -6,6 +6,7 @@ import { audit, transaction, type Pools, type Actor } from '../db.js';
 import { platform, merchantGrant } from '../policy.js';
 import { requireCondition } from '../errors.js';
 import { operation, idempotencyKey, expectedRevision } from '../operations.js';
+import { getEntitlements } from '../entitlements.js';
 function support(actor: Actor) {
   requireCondition(['platform_admin', 'platform_support'].includes(actor.role), 'FORBIDDEN', 403);
 }
@@ -19,11 +20,17 @@ export function platformModule(app: FastifyInstance, pools: Pools, c: Config) {
       async (db) => {
         const merchant = (
           await db.query(
-            'SELECT m.*,e.plan,e.max_staff,e.max_branches,e.max_customers FROM merchants m JOIN feature_entitlements e ON e.merchant_id=m.id WHERE m.id=$1',
+            `SELECT m.*,COALESCE(p.key,e.plan) AS plan,p.name_ar AS plan_name_ar,p.name_en AS plan_name_en,e.max_customers,e.max_staff,e.max_branches
+             FROM merchants m JOIN feature_entitlements e ON e.merchant_id=m.id
+             LEFT JOIN merchant_subscriptions ms ON ms.merchant_id=m.id LEFT JOIN plans p ON p.id=ms.plan_id WHERE m.id=$1`,
             [m],
           )
         ).rows[0];
         requireCondition(merchant, 'NOT_FOUND', 404);
+        // Show the effective limits (plan + add-ons + overrides): the same numbers as the usage meters.
+        const ent = await getEntitlements(db, m);
+        merchant.max_staff = ent.limits.max_staff ?? null;
+        merchant.max_branches = ent.limits.max_branches ?? null;
         const summary = (
           await db.query(
             `SELECT
@@ -118,19 +125,37 @@ export function platformModule(app: FastifyInstance, pools: Pools, c: Config) {
   app.get('/api/v1/platform/integrations', async (req) => {
     support(authenticated(req));
     return {
+      // Read from this server's real configuration, not hard-coded.
       providers: [
+        { id: 'auth', status: c.AUTH_PROVIDER === 'local' ? 'local_only' : 'configured' },
+        { id: 'object_storage', status: 'local_disk' },
         {
-          id: 'auth',
-          status: c.AUTH_PROVIDER === 'local' ? 'local_only' : 'requires_environment_verification',
+          id: 'apple_wallet',
+          status: c.APPLE_WALLET_ENABLED === 'true' ? 'configured' : 'not_configured',
         },
-        { id: 'object_storage', status: 'local_only' },
-        { id: 'apple_wallet', status: 'not_configured' },
-        { id: 'google_wallet', status: 'not_configured' },
-        { id: 'email', status: c.AUTH_PROVIDER === 'local' ? 'local_sink_only' : 'not_configured' },
-        { id: 'whatsapp', status: 'not_configured' },
-        { id: 'sms', status: 'not_configured' },
-        { id: 'web_push', status: 'not_configured' },
-        { id: 'payments', status: 'not_configured' },
+        {
+          id: 'google_wallet',
+          status: c.GOOGLE_WALLET_ENABLED === 'true' ? 'configured' : 'not_configured',
+        },
+        {
+          id: 'email',
+          status: c.SMTP_HOST
+            ? 'configured'
+            : c.AUTH_PROVIDER === 'local'
+              ? 'local_sink_only'
+              : 'not_configured',
+        },
+        // WhatsApp opens a chat with a prepared message (wa.me); there is no paid WhatsApp API.
+        { id: 'whatsapp', status: 'manual_links' },
+        {
+          id: 'web_push',
+          status:
+            c.WEB_PUSH_VAPID_PUBLIC_KEY && c.WEB_PUSH_VAPID_PRIVATE_KEY
+              ? 'configured'
+              : 'not_configured',
+        },
+        { id: 'sms', status: 'not_used' },
+        { id: 'payments', status: 'manual_only' },
       ],
       checkedAt: new Date(),
     };

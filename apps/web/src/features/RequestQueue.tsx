@@ -65,11 +65,32 @@ export function CashierRequests({
     [undoReady, setUndoReady] = useState(false),
     [alerts, setAlerts] = useState(() => {
       try {
-        return localStorage.getItem('nuqta-queue-alerts') === 'true';
+        // On unless this device turned it off: a waiting customer must be noticed.
+        return localStorage.getItem('nuqta-queue-alerts') !== 'false';
       } catch {
         return false;
       }
     });
+  // Ticks every 15 seconds so each waiting request shows the minutes it has left.
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 15_000);
+    return () => window.clearInterval(timer);
+  }, []);
+  // Browsers only allow sound after a tap; prime the alert on the first tap anywhere.
+  useEffect(() => {
+    if (!alerts || typeof AudioContext !== 'function') return;
+    const prime = () => {
+      try {
+        audio.current ??= new AudioContext();
+        void audio.current.resume().catch(() => {});
+      } catch {
+        /* Optional feedback. */
+      }
+    };
+    document.addEventListener('pointerdown', prime, { once: true });
+    return () => document.removeEventListener('pointerdown', prime);
+  }, [alerts]);
   const generation = useRef(0),
     loadSerial = useRef(0),
     seen = useRef<Set<string> | null>(null),
@@ -431,11 +452,15 @@ export function CashierRequests({
           >
             <label>
               <ActionLabel icon="keyboard">
-                {ar ? 'أو اكتب كود العميل للطلب' : 'Or enter the request customer QR code'}
+                {ar
+                  ? 'أو اكتب الـ 6 أرقام اللي على موبايل العميل'
+                  : "Or type the 6 digits on the customer's phone"}
               </ActionLabel>
               <input
                 dir="ltr"
                 autoComplete="off"
+                inputMode="numeric"
+                placeholder="482 913"
                 value={manual}
                 onChange={(e) => setManual(e.target.value)}
                 required
@@ -463,9 +488,20 @@ export function CashierRequests({
               <h3>{row.alias}</h3>
               <bdi className="request-match">{row.code}</bdi>
             </div>
-            <small>
-              {ar ? 'صالح لحد ' : 'Valid until '}
-              {new Date(row.expires_at).toLocaleTimeString(lang)}
+            <small className="request-timer">
+              {(() => {
+                const left = Math.max(
+                  0,
+                  Math.ceil((new Date(row.expires_at).getTime() - now) / 60_000),
+                );
+                return ar
+                  ? left <= 1
+                    ? 'فاضل أقل من دقيقة'
+                    : `فاضل ${left} دقايق`
+                  : left <= 1
+                    ? 'Less than a minute left'
+                    : `${left} minutes left`;
+              })()}
             </small>
             <p className={matching ? 'notice success' : 'muted'}>
               {matching
@@ -546,7 +582,7 @@ export function CashierRequests({
                       onChange={(e) => setRejections({ ...rejections, [row.id]: e.target.value })}
                     />
                   </label>
-                  <button className="secondary" disabled={busy}>
+                  <button className="danger-outline" disabled={busy}>
                     {ar ? 'ارفض الطلب' : 'Reject this request'}
                   </button>
                 </form>

@@ -139,7 +139,15 @@ export function provisioningModule(app: FastifyInstance, pools: Pools, c: Config
       async (db) => ({
         merchants: (
           await db.query(
-            'SELECT m.*,e.plan,e.max_branches,e.max_staff,(SELECT count(*)::int FROM branches b WHERE b.merchant_id=m.id) AS branch_count,(SELECT count(*)::int FROM staff_memberships s WHERE s.merchant_id=m.id) AS staff_count FROM merchants m LEFT JOIN feature_entitlements e ON e.merchant_id=m.id ORDER BY m.created_at DESC LIMIT 100',
+            // The plan shown is the merchant's live subscription; staff counts exclude the owner, as usage limits do.
+            `SELECT m.*,COALESCE(p.key,e.plan) AS plan,p.name_ar AS plan_name_ar,p.name_en AS plan_name_en,e.max_branches,e.max_staff,
+              (SELECT count(*)::int FROM branches b WHERE b.merchant_id=m.id) AS branch_count,
+              (SELECT count(*)::int FROM staff_memberships s WHERE s.merchant_id=m.id AND s.role<>'owner' AND s.status='active') AS staff_count,
+              act.last_purchase_at,coalesce(act.visits_7d,0) AS visits_7d
+             FROM merchants m LEFT JOIN feature_entitlements e ON e.merchant_id=m.id
+             LEFT JOIN platform_merchant_activity() act ON act.merchant_id=m.id
+             LEFT JOIN merchant_subscriptions ms ON ms.merchant_id=m.id LEFT JOIN plans p ON p.id=ms.plan_id
+             ORDER BY m.created_at DESC LIMIT 100`,
           )
         ).rows,
       }),
@@ -198,6 +206,29 @@ export function provisioningModule(app: FastifyInstance, pools: Pools, c: Config
         ).rows[0];
         requireCondition(row, 'REVISION_CONFLICT', 409);
         return { draft: row };
+      },
+      actor,
+    );
+  });
+  // Discards an unfinished draft the admin no longer wants (activated drafts stay as history).
+  app.delete('/api/v1/platform/provisioning-drafts/:id', async (req) => {
+    const actor = authenticated(req);
+    platform(actor);
+    const { id } = z.object({ id: z.uuid() }).parse(req.params);
+    return transaction(
+      pools.pool,
+      async (db) => {
+        const row = (
+          await db.query(
+            "SELECT id FROM provisioning_drafts WHERE id=$1 AND status='draft' AND created_by=$2 AND NOT EXISTS(SELECT 1 FROM provisioning_activations a WHERE a.draft_id=$1) FOR UPDATE",
+            [id, actor.id],
+          )
+        ).rows[0];
+        requireCondition(row, 'NOT_FOUND', 404);
+        await db.query('DELETE FROM provisioning_credentials WHERE draft_id=$1', [id]);
+        await db.query('DELETE FROM provisioning_logos WHERE draft_id=$1', [id]);
+        await db.query('DELETE FROM provisioning_drafts WHERE id=$1', [id]);
+        return { deleted: true };
       },
       actor,
     );

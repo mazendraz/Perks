@@ -5,6 +5,7 @@ import {
   statusLabel,
   subscriptionPlanLabel,
   transactionTypeLabel,
+  auditLabel,
 } from '../business-labels.js';
 import { navigate } from '../useRoute.js';
 import { CustomerOutreach } from './CustomerOutreach.js';
@@ -17,6 +18,8 @@ import { Support } from './Support.js';
 import { EnrollmentCodes } from './EnrollmentCodes.js';
 import { PlanBilling } from './PlanBilling.js';
 import { Subscriptions } from './Subscriptions.js';
+import { intlLocale } from '../locale.js';
+import { useUrlTab } from '../url-tab.js';
 interface Workspace {
   merchant: {
     id: string;
@@ -24,8 +27,10 @@ interface Workspace {
     slug: string;
     status: string;
     plan: string;
-    max_staff: number;
-    max_branches: number;
+    plan_name_ar?: string | null;
+    plan_name_en?: string | null;
+    max_staff: number | null;
+    max_branches: number | null;
     max_customers: number;
   };
   summary: Record<string, number>;
@@ -50,6 +55,17 @@ interface Workspace {
   }[];
   checkedAt: string;
 }
+const workspaceTabs = [
+  'overview',
+  'subscription',
+  'design',
+  'collection',
+  'customers',
+  'team',
+  'qr',
+  'support',
+  'activity',
+] as const;
 export function MerchantWorkspace({
   merchantId,
   viewerId,
@@ -69,10 +85,13 @@ export function MerchantWorkspace({
   const ar = lang === 'ar',
     [data, setData] = useState<Workspace | null>(null),
     [error, setError] = useState(''),
-    [tab, setTab] = useState(initialTab),
+    [tab, setTab] = useUrlTab('overview', workspaceTabs),
     [busy, setBusy] = useState(false),
     [retry, setRetry] = useState<string | null>(null),
     [reason, setReason] = useState('');
+  useEffect(() => {
+    if (initialTab !== 'overview') setTab(initialTab);
+  }, []);
   const load = async () => {
     setBusy(true);
     try {
@@ -95,7 +114,8 @@ export function MerchantWorkspace({
           <h1>{data?.merchant.name || (ar ? 'متابعة المحل' : 'Business operations')}</h1>
           <p className="muted">
             {merchantStatusLabel(data?.merchant.status, lang)} ·{' '}
-            {subscriptionPlanLabel(data?.merchant.plan, lang)} · <bdi>{data?.merchant.slug}</bdi>
+            {subscriptionPlanLabel(data?.merchant.plan, lang, data?.merchant)} ·{' '}
+            <bdi>{data?.merchant.slug}</bdi>
           </p>
         </div>
         <div className="form-actions">
@@ -216,7 +236,8 @@ export function MerchantWorkspace({
         <>
           <section className="panel">
             <h2>
-              {ar ? 'الفروع' : 'Branches'} · {data.branches.length}/{data.merchant.max_branches}
+              {ar ? 'الفروع' : 'Branches'} · {data.branches.length}/
+              {data.merchant.max_branches ?? '∞'}
             </h2>
             {data.branches.map((b) => (
               <div className="list-row" key={b.id}>
@@ -233,8 +254,10 @@ export function MerchantWorkspace({
               {ar ? 'إضافة حساب بإيميل وباسورد' : 'Add email and password account'}
             </button>
             <h2>
-              {ar ? 'حسابات الفريق' : 'Team accounts'} · {data.staff.length}/
-              {data.merchant.max_staff}
+              {ar ? 'حسابات الفريق' : 'Team accounts'} ·{' '}
+              {data.staff.filter((s) => s.role !== 'owner' && s.status === 'active').length}/
+              {data.merchant.max_staff ?? '∞'}{' '}
+              <small>{ar ? '(من غير المالك)' : '(owner not counted)'}</small>
             </h2>
             {data.invitations?.map((i) => (
               <div className="list-row" key={i.id}>
@@ -289,7 +312,7 @@ export function MerchantWorkspace({
             {data.jobs.map((j) => (
               <div className="subpanel" key={j.id}>
                 <div className="section-heading">
-                  <strong>{j.kind}</strong>
+                  <strong title={j.kind}>{auditLabel(j.kind, lang)}</strong>
                   <span className="badge">
                     {statusLabel(j.status, lang)} · {j.attempts}
                   </span>
@@ -321,7 +344,7 @@ export function MerchantWorkspace({
                 <div>
                   <bdi>{t.public_reference}</bdi>
                   <small>
-                    {t.branch_name} · {new Date(t.at).toLocaleString(lang)}
+                    {t.branch_name} · {new Date(t.at).toLocaleString(intlLocale(lang))}
                   </small>
                 </div>
                 <span>
@@ -334,8 +357,8 @@ export function MerchantWorkspace({
             <h2>{ar ? 'سجل الإجراءات' : 'Audit history'}</h2>
             {data.events.map((e) => (
               <div className="list-row" key={e.id}>
-                <span>{e.action}</span>
-                <small>{new Date(e.at).toLocaleString(lang)}</small>
+                <span title={e.action}>{auditLabel(e.action, lang)}</span>
+                <small>{new Date(e.at).toLocaleString(intlLocale(lang))}</small>
               </div>
             ))}
           </section>

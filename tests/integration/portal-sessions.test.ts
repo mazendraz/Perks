@@ -111,8 +111,10 @@ test('four portals retain separate identities in one cookie jar; cross-portal CS
     const logout = await request('cashier', '/auth/logout', 'POST', {}, tokens.get('cashier'));
     assert.equal(logout.statusCode, 204, logout.body);
     assert.equal((await request('cashier', '/session')).statusCode, 401);
-    for (const portal of ['platform', 'merchant', 'customer'])
+    for (const portal of ['platform', 'merchant'])
       assert.equal((await request(portal, '/session')).json().user.id, people.get(portal)!.id);
+    // One phone, one sign-out: leaving a staff portal also ends the customer card on this browser.
+    assert.equal((await request('customer', '/session')).statusCode, 401);
     const wrong = await request('cashier', '/auth/login', 'POST', {
       email: people.get('platform')!.email,
       password,

@@ -41,6 +41,12 @@ import { useEffect, useState, type FormEvent, type CSSProperties } from 'react';
 import type { Grant, Language, CardData } from '../../../../packages/contracts/src/index.js';
 import { LoyaltyCard } from '../../../../packages/ui/src/LoyaltyCard.js';
 import { api, errorText } from '../api.js';
+import { EmailTypoHint } from './EmailTypoHint.js';
+import { intlLocale } from '../locale.js';
+import { useUrlTab } from '../url-tab.js';
+import { StaffActivity } from './StaffActivity.js';
+import { OwnerToday } from './TodayStrip.js';
+import { SetupChecklist } from './SetupChecklist.js';
 interface Merchant {
   id: string;
   name: string;
@@ -111,12 +117,26 @@ interface Metrics {
   returningCustomers: number;
   returnRate: number;
 }
+const ownerTabs = [
+  'overview',
+  'customers',
+  'outreach',
+  'messages',
+  'brand',
+  'programs',
+  'materials',
+  'team',
+  'branches',
+  'subscription',
+  'operations',
+  'support',
+] as const;
 export function MerchantPage({ grant, lang }: { grant: Grant; lang: Language }) {
   const [showAllMetrics, setShowAllMetrics] = useState(false);
   const [brandProgramId, setBrandProgramId] = useState(''),
     [previewThreshold, setPreviewThreshold] = useState<number | null>(null);
   const ar = lang === 'ar',
-    [tab, setTab] = useState('overview'),
+    [tab, setTab] = useUrlTab('overview', ownerTabs),
     [error, setError] = useState(''),
     [notice, setNotice] = useState(''),
     [busy, setBusy] = useState(false),
@@ -154,6 +174,8 @@ export function MerchantPage({ grant, lang }: { grant: Grant; lang: Language }) 
         alias: string;
         branch_name: string;
         at: string;
+        source?: string;
+        staff_name?: string | null;
       }[]
     >([]),
     [invite, setInvite] = useState<{
@@ -473,7 +495,7 @@ export function MerchantPage({ grant, lang }: { grant: Grant; lang: Language }) 
       id: 'business',
       label: ar ? 'إدارة المحل' : 'Business',
       icon: 'shop',
-      tabs: ['team', 'branches', 'subscription'],
+      tabs: ['branches', 'team', 'subscription'],
     },
     {
       id: 'activity',
@@ -492,7 +514,12 @@ export function MerchantPage({ grant, lang }: { grant: Grant; lang: Language }) 
           <span className="eyebrow">{merchant?.name || grant.name}</span>
           <h1>{ar ? 'لوحة التاجر' : 'Merchant dashboard'}</h1>
         </div>
-        <a className="secondary small" href={'/join/' + grant.slug}>
+        <a
+          className="secondary small"
+          href={'/join/' + grant.slug}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
           <ActionLabel icon="qr">{ar ? 'افتح التسجيل' : 'Open enrollment'}</ActionLabel>
         </a>
       </div>
@@ -563,6 +590,23 @@ export function MerchantPage({ grant, lang }: { grant: Grant; lang: Language }) 
               <span>PERKS / {merchant?.name || grant.name}</span>
             </div>
           </section>
+          {owner && merchant && (
+            <SetupChecklist
+              lang={lang}
+              done={{
+                logo: !!merchant.logo_asset_id,
+                program: programs.some((p) => p.status === 'active'),
+                cashier: staff.some((s) => s.role !== 'owner' && s.status === 'active'),
+                stamp: recent.some((t) => t.type === 'award' && t.source !== 'welcome'),
+              }}
+              go={setTab}
+            />
+          )}
+          <OwnerToday
+            merchantId={grant.merchant_id}
+            lang={lang}
+            onOpenOperations={() => setTab('operations')}
+          />
           <div className="filter-row">
             <label>
               {ar ? 'الفترة' : 'Period'}
@@ -590,7 +634,7 @@ export function MerchantPage({ grant, lang }: { grant: Grant; lang: Language }) 
             <>
               <small className="muted">
                 {ar ? 'آخر تحديث ' : 'Updated '}
-                {new Date(overview.updatedAt).toLocaleTimeString(lang)} ·
+                {new Date(overview.updatedAt).toLocaleTimeString(intlLocale(lang))} ·
                 {ar ? 'النشاط حسب فروعك المسموحة' : 'Activity follows your allowed branches'}
               </small>
               <div className="kpi-grid merchant-metrics">
@@ -600,7 +644,7 @@ export function MerchantPage({ grant, lang }: { grant: Grant; lang: Language }) 
                     ['visits', ar ? 'زيارات مؤكدة' : 'Confirmed visits'],
                     ['rewardsOpen', ar ? 'مكافآت متاحة' : 'Open rewards'],
                     ['rewardsRedeemed', ar ? 'مكافآت مستبدلة' : 'Redeemed rewards'],
-                    ['active', ar ? 'نشطين آخر ٣٠ يوم' : 'Active in 30 days'],
+                    ['active', ar ? 'نشطين آخر 30 يوم' : 'Active in 30 days'],
                     ['inactive', ar ? 'خاملين' : 'Inactive'],
                     ['neverActive', ar ? 'لسه مازاروش' : 'Never active'],
                     ['newSignups', ar ? 'تسجيلات جديدة' : 'New signups'],
@@ -673,6 +717,9 @@ export function MerchantPage({ grant, lang }: { grant: Grant; lang: Language }) 
                 </div>
               </section>
               <PurchaseTrend data={overview} lang={lang} />
+              {(grant.role === 'owner' || grant.role === 'manager') && (
+                <StaffActivity merchantId={grant.merchant_id} lang={lang} />
+              )}
             </>
           )}
           {corrections.filter((c) => ['pending', 'needs_review'].includes(c.status)).length > 0 && (
@@ -778,8 +825,9 @@ export function MerchantPage({ grant, lang }: { grant: Grant; lang: Language }) 
                   </span>
                 )}
                 <h2>{p.name}</h2>
-                <p>
-                  {p.threshold}→{p.reward_title}
+                <p className="program-rule">
+                  {ar ? `اجمع ${p.threshold} أختام = ` : `Collect ${p.threshold} stamps = `}
+                  <bdi>{p.reward_title}</bdi>
                 </p>
                 <p className="muted">{p.reward_terms}</p>
                 <p>
@@ -787,9 +835,9 @@ export function MerchantPage({ grant, lang }: { grant: Grant; lang: Language }) 
                   {p.validity_days} {ar ? 'يوم' : 'days'}
                 </p>
                 {grant.role === 'owner' && (
-                  <>
+                  <div className="program-actions">
                     <button
-                      className="text-button"
+                      className={p.status === 'active' ? 'danger-outline' : 'secondary'}
                       onClick={() => {
                         setError('');
                         setEarningAction({
@@ -818,9 +866,9 @@ export function MerchantPage({ grant, lang }: { grant: Grant; lang: Language }) 
                         );
                       }}
                     >
-                      {ar ? 'نشر نسخة جديدة' : 'Publish new version'}
+                      {ar ? 'عدّل البرنامج' : 'Edit program'}
                     </button>
-                  </>
+                  </div>
                 )}
               </section>
             ))}
@@ -832,9 +880,6 @@ export function MerchantPage({ grant, lang }: { grant: Grant; lang: Language }) 
       )}
       {tab === 'team' && (
         <section className="panel">
-          {grant.role === 'owner' && (
-            <RecoveryPolicy key={grant.merchant_id} merchantId={grant.merchant_id} lang={lang} />
-          )}
           <div className="section-heading">
             <h2>{ar ? 'الفريق والصلاحيات' : 'Staff and permissions'}</h2>
             <button
@@ -903,6 +948,9 @@ export function MerchantPage({ grant, lang }: { grant: Grant; lang: Language }) 
               )}
             </div>
           ))}
+          {grant.role === 'owner' && (
+            <RecoveryPolicy key={grant.merchant_id} merchantId={grant.merchant_id} lang={lang} />
+          )}
         </section>
       )}
       {tab === 'outreach' && <CustomerOutreach merchantId={grant.merchant_id} lang={lang} />}
@@ -1116,8 +1164,8 @@ export function MerchantPage({ grant, lang }: { grant: Grant; lang: Language }) 
               <thead>
                 <tr>
                   {(ar
-                    ? ['المرجع', 'العميل', 'النوع', 'الكمية', 'الفرع', 'الوقت']
-                    : ['Reference', 'Customer', 'Type', 'Quantity', 'Branch', 'Time']
+                    ? ['الوقت', 'العميل', 'النوع', 'الكمية', 'الكاشير', 'الفرع', 'المرجع']
+                    : ['Time', 'Customer', 'Type', 'Quantity', 'Cashier', 'Branch', 'Reference']
                   ).map((h) => (
                     <th key={h}>{h}</th>
                   ))}
@@ -1126,15 +1174,45 @@ export function MerchantPage({ grant, lang }: { grant: Grant; lang: Language }) 
               <tbody>
                 {recent.map((t) => (
                   <tr key={t.id}>
-                    <td data-label={ar ? 'المرجع' : 'Reference'}>
-                      <bdi>{t.public_reference}</bdi>
-                    </td>
-                    <td data-label={ar ? 'العميل' : 'Customer'}>{t.alias}</td>
-                    <td data-label={ar ? 'النوع' : 'Type'}>{transactionTypeLabel(t.type, lang)}</td>
-                    <td data-label={ar ? 'الكمية' : 'Quantity'}>{t.quantity}</td>
-                    <td data-label={ar ? 'الفرع' : 'Branch'}>{t.branch_name}</td>
                     <td data-label={ar ? 'الوقت' : 'Time'}>
-                      {new Date(t.at).toLocaleString(lang)}
+                      {new Date(t.at).toLocaleString(intlLocale(lang), {
+                        dateStyle: 'medium',
+                        timeStyle: 'short',
+                      })}
+                    </td>
+                    <td data-label={ar ? 'العميل' : 'Customer'}>
+                      <bdi>{t.alias}</bdi>
+                    </td>
+                    <td data-label={ar ? 'النوع' : 'Type'}>
+                      {t.source === 'welcome'
+                        ? ar
+                          ? 'ختم ترحيب'
+                          : 'Welcome stamp'
+                        : t.type === 'redeem'
+                          ? ar
+                            ? 'مكافأة اتصرفت'
+                            : 'Reward redeemed'
+                          : transactionTypeLabel(t.type, lang)}
+                    </td>
+                    <td data-label={ar ? 'الكمية' : 'Quantity'}>
+                      {t.type === 'redeem' ? '—' : t.quantity}
+                    </td>
+                    <td data-label={ar ? 'الكاشير' : 'Cashier'}>
+                      {t.staff_name ? (
+                        <bdi>{t.staff_name}</bdi>
+                      ) : t.source === 'welcome' || t.source === 'auto' ? (
+                        ar ? (
+                          'تلقائي'
+                        ) : (
+                          'Automatic'
+                        )
+                      ) : (
+                        '—'
+                      )}
+                    </td>
+                    <td data-label={ar ? 'الفرع' : 'Branch'}>{t.branch_name}</td>
+                    <td data-label={ar ? 'المرجع' : 'Reference'}>
+                      <bdi className="muted">{t.public_reference}</bdi>
                     </td>
                   </tr>
                 ))}
@@ -1170,6 +1248,11 @@ export function MerchantPage({ grant, lang }: { grant: Grant; lang: Language }) 
                 value={invite.email}
                 onChange={(e) => setInvite({ ...invite, email: e.target.value })}
               />
+              <EmailTypoHint
+                email={invite.email}
+                lang={lang}
+                onUse={(email) => setInvite({ ...invite, email })}
+              />
             </label>
             <label className="checkbox-label">
               <input
@@ -1195,7 +1278,7 @@ export function MerchantPage({ grant, lang }: { grant: Grant; lang: Language }) 
                 />
                 <small>
                   {ar
-                    ? '١٠ حروف أو أكتر. الموظف يدخل مباشرة بالإيميل والباسورد.'
+                    ? '10 حروف أو أكتر. الموظف يدخل مباشرة بالإيميل والباسورد.'
                     : 'At least 10 characters. Staff can sign in immediately with email and password.'}
                 </small>
               </label>

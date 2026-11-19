@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import type { Language } from '../../../../packages/contracts/src/index.js';
 import { Icon } from '../../../../packages/ui/src/Icon.js';
 import { api, ApiError, errorText } from '../api.js';
+import { intlLocale } from '../locale.js';
 interface AdminAccount {
   id: string;
   name: string;
@@ -224,7 +225,7 @@ export function PlatformTeam({ lang }: { lang: Language }) {
                   <td>{a.activeSessions}</td>
                   <td>
                     {a.lastSignIn
-                      ? new Date(a.lastSignIn).toLocaleString(lang)
+                      ? new Date(a.lastSignIn).toLocaleString(intlLocale(lang))
                       : ar
                         ? 'لسه ما دخلش'
                         : 'Not signed in yet'}
@@ -275,7 +276,7 @@ export function PlatformTeam({ lang }: { lang: Language }) {
                   {accounts.find((a) => a.id === e.target_id)?.name} · {e.detail.reason}
                 </small>
               </div>
-              <small>{new Date(e.at).toLocaleString(lang)}</small>
+              <small>{new Date(e.at).toLocaleString(intlLocale(lang))}</small>
             </div>
           ))
         ) : (
@@ -402,7 +403,7 @@ export function PlatformTeam({ lang }: { lang: Language }) {
                 />
                 <small className="muted">
                   {ar
-                    ? '١٠ حروف على الأقل. الباسورد مش بيتعرض تاني بعد الحفظ.'
+                    ? '10 حروف على الأقل. الباسورد مش بيتعرض تاني بعد الحفظ.'
                     : 'At least 10 characters. The password is not shown again after saving.'}
                 </small>
               </fieldset>

@@ -16,6 +16,8 @@ import type {
 } from '../../../../packages/contracts/src/index.js';
 import type { AwardInput } from '../../../../packages/contracts/src/commands.js';
 import { api, ApiError, errorText } from '../api.js';
+import { intlLocale } from '../locale.js';
+import { ShiftSummary } from './TodayStrip.js';
 interface Member {
   id: string;
   alias: string;
@@ -56,6 +58,16 @@ interface Recent {
   at: string;
   alias: string;
   branch_id: string;
+}
+/** "Today", "Yesterday" or a short date, so an old sale never looks like a new one. */
+function dayLabel(at: string, lang: Language) {
+  const d = new Date(at),
+    today = new Date(),
+    start = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime(),
+    diff = Math.round((start(today) - start(d)) / 86_400_000);
+  if (diff === 0) return lang === 'ar' ? 'النهارده' : 'Today';
+  if (diff === 1) return lang === 'ar' ? 'امبارح' : 'Yesterday';
+  return d.toLocaleDateString(intlLocale(lang), { day: 'numeric', month: 'short' });
 }
 export function CashierPage({ grant, lang }: { grant: Grant; lang: Language }) {
   const ar = lang === 'ar',
@@ -395,24 +407,26 @@ export function CashierPage({ grant, lang }: { grant: Grant; lang: Language }) {
           {ar ? 'قفل الوردية' : 'Lock shift'}
         </button>
       </div>
-      <label className="branch-picker">
-        {ar ? 'الفرع' : 'Branch'}
-        <Select
-          value={branch}
-          disabled={!!pending || !!redemption}
-          onChange={(e) => {
-            setBranch(e.target.value);
-            setStep('home');
-            setMember(null);
-          }}
-        >
-          {grant.branches.map((b) => (
-            <option value={b.id} key={b.id}>
-              {b.name}
-            </option>
-          ))}
-        </Select>
-      </label>
+      {grant.branches.length > 1 && (
+        <label className="branch-picker">
+          {ar ? 'الفرع' : 'Branch'}
+          <Select
+            value={branch}
+            disabled={!!pending || !!redemption}
+            onChange={(e) => {
+              setBranch(e.target.value);
+              setStep('home');
+              setMember(null);
+            }}
+          >
+            {grant.branches.map((b) => (
+              <option value={b.id} key={b.id}>
+                {b.name}
+              </option>
+            ))}
+          </Select>
+        </label>
+      )}
       {error && (
         <div className="notice error" role="alert">
           {error}
@@ -425,6 +439,12 @@ export function CashierPage({ grant, lang }: { grant: Grant; lang: Language }) {
       )}
       {step === 'home' && (
         <div className="action-stack">
+          <CashierRequests
+            grant={grant}
+            branch={branch}
+            lang={lang}
+            onCommitted={() => void refreshRecent()}
+          />
           <section className="cashier-station">
             <div className="station-icon">
               <Icon name="scan" size={37} />
@@ -442,12 +462,6 @@ export function CashierPage({ grant, lang }: { grant: Grant; lang: Language }) {
               <span aria-hidden="true">{ar ? '←' : '→'}</span>
             </button>
           </section>
-          <CashierRequests
-            grant={grant}
-            branch={branch}
-            lang={lang}
-            onCommitted={() => void refreshRecent()}
-          />
           <PushToggle lang={lang} />
           <AutoStampFeed
             grant={grant}
@@ -455,21 +469,20 @@ export function CashierPage({ grant, lang }: { grant: Grant; lang: Language }) {
             lang={lang}
             onChanged={() => void refreshRecent()}
           />
-          <TeamCustomerRecovery
-            key={grant.id + ':' + branch}
-            grant={grant}
-            branchId={branch}
-            lang={lang}
-          />
           <section className="panel">
             <h2>{ar ? 'آخر العمليات' : 'Recent transactions'}</h2>
+            <ShiftSummary merchantId={grant.merchant_id} lang={lang} />
             {recent.length ? (
               recent.slice(0, 8).map((t) => (
                 <div className="activity-row" key={t.id}>
                   <div>
                     <strong>{t.alias}</strong>
                     <small>
-                      <bdi>{t.public_reference}</bdi> ·{new Date(t.at).toLocaleTimeString(lang)}
+                      {dayLabel(t.at, lang)} ·{' '}
+                      {new Date(t.at).toLocaleTimeString(intlLocale(lang), {
+                        hour: 'numeric',
+                        minute: '2-digit',
+                      })}
                     </small>
                     {t.type === 'award' && (
                       <button
@@ -493,6 +506,15 @@ export function CashierPage({ grant, lang }: { grant: Grant; lang: Language }) {
               </p>
             )}
           </section>
+          <details className="panel cashier-tools">
+            <summary>{ar ? 'أدوات تانية' : 'More tools'}</summary>
+            <TeamCustomerRecovery
+              key={grant.id + ':' + branch}
+              grant={grant}
+              branchId={branch}
+              lang={lang}
+            />
+          </details>
         </div>
       )}
       {step === 'scan' && (
@@ -507,14 +529,17 @@ export function CashierPage({ grant, lang }: { grant: Grant; lang: Language }) {
           >
             <label>
               <ActionLabel icon="keyboard">
-                {ar ? 'أو اكتب الكود من كارت العميل' : 'Or enter the customer card code'}
+                {ar
+                  ? 'أو اكتب الـ 6 أرقام اللي على موبايل العميل'
+                  : "Or type the 6 digits on the customer's phone"}
               </ActionLabel>
               <input
                 dir="ltr"
+                inputMode="numeric"
                 value={manual}
                 onChange={(e) => setManual(e.target.value)}
                 required
-                placeholder="NQP:…"
+                placeholder="482 913"
                 autoComplete="off"
               />
             </label>
@@ -551,7 +576,7 @@ export function CashierPage({ grant, lang }: { grant: Grant; lang: Language }) {
                 <div className="reward-row" key={r.id}>
                   <div>
                     <strong>{r.title}</strong>
-                    <small>{new Date(r.expires_at).toLocaleDateString(lang)}</small>
+                    <small>{new Date(r.expires_at).toLocaleDateString(intlLocale(lang))}</small>
                   </div>
                   <button
                     className="secondary small"
@@ -703,7 +728,7 @@ export function CashierPage({ grant, lang }: { grant: Grant; lang: Language }) {
             </div>
           )}
           <bdi>{result.reference}</bdi>
-          <p className="muted">{new Date(result.committedAt).toLocaleString(lang)}</p>
+          <p className="muted">{new Date(result.committedAt).toLocaleString(intlLocale(lang))}</p>
           <button className="primary full" onClick={next}>
             {ar ? 'العميل اللي بعده' : 'Next customer'}
           </button>

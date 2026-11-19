@@ -10,6 +10,16 @@
   font-weight: 500 900;
   font-display: swap;
 }
+/* GE SS draws 0-9 as Arabic-Indic shapes. Take the digits from Manrope instead, so every number
+   on an Arabic screen is Western (0-9) and matches phone numbers, prices and codes. Listed first in
+   every font stack and limited to these characters. */
+@font-face {
+  font-family: 'Perks Digits';
+  src: url('/fonts/manrope.ttf') format('truetype');
+  font-weight: 200 900;
+  font-display: swap;
+  unicode-range: U+0030-0039;
+}
 @font-face {
   font-family: 'Manrope';
   src: url('/fonts/manrope.ttf') format('truetype');
@@ -26,7 +36,7 @@
   --gold: #cbff64;
   color: var(--ink);
   background: var(--paper);
-  font-family: 'GE SS Arabic', sans-serif;
+  font-family: 'Perks Digits', 'GE SS Arabic', sans-serif;
   font-size: 14px;
   line-height: 1.8;
 }
@@ -161,7 +171,7 @@ label {
 }
 .wordmark {
   color: #191c3c;
-  font-family: 'GE SS Arabic', sans-serif;
+  font-family: 'Perks Digits', 'GE SS Arabic', sans-serif;
   font-size: 29px;
   font-weight: 600;
   gap: 11px;
@@ -3776,7 +3786,7 @@ input[type='number']::-webkit-outer-spin-button {
 }
 .logo-initial {
   display: block;
-  font-family: 'GE SS Arabic', Manrope, sans-serif;
+  font-family: 'Perks Digits', 'GE SS Arabic', Manrope, sans-serif;
   font-size: 18px;
   line-height: 1.3;
 }

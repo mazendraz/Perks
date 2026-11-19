@@ -260,7 +260,7 @@ export function PalettePaste({
   return (
     <div className="palette-paste">
       <label>
-        {ar ? 'ألوان الهوية مرة واحدة (٣ أكواد HEX)' : 'Paste brand palette (3 HEX codes)'}
+        {ar ? 'ألوان الهوية مرة واحدة (3 أكواد HEX)' : 'Paste brand palette (3 HEX codes)'}
         <input
           dir="ltr"
           value={value}
@@ -288,7 +288,7 @@ export function PalettePaste({
       </button>
       {error && (
         <p role="alert" className="error-text">
-          {ar ? 'اكتب ٣ أكواد من ٦ حروف أو أرقام لكل لون.' : 'Enter three 6-digit HEX colors.'}
+          {ar ? 'اكتب 3 أكواد من 6 حروف أو أرقام لكل لون.' : 'Enter three 6-digit HEX colors.'}
         </p>
       )}
     </div>
@@ -358,8 +358,9 @@ export function TemplatePicker({
                   // Only the "Your logo" edition previews the shop's logo in its background.
                   logo_asset_id: t === 'logomark' ? card.logo_asset_id : undefined,
                   logo_url: t === 'logomark' ? card.logo_url : undefined,
-                  threshold: 5,
-                  balance: 2,
+                  // Thumbnails show the shop's real stamp count so every preview agrees.
+                  threshold: card.threshold || 5,
+                  balance: Math.min(2, (card.threshold || 5) - 1),
                   stamp_shape: suggestedStamps(t)?.stampShape || card.stamp_shape,
                   stamp_icon: suggestedStamps(t)?.stampIcon || card.stamp_icon,
                   stamp_style: suggestedStamps(t)?.stampStyle || card.stamp_style,
@@ -501,7 +502,7 @@ export function StampControls({
           </div>
           <small className="muted">
             {ar
-              ? 'من ٢ لـ٥٠ ختم. العدد ده هو المطلوب عشان العميل يكسب المكافأة.'
+              ? 'من 2 لحد 50 ختم. العدد ده هو المطلوب عشان العميل يكسب المكافأة.'
               : '2–50 stamps. This is how many a customer needs to earn the reward.'}
           </small>
           {countAction}

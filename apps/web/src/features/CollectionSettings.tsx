@@ -92,11 +92,17 @@ export function CollectionSettings({ merchantId, lang }: { merchantId: string; l
     [busy, setBusy] = useState(false),
     [error, setError] = useState(''),
     [saved, setSaved] = useState(''),
-    [checks, setChecks] = useState<Record<string, string>>({});
+    [checks, setChecks] = useState<Record<string, string>>({}),
+    [programCap, setProgramCap] = useState<number | null>(null);
   const load = async () => {
     try {
-      const data = await api<{ settings: Stored; branches: Branch[] }>(path);
+      const data = await api<{
+        settings: Stored;
+        branches: Branch[];
+        programMaxPerPurchase?: number | null;
+      }>(path);
       setRules(data.settings);
+      setProgramCap(data.programMaxPerPurchase ?? null);
       setBranches(data.branches);
       setPositions(
         Object.fromEntries(
@@ -447,8 +453,25 @@ export function CollectionSettings({ merchantId, lang }: { merchantId: string; l
               value={rules.maxStampsPerCollection}
               min={rules.defaultStamps}
               max={100}
-              onChange={(v) => set({ maxStampsPerCollection: v ?? 100 })}
+              onChange={(v) => set({ maxStampsPerCollection: v ?? 5 })}
             />
+          )}
+          {rules.allowMultiple && (
+            <p className="muted" role="note">
+              {(() => {
+                const effective =
+                  programCap === null
+                    ? rules.maxStampsPerCollection
+                    : Math.min(programCap, rules.maxStampsPerCollection);
+                return ar
+                  ? `الحد الفعلي دلوقتي: ${effective} في العملية. السيستم بياخد الأقل من الرقم ده، و«أقصى أختام في العملية» في برنامج المحل${programCap === null ? '' : ` (${programCap})`}، وحد كل كاشير.`
+                  : `Actual limit now: ${effective} per purchase. The system uses the smallest of this number, the program's "max per purchase"${programCap === null ? '' : ` (${programCap})`}, and each cashier's own limit.`;
+              })()}
+              {rules.maxStampsPerCollection > 10 &&
+                (ar
+                  ? ' رقم كبير بيفتح باب للتلاعب؛ 3–5 كفاية لمعظم المحلات.'
+                  : ' A high number invites misuse; 3–5 suits most shops.')}
+            </p>
           )}
         </fieldset>
         <fieldset>

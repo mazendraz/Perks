@@ -2,6 +2,7 @@ import { Select } from '../controls/Select.js';
 import { useState } from 'react';
 import type { Language } from '../../../../packages/contracts/src/index.js';
 import { api, ApiError, errorText } from '../api.js';
+import { EmailTypoHint } from './EmailTypoHint.js';
 export interface AccountSeed {
   email: string;
   role: string;
@@ -91,6 +92,7 @@ export function PlatformAccountForm({
             disabled={!!attempt}
             onChange={(e) => setEmail(e.target.value)}
           />
+          <EmailTypoHint email={email} lang={lang} onUse={setEmail} />
         </label>
         <label>
           {ar ? 'باسورد الحساب' : 'Account password'}

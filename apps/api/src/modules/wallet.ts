@@ -8,7 +8,7 @@ import { requireCondition } from '../errors.js';
 import { safeEqual, tokenHash } from '../crypto.js';
 import { createFileStore } from '../storage/file-store.js';
 import {
-  artworkLogo,
+  logoAssets,
   buildPkpass,
   loadAppleSigner,
   passAuthToken,
@@ -108,7 +108,7 @@ export function walletModule(app: FastifyInstance, pools: Pools, c: Config) {
     if (!card) return reply.code(404).send();
     // The "Your logo" edition draws the shop logo behind the stamps.
     const source = walletTheme(card).art.kind === 'logo' ? await logo(card) : null;
-    const watermark = source ? await artworkLogo(source) : null;
+    const watermark = source ? (await logoAssets(source)).artwork : null;
     // The whole card face, in the large image size of Google's current pass design.
     const image = await sharp(Buffer.from(googleHeroSvg(card, 2, true, watermark)))
       .resize(1032, 812)

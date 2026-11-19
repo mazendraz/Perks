@@ -132,7 +132,7 @@ export function LoyaltyCard({
           <div>
             <strong>{ar ? 'مكافأتك جاهزة!' : 'Your reward is ready!'}</strong>
             <small>
-              {card.reward_title}
+              <bdi>{card.reward_title}</bdi>
               {card.pending_rewards > 1 ? ' · ' + card.pending_rewards : ''}
             </small>
           </div>
@@ -191,8 +191,12 @@ export function LoyaltyCard({
             )}
           </span>
           <div>
-            <strong>{card.merchant_name}</strong>
-            <small>{card.program_name}</small>
+            <strong>
+              <bdi>{card.merchant_name}</bdi>
+            </strong>
+            <small>
+              <bdi>{card.program_name}</bdi>
+            </small>
           </div>
           <span className="card-monogram" aria-hidden="true">
             {categorySymbols[category] ? (
@@ -205,7 +209,9 @@ export function LoyaltyCard({
         <div className="card-member-line">
           <div>
             <span className="card-member-label">{ar ? 'باسم' : 'MEMBER'}</span>
-            <div className="card-alias">{card.alias}</div>
+            <div className="card-alias">
+              <bdi>{card.alias}</bdi>
+            </div>
           </div>
           {card.cycle_number !== undefined && (
             <div className="card-cycle">
@@ -261,9 +267,13 @@ export function LoyaltyCard({
               ? ar
                 ? 'مكافأتك جاهزة'
                 : 'READY TO REDEEM'
-              : ar
-                ? 'كل زيارة بتقرّبك'
-                : 'ONE VISIT CLOSER'}
+              : threshold - displayBalance === 1
+                ? ar
+                  ? 'فاضلك ختم واحد'
+                  : 'ONE STAMP TO GO'
+                : ar
+                  ? `فاضلك ${threshold - displayBalance} أختام`
+                  : `${threshold - displayBalance} STAMPS TO GO`}
           </span>
         </div>
         <div className="card-progress-track" aria-hidden="true">
@@ -275,7 +285,9 @@ export function LoyaltyCard({
         <div className="card-reward-line">
           <div>
             <small>{ar ? 'المكافأة اللي جاية' : 'YOUR NEXT REWARD'}</small>
-            <strong className="card-reward">{card.reward_title}</strong>
+            <strong className="card-reward">
+              <bdi>{card.reward_title}</bdi>
+            </strong>
           </div>
           <span className="card-nuqta">
             PERKS <i>●</i>

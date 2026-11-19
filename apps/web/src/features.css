@@ -2002,3 +2002,237 @@ button[aria-busy='true']::after {
 .list-row .locked-note {
   margin-block-start: 4px;
 }
+
+/* "Did you mean …?" under an email field */
+.email-typo {
+  display: block;
+  margin-top: 4px;
+  color: #7a4b00;
+  font-size: 0.82rem;
+}
+.email-typo .text-button {
+  padding: 0;
+  font-size: inherit;
+  text-decoration: underline;
+}
+.badge.warning {
+  background: #fff4dc;
+  color: #7a4b00;
+}
+.row-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+.short-code {
+  display: grid;
+  gap: 2px;
+  justify-items: center;
+  margin: 8px 0 4px;
+}
+.short-code strong {
+  font-size: 2rem;
+  letter-spacing: 0.12em;
+  font-variant-numeric: tabular-nums;
+}
+.join-notify {
+  align-items: flex-start;
+  padding: 12px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--brand, #2b55cf) 8%, transparent);
+}
+.join-notify span {
+  display: grid;
+  gap: 2px;
+}
+.join-notify small {
+  color: var(--muted, #667085);
+}
+.cashier-tools > summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.request-timer {
+  font-weight: 600;
+}
+
+/* Text people type (names, rewards, terms) can be Arabic or English in either page language:
+   let each paragraph take its own direction so punctuation and numbers land in the right place. */
+input[type='text'],
+input:not([type]),
+textarea,
+.join-program strong,
+.card-reward,
+.program-card p,
+.list-row strong,
+td strong,
+.activity-row strong,
+.request-row h3 {
+  unicode-bidi: plaintext;
+}
+input[type='tel'],
+input[type='email'],
+input[inputmode='numeric'] {
+  direction: ltr;
+  text-align: start;
+}
+/* A destructive action that is not the main one: red text and border, white fill. */
+.danger-outline {
+  min-height: 46px;
+  padding: 9px 20px;
+  border-radius: 10px;
+  font-weight: 600;
+  background: white;
+  border: 1px solid #f0b8b2;
+  color: #b42318;
+}
+.danger-outline:hover {
+  background: #fff3f1;
+}
+.program-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 6px;
+}
+.program-rule {
+  font-weight: 600;
+}
+.danger-outline.small {
+  min-height: 36px;
+  padding: 5px 12px;
+  font-size: 13px;
+}
+.trace-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin: 14px 0;
+}
+.trace-summary dt {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+.trace-summary dd {
+  margin: 0;
+  font-weight: 600;
+}
+.list-search {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 12px;
+  max-width: 420px;
+}
+.join-logo {
+  display: block;
+  width: 72px;
+  height: 72px;
+  object-fit: contain;
+  margin: 0 auto 10px;
+  border-radius: 18px;
+  background: white;
+  padding: 8px;
+  box-shadow: 0 4px 18px rgb(24 27 56 / 8%);
+}
+.field-note {
+  display: block;
+  font-weight: 400;
+  margin-top: 2px;
+}
+
+/* Team activity (owner) */
+.staff-activity .section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.staff-activity .inline-select {
+  min-width: 160px;
+}
+.staff-activity tr.row-flag td {
+  background: color-mix(in srgb, var(--warning, #b45309) 9%, transparent);
+}
+.staff-activity .flag-note {
+  display: block;
+  color: var(--warning, #b45309);
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+/* Owner overview: setup checklist + today strip; cashier shift summary */
+.setup-checklist progress {
+  width: 100%;
+  height: 6px;
+  accent-color: var(--brand, currentColor);
+}
+.setup-checklist ol {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0 0;
+  display: grid;
+  gap: 8px;
+}
+.setup-checklist li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+}
+.setup-checklist li > span {
+  flex: 1;
+}
+.setup-checklist li.done > span {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+.today-strip .today-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin: 10px 0;
+}
+.today-strip .today-grid > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px;
+  border-radius: 12px;
+  background: color-mix(in srgb, currentColor 5%, transparent);
+}
+.today-strip .today-grid strong {
+  font-size: 1.5rem;
+}
+@media (max-width: 560px) {
+  .today-strip .today-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.shift-summary {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: color-mix(in srgb, currentColor 5%, transparent);
+}
+.shift-summary h3 {
+  margin: 0 0 4px;
+  font-size: 0.95rem;
+}
+.shift-summary p {
+  margin: 0;
+}
+.needs-attention ul {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 0;
+  display: grid;
+  gap: 6px;
+}
+.needs-attention li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  min-height: 40px;
+}

@@ -416,7 +416,12 @@ try {
       waitUntil: 'domcontentloaded',
     });
     await firstPage.getByLabel('Your name', { exact: true }).fill('First NFC QA');
-    assert.equal(await firstPage.locator('form input').count(), 3);
+    // Name, phone, terms, and the optional reminders choice (never pre-ticked).
+    assert.equal(await firstPage.locator('form input').count(), 4);
+    assert.equal(
+      await firstPage.getByLabel(/Remind me when my reward is close or ready/).isChecked(),
+      false,
+    );
     await firstPage.getByLabel('Mobile number', { exact: true }).fill(firstPhone);
     await firstPage
       .getByLabel('I accept the program, reward and privacy terms', { exact: true })

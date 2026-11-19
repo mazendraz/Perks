@@ -4,6 +4,7 @@ import type { AutoStampFeedItem } from '../../../../packages/contracts/src/comma
 import { api, ApiError, errorText } from '../api.js';
 import { useLiveRefresh } from '../live-events.js';
 import { FieldErrors } from '../FieldErrors.js';
+import { intlLocale } from '../locale.js';
 
 // Stamps customers collected on their own (sticker or welcome) at this branch, live.
 // The list comes only from the branch-scoped API and stream, so another branch never appears.
@@ -126,7 +127,7 @@ export function AutoStampFeed({
   const revocable = (s: AutoStampFeedItem) =>
     !s.revoked && s.revocableUntil !== null && Date.parse(s.revocableUntil) > now();
   const time = (value: string) =>
-    new Date(value).toLocaleTimeString(lang, { hour: 'numeric', minute: '2-digit' });
+    new Date(value).toLocaleTimeString(intlLocale(lang), { hour: 'numeric', minute: '2-digit' });
 
   const revoke = async (e: FormEvent) => {
     e.preventDefault();
@@ -211,7 +212,7 @@ export function AutoStampFeed({
               ) : (
                 revocable(s) && (
                   <button
-                    className="text-button revoke-link"
+                    className="danger-outline small revoke-link"
                     onClick={() => {
                       setValidation(null);
                       setError('');
@@ -234,7 +235,7 @@ export function AutoStampFeed({
       ) : (
         <p className="muted">
           {ar
-            ? 'مفيش أختام تلقائية في الفرع ده آخر ١٢ ساعة.'
+            ? 'مفيش أختام تلقائية في الفرع ده آخر 12 ساعة.'
             : 'No automatic stamps at this branch in the last 12 hours.'}
         </p>
       )}

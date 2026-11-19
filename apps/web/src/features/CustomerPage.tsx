@@ -31,6 +31,7 @@ import { LoyaltyCard } from '../../../../packages/ui/src/LoyaltyCard.js';
 import { api, errorText, ApiError, setCsrf } from '../api.js';
 import { DeviceNotices } from './CustomerRecovery.js';
 import { navigate } from '../useRoute.js';
+import { intlLocale } from '../locale.js';
 interface HolderChallenge {
   id: string;
   merchant_id: string;
@@ -59,7 +60,14 @@ export function EnrollmentPage({
   const ar = lang === 'ar',
     deviceBound = !!session?.user.deviceBound;
   const [info, setInfo] = useState<{
-      merchant: { id: string; name: string; terms: string; primary_color: string; status: string };
+      merchant: {
+        id: string;
+        name: string;
+        terms: string;
+        primary_color: string;
+        status: string;
+        logo_asset_id?: string | null;
+      };
       branches: { id: string; name: string }[];
       programs: {
         id: string;
@@ -75,6 +83,7 @@ export function EnrollmentPage({
     [alias, setAlias] = useState(session?.user.displayName || ''),
     [phone, setPhone] = useState(''),
     [terms, setTerms] = useState(false),
+    [notify, setNotify] = useState(false),
     [legal, setLegal] = useState<LegalNotice | null>(null),
     [busy, setBusy] = useState(false),
     [prepared, setPrepared] = useState(deviceBound),
@@ -128,6 +137,17 @@ export function EnrollmentPage({
       '/customer/' + result.membershipId + (context.toString() ? '?' + context.toString() : ''),
     );
   };
+  // Asked once at sign-up: reminders about this card on the phone and on WhatsApp.
+  const saveNotify = async (merchantId: string) => {
+    if (!notify) return;
+    for (const channel of ['push', 'whatsapp'])
+      await api('/me/merchants/' + merchantId + '/preferences', {
+        method: 'PATCH',
+        body: { channel, granted: true },
+      }).catch(() => {
+        /* The customer can still turn it on later in preferences. */
+      });
+  };
   const join = async (event: FormEvent) => {
     event.preventDefault();
     if (!info || !prepared || !legal || legal.locale !== lang) return;
@@ -175,6 +195,7 @@ export function EnrollmentPage({
             },
           },
         );
+        await saveNotify(info.merchant.id);
         await openCard(result);
       } else {
         const result = await api<{
@@ -191,6 +212,7 @@ export function EnrollmentPage({
           },
         });
         setCsrf(result.csrfToken);
+        await saveNotify(info.merchant.id);
         await openCard(result);
       }
     } catch (error) {
@@ -245,6 +267,19 @@ export function EnrollmentPage({
       {info ? (
         <>
           <div className="join-brand">
+            {info.merchant.logo_asset_id && (
+              <img
+                className="join-logo"
+                src={
+                  '/api/v1/public/merchants/' +
+                  info.merchant.id +
+                  '/logos/' +
+                  info.merchant.logo_asset_id
+                }
+                alt=""
+                onError={(event) => (event.currentTarget.hidden = true)}
+              />
+            )}
             <span className="eyebrow">{ar ? 'كارتك قريب منك' : 'Your card, always close'}</span>
             <h1>{info.merchant.name}</h1>
             <p className="muted">
@@ -320,11 +355,13 @@ export function EnrollmentPage({
                   ? 'بنحفظ اسمك ورقمك للكارت واسترجاعه بطلبك، وبنربطه بالجهاز ده. ممكن نستخدم موقعك لحظة السكان بس لتأكيد الزيارة، ومش بنحفظه. التسجيل مش موافقة على التسويق.'
                   : 'Your name and number are used for your card and recovery you request. The card is linked to this device. Your location may be used only at the moment you scan, to confirm the visit, and is never stored. Registration does not opt you into marketing.'}
               </p>
-              <p className="muted">
-                {ar
-                  ? 'مسودة محلية، والمراجعة القانونية مطلوبة قبل الإطلاق.'
-                  : 'Local draft. Legal review is required before launch.'}
-              </p>
+              {import.meta.env.DEV && (
+                <p className="muted">
+                  {ar
+                    ? 'مسودة محلية، والمراجعة القانونية مطلوبة قبل الإطلاق.'
+                    : 'Local draft. Legal review is required before launch.'}
+                </p>
+              )}
               <nav
                 className="legal-links"
                 aria-label={ar ? 'اقرأ الشروط والخصوصية' : 'Read terms and privacy'}
@@ -348,6 +385,25 @@ export function EnrollmentPage({
               {ar
                 ? 'موافق على شروط البرنامج والمكافأة والخصوصية'
                 : 'I accept the program, reward and privacy terms'}
+            </label>
+            <label className="checkbox-label join-notify">
+              <input
+                type="checkbox"
+                checked={notify}
+                onChange={(event) => setNotify(event.target.checked)}
+              />
+              <span>
+                <strong>
+                  {ar
+                    ? 'فكّرني لما مكافأتي تقرب أو تجهز'
+                    : 'Remind me when my reward is close or ready'}
+                </strong>
+                <small>
+                  {ar
+                    ? 'على الموبايل وواتساب، من المحل ده بس. تقدر تقفلها في أي وقت.'
+                    : 'On your phone and WhatsApp, from this shop only. Turn it off any time.'}
+                </small>
+              </span>
             </label>
             <button
               className="primary full"
@@ -441,7 +497,14 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
     [qr, setQr] = useState<{ token: string; qrDataUrl: string; expiresAt: string } | null>(null),
     [rewards, setRewards] = useState<Reward[]>([]),
     [activity, setActivity] = useState<
-      { id: string; public_reference: string; type: string; quantity: number; at: string }[]
+      {
+        id: string;
+        public_reference: string;
+        type: string;
+        quantity: number;
+        at: string;
+        source?: string;
+      }[]
     >([]),
     [challenges, setChallenges] = useState<HolderChallenge[]>([]),
     [busy, setBusy] = useState(false),
@@ -848,7 +911,7 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
                             <small>{r.terms}</small>
                             <small>
                               {ar ? 'صالحة لحد ' : 'Valid until '}
-                              {new Date(r.expires_at).toLocaleDateString(lang)}
+                              {new Date(r.expires_at).toLocaleDateString(intlLocale(lang))}
                             </small>
                           </div>
                           <span className="badge">
@@ -896,20 +959,31 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
                       <div className="activity-row" key={a.id}>
                         <div>
                           <strong>
-                            {a.type === 'award'
+                            {a.type === 'award' && a.source === 'welcome'
                               ? ar
-                                ? 'أختام جديدة'
-                                : 'Stamps awarded'
-                              : a.type === 'redeem'
+                                ? 'ختم ترحيب 🎁'
+                                : 'Welcome stamp 🎁'
+                              : a.type === 'award'
                                 ? ar
-                                  ? 'استبدال مكافأة'
-                                  : 'Reward redeemed'
-                                : ar
-                                  ? 'تصحيح'
-                                  : 'Correction'}
+                                  ? a.quantity === 1
+                                    ? 'ختم جديد'
+                                    : 'أختام جديدة'
+                                  : a.quantity === 1
+                                    ? 'New stamp'
+                                    : 'New stamps'
+                                : a.type === 'redeem'
+                                  ? ar
+                                    ? 'استبدال مكافأة'
+                                    : 'Reward redeemed'
+                                  : ar
+                                    ? 'تصحيح'
+                                    : 'Correction'}
                           </strong>
                           <small>
-                            <bdi>{a.public_reference}</bdi> ·{new Date(a.at).toLocaleString(lang)}
+                            {new Date(a.at).toLocaleString(intlLocale(lang), {
+                              dateStyle: 'medium',
+                              timeStyle: 'short',
+                            })}
                           </small>
                         </div>
                         <strong>
@@ -927,8 +1001,8 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
                   <h2>{ar ? 'تفضيلات الرسائل' : 'Message preferences'}</h2>
                   <p className="muted">
                     {ar
-                      ? 'موافقتك اختيارية وممكن تسحبها فيأي وقت. تشغيل القناة مرتبط بجاهزيتها عند النشاط.'
-                      : 'Consent is optional and can be withdrawn anytime. Delivery depends on channel availability.'}
+                      ? 'اختار المحل يكلمك إزاي. كل اختيار ممكن تقفله في أي وقت.'
+                      : 'Choose how this shop may reach you. Turn any choice off at any time.'}
                   </p>
                   <CustomerContact
                     key={card.merchant_id}
@@ -946,25 +1020,32 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
                       await refreshPreferences();
                     }}
                   />
-                  {preferences.map((p) => (
-                    <label className="checkbox-label" key={p.channel}>
-                      <input
-                        type="checkbox"
-                        checked={p.granted}
-                        disabled={busy || loadingPreferences}
-                        aria-busy={busy}
-                        onChange={(e) => void updatePreference(p.channel, e.target.checked)}
-                      />
-                      {(
-                        {
-                          email: ar ? 'البريد الإلكتروني' : 'Email',
-                          sms: 'SMS',
-                          whatsapp: 'WhatsApp',
-                          push: ar ? 'تذكيرات كارت Wallet' : 'Wallet card reminders',
-                        } as Record<string, string>
-                      )[p.channel] || p.channel}
-                    </label>
-                  ))}
+                  {/* SMS is not used, and there is nowhere to enter an email here: only offer what works. */}
+                  {preferences
+                    .filter((p) => p.channel === 'push' || p.channel === 'whatsapp' || p.granted)
+                    .map((p) => (
+                      <label className="checkbox-label" key={p.channel}>
+                        <input
+                          type="checkbox"
+                          checked={p.granted}
+                          disabled={busy || loadingPreferences}
+                          aria-busy={busy}
+                          onChange={(e) => void updatePreference(p.channel, e.target.checked)}
+                        />
+                        {(
+                          {
+                            email: ar ? 'البريد الإلكتروني' : 'Email',
+                            sms: 'SMS',
+                            whatsapp: ar
+                              ? 'رسايل واتساب من المحل'
+                              : 'WhatsApp messages from the shop',
+                            push: ar
+                              ? 'تذكيرات على الموبايل لما مكافأتك تقرب'
+                              : 'Phone reminders when your reward is close',
+                          } as Record<string, string>
+                        )[p.channel] || p.channel}
+                      </label>
+                    ))}
                 </section>
               )}
             </div>

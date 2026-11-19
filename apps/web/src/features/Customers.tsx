@@ -5,6 +5,7 @@ import { useEffect, useState, useRef } from 'react';
 import type { Grant, Language } from '../../../../packages/contracts/src/index.js';
 import { api, errorText } from '../api.js';
 import { CardReset, type ResettableMembership } from './CardReset.js';
+import { intlLocale } from '../locale.js';
 interface Customer {
   id: string;
   alias: string;
@@ -247,7 +248,7 @@ export function Customers({ grant, lang }: { grant: Grant; lang: Language }) {
                   <td data-label={ar ? 'صافي الأختام' : 'Net stamps'}>{r.net_stamps}</td>
                   <td data-label={ar ? 'آخر شراء' : 'Last purchase'}>
                     {r.last_purchase_at
-                      ? new Date(r.last_purchase_at).toLocaleDateString(lang)
+                      ? new Date(r.last_purchase_at).toLocaleDateString(intlLocale(lang))
                       : '—'}
                   </td>
                   <td data-label={ar ? 'الشريحة' : 'Segment'}>
@@ -315,7 +316,7 @@ export function Customers({ grant, lang }: { grant: Grant; lang: Language }) {
                   )[ex.status] || ex.status}{' '}
                   {ex.row_count != null ? '· ' + ex.row_count : ''}
                 </strong>
-                <small>{new Date(ex.expires_at).toLocaleTimeString(lang)}</small>
+                <small>{new Date(ex.expires_at).toLocaleTimeString(intlLocale(lang))}</small>
               </div>
               {ex.status === 'ready' && new Date(ex.expires_at) > new Date() && (
                 <a
@@ -368,7 +369,7 @@ export function Customers({ grant, lang }: { grant: Grant; lang: Language }) {
               <div className="activity-row" key={t.public_reference}>
                 <div>
                   <bdi>{t.public_reference}</bdi>
-                  <small>{new Date(t.at).toLocaleString(lang)}</small>
+                  <small>{new Date(t.at).toLocaleString(intlLocale(lang))}</small>
                 </div>
                 <span>
                   {transactionTypeLabel(t.type, lang)} · {t.quantity}

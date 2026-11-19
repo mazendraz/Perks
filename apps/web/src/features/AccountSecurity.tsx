@@ -5,6 +5,7 @@ import { LockedBadge } from './LockedBadge.js';
 import { api, ApiError, errorText } from '../api.js';
 import { Icon } from '../../../../packages/ui/src/Icon.js';
 import { staffRoleLabel, staffStatusLabel } from '../business-labels.js';
+import { intlLocale } from '../locale.js';
 export interface SecurityAccount {
   id: string;
   email: string;
@@ -161,7 +162,7 @@ export function AccountSecurity({
                   {a.passwordChangedAt && (
                     <small>
                       {ar ? 'آخر تغيير: ' : 'Changed: '}
-                      {new Date(a.passwordChangedAt).toLocaleString(lang)}
+                      {new Date(a.passwordChangedAt).toLocaleString(intlLocale(lang))}
                     </small>
                   )}
                 </td>

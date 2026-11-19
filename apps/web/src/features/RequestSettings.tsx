@@ -55,11 +55,16 @@ export function RequestSettings({
       <h3>{ar ? 'طلبات الأختام' : 'Stamp requests'}</h3>
       <p className="muted">
         {ar
-          ? 'الطلب صالح ١٠ دقايق. الختم محتاج سكان كود العميل وموافقة الكاشير.'
+          ? 'الطلب صالح 10 دقايق. الختم محتاج سكان كود العميل وموافقة الكاشير.'
           : 'Requests last 10 minutes. Stamps require a customer code scan and cashier approval.'}
       </p>
       <label>
         {ar ? 'أقصى طلبات لكل عميل في اليوم' : 'Maximum requests per customer per day'}
+        <small className="muted field-note">
+          {ar
+            ? 'ده بيمنع العميل يبعت طلبات كتير ورا بعض بس. عدد الأختام نفسه بيتحدد من قواعد جمع الأختام المتفق عليها.'
+            : 'This only stops a customer from sending too many requests. How many stamps they can get is set by the stamp collection rules agreed with Perks.'}
+        </small>
         <input
           type="number"
           min={1}

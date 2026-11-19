@@ -31,7 +31,7 @@ test('the Wallet reminder tells each customer their own stamps left, or that the
   );
   assert.match(
     walletReminderText(reminderDefaults, card, 'en'),
-    /just 2 stamps to go for your قهوة/,
+    /just 2 stamps to go and قهوة مجانًا is yours/,
   );
   assert.match(
     walletReminderText(reminderDefaults, { ...card, display_balance: 8, pending_rewards: 1 }, 'ar'),

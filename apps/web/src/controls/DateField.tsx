@@ -1,6 +1,7 @@
 import { useId } from 'react';
 import type { Language } from '../../../../packages/contracts/src/index.js';
 import { Select } from './Select.js';
+import { intlLocale } from '../locale.js';
 export function DateField({
   label,
   value,
@@ -63,7 +64,7 @@ export function DateField({
           >
             {Array.from({ length: 12 }, (_, i) => (
               <option key={i + 1} value={i + 1}>
-                {new Intl.DateTimeFormat(ar ? 'ar-EG' : 'en', { month: 'short' }).format(
+                {new Intl.DateTimeFormat(intlLocale(ar ? 'ar' : 'en'), { month: 'short' }).format(
                   new Date(2024, i, 1),
                 )}
               </option>

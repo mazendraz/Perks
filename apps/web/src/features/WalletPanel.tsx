@@ -57,7 +57,8 @@ export function WalletPanel({
     android = isAndroid();
   const apple = !!wallets?.apple && iphone,
     google = !!wallets?.google && android;
-  if (!wallets) return null;
+  // Nothing to offer when Wallet is not set up on the server: no panel at all.
+  if (!wallets || (!wallets.apple && !wallets.google)) return null;
   return (
     <section className={'panel wallet-panel' + (apple || google ? ' wallet-panel-ready' : '')}>
       <h2>{ar ? 'كارتك في Wallet' : 'Your card in Wallet'}</h2>
@@ -73,17 +74,11 @@ export function WalletPanel({
               : 'It updates after every stamp. Adding shares your name and card details with your wallet provider.'}
           </p>
         </>
-      ) : wallets?.apple || wallets?.google ? (
+      ) : (
         <p className="muted">
           {ar
             ? 'افتح الكارت من موبايلك علشان تضيفه لـApple Wallet أو Google Wallet. كارت الويب محدث ومحفوظ.'
             : 'Open this card on your phone to add it to Apple Wallet or Google Wallet. Your web card stays current.'}
-        </p>
-      ) : (
-        <p className="muted">
-          {ar
-            ? 'الإضافة للمحفظة مش متاحة حاليًا. كارت الويب محدث ومحفوظ.'
-            : 'Wallet is not available yet. Your web card stays current.'}
         </p>
       )}
       {(wallets.apple || wallets.google) && onPreferences && (

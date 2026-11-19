@@ -22,15 +22,22 @@ import type { Language, CardData } from '../../../../packages/contracts/src/inde
 import type { ProvisioningInput } from '../../../../packages/contracts/src/provisioning.js';
 import { LoyaltyCard } from '../../../../packages/ui/src/LoyaltyCard.js';
 import { api, errorText, ApiError } from '../api.js';
+import { EmailTypoHint } from './EmailTypoHint.js';
+import { intlLocale } from '../locale.js';
 type Merchant = {
   id: string;
   name: string;
   slug: string;
+  category?: string | null;
   status: string;
   primary_color: string;
   branch_count: number;
   staff_count: number;
   plan: string;
+  plan_name_ar?: string | null;
+  plan_name_en?: string | null;
+  last_purchase_at?: string | null;
+  visits_7d?: number;
 };
 type Draft = {
   id: string;
@@ -108,6 +115,8 @@ export function PlatformPage({ lang, userId }: { lang: Language; userId: string 
     [busy, setBusy] = useState(false),
     [error, setError] = useState(''),
     [success, setSuccess] = useState<{ name: string; slug: string; id: string } | null>(null);
+  const [discard, setDiscard] = useState<Draft | null>(null);
+  const [merchantQuery, setMerchantQuery] = useState('');
   const [statusChange, setStatusChange] = useState<Merchant | null>(null),
     [statusReason, setStatusReason] = useState('');
   const [passwords, setPasswords] = useState<Record<number, string>>({});
@@ -119,6 +128,26 @@ export function PlatformPage({ lang, userId }: { lang: Language; userId: string 
     const id = new URLSearchParams(location.search).get('merchant');
     return id && /^[a-f0-9-]{36}$/.test(id) ? id : null;
   });
+  // Keep the open business in the address bar, so refresh and Back return to it.
+  useEffect(() => {
+    const url = new URL(location.href),
+      current = url.searchParams.get('merchant');
+    if ((workspace ?? null) === current) return;
+    if (workspace) url.searchParams.set('merchant', workspace);
+    else {
+      url.searchParams.delete('merchant');
+      url.searchParams.delete('tab');
+    }
+    history.pushState(history.state, '', url);
+  }, [workspace]);
+  useEffect(() => {
+    const back = () => {
+      const id = new URLSearchParams(location.search).get('merchant');
+      setWorkspace(id && /^[a-f0-9-]{36}$/.test(id) ? id : null);
+    };
+    window.addEventListener('popstate', back);
+    return () => window.removeEventListener('popstate', back);
+  }, []);
   useEffect(() => {
     setPasswords({});
     setSavedEmails([]);
@@ -488,8 +517,27 @@ export function PlatformPage({ lang, userId }: { lang: Language; userId: string 
             <h1>{steps[step]}</h1>
           </div>
           <button
+            className="text-button"
+            disabled={busy || !!activation}
+            onClick={() => {
+              // Leave without saving. A brand-new, never-saved draft leaves nothing behind.
+              setEditing(false);
+              setDraft(null);
+              setAttempt(null);
+              setError('');
+              void load();
+            }}
+          >
+            {ar ? 'خروج من غير حفظ' : 'Exit without saving'}
+          </button>
+          <button
             className="secondary"
             onClick={() => {
+              // Nothing typed yet: leave without creating an empty draft.
+              if (!draft && !data.name.trim()) {
+                setEditing(false);
+                return;
+              }
               setBusy(true);
               void save()
                 .then(async (current) => {
@@ -569,6 +617,11 @@ export function PlatformPage({ lang, userId }: { lang: Language; userId: string 
                     value={data.contactEmail}
                     onChange={(e) => patch({ contactEmail: e.target.value })}
                   />
+                  <EmailTypoHint
+                    email={data.contactEmail}
+                    lang={lang}
+                    onUse={(contactEmail) => patch({ contactEmail })}
+                  />
                 </label>
                 <label>
                   {ar ? 'واتساب صاحب المحل (اختياري)' : 'Owner WhatsApp number (optional)'}
@@ -606,7 +659,7 @@ export function PlatformPage({ lang, userId }: { lang: Language; userId: string 
                 </label>
                 <p className="muted">
                   {ar
-                    ? 'PNG أو JPG أو WebP، لحد ٢ ميجا. هتشوفه على الكارت قبل التفعيل.'
+                    ? 'PNG أو JPG أو WebP، لحد 2 ميجا. هتشوفه على الكارت قبل التفعيل.'
                     : 'PNG, JPG or WebP, up to 2 MB. Preview your logo before activation.'}
                 </p>
                 {data.logoAssetId && (
@@ -805,6 +858,15 @@ export function PlatformPage({ lang, userId }: { lang: Language; userId: string 
                           })
                         }
                       />
+                      <EmailTypoHint
+                        email={s.email}
+                        lang={lang}
+                        onUse={(email) =>
+                          patch({
+                            staff: data.staff.map((x, k) => (i === k ? { ...x, email } : x)),
+                          })
+                        }
+                      />
                     </label>
                     <label className="checkbox-label">
                       <input
@@ -847,7 +909,7 @@ export function PlatformPage({ lang, userId }: { lang: Language; userId: string 
                         />
                         <small className="muted">
                           {ar
-                            ? '١٠ حروف أو أكتر. الحساب يقدر يدخل فور التفعيل.'
+                            ? '10 حروف أو أكتر. الحساب يقدر يدخل فور التفعيل.'
                             : 'At least 10 characters. The account can sign in immediately after activation.'}
                         </small>
                       </label>
@@ -1124,19 +1186,26 @@ export function PlatformPage({ lang, userId }: { lang: Language; userId: string 
             <div className="list-row" key={d.id}>
               <div>
                 <strong>{d.data.name || (ar ? 'مسودة جديدة' : 'New draft')}</strong>
-                <small className="muted">{new Date(d.updated_at).toLocaleDateString(lang)}</small>
+                <small className="muted">
+                  {new Date(d.updated_at).toLocaleDateString(intlLocale(lang))}
+                </small>
               </div>
-              <button
-                className="secondary small"
-                onClick={() => {
-                  setDraft(d);
-                  setData(normalize({ ...initial(), ...d.data }));
-                  setStep(0);
-                  setEditing(true);
-                }}
-              >
-                {ar ? 'كمّل' : 'Resume'}
-              </button>
+              <span className="row-actions">
+                <button className="text-button" disabled={busy} onClick={() => setDiscard(d)}>
+                  {ar ? 'امسح' : 'Delete'}
+                </button>
+                <button
+                  className="secondary small"
+                  onClick={() => {
+                    setDraft(d);
+                    setData(normalize({ ...initial(), ...d.data }));
+                    setStep(0);
+                    setEditing(true);
+                  }}
+                >
+                  {ar ? 'كمّل' : 'Resume'}
+                </button>
+              </span>
             </div>
           ))}
         </section>
@@ -1168,17 +1237,29 @@ export function PlatformPage({ lang, userId }: { lang: Language; userId: string 
           </div>
         </section>
       )}
+      <NeedsAttention merchants={merchants} lang={lang} open={setWorkspace} />
       <section className="panel merchant-register">
         <div className="section-heading">
-          <h2>{ar ? 'الأنشطة المشتركة' : 'Your businesses'}</h2>
+          <h2>{ar ? 'المحلات' : 'Your businesses'}</h2>
           <span className="badge">{merchants.length}</span>
         </div>
-        <div className="table-wrap">
+        {merchants.length > 5 && (
+          <label className="list-search">
+            {ar ? 'دوّر على محل' : 'Find a business'}
+            <input
+              type="search"
+              value={merchantQuery}
+              onChange={(e) => setMerchantQuery(e.target.value)}
+              placeholder={ar ? 'الاسم أو نوع النشاط' : 'Name or business type'}
+            />
+          </label>
+        )}
+        <div className="table-wrap mobile-records">
           <table>
             <thead>
               <tr>
                 {(ar
-                  ? ['النشاط', 'الحالة', 'الفروع', 'الفريق', 'الخطة', 'إجراء']
+                  ? ['المحل', 'الحالة', 'الفروع', 'الفريق', 'الباقة', 'إجراء']
                   : ['Business', 'Status', 'Branches', 'Staff', 'Plan', 'Action']
                 ).map((h) => (
                   <th key={h}>{h}</th>
@@ -1186,69 +1267,81 @@ export function PlatformPage({ lang, userId }: { lang: Language; userId: string 
               </tr>
             </thead>
             <tbody>
-              {merchants.map((m) => (
-                <tr key={m.id}>
-                  <td>
-                    <button className="text-button" onClick={() => setWorkspace(m.id)}>
-                      <strong>{m.name}</strong>
-                    </button>
-                    <small>
-                      <bdi>{m.slug}</bdi>
-                    </small>
-                  </td>
-                  <td>
-                    <span className="badge">{merchantStatusLabel(m.status, lang)}</span>
-                  </td>
-                  <td>{m.branch_count}</td>
-                  <td>{m.staff_count}</td>
-                  <td>{subscriptionPlanLabel(m.plan, lang)}</td>
-                  <td>
-                    <button className="primary small" onClick={() => setPreviewBusiness(m.id)}>
-                      {ar ? 'معاينة' : 'Preview'}
-                    </button>
-                    <button
-                      className="secondary small"
-                      onClick={() => navigate('/platform/merchants/' + m.id + '/owner-view')}
-                    >
-                      {ar ? 'عرض واجهة المالك' : 'View owner dashboard'}
-                    </button>
-                    <button
-                      className="secondary small"
-                      onClick={() => {
-                        setWorkspaceTab('overview');
-                        setWorkspace(m.id);
-                      }}
-                    >
-                      {ar ? 'فتح ملف المحل' : 'Open workspace'}
-                    </button>
-                    <button
-                      type="button"
-                      role="switch"
-                      className="business-status-switch"
-                      aria-label={(ar ? 'تشغيل المحل: ' : 'Business active: ') + m.name}
-                      aria-checked={m.status !== 'suspended'}
-                      disabled={busy}
-                      onClick={() => {
-                        setStatusChange(m);
-                        setStatusReason('');
-                      }}
-                    >
-                      <span className="ios-switch-track" aria-hidden="true">
-                        <span />
-                      </span>
-                      <span className="switch-caption">
-                        {m.status === 'suspended'
-                          ? ar
-                            ? 'متوقف'
-                            : 'Paused'
-                          : ar
-                            ? 'شغال'
-                            : 'Active'}
-                      </span>
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {merchants
+                .filter((m) => {
+                  const q = merchantQuery.trim().toLowerCase();
+                  return (
+                    !q ||
+                    m.name.toLowerCase().includes(q) ||
+                    (m.slug || '').toLowerCase().includes(q) ||
+                    (m.category || '').toLowerCase().includes(q)
+                  );
+                })
+                .map((m) => (
+                  <tr key={m.id}>
+                    <td data-label={ar ? 'المحل' : 'Business'}>
+                      <button className="text-button" onClick={() => setWorkspace(m.id)}>
+                        <strong>{m.name}</strong>
+                      </button>
+                      <small>
+                        <bdi>{m.slug}</bdi>
+                      </small>
+                    </td>
+                    <td data-label={ar ? 'الحالة' : 'Status'}>
+                      <span className="badge">{merchantStatusLabel(m.status, lang)}</span>
+                    </td>
+                    <td data-label={ar ? 'الفروع' : 'Branches'}>{m.branch_count}</td>
+                    <td data-label={ar ? 'الفريق' : 'Staff'}>{m.staff_count}</td>
+                    <td data-label={ar ? 'الباقة' : 'Plan'}>
+                      {subscriptionPlanLabel(m.plan, lang, m)}
+                    </td>
+                    <td data-label={ar ? 'إجراء' : 'Action'}>
+                      <button className="primary small" onClick={() => setPreviewBusiness(m.id)}>
+                        {ar ? 'معاينة' : 'Preview'}
+                      </button>
+                      <button
+                        className="secondary small"
+                        onClick={() => navigate('/platform/merchants/' + m.id + '/owner-view')}
+                      >
+                        {ar ? 'عرض واجهة المالك' : 'View owner dashboard'}
+                      </button>
+                      <button
+                        className="secondary small"
+                        onClick={() => {
+                          setWorkspaceTab('overview');
+                          setWorkspace(m.id);
+                        }}
+                      >
+                        {ar ? 'فتح ملف المحل' : 'Open workspace'}
+                      </button>
+                      <button
+                        type="button"
+                        role="switch"
+                        className="business-status-switch"
+                        aria-label={(ar ? 'تشغيل المحل: ' : 'Business active: ') + m.name}
+                        aria-checked={m.status !== 'suspended'}
+                        disabled={busy}
+                        onClick={() => {
+                          setStatusChange(m);
+                          setStatusReason('');
+                        }}
+                      >
+                        <span className="ios-switch-track" aria-hidden="true">
+                          <span />
+                        </span>
+                        <span className="switch-caption">
+                          {m.status === 'suspended'
+                            ? ar
+                              ? 'متوقف'
+                              : 'Paused'
+                            : ar
+                              ? 'شغال'
+                              : 'Active'}
+                        </span>
+                      </button>
+                    </td>
+                  </tr>
+                ))}
             </tbody>
           </table>
         </div>
@@ -1265,6 +1358,48 @@ export function PlatformPage({ lang, userId }: { lang: Language; userId: string 
             setPreviewBusiness(null);
           }}
         />
+      )}
+      {discard && (
+        <div className="modal-backdrop">
+          <div
+            className="dialog"
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="discard-draft"
+          >
+            <h2 id="discard-draft">
+              {ar ? 'تمسح المسودة دي؟' : 'Delete this draft?'}{' '}
+              <bdi>{discard.data.name || (ar ? 'مسودة جديدة' : 'New draft')}</bdi>
+            </h2>
+            <p className="muted">
+              {ar
+                ? 'كل اللي اتكتب فيها هيتمسح ومش هيرجع. مفيش أي محل اتعمل منها.'
+                : 'Everything typed in it is removed for good. No business was created from it.'}
+            </p>
+            <div className="form-actions">
+              <button type="button" className="secondary" onClick={() => setDiscard(null)}>
+                {ar ? 'رجوع' : 'Back'}
+              </button>
+              <button
+                type="button"
+                className="danger"
+                disabled={busy}
+                onClick={() => {
+                  setBusy(true);
+                  void api('/platform/provisioning-drafts/' + discard.id, { method: 'DELETE' })
+                    .then(() => {
+                      setDiscard(null);
+                      return load();
+                    })
+                    .catch((e) => showError(e))
+                    .finally(() => setBusy(false));
+                }}
+              >
+                {ar ? 'امسح المسودة' : 'Delete draft'}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
       {statusChange && (
         <div className="modal-backdrop">
@@ -1320,5 +1455,54 @@ export function PlatformPage({ lang, userId }: { lang: Language; userId: string 
         </div>
       )}
     </>
+  );
+}
+
+/** Active businesses with no real purchase in 7 days (or never): the ones to call this week. */
+function NeedsAttention({
+  merchants,
+  lang,
+  open,
+}: {
+  merchants: Merchant[];
+  lang: 'ar' | 'en';
+  open: (id: string) => void;
+}) {
+  const ar = lang === 'ar';
+  const quiet = merchants.filter((m) => m.status === 'active' && !m.visits_7d);
+  if (!quiet.length) return null;
+  return (
+    <section className="panel needs-attention">
+      <div className="section-heading">
+        <h2>{ar ? 'محلات محتاجة متابعة' : 'Businesses to follow up'}</h2>
+        <span className="badge">{quiet.length}</span>
+      </div>
+      <p className="muted">
+        {ar
+          ? 'مفيش عندهم ولا عملية شراء في آخر 7 أيام. كلّمهم واتأكد إن الكاشير شغال.'
+          : 'No purchases in the last 7 days. Check in and make sure their cashier is set up.'}
+      </p>
+      <ul>
+        {quiet.slice(0, 8).map((m) => (
+          <li key={m.id}>
+            <button className="text-button" onClick={() => open(m.id)}>
+              <strong>{m.name}</strong>
+            </button>
+            <small className="muted">
+              {m.last_purchase_at
+                ? (ar ? 'آخر شراء ' : 'Last purchase ') +
+                  new Date(m.last_purchase_at).toLocaleDateString(intlLocale(lang), {
+                    day: 'numeric',
+                    month: 'short',
+                  })
+                : ar
+                  ? 'لسه ماعملش أول عملية'
+                  : 'No purchase yet'}
+              {m.staff_count === 0 && (ar ? ' · مفيش كاشير' : ' · no cashier')}
+            </small>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }

@@ -286,3 +286,53 @@ test('program version rows and committed operation receipts are immutable', asyn
   });
   assert.equal(foreignInvite.statusCode, 403);
 });
+
+test('an unfinished draft can be deleted by its author; the merchant list shows the live plan and staff without the owner', async () => {
+  const created = await app.inject({
+    method: 'POST',
+    url: '/api/v1/platform/provisioning-drafts',
+    headers: { ...pa, ...key() },
+    payload: { data: { name: 'مسودة للمسح' } },
+  });
+  assert.equal(created.statusCode, 200);
+  const id = created.json().draft.id;
+  const removed = await app.inject({
+    method: 'DELETE',
+    url: '/api/v1/platform/provisioning-drafts/' + id,
+    headers: pa,
+  });
+  assert.equal(removed.statusCode, 200);
+  const again = await app.inject({
+    method: 'DELETE',
+    url: '/api/v1/platform/provisioning-drafts/' + id,
+    headers: pa,
+  });
+  assert.equal(again.statusCode, 404);
+  const list = (
+    await app.inject({ url: '/api/v1/platform/provisioning-drafts', headers: pa })
+  ).json();
+  assert.ok(!list.drafts.some((d: { id: string }) => d.id === id));
+  const merchants = (await app.inject({ url: '/api/v1/platform/merchants', headers: pa })).json()
+    .merchants as { id: string; plan: string; plan_name_en: string | null; staff_count: number }[];
+  assert.ok(merchants.length > 0);
+  for (const m of merchants) {
+    const sub = (
+      await db.query(
+        'SELECT p.key,p.name_en FROM merchant_subscriptions s JOIN plans p ON p.id=s.plan_id WHERE s.merchant_id=$1',
+        [m.id],
+      )
+    ).rows[0];
+    // The list shows the live subscription plan, not the legacy plan column.
+    if (sub) {
+      assert.equal(m.plan, sub.key);
+      assert.equal(m.plan_name_en, sub.name_en);
+    }
+    const ownerless = (
+      await db.query(
+        "SELECT count(*)::int AS n FROM staff_memberships WHERE merchant_id=$1 AND role<>'owner' AND status='active'",
+        [m.id],
+      )
+    ).rows[0].n;
+    assert.equal(m.staff_count, ownerless);
+  }
+});

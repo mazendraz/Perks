@@ -3,6 +3,7 @@ import { statusLabel } from '../business-labels.js';
 import { useEffect, useState, type FormEvent } from 'react';
 import type { Language } from '../../../../packages/contracts/src/index.js';
 import { api, errorText } from '../api.js';
+import { intlLocale } from '../locale.js';
 interface Ticket {
   id: string;
   subject: string;
@@ -11,6 +12,14 @@ interface Ticket {
   revision: number;
   merchant_name?: string;
 }
+const supportCategories: Record<string, [string, string]> = {
+  loyalty: ['الأختام والمكافآت', 'Stamps and rewards'],
+  access: ['الدخول والحسابات', 'Sign-in and accounts'],
+  materials: ['QR والستاندات', 'QR and stands'],
+  billing: ['الاشتراك والدفع', 'Plan and billing'],
+  other: ['حاجة تانية', 'Something else'],
+};
+const supportCategory = (c: string, ar: boolean) => supportCategories[c]?.[ar ? 0 : 1] ?? c;
 export function Support({ lang, merchantId }: { lang: Language; merchantId?: string }) {
   const ar = lang === 'ar',
     [tickets, setTickets] = useState<Ticket[]>([]),
@@ -110,7 +119,7 @@ export function Support({ lang, merchantId }: { lang: Language; merchantId?: str
               {t.subject}
             </button>
             <small>
-              {t.merchant_name} ·{t.category}
+              {t.merchant_name} · {supportCategory(t.category, ar)}
             </small>
           </div>
           <span className="badge">{statusLabel(t.status, lang)}</span>
@@ -145,7 +154,7 @@ export function Support({ lang, merchantId }: { lang: Language; merchantId?: str
               {detail.messages.map((m) => (
                 <div className="support-message" key={m.id}>
                   <p style={{ whiteSpace: 'pre-wrap' }}>{m.body}</p>
-                  <small>{new Date(m.at).toLocaleString(lang)}</small>
+                  <small>{new Date(m.at).toLocaleString(intlLocale(lang))}</small>
                 </div>
               ))}
             </>
@@ -168,7 +177,9 @@ export function Support({ lang, merchantId }: { lang: Language; merchantId?: str
                   {ar ? 'التصنيف' : 'Category'}
                   <Select value={category} onChange={(e) => setCategory(e.target.value)}>
                     {['loyalty', 'access', 'materials', 'billing', 'other'].map((c) => (
-                      <option key={c}>{c}</option>
+                      <option key={c} value={c}>
+                        {supportCategory(c, ar)}
+                      </option>
                     ))}
                   </Select>
                 </label>

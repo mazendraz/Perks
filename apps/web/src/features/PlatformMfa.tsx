@@ -151,7 +151,7 @@ export function PlatformMfa({
               </details>
               <p>
                 {ar
-                  ? 'امسح QR من تطبيق التحقق، واكتب الرمز اللي ظهر. التجهيز صالح ١٠ دقايق.'
+                  ? 'امسح QR من تطبيق التحقق، واكتب الرمز اللي ظهر. التجهيز صالح 10 دقايق.'
                   : 'Scan this QR in your authenticator and enter its code. Setup expires in 10 minutes.'}
               </p>
             </>

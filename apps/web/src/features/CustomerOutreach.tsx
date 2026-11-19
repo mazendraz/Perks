@@ -10,6 +10,7 @@ import {
   type WhatsAppPurpose,
 } from '../../../../packages/contracts/src/customer-reminders.js';
 import { CustomerReminders, purposeLabels, type ReminderConfig } from './CustomerReminders.js';
+import { intlLocale } from '../locale.js';
 export function WhatsAppDraft({
   merchantId,
   lang,
@@ -302,7 +303,7 @@ export function CustomerOutreach({ merchantId, lang }: { merchantId: string; lan
                         ? 'لسه من غير شراء'
                         : 'No purchase yet'}
                     {c.lastPurchase && (
-                      <small>{new Date(c.lastPurchase).toLocaleDateString(lang)}</small>
+                      <small>{new Date(c.lastPurchase).toLocaleDateString(intlLocale(lang))}</small>
                     )}
                     {c.availableRewards > 0 && (
                       <small>

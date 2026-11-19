@@ -70,6 +70,16 @@ export function customerRemindersModule(app: FastifyInstance, pools: Pools, c: C
           revision: row?.revision ?? 0,
           canManage,
           merchantName: merchant.name,
+          // The shop's own reward and stamp count, so the preview shows what customers will read.
+          sampleProgram:
+            (
+              await db.query(
+                `SELECT v.reward_title AS "rewardTitle",v.threshold FROM programs p
+                 JOIN program_versions v ON v.id=p.current_version_id
+                 WHERE p.merchant_id=$1 AND p.status='active' ORDER BY p.created_at LIMIT 1`,
+                [m],
+              )
+            ).rows[0] ?? null,
           timezone: merchant.timezone,
           stats,
           recent,

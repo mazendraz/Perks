@@ -41,7 +41,7 @@ export function InstallCard({ lang }: { lang: Language }) {
     <>
       <button className="secondary install-card-link" onClick={() => void save()}>
         <ActionLabel icon="download">
-          {ar ? 'ضيف My Cards للشاشة الرئيسية' : 'Add My Cards to home screen'}
+          {ar ? 'ضيف كروتي للشاشة الرئيسية' : 'Add My Cards to home screen'}
         </ActionLabel>
       </button>
       {guide && (
@@ -53,7 +53,7 @@ export function InstallCard({ lang }: { lang: Language }) {
             aria-labelledby="install-card-heading"
           >
             <div className="section-heading">
-              <h2 id="install-card-heading">{ar ? 'ضيف My Cards' : 'Add My Cards'}</h2>
+              <h2 id="install-card-heading">{ar ? 'ضيف كروتي للشاشة الرئيسية' : 'Add My Cards'}</h2>
               <button className="secondary" data-dialog-close onClick={close}>
                 {ar ? 'إغلاق' : 'Close'}
               </button>

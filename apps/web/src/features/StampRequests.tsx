@@ -5,6 +5,7 @@ import { useAutoStampRequest } from '../useAutoStampRequest.js';
 import { useEffect, useState, useRef } from 'react';
 import type { Language, SavedCard } from '../../../../packages/contracts/src/index.js';
 import { api, errorText } from '../api.js';
+import { intlLocale } from '../locale.js';
 export interface VisitNotice {
   tone: 'info' | 'error';
   text: string;
@@ -149,7 +150,7 @@ export function CustomerRequests({
           </small>
           <small>
             {ar ? 'صالح لحد ' : 'Valid until '}
-            {new Date(pending.expires_at).toLocaleTimeString(lang)}
+            {new Date(pending.expires_at).toLocaleTimeString(intlLocale(lang))}
           </small>
           <button
             className="text-button"

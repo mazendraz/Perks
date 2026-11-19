@@ -57,3 +57,30 @@ test('the design fingerprint is stable within a build and feeds the Google image
   assert.equal(walletDesignSignature(), walletDesignSignature());
   assert.match(stripVersion(card), /^[0-9a-f]{12}$/);
 });
+
+test('a shop logo is processed once and reused for every pass of that shop', async () => {
+  const { logoAssets } = await import('../../apps/api/src/wallet/apple-pass.js');
+  const logo = await sharp({
+    create: { width: 300, height: 120, channels: 4, background: '#204E43' },
+  })
+    .png()
+    .toBuffer();
+  const first = logoAssets(logo);
+  assert.equal(logoAssets(Buffer.from(logo)), first);
+  const assets = await first;
+  assert.equal(assets.wordmark, true);
+  assert.deepEqual(
+    assets.files.map(([name]) => name),
+    [
+      'logo.png',
+      'logo@2x.png',
+      'logo@3x.png',
+      'primaryLogo.png',
+      'ar.lproj/primaryLogo.png',
+      'primaryLogo@2x.png',
+      'ar.lproj/primaryLogo@2x.png',
+      'primaryLogo@3x.png',
+      'ar.lproj/primaryLogo@3x.png',
+    ],
+  );
+});

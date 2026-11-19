@@ -5,6 +5,110 @@ import { transaction, type Pools } from '../db.js';
 import { merchantGrant, platform } from '../policy.js';
 import { requireCondition } from '../errors.js';
 export function reportingModule(app: FastifyInstance, pools: Pools) {
+  // Today at a glance: what is waiting now, what happened since midnight (shop time),
+  // and the caller's own share, which doubles as the cashier's shift summary.
+  app.get('/api/v1/merchants/:m/today', async (req) => {
+    const actor = authenticated(req),
+      { m } = z.object({ m: z.uuid() }).parse(req.params);
+    return transaction(
+      pools.pool,
+      async (db) => {
+        const grant = await merchantGrant(db, actor, m);
+        const row = (
+          await db.query(
+            `WITH day AS (SELECT (date_trunc('day',clock_timestamp() AT TIME ZONE timezone)) AT TIME ZONE timezone AS start
+                            FROM merchants WHERE id=$1),
+             tx AS (SELECT t.* FROM loyalty_transactions t, day
+                    WHERE t.merchant_id=$1 AND branch_access(t.merchant_id,t.branch_id) AND t.at>=day.start)
+             SELECT
+               (SELECT count(*) FROM stamp_requests r WHERE r.merchant_id=$1 AND r.status='pending'
+                  AND r.expires_at>clock_timestamp() AND r.failed_matches<5
+                  AND branch_access(r.merchant_id,r.branch_id))::int AS pending_requests,
+               (SELECT count(*) FROM reward_grants g WHERE g.merchant_id=$1 AND g.status='available'
+                  AND g.expires_at>clock_timestamp()
+                  AND EXISTS(SELECT 1 FROM unnest(g.branch_ids) b WHERE branch_access(g.merchant_id,b)))::int AS rewards_ready,
+               (SELECT count(DISTINCT purchase_id) FROM tx WHERE type='award' AND source<>'welcome')::int AS visits,
+               (SELECT coalesce(sum(quantity),0) FROM tx WHERE type='award' AND source<>'welcome')::int AS stamps,
+               (SELECT count(*) FROM tx WHERE type='redeem')::int AS redeemed,
+               (SELECT count(DISTINCT purchase_id) FROM tx WHERE type='award' AND source<>'welcome' AND staff_id=$2)::int AS my_visits,
+               (SELECT coalesce(sum(quantity),0) FROM tx WHERE type='award' AND source<>'welcome' AND staff_id=$2)::int AS my_stamps,
+               (SELECT count(*) FROM tx WHERE type='redeem' AND staff_id=$2)::int AS my_redeemed,
+               (SELECT min(at) FROM tx WHERE staff_id=$2) AS my_first_at`,
+            [m, grant.id],
+          )
+        ).rows[0];
+        return {
+          pendingRequests: row.pending_requests,
+          rewardsReady: row.rewards_ready,
+          today: { visits: row.visits, stamps: row.stamps, redeemed: row.redeemed },
+          mine: {
+            visits: row.my_visits,
+            stamps: row.my_stamps,
+            redeemed: row.my_redeemed,
+            firstAt: row.my_first_at,
+          },
+        };
+      },
+      actor,
+    );
+  });
+  // Each cashier's work in the period, with a flag when stamps came unusually fast.
+  app.get('/api/v1/merchants/:m/staff-activity', async (req) => {
+    const actor = authenticated(req),
+      { m } = z.object({ m: z.uuid() }).parse(req.params),
+      q = z
+        .object({
+          days: z.coerce
+            .number()
+            .int()
+            .refine((n) => [1, 7, 30, 90].includes(n))
+            .default(30),
+        })
+        .parse(req.query);
+    return transaction(
+      pools.pool,
+      async (db) => {
+        await merchantGrant(db, actor, m, ['owner', 'manager']);
+        const rows = (
+          await db.query(
+            `WITH tx AS (
+               SELECT t.staff_id,t.type,t.quantity,t.at FROM loyalty_transactions t
+               WHERE t.merchant_id=$1 AND t.staff_id IS NOT NULL AND branch_access(t.merchant_id,t.branch_id)
+                 AND t.at>=clock_timestamp()-make_interval(days=>$2)),
+             bursts AS (
+               SELECT a.staff_id,max((SELECT sum(b.quantity) FROM tx b WHERE b.staff_id=a.staff_id AND b.type='award'
+                 AND b.at BETWEEN a.at AND a.at+interval '10 minutes'))::int AS peak
+               FROM tx a WHERE a.type='award' GROUP BY a.staff_id),
+             decided AS (
+               SELECT r.decided_by,count(*) FILTER (WHERE r.status='approved')::int AS approved,
+                      count(*) FILTER (WHERE r.status='rejected')::int AS rejected
+               FROM stamp_requests r WHERE r.merchant_id=$1 AND r.decided_at>=clock_timestamp()-make_interval(days=>$2)
+                 AND branch_access(r.merchant_id,r.branch_id) GROUP BY r.decided_by)
+             SELECT s.id,s.name,s.role,s.status,
+               coalesce((SELECT count(*) FROM tx WHERE tx.staff_id=s.id AND tx.type='award'),0)::int AS visits,
+               coalesce((SELECT sum(quantity) FROM tx WHERE tx.staff_id=s.id AND tx.type='award'),0)::int AS stamps,
+               coalesce((SELECT count(*) FROM tx WHERE tx.staff_id=s.id AND tx.type='redeem'),0)::int AS rewards,
+               coalesce((SELECT max(at) FROM tx WHERE tx.staff_id=s.id),NULL) AS last_at,
+               coalesce(b.peak,0) AS peak_ten_minutes,
+               coalesce(d.approved,0) AS approved,coalesce(d.rejected,0) AS rejected
+             FROM staff_memberships s
+             LEFT JOIN bursts b ON b.staff_id=s.id
+             LEFT JOIN decided d ON d.decided_by=s.user_id
+             WHERE s.merchant_id=$1
+             ORDER BY stamps DESC,s.name`,
+            [m, q.days],
+          )
+        ).rows;
+        return {
+          days: q.days,
+          // More than 10 stamps from one person inside 10 minutes is worth a look.
+          burstThreshold: 10,
+          staff: rows,
+        };
+      },
+      actor,
+    );
+  });
   app.get('/api/v1/merchants/:m/overview', async (req) => {
     const actor = authenticated(req),
       { m } = z.object({ m: z.uuid() }).parse(req.params),
@@ -37,7 +141,7 @@ export function reportingModule(app: FastifyInstance, pools: Pools) {
         ).rows[0];
         const customers = (
           await db.query(
-            "WITH scoped AS (SELECT cp.id,cp.created_at,(SELECT max(t.at) FROM loyalty_transactions t JOIN memberships ms ON ms.id=t.membership_id WHERE ms.profile_id=cp.id AND t.type='award' AND branch_access(t.merchant_id,t.branch_id) AND ($2::uuid IS NULL OR t.branch_id=$2)) AS last_purchase FROM tenant_customer_profiles cp WHERE cp.merchant_id=$1 AND ($3::boolean OR EXISTS(SELECT 1 FROM memberships ms WHERE ms.profile_id=cp.id AND ((branch_access(ms.merchant_id,ms.origin_branch_id) AND ($2::uuid IS NULL OR ms.origin_branch_id=$2)) OR EXISTS(SELECT 1 FROM loyalty_transactions t WHERE t.membership_id=ms.id AND branch_access(t.merchant_id,t.branch_id) AND ($2::uuid IS NULL OR t.branch_id=$2)))))) SELECT count(*)::int AS registered,count(*) FILTER(WHERE last_purchase>=clock_timestamp()-interval '30 days')::int AS active,count(*) FILTER(WHERE last_purchase<clock_timestamp()-interval '30 days')::int AS inactive,count(*) FILTER(WHERE last_purchase IS NULL)::int AS never_active,count(*) FILTER(WHERE created_at>=clock_timestamp()-$4*interval '1 day')::int AS new_signups,max(created_at) AS watermark FROM scoped",
+            "WITH scoped AS (SELECT cp.id,cp.created_at,(SELECT max(t.at) FROM loyalty_transactions t JOIN memberships ms ON ms.id=t.membership_id WHERE ms.profile_id=cp.id AND t.type='award' AND t.source<>'welcome' AND branch_access(t.merchant_id,t.branch_id) AND ($2::uuid IS NULL OR t.branch_id=$2)) AS last_purchase FROM tenant_customer_profiles cp WHERE cp.merchant_id=$1 AND ($3::boolean OR EXISTS(SELECT 1 FROM memberships ms WHERE ms.profile_id=cp.id AND ((branch_access(ms.merchant_id,ms.origin_branch_id) AND ($2::uuid IS NULL OR ms.origin_branch_id=$2)) OR EXISTS(SELECT 1 FROM loyalty_transactions t WHERE t.membership_id=ms.id AND branch_access(t.merchant_id,t.branch_id) AND ($2::uuid IS NULL OR t.branch_id=$2)))))) SELECT count(*)::int AS registered,count(*) FILTER(WHERE last_purchase>=clock_timestamp()-interval '30 days')::int AS active,count(*) FILTER(WHERE last_purchase<clock_timestamp()-interval '30 days')::int AS inactive,count(*) FILTER(WHERE last_purchase IS NULL)::int AS never_active,count(*) FILTER(WHERE created_at>=clock_timestamp()-$4*interval '1 day')::int AS new_signups,max(created_at) AS watermark FROM scoped",
             [m, q.branchId || null, meta.full_scope && !q.branchId, q.days],
           )
         ).rows[0];

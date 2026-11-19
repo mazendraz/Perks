@@ -7,12 +7,14 @@ import {
 } from '../../../../packages/contracts/src/customer-reminders.js';
 import { api, errorText } from '../api.js';
 import { Select } from '../controls/Select.js';
+import { intlLocale } from '../locale.js';
 
 export interface ReminderConfig {
   settings: ReminderSettings;
   revision: number;
   canManage: boolean;
   merchantName: string;
+  sampleProgram?: { rewardTitle: string; threshold: number } | null;
   timezone: string;
   providers: { apple: boolean; google: boolean };
   stats: {
@@ -33,12 +35,17 @@ export interface ReminderConfig {
   }[];
 }
 // Preview data: a customer two stamps away from the reward.
-const sampleCard = (lang: 'ar' | 'en', business: string) => ({
+// Uses the shop's real reward and stamp count when it has a program.
+const sampleCard = (
+  lang: 'ar' | 'en',
+  business: string,
+  program?: { rewardTitle: string; threshold: number } | null,
+) => ({
   customer_name: lang === 'ar' ? 'مريم' : 'Mariam',
   merchant_name: business,
-  threshold: 8,
-  display_balance: 6,
-  reward_title: lang === 'ar' ? 'قهوة مجانًا' : 'a free coffee',
+  threshold: program?.threshold ?? 8,
+  display_balance: Math.max(0, (program?.threshold ?? 8) - 2),
+  reward_title: program?.rewardTitle || (lang === 'ar' ? 'قهوة مجانًا' : 'a free coffee'),
 });
 export const purposeLabels = (ar: boolean): Record<WhatsAppPurpose, string> => ({
   followup: ar ? 'متابعة الزيارة' : 'Visit follow-up',
@@ -215,7 +222,10 @@ export function CustomerReminders({
         <p>
           {walletReminderText(
             settings,
-            { ...sampleCard(editingLanguage, config.merchantName), pending_rewards: 0 },
+            {
+              ...sampleCard(editingLanguage, config.merchantName, config.sampleProgram),
+              pending_rewards: 0,
+            },
             editingLanguage,
           )}
         </p>
@@ -238,7 +248,10 @@ export function CustomerReminders({
         <p>
           {walletReminderText(
             settings,
-            { ...sampleCard(editingLanguage, config.merchantName), pending_rewards: 1 },
+            {
+              ...sampleCard(editingLanguage, config.merchantName, config.sampleProgram),
+              pending_rewards: 1,
+            },
             editingLanguage,
           )}
         </p>
@@ -308,7 +321,7 @@ export function CustomerReminders({
             <strong>{row.alias}</strong>
             <small>
               {row.channel === 'apple' ? 'Apple Wallet' : 'Google Wallet'} ·{' '}
-              {new Date(row.created_at).toLocaleString(lang)}
+              {new Date(row.created_at).toLocaleString(intlLocale(lang))}
             </small>
           </div>
           <span>

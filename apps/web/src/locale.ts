@@ -11,3 +11,10 @@ export function initialLanguage(): 'ar' | 'en' {
   }
   return resolveLanguage(saved, navigator.languages?.[0] || navigator.language || 'en');
 }
+/**
+ * The locale for dates and numbers. Arabic uses Western digits (0-9), as phones in Egypt do,
+ * so numbers never mix two digit styles and render in every font.
+ */
+export function intlLocale(lang: string): string {
+  return lang === 'ar' ? 'ar-EG-u-nu-latn' : 'en';
+}

@@ -308,18 +308,35 @@ export function BusinessPreview({
                   <h3>{ar ? 'العملاء والمتابعة' : 'Customers and follow-up'}</h3>
                   <p>
                     {data.readiness.never_purchased}{' '}
-                    {ar ? 'عميل لسه من غير شراء' : 'customers have not purchased yet'}
+                    {ar
+                      ? 'عميل لسه من غير شراء'
+                      : data.readiness.never_purchased === 1
+                        ? 'customer has not purchased yet'
+                        : 'customers have not purchased yet'}
                   </p>
                   <p>
-                    {data.summary.open_rewards} {ar ? 'مكافأة جاهزة' : 'rewards available'}
+                    {data.summary.open_rewards}{' '}
+                    {ar
+                      ? 'مكافأة جاهزة'
+                      : data.summary.open_rewards === 1
+                        ? 'reward available'
+                        : 'rewards available'}
                   </p>
                   <p>
                     {data.readiness.missing_phones}{' '}
-                    {ar ? 'عميل بدون رقم واتساب' : 'customers without a WhatsApp number'}
+                    {ar
+                      ? 'عميل بدون رقم واتساب'
+                      : data.readiness.missing_phones === 1
+                        ? 'customer without a WhatsApp number'
+                        : 'customers without a WhatsApp number'}
                   </p>
                   <p>
                     {data.readiness.without_whatsapp_consent}{' '}
-                    {ar ? 'عميل بدون موافقة واتساب' : 'customers have not opted into WhatsApp'}
+                    {ar
+                      ? 'عميل بدون موافقة واتساب'
+                      : data.readiness.without_whatsapp_consent === 1
+                        ? 'customer has not opted into WhatsApp'
+                        : 'customers have not opted into WhatsApp'}
                   </p>
                   <button className="secondary small" onClick={() => onOpen('customers')}>
                     {ar ? 'افتح العملاء والتواصل' : 'Open customers and contact'}

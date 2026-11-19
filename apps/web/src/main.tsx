@@ -7,6 +7,8 @@ import './styles.css';
 import './features.css';
 import './design.css';
 import './mobile.css';
+import { installFormMessages } from './form-messages.js';
+installFormMessages();
 if (!window.__nuqtaUnsupported)
   createRoot(document.getElementById('root')!).render(
     <React.StrictMode>

@@ -312,6 +312,9 @@ const contracts: Record<string, Contract> = {
     response: draftOutput,
     revision: true,
   },
+  'DELETE /api/v1/platform/provisioning-drafts/:id': {
+    response: z.object({ deleted: z.boolean() }),
+  },
   'POST /api/v1/platform/provisioning-drafts/:id/activate': {
     body: draftActivationInput,
     response: activationOutput,

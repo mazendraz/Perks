@@ -2,6 +2,7 @@ import { existsSync } from 'node:fs';
 import { isAbsolute, relative, resolve, parse, sep } from 'node:path';
 import { z } from 'zod';
 import { isIP } from 'node:net';
+import { keysMatch } from './webpush.js';
 if (existsSync('.env')) process.loadEnvFile('.env');
 const schema = z.object({
   APP_ENV: z.enum(['development', 'test', 'staging', 'production']).default('development'),
@@ -54,6 +55,11 @@ const schema = z.object({
     .regex(/^\d{10,25}$/)
     .optional(),
   GOOGLE_WALLET_SERVICE_ACCOUNT_FILE: z.string().optional(),
+  // Web Push for cashier devices. Off unless both halves of the VAPID pair are set
+  // (generate one with `npm run push:keys`). The subject defaults to PUBLIC_APP_ORIGIN.
+  WEB_PUSH_VAPID_PUBLIC_KEY: z.string().optional(),
+  WEB_PUSH_VAPID_PRIVATE_KEY: z.string().optional(),
+  WEB_PUSH_SUBJECT: z.string().optional(),
 });
 export type Config = z.infer<typeof schema>;
 type DatabaseKeys =
@@ -124,6 +130,22 @@ function validateConfig(c: ServiceConfig & Partial<Pick<Config, DatabaseKeys>>) 
       );
     if (deployed(c) && !c.PUBLIC_APP_ORIGIN.startsWith('https://'))
       throw new Error('Apple Wallet updates require an HTTPS PUBLIC_APP_ORIGIN.');
+  }
+  // Empty values (a blank line in .env) mean "not configured", same as unset.
+  const pushPublic = c.WEB_PUSH_VAPID_PUBLIC_KEY?.trim(),
+    pushPrivate = c.WEB_PUSH_VAPID_PRIVATE_KEY?.trim();
+  if (!!pushPublic !== !!pushPrivate)
+    throw new Error(
+      'Web Push requires both WEB_PUSH_VAPID_PUBLIC_KEY and WEB_PUSH_VAPID_PRIVATE_KEY.',
+    );
+  if (pushPublic && pushPrivate) {
+    if (!keysMatch({ publicKey: pushPublic, privateKey: pushPrivate }))
+      throw new Error('WEB_PUSH_VAPID_PUBLIC_KEY and WEB_PUSH_VAPID_PRIVATE_KEY are not one pair.');
+    const subject = c.WEB_PUSH_SUBJECT || c.PUBLIC_APP_ORIGIN;
+    if (!/^(?:https:\/\/|mailto:)\S+$/.test(subject))
+      throw new Error(
+        'Web Push needs an https URL or mailto: address as WEB_PUSH_SUBJECT (or an https PUBLIC_APP_ORIGIN to default to).',
+      );
   }
   if (c.MONITORING_TOKEN && c.MONITORING_TOKEN === c.AUTH_PEPPER)
     throw new Error('Monitoring token must be independent of authentication secrets.');

@@ -147,6 +147,13 @@ export function platformModule(app: FastifyInstance, pools: Pools, c: Config) {
         },
         // WhatsApp opens a chat with a prepared message (wa.me); there is no paid WhatsApp API.
         { id: 'whatsapp', status: 'manual_links' },
+        {
+          id: 'web_push',
+          status:
+            c.WEB_PUSH_VAPID_PUBLIC_KEY && c.WEB_PUSH_VAPID_PRIVATE_KEY
+              ? 'configured'
+              : 'not_configured',
+        },
         { id: 'sms', status: 'not_used' },
         { id: 'payments', status: 'manual_only' },
       ],

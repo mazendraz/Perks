@@ -17,6 +17,56 @@ self.addEventListener('activate', event => {
     await self.clients.claim();
   })());
 });
+/* Cashier notifications (Web Push). The payload is composed by the server and is generic by design:
+   { title, body, url, tag, lang, dir } where body is a branch name. Nothing here is cached or trusted
+   beyond showing it; a tap only ever opens a same-origin cashier page. */
+self.addEventListener('push', event => {
+  const data = (() => { try { return (event.data && event.data.json()) || {}; } catch { return {}; } })();
+  const text = value => (typeof value === 'string' ? value.slice(0, 200) : '');
+  const options = {
+    body: text(data.body),
+    icon: '/icons/perks-192.png',
+    badge: '/icons/perks-192.png',
+    lang: data.lang === 'en' ? 'en' : 'ar',
+    dir: data.dir === 'ltr' ? 'ltr' : 'rtl',
+    data: { url: typeof data.url === 'string' ? data.url : '/cashier' }
+  };
+  // The same tag replaces the earlier notification instead of stacking, and still buzzes.
+  if(typeof data.tag === 'string' && data.tag) { options.tag = text(data.tag); options.renotify = true; }
+  // A push that shows nothing makes the browser show its own generic notice, so always show one.
+  event.waitUntil(self.registration.showNotification(text(data.title) || 'Perks', options));
+});
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  let target = new URL('/cashier', self.location.origin);
+  try {
+    const wanted = new URL((event.notification.data && event.notification.data.url) || '/cashier', self.location.origin);
+    if(wanted.origin === self.location.origin && /^\/cashier(?:\/|$)/.test(wanted.pathname)) target = wanted;
+  } catch { /* keep the default */ }
+  event.waitUntil((async()=>{
+    const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for(const client of windows) {
+      if(new URL(client.url).origin === self.location.origin && /^\/cashier(?:\/|$)/.test(new URL(client.url).pathname)) {
+        await client.focus();
+        return client.url === target.href || !('navigate' in client) ? undefined : client.navigate(target.href);
+      }
+    }
+    return self.clients.openWindow(target.href);
+  })());
+});
+/* The push service replaced this browser's subscription (its keys rotated or it expired). Subscribe again
+   with the same server key so the browser keeps a valid one, then ask an open page to register it: the
+   worker cannot read the session's CSRF token, so the page does the authenticated part (or the next visit). */
+self.addEventListener('pushsubscriptionchange', event => {
+  event.waitUntil((async()=>{
+    try {
+      const key = (event.oldSubscription && event.oldSubscription.options && event.oldSubscription.options.applicationServerKey) || undefined;
+      if(key) await self.registration.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key });
+    } catch { /* permission revoked: the next visit shows the button again */ }
+    const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for(const client of windows) client.postMessage({ type: 'PUSH_SUBSCRIPTION_CHANGED' });
+  })());
+});
 self.addEventListener('fetch', event => {
   const request=event.request,url=new URL(request.url);
   // API, auth, health, methods and query-bearing asset requests always use the network.

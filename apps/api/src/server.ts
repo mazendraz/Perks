@@ -6,6 +6,7 @@ import { accountManagementModule } from './modules/account-management.js';
 import { contractDocumentation, activationDataSchema } from './openapi.js';
 import { scriptSources } from '../../../packages/domain/src/browser-policy.js';
 import { liveEventsModule } from './live-events.js';
+import { pushModule } from './modules/push.js';
 import { experienceModule } from './modules/experience.js';
 import { customerIdentityModule } from './modules/customer-identity.js';
 import { customerRecoveryModule } from './modules/customer-recovery.js';
@@ -49,6 +50,8 @@ export async function buildApp(
     monitoringProbes?: MonitoringProbes;
     // Lets tests answer Google Maps short links without the network.
     mapsFetch?: typeof fetch;
+    // Lets tests answer push-service requests without the network.
+    pushTransport?: typeof fetch;
   } = {},
 ) {
   const c = readConfig(overrides),
@@ -172,6 +175,7 @@ export async function buildApp(
   requestsModule(app, pools, c);
   collectionModule(app, pools, c, options.mapsFetch);
   liveEventsModule(app, pools, c);
+  pushModule(app, pools, c, { transport: options.pushTransport });
   experienceModule(app, pools);
   customerIdentityModule(app, pools, c);
   customerRecoveryModule(app, pools, c);

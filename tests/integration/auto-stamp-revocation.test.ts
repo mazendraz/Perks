@@ -697,8 +697,8 @@ test('the branch stream announces an automatic stamp to that branch only', async
     while (!check() && Date.now() < end) await new Promise((r) => setTimeout(r, 20));
   };
   try {
-    // The cashier cannot even open branch B's stream.
-    assert.equal(await open(cashier, ids.branchA2), 403);
+    // The cashier cannot even open branch B's stream; the branch is not visible to them at all.
+    assert.equal(await open(cashier, ids.branchA2), 404);
     const cashierA = (await open(cashier, ids.branchA)) as Exclude<
       Awaited<ReturnType<typeof open>>,
       number

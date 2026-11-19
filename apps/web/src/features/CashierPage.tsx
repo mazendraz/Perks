@@ -2,6 +2,8 @@ import { Select } from '../controls/Select.js';
 import { ActionLabel, Icon } from '../../../../packages/ui/src/Icon.js';
 import { FieldErrors, fieldProps } from '../FieldErrors.js';
 import { CashierRequests } from './StampRequests.js';
+import { PushToggle } from './PushToggle.js';
+import { unlinkPushDevice } from '../push.js';
 import { TeamCustomerRecovery } from './CustomerRecovery.js';
 import { AutoStampFeed } from './AutoStampFeed.js';
 import { useEffect, useState, type FormEvent, type CSSProperties } from 'react';
@@ -396,7 +398,8 @@ export function CashierPage({ grant, lang }: { grant: Grant; lang: Language }) {
         <button
           className="secondary small"
           onClick={() =>
-            void api('/auth/logout', { method: 'POST' })
+            void unlinkPushDevice()
+              .then(() => api('/auth/logout', { method: 'POST' }))
               .then(() => location.assign('/cashier/login'))
               .catch((e) => setError(errorText(e, lang)))
           }
@@ -459,6 +462,7 @@ export function CashierPage({ grant, lang }: { grant: Grant; lang: Language }) {
               <span aria-hidden="true">{ar ? '←' : '→'}</span>
             </button>
           </section>
+          <PushToggle lang={lang} />
           <AutoStampFeed
             grant={grant}
             branch={branch}

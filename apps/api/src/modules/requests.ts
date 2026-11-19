@@ -13,6 +13,7 @@ import { idempotencyKey, operation, expectedRevision } from '../operations.js';
 import { merchantGrant } from '../policy.js';
 import { award } from './loyalty.js';
 import { requireEarning } from '../subscriptions.js';
+import { webPushConfig } from '../webpush.js';
 function code(nonce: string, c: Config) {
   return (parseInt(keyedHash('request:' + nonce, c.AUTH_PEPPER).slice(0, 12), 16) % 1_000_000)
     .toString()
@@ -137,6 +138,10 @@ export async function createStampRequest(
           await audit(db, actor, 'request.create', ms.merchant_id, r.id, {
             branchId: p.branchId,
           });
+          // Same transaction as the request, so a rolled-back request never rings a phone. Only a
+          // newly created request notifies (not a replay or the already-pending one above), and
+          // nothing is queued while Web Push is switched off.
+          if (webPushConfig(c)) await db.query('SELECT enqueue_cashier_push($1)', [r.id]);
           return { id: r.id, nonce, expiresAt: r.expires_at, status: 'pending' };
         },
       );

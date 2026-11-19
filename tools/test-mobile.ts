@@ -561,7 +561,7 @@ try {
           throw error;
         }
       }
-      await page.locator('.match-code').waitFor();
+      await page.locator('small').filter({ hasText: 'Request number:' }).locator('bdi').waitFor();
       await page.waitForFunction(() => !new URLSearchParams(location.search).has('auto'));
       assert.equal(
         await page.evaluate(
@@ -585,7 +585,7 @@ try {
       1,
     );
     await page.reload({ waitUntil: 'domcontentloaded' });
-    await page.locator('.match-code').waitFor();
+    await page.locator('small').filter({ hasText: 'Request number:' }).locator('bdi').waitFor();
     assert.equal(
       (
         await db.query('SELECT count(*)::int AS n FROM stamp_requests WHERE membership_id=$1', [
@@ -661,7 +661,9 @@ try {
       project.name +
         ': labeled camera and manual scan actions remain readable with icons at 320/390/430px in both languages',
     );
-    await cp.getByLabel('Or enter the customer card code', { exact: true }).fill(token);
+    await cp
+      .getByLabel("Or type the 6 digits on the customer's phone", { exact: true })
+      .fill(token);
     await cp.getByRole('button', { name: 'Read code', exact: true }).click();
     await cp.getByRole('button', { name: 'Add stamps', exact: true }).click();
     await cp
@@ -1106,7 +1108,7 @@ try {
       assert.ok(
         !/[A-Z]{3,}_|[a-f0-9]{8}-[a-f0-9]{4}-/.test(await page.getByRole('alert').innerText()),
       );
-      assert.equal(await page.locator('.match-code').count(), 0);
+      assert.equal(await page.locator('small').filter({ hasText: 'Request number:' }).count(), 0);
     } finally {
       await db.query("UPDATE branches SET status='active' WHERE id=$1", [branch]);
       await db.query('UPDATE placements SET status=$2 WHERE public_code=$1', [

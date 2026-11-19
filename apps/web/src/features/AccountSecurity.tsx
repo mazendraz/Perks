@@ -85,6 +85,23 @@ export function AccountSecurity({
     setChecked(false);
     setAttempt(null);
     setError('');
+    // The list may be minutes old (the person may have signed in or changed their password
+    // since), so pick up the current versions before anything is sent.
+    void api<{ accounts: SecurityAccount[] }>('/merchants/' + merchantId + '/account-security')
+      .then(({ accounts }) => {
+        setRows(accounts);
+        const fresh = accounts.find((x) => x.id === account.id);
+        if (!fresh) return;
+        setAction((current) =>
+          current && current.account.id === fresh.id ? { ...current, account: fresh } : current,
+        );
+        setEdit((current) =>
+          current && current.id === fresh.id
+            ? { ...current, revision: fresh.revision, credentialVersion: fresh.credentialVersion }
+            : current,
+        );
+      })
+      .catch(() => undefined);
   };
   return (
     <div className="account-security">

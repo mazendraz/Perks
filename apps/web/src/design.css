@@ -3192,6 +3192,7 @@ td small {
   .mobile-records table,
   .mobile-records tbody {
     display: block;
+    min-width: 0;
   }
   .mobile-records thead {
     position: absolute;

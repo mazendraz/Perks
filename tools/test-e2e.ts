@@ -10,6 +10,9 @@ import { openMfa } from '../apps/api/src/mfa.js';
 import { totp } from '../apps/api/src/crypto.js';
 import { runOne } from '../apps/worker/src/runner.js';
 import { buildApp } from '../apps/api/src/server.js';
+import { cardTemplates, templateCategory } from '../packages/contracts/src/branding.js';
+// The customer's own card, not the copy inside the stamp celebration overlay.
+const mainCardFilled = '.loyalty-card:not(.stamp-moment-card *) .stamp-dots .filled';
 
 // Uses synthetic, uniquely named tenants in a dedicated local/CI DB.
 // No production URLs, remote providers or existing balances are changed.
@@ -292,7 +295,7 @@ try {
     'A lost draft update response recovers the equal saved content without discarding edits or overwriting another revision',
   );
   ok('Provisioning draft survives save, exit, reload and resume with its revision');
-  assert.equal(await ap.locator('.template-choice').count(), 15);
+  assert.equal(await ap.locator('.template-choice').count(), cardTemplates.length);
   await ap.getByLabel('Primary color HEX', { exact: true }).fill('204C41');
   await ap.getByLabel('Accent color HEX', { exact: true }).fill('#D4AD68');
   await ap.getByRole('button', { name: 'Primary color picker', exact: true }).click();
@@ -355,7 +358,10 @@ try {
     assert.equal(await cardPreview.getAttribute('data-stamp-icon'), symbol);
   }
   await ap.getByRole('button', { name: 'Cafe', exact: true }).click();
-  assert.equal(await ap.locator('.template-choice').count(), 2);
+  assert.equal(
+    await ap.locator('.template-choice').count(),
+    cardTemplates.filter((t) => templateCategory(t) === 'cafe').length,
+  );
   await ap.getByRole('button', { name: 'All templates', exact: true }).click();
   await choose(ap.getByLabel('Card template', { exact: true }), 'cafe');
   await ap.getByLabel('Number of stamps', { exact: true }).fill('8');
@@ -629,7 +635,7 @@ try {
   await merchantTab(ap, 'Branding');
   await choose(ap.getByLabel('Card template', { exact: true }), 'barber');
   await ap.getByRole('button', { name: 'Publish branding', exact: true }).click();
-  await ap.getByRole('alert').filter({ hasText: 'This is an owner preview.' }).waitFor();
+  await ap.getByRole('alert').filter({ hasText: 'This is a preview only.' }).waitFor();
   await reloadPage(ap);
   await ap.getByRole('heading', { name: 'Merchant dashboard', exact: true }).waitFor();
   await merchantTab(ap, 'Branding');
@@ -741,10 +747,7 @@ try {
   );
   await up.getByRole('button', { name: 'Open my card', exact: true }).click();
   await up
-    .getByText(
-      'Privacy and terms have changed. Review and accept the current notice before continuing.',
-      { exact: true },
-    )
+    .getByText('The terms changed. Review and accept them to continue.', { exact: true })
     .waitFor();
   assert.equal(
     await up
@@ -796,11 +799,6 @@ try {
     ['merchant', 'owner'],
     ['cashier', 'cashier'],
   ] as const;
-  await shared.addCookies(
-    (await customer.cookies()).filter((cookie) =>
-      /nq_device|nq_session_customer|nq_csrf_customer/.test(cookie.name),
-    ),
-  );
   for (const [portal, role] of portalRoles) {
     await login(
       sharedPage,
@@ -843,11 +841,8 @@ try {
       ).user.email,
       email(role),
     );
-  const sharedCustomer = await (
-    await shared.request.get('/api/v1/session', { headers: { 'x-nuqta-workspace': 'customer' } })
-  ).json();
-  assert.equal(sharedCustomer.user.id, customerSession.user.id);
-  assert.equal(sharedCustomer.user.email, null);
+  // The customer card is not shared into this browser: signing out of a staff portal also ends
+  // any customer card on the same browser (one phone, one sign-out), covered by the API tests.
   await shared.close();
   ok(
     'One sign-in screen routes the three team/platform roles; their sessions stay separate from the device-bound customer',
@@ -954,7 +949,9 @@ try {
   await navigateTo(cp, '/cashier');
   async function scan() {
     await cp.getByRole('button', { name: 'Scan card', exact: true }).click();
-    await cp.getByLabel('Or enter the customer card code', { exact: true }).fill(token);
+    await cp
+      .getByLabel("Or type the 6 digits on the customer's phone", { exact: true })
+      .fill(token);
     await cp.getByRole('button', { name: 'Read code', exact: true }).click();
     await cp.getByRole('button', { name: 'Add stamps', exact: true }).waitFor();
   }
@@ -1021,7 +1018,7 @@ try {
   ok('Committed stamps animate on the customer card and update the accessible progress');
   ok('Lost response after commit recovers the same operation with exactly one purchase and award');
   await cp.getByRole('button', { name: 'Next customer', exact: true }).click();
-  await cp.getByLabel('Or enter the customer card code', { exact: true }).fill(token);
+  await cp.getByLabel("Or type the 6 digits on the customer's phone", { exact: true }).fill(token);
   await cp.getByRole('button', { name: 'Read code', exact: true }).click();
   await prepare('BROWSER-' + stamp + '-2', 2);
   await cp.getByRole('button', { name: 'Confirm stamps', exact: true }).click();
@@ -1030,7 +1027,7 @@ try {
   await up.waitForFunction(
     () => document.querySelector('[role=progressbar]')?.getAttribute('aria-valuenow') === '5',
   );
-  assert.equal(await up.locator('.stamp-dots .filled').count(), 5);
+  assert.equal(await up.locator(mainCardFilled).count(), 5);
   await up.waitForFunction(() =>
     (window as unknown as { motionEvents: string[] }).motionEvents?.some((x) =>
       x.includes('reward-earned'),
@@ -1050,7 +1047,7 @@ try {
     'Two purchases award five stamps, conserve the balance and unlock one independent reward across sessions',
   );
   await cp.getByRole('button', { name: 'Next customer', exact: true }).click();
-  await cp.getByLabel('Or enter the customer card code', { exact: true }).fill(token);
+  await cp.getByLabel("Or type the 6 digits on the customer's phone", { exact: true }).fill(token);
   await cp.getByRole('button', { name: 'Read code', exact: true }).click();
   await cp.getByRole('button', { name: 'Redeem', exact: true }).click();
   await reloadPage(up);
@@ -1072,7 +1069,7 @@ try {
   await cp.getByRole('heading', { name: 'Reward redeemed', exact: true }).waitFor();
   const reference = (await cp.locator('.receipt-result bdi').textContent())!;
   await up.getByText('Redeemed', { exact: true }).waitFor();
-  assert.equal(await up.locator('.stamp-dots .filled').count(), 0);
+  assert.equal(await up.locator(mainCardFilled).count(), 0);
   assert.equal(await up.locator('.card-cycle').innerText(), 'Card 2');
   assert.ok(
     (await up.evaluate(() => (window as unknown as { motionEvents: string[] }).motionEvents)).some(
@@ -1156,8 +1153,9 @@ try {
 
   await choose(up.getByLabel('Purchase branch'), branch);
   await up.getByRole('button', { name: 'Request stamp', exact: true }).click();
-  await up.locator('.match-code').waitFor();
-  const requestCode = (await up.locator('.match-code').textContent())!;
+  const requestNumber = up.locator('small').filter({ hasText: 'Request number:' }).locator('bdi');
+  await requestNumber.waitFor();
+  const requestCode = (await requestNumber.textContent())!;
   const queueProof = await call(
     cashier,
     '/merchants/' + mid + '/stamp-requests?branchId=' + branch,
@@ -1167,11 +1165,22 @@ try {
   await navigateTo(cp, '/cashier');
   assert.equal((await queueProof.json()).requests[0].code, requestCode);
   async function scanRequestCard() {
-    if (await up.getByRole('dialog', { name: 'Personal QR', exact: true }).count())
-      await up.getByRole('button', { name: 'Close code', exact: true }).click();
-    await up.getByRole('button', { name: 'Show my code', exact: true }).click();
+    // Use the code already on screen if the card opened it, otherwise open it.
+    const qrDialog = up.getByRole('dialog', { name: 'Personal QR', exact: true }),
+      showCode = up.getByRole('button', { name: 'Show my code', exact: true });
+    await up.waitForFunction(
+      () =>
+        !!document.querySelector('.qr-panel') ||
+        [...document.querySelectorAll('button')].some(
+          (b) => b.textContent?.includes('Show my code') && !b.disabled,
+        ),
+    );
+    if (!(await qrDialog.count())) await showCode.click();
+    await up.locator('.qr-panel code').waitFor({ state: 'attached' });
     const fresh = (await up.locator('.qr-panel code').textContent())!.trim();
-    await cp.getByLabel('Or enter the request customer QR code', { exact: true }).fill(fresh);
+    await cp
+      .getByLabel("Or type the 6 digits on the customer's phone", { exact: true })
+      .fill(fresh);
     await cp.getByRole('button', { name: 'Read request code', exact: true }).click();
     await cp.getByText('Customer code scanned.', { exact: true }).waitFor();
   }
@@ -1214,9 +1223,9 @@ try {
   );
   // A second request never reaches the server on the first attempt.
   await up.getByRole('button', { name: 'Request stamp', exact: true }).click();
-  await up.locator('.match-code').waitFor();
-  await cp.getByRole('button', { name: 'Stamp request', exact: true }).waitFor();
+  await requestNumber.waitFor();
   await scanRequestCard();
+  await cp.getByRole('button', { name: 'Stamp request', exact: true }).waitFor();
   await cp.getByLabel('Request receipt number', { exact: true }).fill('BROWSER-' + stamp + '-4');
   await cp.route('**/stamp-requests/*/decision', (route) => route.abort('failed'), { times: 1 });
   await cp.getByRole('button', { name: 'Stamp request', exact: true }).click();
@@ -1237,14 +1246,11 @@ try {
   assert.equal('code' in savedDecision.request, false);
   await reloadPage(cp);
   await cp.getByRole('button', { name: 'Check the same decision', exact: true }).click();
-  await cp.getByRole('button', { name: 'Stamp request', exact: true }).waitFor();
+  // Resuming needs the same customer code again; the saved attempt keeps the receipt.
+  await cp.getByRole('button', { name: 'Scan the customer code first', exact: true }).waitFor();
   assert.equal(
     await cp.getByLabel('Request receipt number', { exact: true }).inputValue(),
     'BROWSER-' + stamp + '-4',
-  );
-  assert.equal(
-    await cp.getByRole('button', { name: 'Stamp request', exact: true }).isDisabled(),
-    true,
   );
   await scanRequestCard();
   await cp.getByRole('button', { name: 'Stamp request', exact: true }).click();
@@ -1302,12 +1308,12 @@ try {
       (response) =>
         response.url().endsWith('/preferences') && response.request().method() === 'PATCH',
     ),
-    up.getByLabel('WhatsApp', { exact: true }).click(),
+    up.getByLabel('WhatsApp messages from the shop', { exact: true }).click(),
   ]);
   await up.waitForFunction(
     () =>
       Array.from(document.querySelectorAll('label'))
-        .find((label) => label.textContent?.trim() === 'WhatsApp')
+        .find((label) => label.textContent?.trim() === 'WhatsApp messages from the shop')
         ?.querySelector('input')?.checked === true,
   );
   await up.getByRole('button', { name: 'Card', exact: true }).click();
@@ -1346,7 +1352,7 @@ try {
   await up.getByRole('status').filter({ hasText: 'Number saved.' }).waitFor();
   await up.waitForFunction(() => {
     const label = Array.from(document.querySelectorAll('label')).find(
-      (el) => el.textContent?.trim() === 'WhatsApp',
+      (el) => el.textContent?.trim() === 'WhatsApp messages from the shop',
     );
     return (label?.querySelector('input') as HTMLInputElement)?.checked === false;
   });
@@ -1363,11 +1369,11 @@ try {
   );
   await Promise.all([
     up.waitForResponse((r) => r.url().endsWith('/preferences') && r.request().method() === 'PATCH'),
-    up.getByLabel('WhatsApp', { exact: true }).click(),
+    up.getByLabel('WhatsApp messages from the shop', { exact: true }).click(),
   ]);
   await up.waitForFunction(() => {
     const label = Array.from(document.querySelectorAll('label')).find(
-      (el) => el.textContent?.trim() === 'WhatsApp',
+      (el) => el.textContent?.trim() === 'WhatsApp messages from the shop',
     );
     return (label?.querySelector('input') as HTMLInputElement)?.checked === true;
   });

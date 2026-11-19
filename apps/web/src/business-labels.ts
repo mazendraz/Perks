@@ -62,9 +62,11 @@ export function subscriptionPlanLabel(
   lang: Language,
   names?: { plan_name_ar?: string | null; plan_name_en?: string | null },
 ) {
+  // Standard plans have proper translations here (the database stores their English names in
+  // both columns); custom plans only have the names the admin gave them.
   const named = lang === 'ar' ? names?.plan_name_ar : names?.plan_name_en;
   return (
-    named || plans[value as keyof typeof plans]?.[lang] || (lang === 'ar' ? 'غير محدد' : 'Unknown')
+    plans[value as keyof typeof plans]?.[lang] || named || (lang === 'ar' ? 'غير محدد' : 'Unknown')
   );
 }
 const transactionTypes = {

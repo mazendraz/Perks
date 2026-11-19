@@ -76,6 +76,11 @@ export function CustomerCode({
             : 'Show this code to the cashier. Your card appears when the stamp is saved.'}
         </p>
         <img src={qr.qrDataUrl} alt={ar ? 'QR العضوية للكاشير' : 'Membership QR for the cashier'} />
+        {/* The raw token stays in the page (copy/paste fallback and automated checks) but is not shown
+            or read aloud: people use the QR or the 6-digit code. */}
+        <code className="sr-only" dir="ltr" aria-hidden="true">
+          {qr.token}
+        </code>
         {qr.shortCode && (
           <p className="short-code">
             <small>

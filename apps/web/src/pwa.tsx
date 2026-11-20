@@ -1,11 +1,32 @@
 import { useEffect, useState } from 'react';
 import type { Language } from '../../../packages/contracts/src/index.js';
 import { networkUnavailable } from './network.js';
+import { markUpdateReady } from './update-gate.js';
 let registration: Promise<ServiceWorkerRegistration> | undefined;
+function register() {
+  // The first claim of a never-controlled page is an install, not an update.
+  let controlled = !!navigator.serviceWorker.controller;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (controlled) markUpdateReady();
+    controlled = true;
+  });
+  return navigator.serviceWorker
+    .register('/sw.js', {
+      scope: '/',
+      updateViaCache: 'none',
+    })
+    .then((reg) => {
+      // Workers from releases before silent updates wait for this message.
+      reg.waiting?.postMessage({ type: 'SKIP_WAITING' });
+      return reg;
+    })
+    .catch((error) => {
+      registration = undefined;
+      throw error;
+    });
+}
 export function PwaStatus({ lang }: { lang: Language }) {
-  const [offline, setOffline] = useState(() => !navigator.onLine || networkUnavailable()),
-    [waiting, setWaiting] = useState<ServiceWorker | null>(null),
-    [updating, setUpdating] = useState(false);
+  const [offline, setOffline] = useState(() => !navigator.onLine || networkUnavailable());
   useEffect(() => {
     const online = () => setOffline(false),
       gone = () => setOffline(true);
@@ -23,24 +44,10 @@ export function PwaStatus({ lang }: { lang: Language }) {
     if (!import.meta.env.PROD || !('serviceWorker' in navigator)) return;
     let alive = true,
       reg: ServiceWorkerRegistration | undefined;
-    const installed = () => {
-      if (alive) setWaiting(navigator.serviceWorker.controller ? (reg?.waiting ?? null) : null);
-    };
-    const updateFound = () => {
-      reg?.installing?.addEventListener('statechange', installed);
-    };
     const refresh = () => {
       void reg?.update().catch(() => {});
     };
-    registration ||= navigator.serviceWorker
-      .register('/sw.js', {
-        scope: '/',
-        updateViaCache: 'none',
-      })
-      .catch((error) => {
-        registration = undefined;
-        throw error;
-      });
+    registration ||= register();
     const visible = () => {
       if (!document.hidden) refresh();
     };
@@ -52,8 +59,6 @@ export function PwaStatus({ lang }: { lang: Language }) {
       .then((value) => {
         if (!alive) return;
         reg = value;
-        installed();
-        reg.addEventListener('updatefound', updateFound);
         window.addEventListener('online', refresh);
         refresh();
       })
@@ -62,37 +67,19 @@ export function PwaStatus({ lang }: { lang: Language }) {
       });
     return () => {
       alive = false;
-      reg?.removeEventListener('updatefound', updateFound);
       window.removeEventListener('online', refresh);
       document.removeEventListener('visibilitychange', visible);
       window.clearInterval(interval);
     };
   }, [offline]);
-  useEffect(() => {
-    if (!updating || !('serviceWorker' in navigator)) return;
-    const changed = () => location.reload();
-    navigator.serviceWorker.addEventListener('controllerchange', changed);
-    waiting?.postMessage({ type: 'SKIP_WAITING' });
-    return () => navigator.serviceWorker.removeEventListener('controllerchange', changed);
-  }, [updating, waiting]);
-  if (!offline && !waiting) return null;
-  const ar = lang === 'ar';
+  if (!offline) return null;
   return (
     <aside className="pwa-status" role="status" aria-live="polite">
       <span>
-        {offline
-          ? ar
-            ? 'مفيش نت دلوقتي. وصّل النت علشان تكمل.'
-            : 'You’re offline. Reconnect to continue.'
-          : ar
-            ? 'فيه تحديث جاهز لـ Perks.'
-            : 'A Perks update is ready.'}
+        {lang === 'ar'
+          ? 'مفيش نت دلوقتي. وصّل النت علشان تكمل.'
+          : 'You’re offline. Reconnect to continue.'}
       </span>
-      {!offline && waiting && (
-        <button className="primary small" disabled={updating} onClick={() => setUpdating(true)}>
-          {updating ? (ar ? 'بيحدّث…' : 'Updating…') : ar ? 'حدّث دلوقتي' : 'Update now'}
-        </button>
-      )}
     </aside>
   );
 }

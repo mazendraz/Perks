@@ -1,19 +1,27 @@
 /* global self,caches,fetch,URL,Response */
 const VERSION = '__NUQTA_VERSION__';
 const CACHE = 'nuqta-shell-' + VERSION;
+const META = 'nuqta-meta';
 const SHELL = /*__NUQTA_SHELL__*/[];
 const ALLOWED = /*__NUQTA_ALLOWED__*/[];
 self.addEventListener('install', event => {
-  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(SHELL)));
-});
-self.addEventListener('message', event => {
-  if(event.data && event.data.type === 'SKIP_WAITING') event.waitUntil(self.skipWaiting());
+  // Activate as soon as the shell is cached; pages pick up the new release on their own
+  // next navigation or while hidden (see src/update-gate.ts), never by prompting.
+  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(SHELL)).then(() => self.skipWaiting()));
 });
 self.addEventListener('activate', event => {
   event.waitUntil((async()=>{
+    // Keep exactly one preceding shell (the release this worker replaces) for tabs still
+    // running it; delete every older one. The replaced release is recorded explicitly
+    // because a cache can exist for a release that never activated.
+    const meta=await caches.open(META),recorded=await meta.match('/active');
     const keys=(await caches.keys()).filter(key=>key.startsWith('nuqta-shell-') && key!==CACHE);
-    // Keep one preceding shell for existing tabs; bound disk use across releases.
-    await Promise.all(keys.slice(0,-1).map(key=>caches.delete(key)));
+    let previous=recorded ? 'nuqta-shell-'+(await recorded.text()) : null;
+    if(previous===CACHE || (previous && !keys.includes(previous)))previous=null;
+    // Releases from before the record existed: caches.keys() lists in creation order.
+    if(!previous && !recorded)previous=keys[keys.length-1] || null;
+    await Promise.all(keys.filter(key=>key!==previous).map(key=>caches.delete(key)));
+    await meta.put('/active',new Response(VERSION));
     await self.clients.claim();
   })());
 });
@@ -82,7 +90,13 @@ self.addEventListener('fetch', event => {
     }));
     return;
   }
-  if(url.search || !ALLOWED.includes(url.pathname))return;
+  if(url.search)return;
+  if(!ALLOWED.includes(url.pathname)) {
+    // A tab claimed mid-session still runs the previous release; serve its lazy chunks
+    // from the preceding shell cache when they are no longer on the server.
+    if(url.pathname.startsWith('/assets/'))event.respondWith(caches.match(url.pathname).then(hit=>hit||fetch(request)));
+    return;
+  }
   event.respondWith((async()=>{
     const cache=await caches.open(CACHE),cached=await cache.match(url.pathname);
     if(cached)return cached;

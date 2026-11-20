@@ -22,6 +22,7 @@
     "test:integration": "tsx tools/run-integration.ts",
     "test:e2e": "tsx tools/test-e2e.ts",
     "test:e2e:ci": "tsx tools/ci-e2e.ts",
+    "test:pwa-update": "tsx tools/test-pwa-update.ts",
     "env:check": "tsx tools/env-check.ts",
     "push:keys": "tsx tools/generate-vapid-keys.ts",
     "storage:migrate-local": "tsx tools/migrate-local-storage.ts",

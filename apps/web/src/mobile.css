@@ -27,9 +27,6 @@
   box-shadow: 0 12px 45px #17362a22;
   font-size: 14px;
 }
-.pwa-status button {
-  white-space: nowrap;
-}
 .customer-card-loading {
   width: min(100%, 380px);
   margin: 20px auto;

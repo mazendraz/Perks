@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
+import { applyUpdateOnNavigation } from './update-gate.js';
 export function navigate(path: string) {
+  if (applyUpdateOnNavigation(path)) return;
   history.pushState({}, '', path);
   window.dispatchEvent(new PopStateEvent('popstate'));
   window.scrollTo(0, 0);

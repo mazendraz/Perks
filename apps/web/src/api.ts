@@ -2,6 +2,7 @@ import type { ApiFailure, Session } from '../../../packages/contracts/src/index.
 import { portalForPath, type Portal } from './portals.js';
 import { setNetworkUnavailable } from './network.js';
 import { messageFor, type ErrorDetails } from './error-messages.js';
+import { holdUpdates } from './update-gate.js';
 let csrf = '';
 let ownerPreview: { merchantId: string; staffId: string } | null = null;
 export function setOwnerPreview(value: typeof ownerPreview) {
@@ -33,18 +34,29 @@ function planDetails(error: unknown): ErrorDetails | undefined {
     options: Array.isArray(e.options) ? (e.options as ErrorDetails['options']) : undefined,
   };
 }
+type ApiOptions = {
+  method?: string;
+  body?: unknown;
+  key?: string;
+  revision?: number;
+  workspace?: Portal | 'shared';
+  timeoutMs?: number;
+};
 export async function api<T>(
   path: string,
-  options: {
-    method?: string;
-    body?: unknown;
-    key?: string;
-    revision?: number;
-    workspace?: Portal | 'shared';
-    timeoutMs?: number;
-  } = {},
+  options: ApiOptions = {},
   restoreDevice = true,
 ): Promise<T> {
+  if ((options.method || 'GET') === 'GET') return send<T>(path, options, restoreDevice);
+  // A reload mid-write would leave the stamp/redeem outcome unknown to the user.
+  const release = holdUpdates();
+  try {
+    return await send<T>(path, options, restoreDevice);
+  } finally {
+    release();
+  }
+}
+async function send<T>(path: string, options: ApiOptions, restoreDevice: boolean): Promise<T> {
   const headers: Record<string, string> = {};
   headers['x-nuqta-language'] = document.documentElement.lang === 'en' ? 'en' : 'ar';
   const authEntry = path === '/auth/login' || path === '/auth/register';
@@ -114,7 +126,7 @@ export async function api<T>(
       window.dispatchEvent(new Event('nuqta:customer-session-restored'));
       // Authentication/CSRF rejected the first attempt before its handler ran.
       // Retry once, retaining the exact commercial command and idempotency key.
-      return api<T>(path, options, false);
+      return send<T>(path, options, false);
     } catch {
       /* A revoked or absent device must still receive the original failure. */
     }

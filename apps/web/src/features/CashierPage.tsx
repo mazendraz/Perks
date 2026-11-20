@@ -18,6 +18,7 @@ import type { AwardInput } from '../../../../packages/contracts/src/commands.js'
 import { api, ApiError, errorText } from '../api.js';
 import { intlLocale } from '../locale.js';
 import { ShiftSummary } from './TodayStrip.js';
+import { holdUpdates } from '../update-gate.js';
 interface Member {
   id: string;
   alias: string;
@@ -93,6 +94,8 @@ export function CashierPage({ grant, lang }: { grant: Grant; lang: Language }) {
     [correction, setCorrection] = useState<{ tx: Recent; reason: string } | null>(null),
     [notice, setNotice] = useState('');
   const [validation, setValidation] = useState<ApiError | null>(null);
+  // Any step past home is a stamp/redeem in progress; a silent update must not reset it.
+  useEffect(() => (step === 'home' ? undefined : holdUpdates()), [step]);
   const refreshRecent = async () => {
     try {
       const r = await api<{ transactions: Recent[] }>(

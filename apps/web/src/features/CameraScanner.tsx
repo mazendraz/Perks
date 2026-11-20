@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ActionLabel } from '../../../../packages/ui/src/Icon.js';
 import type { IScannerControls } from '@zxing/browser';
 import type { Language } from '../../../../packages/contracts/src/index.js';
+import { holdUpdates } from '../update-gate.js';
 export function CameraScanner({
   lang,
   onRead,
@@ -14,6 +15,7 @@ export function CameraScanner({
   const video = useRef<HTMLVideoElement>(null),
     [active, setActive] = useState(false),
     [error, setError] = useState('');
+  useEffect(() => (active ? holdUpdates() : undefined), [active]);
   useEffect(() => {
     if (!active || !video.current) return;
     const element = video.current;

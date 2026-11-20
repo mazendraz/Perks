@@ -30,24 +30,26 @@ const card: WalletCard = {
   earning_active: true,
 };
 
-test('iPhones before iOS 27 get the new card face as a 375×144 strip, with every stamp inside it', async () => {
+test('iPhones before iOS 27 get a 375×144 strip with every stamp and the progress line', async () => {
   for (const template of cardTemplates)
     for (const rtl of [false, true]) {
       const svg = appleStripSvg({ ...card, template }, 3, rtl);
       const meta = await sharp(Buffer.from(svg)).metadata();
       assert.equal(meta.width, 1125);
       assert.equal(meta.height, 432);
-      // Same slots and progress line as the poster, not the old plain stamp row.
       assert.equal(svg.match(/data-slot=/g)?.length, 8);
       assert.equal(svg.match(/data-filled="true"/g)?.length, 3);
+      assert.ok(svg.includes('data-track="true"'));
     }
 });
 
-test('a business edition draws its business on the older-iPhone strip, like on the poster', () => {
+test('the older-iPhone strip has no business drawing: it does not fit a strip this short', () => {
   const cafe = { ...card, template: 'cafe' as WalletCard['template'] },
     plain = { ...card, template: 'classic' as WalletCard['template'] };
-  assert.notEqual(appleStripSvg(cafe, 1), appleStripSvg(plain, 1));
-  assert.ok(posterArtworkSvg(cafe, 1).length > 0);
+  // Same colours, so the only difference would be the drawing.
+  assert.equal(appleStripSvg(cafe, 1), appleStripSvg(plain, 1));
+  // The poster keeps its drawing.
+  assert.notEqual(posterArtworkSvg(cafe, 1), posterArtworkSvg(plain, 1));
 });
 
 test('the design fingerprint is stable within a build and feeds the Google image address', () => {

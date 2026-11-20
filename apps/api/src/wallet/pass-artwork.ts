@@ -333,17 +333,24 @@ export const GOOGLE_HERO: CardFace = {
 };
 /**
  * Apple Wallet strip (375×144 points) for iPhones before iOS 27, which cannot show the poster.
- * It is the same card face as the poster, cut to the strip shape: the same edition drawing,
- * stamps and progress line, so older iPhones show the new design, not a plain stamp row.
+ * Everything sits in the band between `top` and `bottom`: at least 17% clear at the top and the
+ * bottom, and still 17% clear if Wallet crops the strip to 375×123 around its middle.
  */
-export const APPLE_STRIP: CardFace = {
+export const APPLE_STRIP = {
   width: 375,
   height: 144,
-  top: 4,
-  bottom: 144,
-  padX: 30,
-  maxStamp: 60,
-};
+  top: 32,
+  bottom: 112,
+  padX: 24,
+  /** Largest shop logo on the reading side. */
+  logoWidth: 104,
+  logoHeight: 52,
+  /** Space between the logo and the stamps, with a thin divider in the middle. */
+  gutter: 28,
+  /** Room under the stamps for the progress line. */
+  track: 14,
+  maxStamp: 40,
+} as const;
 /** Where the shop logo sits on a poster that carries it, and where the stamps start below it. */
 const LOGO_BOX = { y: 80, height: 58, maxWidth: 190, stampsTop: 152 };
 
@@ -771,6 +778,63 @@ export interface ArtworkLogo {
   width: number;
   height: number;
 }
+/**
+ * The stamp slots, the same as the web card (packages/ui StampInk + StampFrame): a dashed frame
+ * for an empty slot, the gift on the last one, and the rough ink stamp for a filled one.
+ */
+function stampSlots(
+  card: WalletCard,
+  theme: WalletTheme,
+  positions: { x: number; y: number }[],
+  size: number,
+  emptyOpacity: number,
+  dashOpacity: number,
+) {
+  const total = Math.max(2, Math.min(50, card.threshold)),
+    filled = Math.max(0, Math.min(total, card.display_balance)),
+    accent = theme.stamp,
+    ink = theme.ink,
+    outline = card.stamp_style === 'outline',
+    glyphInk = outline ? accent : theme.stampInk,
+    shape = card.stamp_shape,
+    icon = stampIconPaths[card.stamp_icon] ? card.stamp_icon : 'check';
+  const n = (value: number) => value.toFixed(2);
+  const glyph = (path: string, stroke: string, width: number, k: number, opacity = 1) =>
+    `<g transform="scale(${(k / 24).toFixed(4)}) translate(-12 -12)" fill="none" stroke="${stroke}" stroke-opacity="${opacity}" stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round"><path d="${path}"/></g>`;
+  return positions.map(({ x, y }, i) => {
+    const open = `<g data-slot="${i + 1}" data-filled="${i < filled}" transform="translate(${n(x)} ${n(y)})">`;
+    if (i === total - 1)
+      return (
+        open +
+        `<g transform="scale(${(size / 48).toFixed(4)})">` +
+        giftSlot(i < filled, { ink, accent, glyphInk, outline, dashOpacity }) +
+        '</g></g>'
+      );
+    if (i >= filled)
+      return (
+        open +
+        `<g transform="scale(${(size / 48).toFixed(4)})">` +
+        `<path d="${shapePath(shape)}" fill="none" stroke="${ink}" stroke-opacity="${String(emptyOpacity).replace(/^0/, '')}" stroke-width="1.2" stroke-dasharray="3 3"/>` +
+        '</g></g>'
+      );
+    const g = stampGeometry(card.id + ':' + i, shape),
+      k = (size * 60) / 56 / 64;
+    return (
+      open +
+      `<g transform="scale(${k.toFixed(4)}) rotate(${n(g.angle)})">` +
+      `<path d="${g.outer}" fill="${outline ? 'none' : accent}" stroke="${outline ? accent : 'none'}" stroke-width="${outline ? 2.6 : 0}"/>` +
+      `<path d="${g.inner}" fill="none" stroke="${glyphInk}" stroke-opacity=".35" stroke-width="1.2"/>` +
+      glyph(stampIconPaths[icon]!, glyphInk, icon === 'check' ? 2.6 : 1.7, 28) +
+      g.specks
+        .map(
+          (p) =>
+            `<circle cx="${n(p.x)}" cy="${n(p.y)}" r="${n(p.r)}" fill="${accent}" opacity=".8"/>`,
+        )
+        .join('') +
+      '</g></g>'
+    );
+  });
+}
 export function posterArtworkSvg(
   card: WalletCard,
   scale: number,
@@ -787,48 +851,10 @@ export function posterArtworkSvg(
     { width: W, height: H } = face,
     accent = theme.stamp,
     ink = theme.ink,
-    outline = card.stamp_style === 'outline',
-    glyphInk = outline ? accent : theme.stampInk,
-    shape = card.stamp_shape,
-    icon = stampIconPaths[card.stamp_icon] ? card.stamp_icon : 'check',
     art = posterArt(card, theme, rtl, face),
     layout = posterLayout(total, rtl, stampsFace);
   const n = (value: number) => value.toFixed(2);
-  const glyph = (path: string, stroke: string, width: number, k: number, opacity = 1) =>
-    `<g transform="scale(${(k / 24).toFixed(4)}) translate(-12 -12)" fill="none" stroke="${stroke}" stroke-opacity="${opacity}" stroke-width="${width}" stroke-linecap="round" stroke-linejoin="round"><path d="${path}"/></g>`;
-  const slots = layout.slots.map(({ x, y }, i) => {
-    const open = `<g data-slot="${i + 1}" data-filled="${i < filled}" transform="translate(${n(x)} ${n(y)})">`;
-    if (i === total - 1)
-      return (
-        open +
-        `<g transform="scale(${(layout.size / 48).toFixed(4)})">` +
-        giftSlot(i < filled, { ink, accent, glyphInk, outline, dashOpacity: 0.32 }) +
-        '</g></g>'
-      );
-    if (i >= filled)
-      return (
-        open +
-        `<g transform="scale(${(layout.size / 48).toFixed(4)})">` +
-        `<path d="${shapePath(shape)}" fill="none" stroke="${ink}" stroke-opacity=".28" stroke-width="1.2" stroke-dasharray="3 3"/>` +
-        '</g></g>'
-      );
-    const g = stampGeometry(card.id + ':' + i, shape),
-      k = (layout.size * 60) / 56 / 64;
-    return (
-      open +
-      `<g transform="scale(${k.toFixed(4)}) rotate(${n(g.angle)})">` +
-      `<path d="${g.outer}" fill="${outline ? 'none' : accent}" stroke="${outline ? accent : 'none'}" stroke-width="${outline ? 2.6 : 0}"/>` +
-      `<path d="${g.inner}" fill="none" stroke="${glyphInk}" stroke-opacity=".35" stroke-width="1.2"/>` +
-      glyph(stampIconPaths[icon]!, glyphInk, icon === 'check' ? 2.6 : 1.7, 28) +
-      g.specks
-        .map(
-          (p) =>
-            `<circle cx="${n(p.x)}" cy="${n(p.y)}" r="${n(p.r)}" fill="${accent}" opacity=".8"/>`,
-        )
-        .join('') +
-      '</g></g>'
-    );
-  });
+  const slots = stampSlots(card, theme, layout.slots, layout.size, 0.28, 0.32);
   // The web card's progress line under the stamps, filled from the reading side.
   const trackX = face.padX,
     trackW = W - face.padX * 2,
@@ -876,14 +902,132 @@ export function googleHeroSvg(
   return posterArtworkSvg(card, scale, rtl, { face: GOOGLE_HERO, watermark });
 }
 
-/** The storeCard strip for iOS 26 and earlier: the poster's card face in the strip shape. */
+/**
+ * Where the strip puts the logo and the stamps, in left-to-right order (Arabic mirrors it).
+ * The stamps use as many rows as make them largest, inside the safe band.
+ */
+export function appleStripLayout(total: number, logo: { width: number; height: number } | null) {
+  const S = APPLE_STRIP,
+    gap = 0.3,
+    // Filled ink and its specks reach past the slot; fit the grid with that margin.
+    overhang = 1.18;
+  let logoBox: { x: number; y: number; width: number; height: number } | null = null,
+    left = S.padX;
+  if (logo) {
+    const k = Math.min(S.logoHeight / logo.height, S.logoWidth / logo.width),
+      width = logo.width * k,
+      height = logo.height * k;
+    logoBox = { x: S.padX, y: (S.top + S.bottom) / 2 - height / 2, width, height };
+    left = S.padX + width + S.gutter;
+  }
+  const areaW = S.width - S.padX - left,
+    areaH = S.bottom - S.top - S.track;
+  let best = { rows: 1, columns: total, size: 0 };
+  for (let rows = 1; rows <= 6; rows++) {
+    const columns = Math.ceil(total / rows),
+      size =
+        Math.min(
+          areaW / (columns + (columns - 1) * gap),
+          areaH / (rows + (rows - 1) * gap),
+          S.maxStamp * overhang,
+        ) / overhang;
+    // A new row has to make the stamps clearly larger, so short cards stay on one line.
+    if (size > best.size * 1.08) best = { rows, columns, size };
+  }
+  const { rows, columns, size } = best,
+    pitch = size * (1 + gap),
+    gridW = columns * size + (columns - 1) * size * gap,
+    gridH = rows * size + (rows - 1) * size * gap,
+    centreX = left + areaW / 2,
+    gridTop = S.top + (areaH - gridH) / 2;
+  return {
+    logo: logoBox,
+    divider: logo ? S.padX + logoBox!.width + S.gutter / 2 : null,
+    size,
+    track: {
+      x: centreX - gridW / 2,
+      width: gridW,
+      y: Math.min(S.bottom - 3, gridTop + gridH + size * 0.18 + 8),
+    },
+    slots: Array.from({ length: total }, (_, i) => {
+      const row = Math.floor(i / columns),
+        col = i % columns;
+      return {
+        x: centreX + (col + 0.5 - columns / 2) * pitch,
+        y: gridTop + size / 2 + row * pitch,
+      };
+    }),
+  };
+}
+
+/**
+ * The storeCard strip for iOS 26 and earlier. It is drawn for the strip, not cut from the
+ * poster: the card colour with a soft glow like the poster's light, the shop logo large on the
+ * reading side, the stamps with the gift, and the progress line. No business drawing, which
+ * does not fit a strip this short. Arabic mirrors everything, stamps filling from the right.
+ */
 export function appleStripSvg(
   card: WalletCard,
   scale: number,
   rtl = false,
-  watermark: ArtworkLogo | null = null,
+  logo: ArtworkLogo | null = null,
 ) {
-  return posterArtworkSvg(card, scale, rtl, { face: APPLE_STRIP, watermark });
+  const S = APPLE_STRIP,
+    W = S.width,
+    H = S.height;
+  const total = Math.max(2, Math.min(50, card.threshold)),
+    filled = Math.max(0, Math.min(total, card.display_balance)),
+    theme = walletTheme(card),
+    layout = appleStripLayout(total, logo),
+    n = (value: number) => value.toFixed(2),
+    flip = (x: number) => (rtl ? W - x : x);
+  // The glow fades to the exact card colour before every edge, so the strip has no visible seam.
+  const stampsX = flip(layout.track.x + layout.track.width / 2),
+    logoX = layout.logo ? flip(layout.logo.x + layout.logo.width / 2) : null;
+  const defs =
+    GIFT_LIFT +
+    `<radialGradient id="strip-glow" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="${theme.stamp}" stop-opacity=".22"/><stop offset=".6" stop-color="${theme.stamp}" stop-opacity=".08"/><stop offset="1" stop-color="${theme.stamp}" stop-opacity="0"/></radialGradient>` +
+    `<radialGradient id="strip-light" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="${theme.ink}" stop-opacity=".09"/><stop offset="1" stop-color="${theme.ink}" stop-opacity="0"/></radialGradient>`;
+  const glow =
+    `<ellipse cx="${n(stampsX)}" cy="${H / 2}" rx="${n(Math.max(120, layout.track.width / 2 + 60))}" ry="${n(H * 0.42)}" fill="url(#strip-glow)"/>` +
+    // A soft light behind the logo on dark cards; on a light card the same glow reads as a smudge.
+    (logoX === null || theme.ink !== '#ffffff'
+      ? ''
+      : `<ellipse cx="${n(logoX)}" cy="${H / 2}" rx="${n(layout.logo!.width / 2 + 40)}" ry="${n(H * 0.4)}" fill="url(#strip-light)"/>`);
+  let logoMarkup = '';
+  if (logo && layout.logo) {
+    const box = layout.logo,
+      x = rtl ? W - box.x - box.width : box.x;
+    logoMarkup =
+      `<image data-logo="true" x="${n(x)}" y="${n(box.y)}" width="${n(box.width)}" height="${n(box.height)}" href="${logo.href}"/>` +
+      `<path data-divider="true" d="M${n(flip(layout.divider!))} ${S.top + 8}V${S.bottom - 8}" stroke="${theme.ink}" stroke-opacity=".16" stroke-width="1"/>`;
+  }
+  const slots = stampSlots(
+    card,
+    theme,
+    layout.slots.map(({ x, y }) => ({ x: flip(x), y })),
+    layout.size,
+    0.3,
+    0.34,
+  );
+  const t = layout.track,
+    done = t.width * (filled / total),
+    trackX = rtl ? W - t.x - t.width : t.x;
+  const track =
+    `<rect data-track="true" x="${n(trackX)}" y="${n(t.y)}" width="${n(t.width)}" height="3" rx="1.5" fill="${theme.ink}" fill-opacity=".14"/>` +
+    (done > 0
+      ? `<rect x="${n(rtl ? trackX + t.width - done : trackX)}" y="${n(t.y)}" width="${n(done)}" height="3" rx="1.5" fill="${theme.stamp}"/>`
+      : '');
+  // A closed card keeps its stamps, faded, so it reads as no longer in use.
+  const body = slots.join('') + track;
+  return (
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${W * scale}" height="${H * scale}" viewBox="0 0 ${W} ${H}">` +
+    `<defs>${defs}</defs><rect width="${W}" height="${H}" fill="${theme.background}"/>` +
+    glow +
+    logoMarkup +
+    (card.active ? body : `<g data-closed="true" opacity=".4">${body}</g>`) +
+    '</svg>'
+  );
 }
 
 let artworkSignatureCache: string | null = null;

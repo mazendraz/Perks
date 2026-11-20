@@ -446,7 +446,8 @@ test('a closed card pushes a voided pass and then forgets its devices', async ()
     !files.get('pass.json')!.toString().includes('عميل والت'),
     'revocation clears the displayed member name',
   );
-  assert.match(files.get('en.lproj/pass.strings')!.toString('utf16le'), /This card is closed/);
+  // The seeded program is Arabic, so every phone language gets the Arabic words.
+  assert.match(files.get('en.lproj/pass.strings')!.toString('utf16le'), /الكارت ده اتقفل/);
   assert.equal(
     (
       await app.inject({

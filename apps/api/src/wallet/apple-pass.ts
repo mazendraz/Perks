@@ -10,7 +10,7 @@ import type {
   StampShape,
 } from '../../../../packages/contracts/src/branding.js';
 import { appleStripSvg, posterArtworkSvg, type ArtworkLogo } from './pass-artwork.js';
-import { mix, walletTheme } from '../../../../packages/domain/src/wallet-theme.js';
+import { contrast, mix, walletTheme } from '../../../../packages/domain/src/wallet-theme.js';
 import { categoryEditions, templateCategory } from '../../../../packages/contracts/src/branding.js';
 import { walletReminderText } from '../../../../packages/contracts/src/customer-reminders.js';
 import { fillWalletMessage } from '../../../../packages/contracts/src/owner-plan.js';
@@ -205,6 +205,42 @@ export function texts(card: WalletCard) {
     },
   };
 }
+/**
+ * The language the shop wrote its program in: Arabic when the program's own words are mostly
+ * Arabic letters. The pass shows every label in this language, whatever the phone's language,
+ * so an Arabic card never mixes in English captions.
+ */
+export function programLanguage(
+  card: Pick<WalletCard, 'program_name' | 'reward_title' | 'reward_terms'>,
+): 'ar' | 'en' {
+  const text = [card.program_name, card.reward_title, card.reward_terms].join(' '),
+    arabic = (text.match(/[؀-ۿݐ-ݿ]/g) ?? []).length,
+    latin = (text.match(/[A-Za-z]/g) ?? []).length;
+  return latin > arabic ? 'en' : 'ar';
+}
+const REWARD_FIELD_MAX = 30;
+/** The reward for the card face: about 30 characters, cut at a word. The full title is on the back. */
+export function shortReward(title: string, max = REWARD_FIELD_MAX) {
+  const chars = Array.from(title.trim());
+  if (chars.length <= max) return title.trim();
+  const cut = chars.slice(0, max - 1).join(''),
+    space = cut.lastIndexOf(' ');
+  return (space >= max * 0.6 ? cut.slice(0, space) : cut).trimEnd() + '…';
+}
+// A shop name longer than this does not fit beside a logo and the stamps count.
+const LOGO_TEXT_MAX = 18;
+/**
+ * A caption colour that reads on the card: the theme's own when it has enough contrast,
+ * otherwise the text colour faded only as much as still reads.
+ */
+export function readableLabel(theme: { background: string; ink: string; label: string }) {
+  if (contrast(theme.label, theme.background) >= 4.5) return theme.label;
+  for (const amount of [0.25, 0.2, 0.15, 0.1, 0.05]) {
+    const label = mix(theme.ink, theme.background, amount);
+    if (contrast(label, theme.background) >= 4.5) return label;
+  }
+  return theme.ink;
+}
 const stringsEscape = (value: string) =>
   value
     .replaceAll('\\', '\\\\')
@@ -232,11 +268,16 @@ export function passJson(
     signer: AppleWalletSigner;
     /** The shop's logo already spells its name, so the name is not repeated beside it. */
     wordmark?: boolean;
+    /** The pass carries the shop logo (a long name is then left out of the logo row). */
+    logo?: boolean;
   },
 ) {
   // Colours come from the shop's card edition (template), the same as the web card.
   const theme = walletTheme(card),
-    cardUrl = options.origin + '/customer/' + card.id + '?wallet=1';
+    cardUrl = options.origin + '/customer/' + card.id + '?wallet=1',
+    // Beside the logo, a long name would run into the stamps count: the logo alone says it.
+    showName =
+      !options.wordmark && !(options.logo && Array.from(card.merchant_name).length > LOGO_TEXT_MAX);
   return {
     formatVersion: 1,
     passTypeIdentifier: options.signer.passTypeIdentifier,
@@ -251,10 +292,10 @@ export function passJson(
       : {}),
     organizationName: card.merchant_name,
     description: card.merchant_name + ' · Perks',
-    ...(options.wordmark ? {} : { logoText: card.merchant_name }),
+    ...(showName ? { logoText: card.merchant_name } : {}),
     backgroundColor: rgb(theme.background),
     foregroundColor: rgb(theme.ink),
-    labelColor: rgb(theme.label),
+    labelColor: rgb(readableLabel(theme)),
     // No barcode: the pass is a card face. Stamping uses the live code on the web card.
     sharingProhibited: true,
     ...(card.active ? {} : { voided: true }),
@@ -306,7 +347,10 @@ export function passJson(
           changeMessage: 'stamp_change',
         },
       ],
-      secondaryFields: [{ key: 'reward', label: 'reward_label', value: card.reward_title }],
+      // One line on the card face; the full reward is the first thing on the back.
+      secondaryFields: [
+        { key: 'reward', label: 'reward_label', value: shortReward(card.reward_title) },
+      ],
       auxiliaryFields: [
         {
           key: 'left',
@@ -316,12 +360,15 @@ export function passJson(
         },
       ],
       backFields: [
+        // Always present, even empty: Wallet announces a reminder (changeMessage) only when an
+        // existing field changes value, not when a field first appears.
         {
           key: 'reminder',
           label: 'reminder_label',
           value: reminderKey(card),
           changeMessage: '%@',
         },
+        { key: 'reward_full', label: 'reward_label', value: card.reward_title },
         {
           key: 'member',
           label: 'member_label',
@@ -545,16 +592,26 @@ export async function buildPkpass(
   const inArt = logo?.artwork ?? null,
     logoEdition = walletTheme(card).art.kind === 'logo',
     art = { logo: logoEdition ? null : inArt, watermark: logoEdition ? inArt : null };
+  // The card speaks the program's language on every phone (labels, values and stamp direction).
+  const lang = programLanguage(card),
+    rtl = lang === 'ar';
+  // iOS 26 and earlier cannot show the poster: they get a strip drawn for the strip shape, with
+  // the shop logo, stamps and progress line.
+  const strips: [string, Buffer][] = [];
+  for (const scale of [1, 2, 3])
+    strips.push([
+      `strip${scale > 1 ? '@' + scale + 'x' : ''}.png`,
+      await png(appleStripSvg(card, scale, rtl, inArt), 375 * scale, 144 * scale),
+    ]);
   const files: [string, Buffer][] = [
-    ['pass.json', Buffer.from(JSON.stringify(passJson(card, { ...options, wordmark })))],
-    ['icon.png', await png(appIcon, 29)],
-    ['icon@2x.png', await png(appIcon, 58)],
-    ['icon@3x.png', await png(appIcon, 87)],
-    // iOS 26 and earlier cannot show the poster: their strip is the same card face (edition
-    // drawing, stamps, progress line), cut to the strip shape.
-    ['strip.png', await png(appleStripSvg(card, 1, false, art.watermark), 375, 144)],
-    ['strip@2x.png', await png(appleStripSvg(card, 2, false, art.watermark), 750, 288)],
-    ['strip@3x.png', await png(appleStripSvg(card, 3, false, art.watermark), 1125, 432)],
+    [
+      'pass.json',
+      Buffer.from(JSON.stringify(passJson(card, { ...options, wordmark, logo: !!logo }))),
+    ],
+    ['icon.png', await png(appIcon, 38)],
+    ['icon@2x.png', await png(appIcon, 76)],
+    ['icon@3x.png', await png(appIcon, 114)],
+    ...strips,
   ];
   // The logo slot Wallet gives a poster is only 30 points tall, so the logo is also drawn large
   // inside the artwork, where people actually see it.
@@ -572,17 +629,11 @@ export async function buildPkpass(
     );
   }
   if (logo) files.push(...logo.files);
-  const t = texts(card);
-  // Arabic phones fill the stamps from the right, like the Arabic web card.
-  for (const scale of [1, 2, 3])
-    files.push([
-      `ar.lproj/strip${scale > 1 ? '@' + scale + 'x' : ''}.png`,
-      await png(appleStripSvg(card, scale, true, art.watermark), 375 * scale, 144 * scale),
-    ]);
-  files.push(
-    ['ar.lproj/pass.strings', stringsFile(t.ar)],
-    ['en.lproj/pass.strings', stringsFile(t.en)],
-  );
+  // Every phone language gets the program's strip and words: an Arabic phone looks in ar.lproj
+  // first, so it gets the same strip as the base one, never a strip in the other direction.
+  for (const [name, data] of strips) files.push(['ar.lproj/' + name, data]);
+  const words = stringsFile(texts(card)[lang]);
+  files.push(['ar.lproj/pass.strings', words], ['en.lproj/pass.strings', words]);
   const manifest = Buffer.from(
     JSON.stringify(
       Object.fromEntries(

@@ -61,8 +61,16 @@ async function register(subscription: PushSubscription, lang: Language) {
   });
 }
 // Where this browser stands. When it already holds a subscription the server is told again, which
-// re-binds the device to the current sign-in (and repairs a row the server dropped).
-export async function pushState(lang: Language): Promise<PushState> {
+// re-binds the device to the current sign-in (and repairs a row the server dropped). Runs on every
+// cashier screen; calls within a few seconds of each other share one check.
+let recent: { lang: Language; at: number; result: Promise<PushState> } | null = null;
+export function pushState(lang: Language): Promise<PushState> {
+  if (recent && recent.lang === lang && Date.now() - recent.at < 5000) return recent.result;
+  const result = checkPushState(lang);
+  recent = { lang, at: Date.now(), result };
+  return result;
+}
+async function checkPushState(lang: Language): Promise<PushState> {
   const config = await fetchConfig();
   if (!config.enabled || !config.publicKey) return 'unavailable';
   if (!pushSupported()) return iosBrowserTab() ? 'needs-install' : 'unsupported';
@@ -101,19 +109,42 @@ export async function enablePush(lang: Language): Promise<PushState> {
   await register(subscription, lang);
   return 'on';
 }
-export async function sendTestPush(): Promise<boolean> {
+export type TestPushResult =
+  | { delivered: true; status: number }
+  | {
+      delivered: false;
+      // NO_SUBSCRIPTION: this browser holds none. NOT_REGISTERED: the server had dropped it (repaired
+      // and retried once already). SUBSCRIPTION_GONE: the push service says it expired.
+      // PUSH_SERVICE_REFUSED: the push service turned the server down (status 403 = VAPID key/subject).
+      reason:
+        | 'NO_SUBSCRIPTION'
+        | 'NOT_REGISTERED'
+        | 'SUBSCRIPTION_GONE'
+        | 'PUSH_SERVICE_REFUSED'
+        | 'REQUEST_FAILED';
+      status?: number;
+    };
+export async function sendTestPush(lang: Language): Promise<TestPushResult> {
   const registration = await readyRegistration();
   const subscription = await registration?.pushManager.getSubscription();
-  if (!subscription) return false;
-  try {
-    await api('/me/push/test', {
+  if (!subscription) return { delivered: false, reason: 'NO_SUBSCRIPTION' };
+  const send = () =>
+    api<TestPushResult>('/me/push/test', {
       method: 'POST',
       body: { endpoint: subscription.endpoint },
       timeoutMs: 15000,
     });
-    return true;
+  try {
+    let result = await send();
+    if (!result.delivered && result.reason === 'NOT_REGISTERED') {
+      await register(subscription, lang);
+      result = await send();
+    }
+    if (!result.delivered && result.reason === 'SUBSCRIPTION_GONE')
+      await subscription.unsubscribe().catch(() => {});
+    return result;
   } catch {
-    return false;
+    return { delivered: false, reason: 'REQUEST_FAILED' };
   }
 }
 // Removes this browser's subscription from the server and the browser. Used by "turn off" and by sign out.

@@ -27,15 +27,12 @@ export function CustomerRequests({
   onPending,
   onAwarded,
   onNotice,
-  onShowCode,
 }: {
   card: SavedCard;
   lang: Language;
   onPending?: (pending: boolean) => void;
   onAwarded?: () => Promise<void> | void;
   onNotice?: (notice: VisitNotice | null) => void;
-  /** Opens the customer's personal QR, which the cashier scans to approve. */
-  onShowCode?: () => void;
 }) {
   const ar = lang === 'ar',
     [branches, setBranches] = useState<{ id: string; name: string }[]>([]),
@@ -134,20 +131,11 @@ export function CustomerRequests({
       )}
       {pending ? (
         <>
-          <p>
+          <p role="status">
             {ar
-              ? 'ورّي كود الـQR بتاعك للكاشير يعمله سكان، وهو يوافق على الختم.'
-              : 'Show your QR code to the cashier to scan, then they approve your stamp.'}
+              ? 'الطلب وصل للكاشير. استنى لحظة لحد ما يأكد الختم من عنده.'
+              : 'Your request reached the cashier. Wait a moment while they confirm the stamp.'}
           </p>
-          {onShowCode && (
-            <button type="button" className="primary" onClick={onShowCode}>
-              <ActionLabel icon="qr">{ar ? 'اعرض كود الـQR' : 'Show my QR code'}</ActionLabel>
-            </button>
-          )}
-          <small className="muted">
-            {ar ? 'رقم الطلب: ' : 'Request number: '}
-            <bdi>{pending.code}</bdi>
-          </small>
           <small>
             {ar ? 'صالح لحد ' : 'Valid until '}
             {new Date(pending.expires_at).toLocaleTimeString(intlLocale(lang))}

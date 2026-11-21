@@ -22,15 +22,41 @@ import {
   type AwardInput,
 } from '../../../../packages/contracts/src/commands.js';
 export type { AwardInput } from '../../../../packages/contracts/src/commands.js';
+// A customer's scan the cashier approved from the notification: the receipt the cashier typed is kept
+// as written and may repeat. The presence proof is the sticker scan itself, so no customer QR is asked.
+export interface ApprovalAward {
+  membershipId: string;
+  branchId: string;
+  quantity: number;
+  receipt: string;
+}
+// Whether this receipt text was already used at the shop, on an approved scan or a cashier stamp.
+export async function receiptAlreadyUsed(db: DB, merchantId: string, receipt: string) {
+  const text = receipt.trim();
+  return !!(
+    await db.query(
+      `SELECT 1 FROM loyalty_transactions WHERE merchant_id=$1 AND lower(receipt_note)=lower($2)
+       UNION ALL SELECT 1 FROM purchase_references WHERE merchant_id=$1 AND normalized_reference=$3 LIMIT 1`,
+      [merchantId, text, normalizeReceipt(text)],
+    )
+  ).rowCount;
+}
 export async function award(
   db: DB,
   actor: Actor,
   merchantId: string,
   key: string,
-  p: AwardInput,
+  p: AwardInput | ApprovalAward,
   source: 'scan' | 'request' = 'scan',
   requestId?: string,
 ) {
+  const approval = 'receipt' in p ? p : undefined,
+    scanned = 'receipt' in p ? undefined : p;
+  requireCondition(
+    !approval || (source === 'request' && requestId),
+    'REQUEST_CONTEXT_MISMATCH',
+    422,
+  );
   const staff = await merchantGrant(
     db,
     actor,
@@ -40,17 +66,27 @@ export async function award(
     true,
   );
   requireCondition(p.quantity <= staff.max_qty, 'QTY_OVER_LIMIT', 422);
-  const normalized = normalizeReceipt(p.purchaseReference.reference);
-  requireCondition(normalized && /^[\p{L}\p{N} /_.:-]+$/u.test(normalized), 'RECEIPT_INVALID', 422);
+  const normalized = scanned ? normalizeReceipt(scanned.purchaseReference.reference) : '';
+  if (scanned)
+    requireCondition(
+      normalized && /^[\p{L}\p{N} /_.:-]+$/u.test(normalized),
+      'RECEIPT_INVALID',
+      422,
+    );
+  const receiptNote = approval?.receipt.trim();
   const canonical = {
     membershipId: p.membershipId,
     branchId: p.branchId,
     quantity: p.quantity,
-    purchaseReference: {
-      namespace: 'manual',
-      reference: normalized,
-      businessDate: p.purchaseReference.businessDate,
-    },
+    ...(scanned
+      ? {
+          purchaseReference: {
+            namespace: 'manual',
+            reference: normalized,
+            businessDate: scanned.purchaseReference.businessDate,
+          },
+        }
+      : { receipt: receiptNote }),
     source,
     requestId: requestId || null,
   };
@@ -71,13 +107,24 @@ export async function award(
           : undefined;
       const account = (
         await db.query(
-          'SELECT a.*,m.program_id,m.status AS membership_status,p.status AS program_status,v.threshold,v.max_per_tx,v.reward_title,v.reward_terms,v.validity_days,v.starts_at,v.ends_at FROM loyalty_accounts a JOIN memberships m ON m.id=a.membership_id AND m.merchant_id=a.merchant_id JOIN programs p ON p.id=m.program_id JOIN program_versions v ON v.id=a.program_version_id WHERE a.membership_id=$1 AND a.merchant_id=$2 FOR UPDATE OF a FOR SHARE OF m,p',
+          'SELECT a.*,m.program_id,m.user_id AS holder_id,m.status AS membership_status,p.status AS program_status,v.threshold,v.max_per_tx,v.reward_title,v.reward_terms,v.validity_days,v.starts_at,v.ends_at FROM loyalty_accounts a JOIN memberships m ON m.id=a.membership_id AND m.merchant_id=a.merchant_id JOIN programs p ON p.id=m.program_id JOIN program_versions v ON v.id=a.program_version_id WHERE a.membership_id=$1 AND a.merchant_id=$2 FOR UPDATE OF a FOR SHARE OF m,p',
           [p.membershipId, merchantId],
         )
       ).rows[0];
       requireCondition(account, 'NOT_FOUND', 404);
       requireCondition(account.membership_status === 'active', 'MEMBERSHIP_DISABLED', 403);
       requireCondition(account.program_status === 'active', 'PROGRAM_INACTIVE', 409);
+      // A customer this shop blocked gets no stamp from anyone until a staff member unblocks them.
+      requireCondition(
+        !(
+          await db.query('SELECT customer_blocked($1,$2) AS blocked', [
+            merchantId,
+            account.holder_id,
+          ])
+        ).rows[0].blocked,
+        'CUSTOMER_BLOCKED',
+        409,
+      );
       await requireEarning(db, merchantId);
       const clock = (await db.query('SELECT clock_timestamp() AS at')).rows[0].at as Date;
       if (source === 'request') {
@@ -135,8 +182,8 @@ export async function award(
         'PROGRAM_BRANCH_UNAUTHORIZED',
         403,
       );
-      {
-        const tok = readPresentationToken(p.presentationContext);
+      if (scanned) {
+        const tok = readPresentationToken(scanned.presentationContext);
         requireCondition(/^[a-f0-9]{64}$/.test(tok), 'TOKEN_INVALID', 422);
         const proof = (
           await db.query(
@@ -166,30 +213,34 @@ export async function award(
           410,
         );
       }
-      const merchant = (await db.query('SELECT timezone FROM merchants WHERE id=$1', [merchantId]))
-        .rows[0];
-      requireCondition(
-        p.purchaseReference.businessDate === businessDate(merchant.timezone, clock),
-        'BUSINESS_DATE_MISMATCH',
-        422,
-      );
-      const purchase = (
-        await db.query(
-          "INSERT INTO purchase_references(merchant_id,branch_id,namespace,business_date,reference,normalized_reference) VALUES($1,$2,'manual',$3,$4,$5) ON CONFLICT(merchant_id,namespace,branch_id,business_date,normalized_reference) DO NOTHING RETURNING id",
-          [
-            merchantId,
-            p.branchId,
-            p.purchaseReference.businessDate,
-            p.purchaseReference.reference,
-            normalized,
-          ],
-        )
-      ).rows[0];
-      requireCondition(purchase, 'PURCHASE_ALREADY_USED', 409);
+      let purchase: { id: string } | undefined, receiptUsed: boolean | undefined;
+      if (scanned) {
+        const merchant = (
+          await db.query('SELECT timezone FROM merchants WHERE id=$1', [merchantId])
+        ).rows[0];
+        requireCondition(
+          scanned.purchaseReference.businessDate === businessDate(merchant.timezone, clock),
+          'BUSINESS_DATE_MISMATCH',
+          422,
+        );
+        purchase = (
+          await db.query(
+            "INSERT INTO purchase_references(merchant_id,branch_id,namespace,business_date,reference,normalized_reference) VALUES($1,$2,'manual',$3,$4,$5) ON CONFLICT(merchant_id,namespace,branch_id,business_date,normalized_reference) DO NOTHING RETURNING id",
+            [
+              merchantId,
+              p.branchId,
+              scanned.purchaseReference.businessDate,
+              scanned.purchaseReference.reference,
+              normalized,
+            ],
+          )
+        ).rows[0];
+        requireCondition(purchase, 'PURCHASE_ALREADY_USED', 409);
+      } else receiptUsed = await receiptAlreadyUsed(db, merchantId, receiptNote!);
       const txId = randomUUID(),
         reference = 'TX-' + txId.slice(0, 8).toUpperCase() + '-' + txId.slice(9, 13).toUpperCase();
       await db.query(
-        "INSERT INTO loyalty_transactions(id,public_reference,merchant_id,membership_id,program_version_id,branch_id,staff_id,operation_id,purchase_id,type,quantity,source) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,'award',$10,$11)",
+        "INSERT INTO loyalty_transactions(id,public_reference,merchant_id,membership_id,program_version_id,branch_id,staff_id,operation_id,purchase_id,type,quantity,source,receipt_note) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,'award',$10,$11,$12)",
         [
           txId,
           reference,
@@ -199,15 +250,17 @@ export async function award(
           p.branchId,
           staff.id,
           operationId,
-          purchase.id,
+          purchase?.id ?? null,
           p.quantity,
           source,
+          receiptNote ?? null,
         ],
       );
-      await db.query(
-        'INSERT INTO purchase_allocations(merchant_id,purchase_id,membership_id,transaction_id) VALUES($1,$2,$3,$4)',
-        [merchantId, purchase.id, p.membershipId, txId],
-      );
+      if (purchase)
+        await db.query(
+          'INSERT INTO purchase_allocations(merchant_id,purchase_id,membership_id,transaction_id) VALUES($1,$2,$3,$4)',
+          [merchantId, purchase.id, p.membershipId, txId],
+        );
       await db.query(
         "INSERT INTO ledger_entries(merchant_id,membership_id,transaction_id,program_version_id,type,amount) VALUES($1,$2,$3,$4,'earn',$5)",
         [merchantId, p.membershipId, txId, account.program_version_id, p.quantity],
@@ -258,7 +311,7 @@ export async function award(
         requestId || (matchingRequest?.expires_at > clock ? matchingRequest.id : undefined);
       if (fulfilledRequestId) {
         await db.query(
-          "UPDATE stamp_requests SET status='approved',decided_by=$1,decided_at=clock_timestamp(),transaction_id=$2,result=$3 WHERE id=$4",
+          "UPDATE stamp_requests SET status='approved',decided_by=$1,decided_at=clock_timestamp(),transaction_id=$2,result=$3,receipt_note=coalesce($5,receipt_note) WHERE id=$4",
           [
             actor.id,
             txId,
@@ -269,6 +322,7 @@ export async function award(
               balanceAfter: calculated.balanceAfter,
             },
             fulfilledRequestId,
+            receiptNote ?? null,
           ],
         );
         await db.query(
@@ -279,7 +333,10 @@ export async function award(
       await audit(db, actor, 'loyalty.award', merchantId, txId, {
         membershipId: p.membershipId,
         branchId: p.branchId,
-        purchaseId: purchase.id,
+        purchaseId: purchase?.id ?? null,
+        ...(receiptNote === undefined
+          ? {}
+          : { receipt: receiptNote, receiptAlreadyUsed: receiptUsed }),
         quantity: p.quantity,
         source,
         requestId: requestId || null,
@@ -296,7 +353,8 @@ export async function award(
       return {
         transactionId: txId,
         reference,
-        purchaseId: purchase.id,
+        purchaseId: purchase?.id ?? null,
+        ...(receiptUsed === undefined ? {} : { receiptAlreadyUsed: receiptUsed }),
         membershipId: p.membershipId,
         quantity: p.quantity,
         balanceAfter: calculated.balanceAfter,

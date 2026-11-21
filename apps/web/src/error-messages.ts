@@ -356,8 +356,16 @@ const messages: Record<string, Line> = {
     'It is too late to take this stamp back. Ask a manager.',
   ],
   REWARD_ALREADY_REDEEMED: [
-    'الهدية اللي جت من الختم ده اتصرفت، فالإلغاء محتاج مدير.',
-    'The reward from this stamp was used, so a manager must undo it.',
+    'الختم ده اتحسب في هدية الزبون أخدها خلاص، فمينفعش يتلغي.',
+    'This stamp counted toward a reward the customer already received, so it cannot be revoked.',
+  ],
+  CUSTOMER_BLOCKED: [
+    'العميل ده محظور في المحل. فك الحظر من قائمة السبام الأول.',
+    'This customer is blocked at this shop. Unblock them from the Spam list first.',
+  ],
+  STAMP_UNAVAILABLE: [
+    'مش متاح تاخد ختم من هنا دلوقتي. كلّم الكاشير.',
+    'A stamp is not available here right now. Please ask the cashier.',
   ],
   BALANCE_TOO_LOW: [
     'الكارت مافيهوش أختام كفاية للإلغاء. ممكن تصفّر الكارت بدل كده.',

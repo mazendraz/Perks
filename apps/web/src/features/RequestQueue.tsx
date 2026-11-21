@@ -2,9 +2,9 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import type { Grant, Language, AwardResult } from '../../../../packages/contracts/src/index.js';
 import { api, ApiError, errorText } from '../api.js';
 import { useLiveRefresh } from '../live-events.js';
-import { CameraScanner } from './CameraScanner.js';
 import { ActionLabel } from '../../../../packages/ui/src/Icon.js';
-interface Request {
+
+export interface StampRequestRow {
   id: string;
   membership_id: string;
   branch_id: string;
@@ -13,30 +13,275 @@ interface Request {
   default_stamps: number;
   allow_multiple: boolean;
   expires_at: string;
-  code?: string;
 }
-interface Command {
-  key: string;
-  scope: string;
-  merchantId: string;
-  request: Request;
-  body:
-    | { approve: false; reason: string }
-    | {
-        approve: true;
-        award: {
-          membershipId: string;
-          branchId: string;
-          quantity: number;
-          purchaseReference: { namespace: 'manual'; reference: string; businessDate: string };
-        };
-      };
+
+// One idempotency key per request and decision, kept for the tab's life: tapping again after a lost
+// answer replays the same command, so a flaky connection can never give two stamps or two blocks.
+function decisionKey(requestId: string, kind: 'approve' | 'reject') {
+  const name = 'perks-decision-' + kind + ':' + requestId;
+  try {
+    const saved = sessionStorage.getItem(name);
+    if (saved) return saved;
+    const fresh = crypto.randomUUID();
+    sessionStorage.setItem(name, fresh);
+    return fresh;
+  } catch {
+    return crypto.randomUUID();
+  }
 }
-interface Proof {
-  membershipId: string;
-  context: string;
-  expiresAt: string;
+
+const minutesLeft = (expiresAt: string, now: number, ar: boolean) => {
+  const left = Math.max(0, Math.ceil((new Date(expiresAt).getTime() - now) / 60_000));
+  return ar
+    ? left <= 1
+      ? 'فاضل أقل من دقيقة'
+      : `فاضل ${left} دقايق`
+    : left <= 1
+      ? 'Less than a minute left'
+      : `${left} minutes left`;
+};
+
+// "This receipt was already used": checked while the cashier types, shown as a warning only.
+function useReceiptWarning(merchantId: string, receipt: string) {
+  const [used, setUsed] = useState(false);
+  useEffect(() => {
+    const value = receipt.trim();
+    setUsed(false);
+    if (!value) return;
+    let live = true;
+    const timer = window.setTimeout(() => {
+      void api<{ used: boolean }>(
+        '/merchants/' + merchantId + '/receipts/used?receipt=' + encodeURIComponent(value),
+      )
+        .then((r) => live && setUsed(r.used))
+        .catch(() => {
+          /* A warning only: never in the way of the stamp. */
+        });
+    }, 400);
+    return () => {
+      live = false;
+      window.clearTimeout(timer);
+    };
+  }, [merchantId, receipt]);
+  return used;
 }
+
+export type DecisionOutcome =
+  { kind: 'approved'; award: AwardResult } | { kind: 'rejected'; blocked: boolean };
+
+// The cashier's whole decision on one scan: type the receipt and grant, or reject (and block).
+// Used by the branch queue and by the screen a notification opens.
+export function RequestDecision({
+  grant,
+  lang,
+  request,
+  confirmBlock = false,
+  onDone,
+}: {
+  grant: Grant;
+  lang: Language;
+  request: StampRequestRow;
+  // Opened from the notification's "Reject & Block" button: ask for the confirmation straight away.
+  confirmBlock?: boolean;
+  onDone: (outcome: DecisionOutcome) => void;
+}) {
+  const ar = lang === 'ar';
+  const [receipt, setReceipt] = useState(''),
+    [quantity, setQuantity] = useState(request.default_stamps),
+    [reason, setReason] = useState(''),
+    [blocking, setBlocking] = useState(confirmBlock),
+    [busy, setBusy] = useState(false),
+    [error, setError] = useState(''),
+    [now, setNow] = useState(() => Date.now());
+  const used = useReceiptWarning(grant.merchant_id, receipt);
+  const input = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(Date.now()), 15_000);
+    return () => window.clearInterval(timer);
+  }, []);
+  useEffect(() => {
+    if (!confirmBlock) input.current?.focus();
+  }, [confirmBlock]);
+  const max = Math.min(request.max_per_tx, grant.max_qty);
+  const decide = async (body: Record<string, unknown>, kind: 'approve' | 'reject') => {
+    setBusy(true);
+    setError('');
+    const send = () =>
+      api<AwardResult & { status?: string; blocked?: boolean }>(
+        '/merchants/' + grant.merchant_id + '/stamp-requests/' + request.id + '/decision',
+        { method: 'POST', key: decisionKey(request.id, kind), body },
+      );
+    try {
+      let data;
+      try {
+        data = await send();
+      } catch (e) {
+        // No answer (connection dropped, timeout, server restart): the decision may or may not be
+        // saved. Ask again with the same key, which returns the saved result or makes the decision once,
+        // before the live queue refresh can take an approved card off the screen.
+        if (e instanceof ApiError && e.status > 0 && e.status < 500) throw e;
+        await new Promise((resolve) => setTimeout(resolve, 1500));
+        data = await send();
+      }
+      onDone(
+        kind === 'approve'
+          ? { kind: 'approved', award: data }
+          : { kind: 'rejected', blocked: !!data.blocked },
+      );
+    } catch (e) {
+      setError(errorText(e, lang));
+    } finally {
+      setBusy(false);
+    }
+  };
+  const approve = (event: FormEvent) => {
+    event.preventDefault();
+    void decide({ approve: true, receipt: receipt.trim(), quantity }, 'approve');
+  };
+  return (
+    <article className="request-card" data-request-id={request.id}>
+      <div className="section-heading">
+        <h3>
+          <bdi>{request.alias}</bdi>
+        </h3>
+        <small className="request-timer">{minutesLeft(request.expires_at, now, ar)}</small>
+      </div>
+      {error && (
+        <p className="error-text" role="alert">
+          {error}
+        </p>
+      )}
+      {blocking ? (
+        <div className="notice warning" role="alertdialog" aria-live="assertive">
+          <p>
+            {ar
+              ? 'هترفض الطلب وتحظر العميل ده في المحل. مش هياخد أختام ولا هيوصلك منه إشعارات لحد ما تفك الحظر من قائمة السبام.'
+              : 'This rejects the request and blocks this customer at your shop. They get no stamps and you get no notifications from them until you unblock them in the Spam list.'}
+          </p>
+          <div className="form-actions">
+            <button
+              className="danger"
+              disabled={busy}
+              onClick={() => void decide({ approve: false, block: true }, 'reject')}
+            >
+              {ar ? 'أيوه، ارفض واحظر' : 'Yes, reject & block'}
+            </button>
+            <button className="secondary" disabled={busy} onClick={() => setBlocking(false)}>
+              {ar ? 'رجوع' : 'Back'}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <>
+          <form onSubmit={approve}>
+            <label>
+              <ActionLabel icon="receipt">{ar ? 'رقم الإيصال' : 'Receipt number'}</ActionLabel>
+              <input
+                ref={input}
+                required
+                maxLength={120}
+                autoComplete="off"
+                value={receipt}
+                onChange={(e) => setReceipt(e.target.value)}
+              />
+            </label>
+            {used && (
+              <p className="notice warning" role="status">
+                {ar
+                  ? 'الإيصال ده اتستخدم قبل كده. تقدر تكمّل لو متأكد.'
+                  : 'This receipt was already used. You can still continue if you are sure.'}
+              </p>
+            )}
+            {request.allow_multiple && max > 1 && (
+              <div className="request-quantity">
+                <button
+                  type="button"
+                  className="secondary"
+                  aria-label={ar ? 'قلل الأختام' : 'Fewer stamps'}
+                  disabled={busy || quantity <= 1}
+                  onClick={() => setQuantity(quantity - 1)}
+                >
+                  −
+                </button>
+                <output aria-label={ar ? 'عدد الأختام' : 'Stamp quantity'}>{quantity}</output>
+                <button
+                  type="button"
+                  className="secondary"
+                  aria-label={ar ? 'زود الأختام' : 'More stamps'}
+                  disabled={busy || quantity >= max}
+                  onClick={() => setQuantity(quantity + 1)}
+                >
+                  +
+                </button>
+              </div>
+            )}
+            <button className="primary full" disabled={busy || !receipt.trim()}>
+              <ActionLabel icon="stamp">{ar ? 'اضف الختم' : 'Grant stamp'}</ActionLabel>
+            </button>
+          </form>
+          <button className="danger-outline full" disabled={busy} onClick={() => setBlocking(true)}>
+            {ar ? 'رفض وحظر' : 'Reject & Block'}
+          </button>
+          <details>
+            <summary>{ar ? 'رفض بس من غير حظر' : 'Reject without blocking'}</summary>
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                void decide({ approve: false, reason: reason.trim() }, 'reject');
+              }}
+            >
+              <label>
+                {ar ? 'سبب الرفض' : 'Rejection reason'}
+                <input
+                  required
+                  minLength={4}
+                  maxLength={500}
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                />
+              </label>
+              <button className="secondary" disabled={busy}>
+                {ar ? 'ارفض الطلب' : 'Reject this request'}
+              </button>
+            </form>
+          </details>
+        </>
+      )}
+    </article>
+  );
+}
+
+export function DecisionResult({ outcome, lang }: { outcome: DecisionOutcome; lang: Language }) {
+  const ar = lang === 'ar';
+  if (outcome.kind === 'rejected')
+    return (
+      <p className="notice" role="status">
+        {outcome.blocked
+          ? ar
+            ? 'الطلب اترفض والعميل اتحظر. تلاقيه في قائمة السبام.'
+            : 'Request rejected and the customer blocked. They are in the Spam list.'
+          : ar
+            ? 'الطلب اترفض.'
+            : 'Request rejected.'}
+      </p>
+    );
+  return (
+    <div className="notice success" role="status">
+      {ar ? 'الختم اتضاف: ' : 'Stamp added: '}
+      <bdi>{outcome.award.reference}</bdi> · +{outcome.award.quantity}
+      {outcome.award.receiptAlreadyUsed && (
+        <p>
+          {ar
+            ? 'ملحوظة: الإيصال ده كان اتستخدم قبل كده.'
+            : 'Note: this receipt had been used before.'}
+        </p>
+      )}
+    </div>
+  );
+}
+
+// The branch's open requests. Each one is also pushed to the cashiers' phones; this list is the same
+// decision for whoever is at the counter screen.
 export function CashierRequests({
   grant,
   branch,
@@ -48,21 +293,10 @@ export function CashierRequests({
   lang: Language;
   onCommitted: () => void;
 }) {
-  const ar = lang === 'ar',
-    storageKey = 'nuqta-request-decision-' + grant.id + ':' + branch;
-  const [requests, setRequests] = useState<Request[]>([]),
-    [proof, setProof] = useState<Proof | null>(null),
-    [manual, setManual] = useState(''),
-    [receipts, setReceipts] = useState<Record<string, string>>({}),
-    [quantities, setQuantities] = useState<Record<string, number>>({}),
-    [rejections, setRejections] = useState<Record<string, string>>({}),
-    [pending, setPending] = useState<Command | null>(null),
-    [resumable, setResumable] = useState(false),
-    [busy, setBusy] = useState(false),
+  const ar = lang === 'ar';
+  const [requests, setRequests] = useState<StampRequestRow[]>([]),
     [error, setError] = useState(''),
-    [notice, setNotice] = useState(''),
-    [result, setResult] = useState<{ award: AwardResult; undoUntil: number } | null>(null),
-    [undoReady, setUndoReady] = useState(false),
+    [last, setLast] = useState<DecisionOutcome | null>(null),
     [alerts, setAlerts] = useState(() => {
       try {
         // On unless this device turned it off: a waiting customer must be noticed.
@@ -71,12 +305,10 @@ export function CashierRequests({
         return false;
       }
     });
-  // Ticks every 15 seconds so each waiting request shows the minutes it has left.
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    const timer = window.setInterval(() => setNow(Date.now()), 15_000);
-    return () => window.clearInterval(timer);
-  }, []);
+  const generation = useRef(0),
+    loadSerial = useRef(0),
+    seen = useRef<Set<string> | null>(null),
+    audio = useRef<AudioContext | null>(null);
   // Browsers only allow sound after a tap; prime the alert on the first tap anywhere.
   useEffect(() => {
     if (!alerts || typeof AudioContext !== 'function') return;
@@ -91,10 +323,12 @@ export function CashierRequests({
     document.addEventListener('pointerdown', prime, { once: true });
     return () => document.removeEventListener('pointerdown', prime);
   }, [alerts]);
-  const generation = useRef(0),
-    loadSerial = useRef(0),
-    seen = useRef<Set<string> | null>(null),
-    audio = useRef<AudioContext | null>(null);
+  useEffect(
+    () => () => {
+      void audio.current?.close().catch(() => {});
+    },
+    [],
+  );
   const alert = () => {
     if (!alerts || document.hidden) return;
     try {
@@ -114,271 +348,37 @@ export function CashierRequests({
       }
       if (!matchMedia('(prefers-reduced-motion: reduce)').matches) navigator.vibrate?.(25);
     } catch {
-      /* Alerts never block purchase approval. */
+      /* Alerts never block approval. */
     }
   };
   const load = async () => {
     const current = generation.current,
       serial = ++loadSerial.current;
     try {
-      const data = await api<{ requests: Request[] }>(
+      const data = await api<{ requests: StampRequestRow[] }>(
         '/merchants/' + grant.merchant_id + '/stamp-requests?branchId=' + branch,
       );
       if (current !== generation.current || serial !== loadSerial.current) return;
       if (seen.current && data.requests.some((r) => !seen.current!.has(r.id))) alert();
       seen.current = new Set(data.requests.map((r) => r.id));
       setRequests(data.requests);
-    } catch (error) {
-      if (current === generation.current) setError(errorText(error, lang));
+      setError('');
+    } catch (e) {
+      if (current === generation.current) setError(errorText(e, lang));
     }
   };
   useLiveRefresh('/branches/' + branch + '/events', load);
   useEffect(() => {
     generation.current++;
     seen.current = null;
-    setProof(null);
-    setManual('');
     setRequests([]);
-    setPending(null);
-    setResumable(false);
+    setLast(null);
     setError('');
-    setNotice('');
-    setResult(null);
-    setBusy(false);
-    try {
-      const legacy = 'nuqta-request-decision-' + grant.id;
-      let saved = sessionStorage.getItem(storageKey);
-      if (!saved) {
-        const previous = sessionStorage.getItem(legacy);
-        if (previous && JSON.parse(previous).request?.branch_id === branch) {
-          sessionStorage.setItem(storageKey, previous);
-          sessionStorage.removeItem(legacy);
-          saved = previous;
-        }
-      }
-      if (saved) {
-        const value = JSON.parse(saved) as Command;
-        if (value.merchantId === grant.merchant_id && value.request?.branch_id === branch)
-          setPending(value);
-      }
-    } catch {
-      /* Unavailable local recovery storage never implies a committed write. */
-    }
     void load();
     return () => {
       generation.current++;
     };
   }, [branch, grant.id]);
-  useEffect(
-    () => () => {
-      void audio.current?.close().catch(() => {});
-    },
-    [],
-  );
-  useEffect(() => {
-    if (!proof) return;
-    const timer = window.setTimeout(
-      () => setProof(null),
-      Math.max(0, new Date(proof.expiresAt).getTime() - Date.now()),
-    );
-    return () => window.clearTimeout(timer);
-  }, [proof]);
-  useEffect(() => {
-    setUndoReady(!!result);
-    if (!result) return;
-    const timer = window.setTimeout(
-      () => setUndoReady(false),
-      Math.max(0, result.undoUntil - Date.now()),
-    );
-    return () => window.clearTimeout(timer);
-  }, [result]);
-  const read = async (value: string) => {
-    const current = generation.current;
-    setBusy(true);
-    setError('');
-    try {
-      const data = await api<{
-        membership: { id: string };
-        presentationContext: string;
-        expiresAt: string;
-      }>('/cashier/scans/resolve', {
-        method: 'POST',
-        body: { merchantId: grant.merchant_id, branchId: branch, token: value.trim() },
-      });
-      if (current !== generation.current) return;
-      if (pending && data.membership.id !== pending.request.membership_id)
-        throw new ApiError('REQUEST_CONTEXT_MISMATCH', 422);
-      if (!pending && !requests.some((r) => r.membership_id === data.membership.id))
-        throw new ApiError('REQUEST_CONTEXT_MISMATCH', 422);
-      setProof({
-        membershipId: data.membership.id,
-        context: data.presentationContext,
-        expiresAt: data.expiresAt,
-      });
-      setManual('');
-    } catch (error) {
-      if (current === generation.current) {
-        setProof(null);
-        setError(errorText(error, lang));
-      }
-    } finally {
-      if (current === generation.current) setBusy(false);
-    }
-  };
-  const finish = (award?: AwardResult) => {
-    sessionStorage.removeItem(storageKey);
-    setPending(null);
-    setResumable(false);
-    setProof(null);
-    setError('');
-    if (award?.reference) {
-      setResult({ award, undoUntil: Date.now() + 10000 });
-      onCommitted();
-    } else setNotice(ar ? 'الطلب اترفض.' : 'Request rejected.');
-    void load();
-  };
-  const recover = async () => {
-    if (!pending) return;
-    setBusy(true);
-    setError('');
-    try {
-      const response = await api<{ status: string; result: AwardResult }>(
-        '/operations/by-key?scope=' + encodeURIComponent(pending.scope) + '&key=' + pending.key,
-      );
-      if (response.status === 'committed')
-        finish(pending.body.approve ? response.result : undefined);
-      else {
-        setResumable(true);
-        setProof(null);
-        setNotice(
-          ar
-            ? 'لسه مفيش نتيجة محفوظة. امسح نفس كود العميل وكمّل نفس المحاولة.'
-            : 'No saved outcome yet. Scan the same customer code and resume the same attempt.',
-        );
-        await load();
-      }
-    } catch (error) {
-      setError(errorText(error, lang));
-    } finally {
-      setBusy(false);
-    }
-  };
-  const submit = async (event: FormEvent, row: Request, approve: boolean) => {
-    event.preventDefault();
-    if (pending && !resumable) return;
-    const current = generation.current;
-    const command: Command = pending ?? {
-      key: crypto.randomUUID(),
-      scope: approve ? 'stamp.award:' + grant.merchant_id : 'request.reject:' + row.id,
-      merchantId: grant.merchant_id,
-      request: { ...row, code: undefined },
-      body: approve
-        ? {
-            approve: true,
-            award: {
-              membershipId: row.membership_id,
-              branchId: branch,
-              quantity: quantities[row.id] ?? row.default_stamps,
-              purchaseReference: {
-                namespace: 'manual',
-                reference: receipts[row.id] ?? '',
-                businessDate: new Intl.DateTimeFormat('en-CA', {
-                  timeZone: grant.timezone,
-                  year: 'numeric',
-                  month: '2-digit',
-                  day: '2-digit',
-                }).format(new Date()),
-              },
-            },
-          }
-        : { approve: false, reason: rejections[row.id] ?? '' },
-    };
-    if (
-      command.body.approve &&
-      (!proof ||
-        proof.membershipId !== row.membership_id ||
-        new Date(proof.expiresAt).getTime() <= Date.now())
-    ) {
-      setError(
-        ar
-          ? 'امسح كود الـQR اللي على موبايل العميل الأول، وبعدين اضغط اختم.'
-          : 'Scan the QR code on the customer’s phone first, then tap Stamp.',
-      );
-      document
-        .querySelector('.request-scanner')
-        ?.scrollIntoView({ block: 'start', behavior: 'smooth' });
-      return;
-    }
-    setBusy(true);
-    setError('');
-    setNotice('');
-    try {
-      // Only the immutable business command is persisted. Neither a QR proof nor
-      // the matching code is written to local/session storage.
-      sessionStorage.setItem(storageKey, JSON.stringify(command));
-      setPending(command);
-      setResumable(false);
-      const data = await api<AwardResult>(
-        '/merchants/' + grant.merchant_id + '/stamp-requests/' + row.id + '/decision',
-        {
-          method: 'POST',
-          key: command.key,
-          body: command.body.approve
-            ? {
-                ...command.body,
-                code: row.code,
-                award: { ...command.body.award, presentationContext: proof!.context },
-              }
-            : command.body,
-        },
-      );
-      if (current === generation.current) finish(command.body.approve ? data : undefined);
-      else sessionStorage.removeItem(storageKey);
-    } catch (error) {
-      if (current !== generation.current) return;
-      if (
-        error instanceof ApiError &&
-        error.status >= 400 &&
-        error.status < 500 &&
-        ![401, 403, 429].includes(error.status)
-      ) {
-        setPending(null);
-        sessionStorage.removeItem(storageKey);
-      }
-      setError(errorText(error, lang));
-    } finally {
-      if (current === generation.current) setBusy(false);
-    }
-  };
-  const undo = async () => {
-    if (!result || !undoReady || Date.now() > result.undoUntil) return;
-    setBusy(true);
-    try {
-      await api('/merchants/' + grant.merchant_id + '/corrections', {
-        method: 'POST',
-        key: 'request-undo:' + result.award.transactionId,
-        body: {
-          transactionId: result.award.transactionId,
-          delta: -result.award.quantity,
-          reason: 'Cashier undo requested within ten seconds of approval',
-        },
-      });
-      setUndoReady(false);
-      setNotice(
-        ar
-          ? 'طلب التراجع اتبعت للمدير. الرصيد هيتغير بعد المراجعة.'
-          : 'Undo requested for manager review. The balance changes after approval.',
-      );
-    } catch (error) {
-      setError(errorText(error, lang));
-    } finally {
-      setBusy(false);
-    }
-  };
-  const rows =
-    pending && !requests.some((r) => r.id === pending.request.id)
-      ? [pending.request, ...requests]
-      : requests;
   return (
     <section className="panel request-queue">
       <div className="section-heading">
@@ -412,186 +412,28 @@ export function CashierRequests({
           {error}
         </p>
       )}
-      {notice && (
-        <p className="notice" role="status">
-          {notice}
+      {last && <DecisionResult outcome={last} lang={lang} />}
+      {!!requests.length && (
+        <p className="muted">
+          {ar
+            ? 'اكتب رقم إيصال العميل واضغط "اضف الختم".'
+            : 'Type the customer’s receipt number and tap “Grant stamp”.'}
         </p>
       )}
-      {result && (
-        <div className="notice success" role="status">
-          {ar ? 'اتحفظت العملية: ' : 'Transaction saved: '}
-          <bdi>{result.award.reference}</bdi> · +{result.award.quantity}
-          {undoReady && (
-            <button className="text-button" disabled={busy} onClick={() => void undo()}>
-              {ar ? 'تراجع' : 'Undo'}
-            </button>
-          )}
-        </div>
-      )}
-      {pending && (
-        <div className="notice">
-          <p>{ar ? 'فيه قرار محتاج تأكيد نتيجته.' : 'A decision needs its outcome confirmed.'}</p>
-          <button className="secondary" disabled={busy} onClick={() => void recover()}>
-            {ar ? 'تحقق من نفس القرار' : 'Check the same decision'}
-          </button>
-        </div>
-      )}
-      {!!rows.length && (
-        <div className="request-scanner">
-          <p className="muted">
-            {ar
-              ? 'امسح كود العميل، اكتب الإيصال، وبعدها ضغطة واحدة تعتمد الختم.'
-              : 'Scan the customer code, enter the receipt, then approve with one tap.'}
-          </p>
-          <CameraScanner lang={lang} onRead={(value) => void read(value)} />
-          <form
-            onSubmit={(event) => {
-              event.preventDefault();
-              void read(manual);
-            }}
-          >
-            <label>
-              <ActionLabel icon="keyboard">
-                {ar
-                  ? 'أو اكتب الـ 6 أرقام اللي على موبايل العميل'
-                  : "Or type the 6 digits on the customer's phone"}
-              </ActionLabel>
-              <input
-                dir="ltr"
-                autoComplete="off"
-                inputMode="numeric"
-                placeholder="482 913"
-                value={manual}
-                onChange={(e) => setManual(e.target.value)}
-                required
-              />
-            </label>
-            <button className="secondary" disabled={busy}>
-              <ActionLabel icon="scan">{ar ? 'اقرأ كود الطلب' : 'Read request code'}</ActionLabel>
-            </button>
-          </form>
-        </div>
-      )}
-      {rows.map((row) => {
-        const locked = !!pending,
-          matching = proof?.membershipId === row.membership_id,
-          command = pending?.request.id === row.id ? pending : undefined;
-        const quantity = command?.body.approve
-          ? command.body.award.quantity
-          : (quantities[row.id] ?? row.default_stamps);
-        const receipt = command?.body.approve
-          ? command.body.award.purchaseReference.reference
-          : (receipts[row.id] ?? '');
-        return (
-          <article className="request-card" key={row.id} data-request-id={row.id}>
-            <div className="section-heading">
-              <h3>{row.alias}</h3>
-              <bdi className="request-match">{row.code}</bdi>
-            </div>
-            <small className="request-timer">
-              {(() => {
-                const left = Math.max(
-                  0,
-                  Math.ceil((new Date(row.expires_at).getTime() - now) / 60_000),
-                );
-                return ar
-                  ? left <= 1
-                    ? 'فاضل أقل من دقيقة'
-                    : `فاضل ${left} دقايق`
-                  : left <= 1
-                    ? 'Less than a minute left'
-                    : `${left} minutes left`;
-              })()}
-            </small>
-            <p className={matching ? 'notice success' : 'muted'}>
-              {matching
-                ? ar
-                  ? 'كود العميل اتقري.'
-                  : 'Customer code scanned.'
-                : ar
-                  ? 'اطلب من العميل يفتح كود الـQR من الكارت بتاعه وامسحه.'
-                  : 'Ask the customer to open the QR code on their card and scan it.'}
-            </p>
-            <form onSubmit={(event) => void submit(event, row, true)}>
-              <label>
-                <ActionLabel icon="receipt">
-                  {ar ? 'رقم إيصال الطلب' : 'Request receipt number'}
-                </ActionLabel>
-                <input
-                  required
-                  maxLength={120}
-                  readOnly={locked}
-                  value={receipt}
-                  onChange={(e) => setReceipts({ ...receipts, [row.id]: e.target.value })}
-                />
-              </label>
-              <div className="request-quantity">
-                <button
-                  type="button"
-                  className="secondary"
-                  aria-label={ar ? 'قلل الأختام' : 'Fewer stamps'}
-                  disabled={locked || !row.allow_multiple || quantity <= 1}
-                  onClick={() => setQuantities({ ...quantities, [row.id]: quantity - 1 })}
-                >
-                  −
-                </button>
-                <output aria-label={ar ? 'عدد الأختام' : 'Stamp quantity'}>{quantity}</output>
-                <button
-                  type="button"
-                  className="secondary"
-                  aria-label={ar ? 'زود الأختام' : 'More stamps'}
-                  disabled={
-                    locked ||
-                    !row.allow_multiple ||
-                    quantity >= Math.min(row.max_per_tx, grant.max_qty)
-                  }
-                  onClick={() => setQuantities({ ...quantities, [row.id]: quantity + 1 })}
-                >
-                  +
-                </button>
-              </div>
-              <button
-                className="primary full"
-                // Not disabled before the scan: tapping explains what is missing instead.
-                disabled={
-                  busy || !row.code || (!!pending && (!resumable || pending.request.id !== row.id))
-                }
-              >
-                <ActionLabel icon={matching ? 'stamp' : 'scan'}>
-                  {matching
-                    ? ar
-                      ? 'اختم'
-                      : 'Stamp request'
-                    : ar
-                      ? 'امسح كود العميل الأول'
-                      : 'Scan the customer code first'}
-                </ActionLabel>
-              </button>
-            </form>
-            {!pending && (
-              <details>
-                <summary>{ar ? 'رفض الطلب' : 'Reject request'}</summary>
-                <form onSubmit={(event) => void submit(event, row, false)}>
-                  <label>
-                    {ar ? 'سبب الرفض' : 'Rejection reason'}
-                    <input
-                      required
-                      minLength={4}
-                      maxLength={500}
-                      value={rejections[row.id] ?? ''}
-                      onChange={(e) => setRejections({ ...rejections, [row.id]: e.target.value })}
-                    />
-                  </label>
-                  <button className="danger-outline" disabled={busy}>
-                    {ar ? 'ارفض الطلب' : 'Reject this request'}
-                  </button>
-                </form>
-              </details>
-            )}
-          </article>
-        );
-      })}
-      {!rows.length && (
+      {requests.map((row) => (
+        <RequestDecision
+          key={row.id}
+          grant={grant}
+          lang={lang}
+          request={row}
+          onDone={(outcome) => {
+            setLast(outcome);
+            if (outcome.kind === 'approved') onCommitted();
+            void load();
+          }}
+        />
+      ))}
+      {!requests.length && (
         <p className="muted">
           {ar ? 'مفيش طلبات مفتوحة في الفرع.' : 'No open requests at this branch.'}
         </p>

@@ -17,7 +17,12 @@ import {
   webPushConfig,
 } from '../../apps/api/src/webpush.js';
 import { readConfig } from '../../apps/api/src/config.js';
-import { stampRequestNotice, testNotice } from '../../apps/api/src/push-notices.js';
+import {
+  autoStampNotice,
+  firstName,
+  stampRequestNotice,
+  testNotice,
+} from '../../apps/api/src/push-notices.js';
 
 // RFC 8291 section 5, "Push Message Encryption Example".
 const RFC = {
@@ -278,18 +283,38 @@ test('delivery posts an encrypted body with VAPID headers, refuses other hosts a
   assert.deepEqual(offline, { status: 0, detail: 'TypeError' });
 });
 
-test('a notification carries a generic title and the branch name, and nothing else', () => {
-  const branch = '8f14e45f-ceea-4c67-9f6b-1a2b3c4d5e6f';
-  const en = stampRequestNotice('en', branch, 'Maadi branch'),
-    ar = stampRequestNotice('ar', branch, '  فرع المعادي ');
-  assert.deepEqual(Object.keys(en).sort(), ['body', 'dir', 'lang', 'tag', 'title', 'url']);
-  assert.equal(en.title, 'New stamp request');
-  assert.equal(en.body, 'Maadi branch');
-  assert.equal(ar.body, 'فرع المعادي');
+test('a notification carries the first name and the branch, and opens the scan’s own screen', () => {
+  const id = '8f14e45f-ceea-4c67-9f6b-1a2b3c4d5e6f';
+  const en = stampRequestNotice('en', id, 'Maadi branch', 'Mona Ahmed Ali'),
+    ar = stampRequestNotice('ar', id, '  فرع المعادي ', 'منى أحمد');
+  assert.deepEqual(Object.keys(en).sort(), [
+    'actions',
+    'body',
+    'dir',
+    'lang',
+    'tag',
+    'title',
+    'url',
+  ]);
+  assert.equal(en.title, 'Stamp to approve · Mona');
+  assert.equal(ar.title, 'ختم محتاج موافقتك · منى');
+  assert.ok(en.body.startsWith('Maadi branch'));
+  assert.ok(ar.body.startsWith('فرع المعادي'));
   assert.equal(ar.dir, 'rtl');
-  assert.equal(en.url, '/cashier');
-  assert.equal(en.tag, 'stamp-request:' + branch);
-  assert.equal(stampRequestNotice('en', branch, 'x'.repeat(500)).body.length, 80);
+  assert.equal(en.url, '/cashier/requests/' + id);
+  assert.equal(en.tag, 'stamp-request:' + id);
+  assert.deepEqual(en.actions, [{ action: 'reject-block', title: 'Reject & Block' }]);
+  assert.ok(stampRequestNotice('en', id, 'x'.repeat(500)).body.startsWith('x'.repeat(80) + ' '));
+  // A phone number typed as a name never reaches the lock screen.
+  assert.equal(stampRequestNotice('en', id, 'Maadi', '01001234567').title, 'Stamp to approve');
+  const auto = autoStampNotice('en', id, 'Maadi', 'Omar', 2);
+  assert.equal(auto.title, 'Stamp added +2 · Omar');
+  assert.equal(auto.url, '/cashier/stamps/' + id);
+  assert.deepEqual(
+    auto.actions!.map((a) => a.action),
+    ['revoke', 'block'],
+  );
+  assert.equal(firstName('  Sara  Mohamed '), 'Sara');
   assert.ok(!JSON.stringify(testNotice('en')).match(/\d{4}/));
 });
 
@@ -359,6 +384,40 @@ test('the service worker shows every push, replaces by tag, and tolerates a brok
     },
   });
   assert.equal(shown[1]!.title, 'Perks', 'still shows something: browsers punish a silent push');
+  await dispatch('push', {
+    data: {
+      json: () => ({
+        title: 'Stamp added',
+        url: '/cashier/stamps/t1',
+        actions: [
+          { action: 'revoke', title: 'Revoke this stamp' },
+          { action: 'delete-everything', title: 'x' },
+          { action: 'block', title: 'Block customer' },
+        ],
+      }),
+    },
+  });
+  // Built inside the worker's own realm, so compared by value.
+  assert.deepEqual(JSON.parse(JSON.stringify(shown[2]!.options.actions)), [
+    { action: 'revoke', title: 'Revoke this stamp' },
+    { action: 'block', title: 'Block customer' },
+  ]);
+});
+
+test('a notification button opens the screen with ?do=<action>, never acting on its own', async () => {
+  const { dispatch, opened } = loadWorker();
+  const tap = (action: string) => ({
+    action,
+    notification: { close() {}, data: { url: '/cashier/stamps/t1' } },
+  });
+  await dispatch('notificationclick', tap('revoke'));
+  await dispatch('notificationclick', tap('reject-block'));
+  await dispatch('notificationclick', tap('something-else'));
+  assert.deepEqual(opened, [
+    'https://perks.example/cashier/stamps/t1?do=revoke',
+    'https://perks.example/cashier/stamps/t1?do=reject-block',
+    'https://perks.example/cashier/stamps/t1',
+  ]);
 });
 
 test('a tap opens only a cashier page of this origin, reusing an open cashier window', async () => {

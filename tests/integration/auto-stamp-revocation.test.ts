@@ -96,13 +96,25 @@ async function customer(): Promise<Customer> {
   assert.equal(enrolled.statusCode, 200, enrolled.body);
   return { headers, membership: enrolled.json().membershipId as string };
 }
-const collect = (who: Customer, branch = ids.branchA) =>
-  app.inject({
+// Each visit in these tests stands for a separate trip to the shop: step the card's earlier scan stamps
+// back past the 60-second duplicate floor (covered in scan-push-blocks.test.ts) before scanning again.
+async function collect(who: Customer, branch = ids.branchA) {
+  await db.query('ALTER TABLE loyalty_transactions DISABLE TRIGGER transaction_immutable');
+  try {
+    await db.query(
+      "UPDATE loyalty_transactions SET at=at-interval '2 minutes' WHERE membership_id=$1 AND type='award' AND source IN ('auto','request','scan') AND at>clock_timestamp()-interval '60 seconds'",
+      [who.membership],
+    );
+  } finally {
+    await db.query('ALTER TABLE loyalty_transactions ENABLE TRIGGER transaction_immutable');
+  }
+  return app.inject({
     method: 'POST',
     url: '/api/v1/me/stamp-collections',
     headers: { ...who.headers, ...key() },
     payload: { membershipId: who.membership, branchId: branch, placementCode: codes[branch] },
   });
+}
 async function autoStamp(who: Customer, branch = ids.branchA) {
   const r = await collect(who, branch);
   assert.equal(r.statusCode, 200, r.body);
@@ -410,7 +422,7 @@ test('revoking the stamp that completed the card voids the reward it earned', as
   await configure();
 });
 
-test('a redeemed reward is never undone: cashiers are refused, owners take back only the stamp', async () => {
+test('a redeemed reward is never undone: the stamps behind it cannot be revoked by anyone', async () => {
   await configure({ welcomeStamps: 4 });
   const who = await customer();
   const tx = await autoStamp(who);
@@ -419,20 +431,15 @@ test('a redeemed reward is never undone: cashiers are refused, owners take back 
     "UPDATE reward_grants SET status='redeemed',redeemed_at=clock_timestamp() WHERE id=$1",
     [reward!.id],
   );
-  const refused = await revoke(cashier, tx);
-  assert.equal(refused.statusCode, 409);
-  assert.equal(errorCode(refused), 'REWARD_ALREADY_REDEEMED');
-  // Nothing left on the card to take the stamp from.
-  const empty = await revoke(owner, tx);
-  assert.equal(errorCode(empty), 'BALANCE_TOO_LOW');
-  // After the next visit the owner can take the stamp back; the reward stays redeemed.
+  // Even with a stamp on the new card to take it from, cashiers and owners alike are refused.
   assert.equal((await autoStamp(who)) !== tx, true);
-  const r = await revoke(owner, tx);
-  assert.equal(r.statusCode, 200, r.body);
-  assert.deepEqual(r.json().voidedRewards, []);
+  for (const as of [cashier, owner]) {
+    const refused = await revoke(as, tx);
+    assert.equal(refused.statusCode, 409, refused.body);
+    assert.equal(errorCode(refused), 'REWARD_ALREADY_REDEEMED');
+  }
   assert.deepEqual(await rewards(who.membership), [{ id: reward!.id, status: 'redeemed' }]);
-  const after = await account(who.membership);
-  assert.deepEqual([after.balance, after.ledger], [0, 0]);
+  assert.equal((await account(who.membership)).balance, 1);
   await configure();
 });
 

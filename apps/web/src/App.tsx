@@ -42,6 +42,12 @@ const PlatformPage = lazy(() =>
 const CashierPage = lazy(() =>
   import('./features/CashierPage.js').then((m) => ({ default: m.CashierPage })),
 );
+const CashierScanRoute = lazy(() =>
+  import('./features/ScanActions.js').then((m) => ({ default: m.CashierScanRoute })),
+);
+const SpamList = lazy(() =>
+  import('./features/ScanActions.js').then((m) => ({ default: m.SpamList })),
+);
 const MerchantPage = lazy(() =>
   import('./features/MerchantPage.js').then((m) => ({ default: m.MerchantPage })),
 );
@@ -371,6 +377,9 @@ function Workspace({
           },
         ]
       : []),
+    ...(portal === 'cashier' && grant
+      ? [{ path: '/cashier/spam', label: ar ? 'سبام' : 'Spam', icon: 'shield' }]
+      : []),
     { path: account, label: ar ? 'حسابي' : 'My account', icon: 'people' },
     ...(portal === 'platform' && session.user.role === 'platform_admin'
       ? [
@@ -458,13 +467,31 @@ function Workspace({
         </>
       );
     else content = <PlatformPage lang={lang} userId={session.user.id} />;
-  } else if ((route === '/merchant' || route === '/cashier') && grant?.status === 'suspended')
+  } else if (
+    (route === '/merchant' || route.startsWith('/cashier')) &&
+    route !== account &&
+    grant?.status === 'suspended'
+  )
     content = <SuspendedNotice grant={grant} lang={lang} />;
   else if (route === '/merchant' && grant)
     content = <MerchantPage key={grant.id} grant={grant} lang={lang} />;
   else if (route === '/cashier' && grant)
     content = <CashierPage key={grant.id} grant={grant} lang={lang} />;
-  else if (route === '/customer' || (route.startsWith('/customer/') && route !== account))
+  else if (route === '/cashier/spam' && grant)
+    content = <SpamList key={grant.id} grant={grant} lang={lang} />;
+  else if (/^\/cashier\/(requests|stamps)\/[0-9a-f-]{36}$/.test(route) && grant) {
+    const [, , kind, id] = route.split('/');
+    content = (
+      <CashierScanRoute
+        key={route}
+        grants={grants}
+        preferred={grant}
+        lang={lang}
+        kind={kind === 'requests' ? 'request' : 'stamp'}
+        id={id!}
+      />
+    );
+  } else if (route === '/customer' || (route.startsWith('/customer/') && route !== account))
     content = <CustomerPage lang={lang} membershipId={route.split('/')[2]} />;
   else if (route.startsWith('/invite/'))
     content = <InvitePage token={route.split('/')[2] || ''} lang={lang} refresh={refresh} />;

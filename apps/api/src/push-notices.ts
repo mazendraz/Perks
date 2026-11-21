@@ -1,29 +1,70 @@
-// What a cashier notification says. Deliberately generic: a lock screen is read by whoever holds the
-// phone, so the text carries the branch name and nothing about the customer, the card or any figure.
+// What a cashier notification says. A lock screen is read by whoever holds the phone, so the text
+// carries the customer's first name only (never the full name, phone, card balance or receipt) and the
+// branch. Everything else is on the screen the notification opens, behind the cashier's sign-in.
 export type PushLanguage = 'ar' | 'en';
+export interface PushAction {
+  // Handled by the service worker: it opens `url` with ?do=<action>, never acts on its own.
+  action: 'revoke' | 'block' | 'reject-block';
+  title: string;
+}
 export interface PushNotice {
   title: string;
   body: string;
-  // Where a tap opens. Same-origin path only; the service worker resolves it against its own origin.
+  // Where a tap opens. Same-origin /cashier path only; the service worker resolves it itself.
   url: string;
-  // One notification per branch: a second request replaces the first on the lock screen and buzzes again.
+  // One notification per scan, so each keeps its own buttons.
   tag: string;
   lang: PushLanguage;
   dir: 'rtl' | 'ltr';
+  // Android/Chrome show them on the notification; iPhone does not, and opens `url` on tap instead.
+  actions?: PushAction[];
 }
 const direction = (lang: PushLanguage) => (lang === 'en' ? 'ltr' : 'rtl');
+// "Mona Ahmed" → "Mona". A name that is only digits or symbols (a phone typed as a name) shows nothing.
+export function firstName(alias: string | null | undefined) {
+  const first = (alias ?? '').trim().split(/\s+/)[0] ?? '';
+  return /\p{L}/u.test(first) ? first.slice(0, 24) : '';
+}
+const titled = (base: string, name: string) => (name ? base + ' · ' + name : base);
 export function stampRequestNotice(
   lang: PushLanguage,
-  branchId: string,
+  requestId: string,
   branchName: string,
+  alias?: string | null,
 ): PushNotice {
+  const en = lang === 'en';
   return {
-    title: lang === 'en' ? 'New stamp request' : 'طلب ختم جديد',
-    body: branchName.trim().slice(0, 80),
-    url: '/cashier',
-    tag: 'stamp-request:' + branchId,
+    title: titled(en ? 'Stamp to approve' : 'ختم محتاج موافقتك', firstName(alias)),
+    body:
+      branchName.trim().slice(0, 80) +
+      (en ? ' · enter the receipt to add it' : ' · اكتب رقم الإيصال علشان يتضاف'),
+    url: '/cashier/requests/' + requestId,
+    tag: 'stamp-request:' + requestId,
     lang,
     dir: direction(lang),
+    actions: [{ action: 'reject-block', title: en ? 'Reject & Block' : 'رفض وحظر' }],
+  };
+}
+export function autoStampNotice(
+  lang: PushLanguage,
+  transactionId: string,
+  branchName: string,
+  alias?: string | null,
+  quantity?: number | null,
+): PushNotice {
+  const en = lang === 'en',
+    count = quantity && quantity > 1 ? ' +' + quantity : '';
+  return {
+    title: titled((en ? 'Stamp added' : 'ختم اتضاف') + count, firstName(alias)),
+    body: branchName.trim().slice(0, 80),
+    url: '/cashier/stamps/' + transactionId,
+    tag: 'auto-stamp:' + transactionId,
+    lang,
+    dir: direction(lang),
+    actions: [
+      { action: 'revoke', title: en ? 'Revoke this stamp' : 'إلغاء الختم ده' },
+      { action: 'block', title: en ? 'Block customer' : 'حظر العميل' },
+    ],
   };
 }
 export function testNotice(lang: PushLanguage): PushNotice {
@@ -31,8 +72,8 @@ export function testNotice(lang: PushLanguage): PushNotice {
     title: lang === 'en' ? 'Notifications are on' : 'الإشعارات شغالة',
     body:
       lang === 'en'
-        ? 'Perks · this device will get stamp requests'
-        : 'Perks · الجهاز ده هيوصله طلبات الأختام',
+        ? 'Perks · this device will be told about every customer scan'
+        : 'Perks · الجهاز ده هيوصله تنبيه مع كل سكان من العملاء',
     url: '/cashier',
     tag: 'test',
     lang,

@@ -632,33 +632,8 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
     }
     lastRevision.current = { id: card.id, revision: card.revision };
   }, [card?.id, card?.revision]);
-  // On the very first visit the card is revealed before the full-screen code covers it:
-  // the customer sees their new card arrive, then the code opens for the first stamp.
-  const firstVisit = useRef(new URLSearchParams(location.search).get('new') === '1');
-  const openedFromWallet = useRef<string | undefined>(undefined);
-  useEffect(() => {
-    if (
-      !card ||
-      new URLSearchParams(location.search).get('wallet') !== '1' ||
-      openedFromWallet.current === card.id
-    )
-      return;
-    openedFromWallet.current = card.id;
-    // The Wallet QR is a link, never an award credential. The authenticated
-    // holder still obtains the same short-lived proof used by the normal UI.
-    void showQr();
-  }, [card?.id]);
-  useEffect(() => {
-    // Any open request, from a sticker or from the app, needs the customer's QR in front of
-    // the cashier: the approve button stays locked until it is scanned.
-    if (!(waiting && card)) return;
-    const reduce =
-      typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const delay = firstVisit.current && !reduce ? FIRST_CARD_MOMENT_MS : 0;
-    firstVisit.current = false;
-    const timer = window.setTimeout(() => void showQr(), delay);
-    return () => window.clearTimeout(timer);
-  }, [waiting, card?.id]);
+  // The personal QR is only for redeeming a reward now: a stamp comes from the shop's sticker and the
+  // cashier's receipt, so neither a Wallet open nor a waiting request opens the code by itself.
   useEffect(() => {
     if (challenges.some((ch) => ch.status === 'awaiting_holder')) {
       qrEpoch.current++;
@@ -871,14 +846,6 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
                     </div>
                   )}
                   <div className="card-actions">
-                    <button
-                      className="primary"
-                      disabled={busy}
-                      aria-busy={busy}
-                      onClick={() => void showQr()}
-                    >
-                      <ActionLabel icon="qr">{ar ? 'اعرض الكود' : 'Show my code'}</ActionLabel>
-                    </button>
                     <button className="secondary" onClick={() => setTab('history')}>
                       <ActionLabel icon="clock">{ar ? 'آخر نشاط' : 'Recent activity'}</ActionLabel>
                     </button>
@@ -914,6 +881,16 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
                               {new Date(r.expires_at).toLocaleDateString(intlLocale(lang))}
                             </small>
                           </div>
+                          {r.status === 'available' && (
+                            <button
+                              className="primary small"
+                              disabled={busy}
+                              aria-busy={busy}
+                              onClick={() => void showQr()}
+                            >
+                              <ActionLabel icon="qr">{ar ? 'استبدل' : 'Redeem'}</ActionLabel>
+                            </button>
+                          )}
                           <span className="badge">
                             {r.status === 'available'
                               ? ar
@@ -945,7 +922,6 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
                     card={card}
                     lang={lang}
                     onPending={setWaiting}
-                    onShowCode={() => void showQr()}
                     onAwarded={load}
                     onNotice={setVisitNotice}
                   />

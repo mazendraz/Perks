@@ -7,16 +7,10 @@ import { readConfig } from '../../apps/api/src/config.js';
 import { buildApp } from '../../apps/api/src/server.js';
 import { seed, ids } from '../../db/seed.js';
 import { login, key } from '../helpers.js';
-import { businessDate } from '../../packages/domain/src/loyalty.js';
 const c = readConfig(),
   db = new pg.Client({ connectionString: c.DATABASE_MIGRATOR_URL }),
   { app } = await buildApp({ APP_ENV: 'test', LOG_LEVEL: 'silent' });
-let cu: Awaited<ReturnType<typeof login>>,
-  ca: typeof cu,
-  foreign: typeof cu,
-  ms: string,
-  token: string,
-  proof: string;
+let cu: Awaited<ReturnType<typeof login>>, ca: typeof cu, foreign: typeof cu, ms: string;
 before(async () => {
   await db.connect();
   await seed(db);
@@ -40,21 +34,6 @@ before(async () => {
   });
   assert.equal(enrolled.statusCode, 200);
   ms = enrolled.json().membershipId;
-  const qr = await app.inject({
-    method: 'POST',
-    url: '/api/v1/me/memberships/' + ms + '/presentation-tokens',
-    headers: { ...cu, ...key() },
-    payload: {},
-  });
-  token = qr.json().token;
-  const resolved = await app.inject({
-    method: 'POST',
-    url: '/api/v1/cashier/scans/resolve',
-    headers: ca,
-    payload: { merchantId: ids.merchantA, branchId: ids.branchA, token },
-  });
-  assert.equal(resolved.statusCode, 200);
-  proof = resolved.json().presentationContext;
 });
 after(async () => {
   await app.close();
@@ -70,21 +49,8 @@ async function create() {
   assert.equal(r.statusCode, 200, r.body);
   return r.json();
 }
-const body = (r: { code: string }, receipt: string) => ({
-  approve: true,
-  code: r.code,
-  award: {
-    presentationContext: proof,
-    branchId: ids.branchA,
-    membershipId: ms,
-    quantity: 2,
-    purchaseReference: {
-      namespace: 'manual',
-      reference: receipt,
-      businessDate: businessDate('Africa/Cairo'),
-    },
-  },
-});
+// The cashier approves from the notification with the receipt number alone: no customer QR, no code.
+const body = (_r: unknown, receipt: string) => ({ approve: true, receipt, quantity: 2 });
 const decide = (id: string, p: Record<string, unknown>, k = randomUUID(), headers = ca) =>
   app.inject({
     method: 'POST',
@@ -130,7 +96,7 @@ test('worker expires pending requests once with a system event; ordinary runtime
     await runtime.end();
   }
 });
-test('requests require holder/branch authority; matching attempts persist and one approval uses the shared purchase key', async () => {
+test('requests require holder/branch authority; one approval per request, the receipt is kept', async () => {
   assert.equal(
     (
       await app.inject({
@@ -145,25 +111,9 @@ test('requests require holder/branch authority; matching attempts persist and on
   const all = await Promise.all(Array.from({ length: 8 }, () => create()));
   assert.equal(new Set(all.map((x) => x.id)).size, 1);
   const r = all[0];
-  const unscanned = body(r, 'REQ-UNSCANNED');
-  unscanned.award.presentationContext = token;
-  assert.equal((await decide(r.id, unscanned)).statusCode, 403);
-  const anotherSession = await login(app, 'cashier@bunn.test');
-  assert.equal(
-    (await decide(r.id, body(r, 'REQ-OTHER-SESSION'), randomUUID(), anotherSession)).statusCode,
-    403,
-  );
+  // Another shop's staff cannot see or decide it; an empty receipt is refused.
   assert.equal((await decide(r.id, body(r, 'REQ-1'), randomUUID(), foreign)).statusCode, 404);
-  assert.equal(
-    (await decide(r.id, { ...body(r, 'REQ-1'), code: r.code === '000000' ? '000001' : '000000' }))
-      .statusCode,
-    422,
-  );
-  assert.equal(
-    (await db.query('SELECT failed_matches FROM stamp_requests WHERE id=$1', [r.id])).rows[0]
-      .failed_matches,
-    1,
-  );
+  assert.equal((await decide(r.id, body(r, '   '))).statusCode, 422);
   const k = randomUUID(),
     replies = await Promise.all(
       Array.from({ length: 12 }, () => decide(r.id, body(r, 'REQ-1'), k)),
@@ -171,14 +121,14 @@ test('requests require holder/branch authority; matching attempts persist and on
   assert.ok(replies.every((x) => x.statusCode === 200));
   assert.equal(new Set(replies.map((x) => x.json().transactionId)).size, 1);
   assert.equal((await decide(r.id, body(r, 'REQ-1'))).statusCode, 409);
-  const duplicate = await app.inject({
-    method: 'POST',
-    url: '/api/v1/merchants/' + ids.merchantA + '/stamp-awards',
-    headers: { ...ca, ...key() },
-    payload: { ...body(r, ' req-١ ').award, presentationContext: token },
-  });
-  assert.equal(duplicate.statusCode, 409);
-  assert.equal(duplicate.json().error.code, 'PURCHASE_ALREADY_USED');
+  assert.equal(
+    (
+      await db.query('SELECT receipt_note FROM loyalty_transactions WHERE id=$1', [
+        replies[0]!.json().transactionId,
+      ])
+    ).rows[0].receipt_note,
+    'REQ-1',
+  );
   const own = (await app.inject({ url: '/api/v1/me/stamp-requests', headers: cu })).json()
     .requests[0];
   assert.equal(own.status, 'approved');
@@ -210,8 +160,8 @@ test('expiry after waiting for an account lock prevents approval and preserves b
     before,
   );
 });
-test('cancel versus approve has one final outcome and five wrong matching attempts lock the request', async () => {
-  let r = await create();
+test('cancel versus approve has one final outcome', async () => {
+  const r = await create();
   const results = await Promise.all([
     decide(r.id, body(r, 'REQ-CANCEL-RACE')),
     app.inject({
@@ -227,18 +177,6 @@ test('cancel versus approve has one final outcome and five wrong matching attemp
   ).rows[0];
   assert.ok(['approved', 'cancelled'].includes(final.status));
   assert.equal(Boolean(final.transaction_id), final.status === 'approved');
-  r = await create();
-  for (let i = 0; i < 5; i++)
-    assert.equal(
-      (
-        await decide(r.id, {
-          ...body(r, 'REQ-LOCKED'),
-          code: r.code === '000000' ? '000001' : '000000',
-        })
-      ).statusCode,
-      422,
-    );
-  assert.equal((await decide(r.id, body(r, 'REQ-LOCKED'))).statusCode, 429);
   assert.equal(
     Number(
       (

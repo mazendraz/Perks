@@ -104,7 +104,7 @@ const requestStamp = async () => {
   return r.json().id as string;
 };
 const targets = async (request: string) =>
-  (await worker.query('SELECT * FROM push_targets_for_stamp_request($1)', [request])).rows;
+  (await worker.query("SELECT * FROM push_targets_for_scan('request',$1)", [request])).rows;
 
 test('Web Push is invisible and queues nothing while no VAPID pair is configured', async () => {
   const config = await off.inject({ url: '/api/v1/me/push/config', headers: cashier });
@@ -118,7 +118,7 @@ test('Web Push is invisible and queues nothing while no VAPID pair is configured
   assert.equal(refused.statusCode, 404);
 });
 
-test('only cashiers and managers can register a device, and only for real push services', async () => {
+test('only shop staff (owners, managers, cashiers) can register a device, and only for real push services', async () => {
   const config = await app.inject({ url: '/api/v1/me/push/config', headers: cashier });
   assert.deepEqual(config.json(), { enabled: true, publicKey: keys.publicKey });
   assert.equal(
@@ -169,12 +169,27 @@ test('a new stamp request rings the branch’s cashiers with the branch name onl
     transport,
   );
   assert.deepEqual(outcome, { outcome: 'succeeded', error: null });
-  const notice = decrypt(sent[0]!.body);
-  assert.deepEqual(Object.keys(notice).sort(), ['body', 'dir', 'lang', 'tag', 'title', 'url']);
-  assert.equal(notice.url, '/cashier');
+  // Other test files' devices for the same cashier are rung too; read this file's own.
+  const notice = decrypt(sent.find((s) => s.url.endsWith('/ok'))!.body);
+  assert.deepEqual(Object.keys(notice).sort(), [
+    'actions',
+    'body',
+    'dir',
+    'lang',
+    'tag',
+    'title',
+    'url',
+  ]);
+  assert.equal(notice.url, '/cashier/requests/' + request);
+  assert.deepEqual(
+    notice.actions.map((a: { action: string }) => a.action),
+    ['reject-block'],
+  );
   const branch = (await db.query('SELECT name FROM branches WHERE id=$1', [ids.branchA])).rows[0]
     .name;
-  assert.equal(notice.body, branch);
+  // The branch and the customer's first name; never the full name, balance or receipt.
+  assert.equal(notice.body.startsWith(branch), true);
+  assert.equal(notice.title.includes('customer'), false);
   // Asking again for the same pending request does not queue a second notification.
   await requestStamp();
   assert.equal(
@@ -229,7 +244,7 @@ test('the runtime role cannot read other people’s devices or call the worker f
       'row level security hides every device without a signed-in user',
     );
     await assert.rejects(
-      runtime.query('SELECT * FROM push_targets_for_stamp_request($1)', [randomUUID()]),
+      runtime.query("SELECT * FROM push_targets_for_scan('request',$1)", [randomUUID()]),
       /permission denied/,
     );
     await assert.rejects(

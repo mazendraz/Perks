@@ -1,7 +1,7 @@
 import sharp from 'sharp';
 import { chromium, type Page, type BrowserContext, type Locator } from 'playwright';
 import pg from 'pg';
-import { randomBytes } from 'node:crypto';
+import { randomBytes, randomUUID } from 'node:crypto';
 import { mkdir, writeFile } from 'node:fs/promises';
 import assert from 'node:assert/strict';
 import { readConfig } from '../apps/api/src/config.js';
@@ -782,10 +782,17 @@ try {
     'Name/phone/terms registration preserves accessible validation and recovers a lost committed response without a password or duplicate identity',
   );
   const membership = new URL(up.url()).pathname.split('/').at(-1)!;
-  await up.getByRole('button', { name: 'Show my code', exact: true }).click();
-  await up.locator('.qr-panel code').waitFor({ state: 'attached' });
-  let token = (await up.locator('.qr-panel code').textContent())!;
-  await up.getByRole('button', { name: 'Close code', exact: true }).click();
+  // The card no longer offers its QR for stamps (only a reward's Redeem button opens it); the token the
+  // cashier scans comes from the same authenticated endpoint that button uses.
+  assert.equal(await up.getByRole('button', { name: 'Show my code', exact: true }).count(), 0);
+  const presentation = await call(
+    customer,
+    '/me/memberships/' + membership + '/presentation-tokens',
+    {},
+    randomUUID(),
+  );
+  assert.equal(presentation.status(), 200);
+  let token = (await presentation.json()).token as string;
   assert.match(token, /^NQP:/);
   ok('Device-bound customer receives a persisted branded card and real QR without email/password');
   const customerSession = await (
@@ -1041,7 +1048,9 @@ try {
   ok(
     'The completed card remains full and celebrates the committed reward until cashier redemption',
   );
-  await up.getByRole('button', { name: 'Show my code', exact: true }).click();
+  // The completed card's reward is redeemed with the customer's QR, opened from the reward itself.
+  await up.getByRole('button', { name: 'Redeem', exact: true }).first().click();
+  await up.locator('.qr-panel code').waitFor({ state: 'attached' });
   token = (await up.locator('.qr-panel code').textContent())!;
   ok(
     'Two purchases award five stamps, conserve the balance and unlock one independent reward across sessions',
@@ -1153,9 +1162,10 @@ try {
 
   await choose(up.getByLabel('Purchase branch'), branch);
   await up.getByRole('button', { name: 'Request stamp', exact: true }).click();
-  const requestNumber = up.locator('small').filter({ hasText: 'Request number:' }).locator('bdi');
-  await requestNumber.waitFor();
-  const requestCode = (await requestNumber.textContent())!;
+  const waitingForCashier = up.getByText('Your request reached the cashier', { exact: false });
+  await waitingForCashier.waitFor();
+  // No QR and no request code on the customer's side any more.
+  assert.equal(await up.locator('.qr-panel').count(), 0);
   const queueProof = await call(
     cashier,
     '/merchants/' + mid + '/stamp-requests?branchId=' + branch,
@@ -1163,29 +1173,7 @@ try {
   assert.equal(queueProof.status(), 200);
   assert.equal((await queueProof.json()).requests.length, 1);
   await navigateTo(cp, '/cashier');
-  assert.equal((await queueProof.json()).requests[0].code, requestCode);
-  async function scanRequestCard() {
-    // Use the code already on screen if the card opened it, otherwise open it.
-    const qrDialog = up.getByRole('dialog', { name: 'Personal QR', exact: true }),
-      showCode = up.getByRole('button', { name: 'Show my code', exact: true });
-    await up.waitForFunction(
-      () =>
-        !!document.querySelector('.qr-panel') ||
-        [...document.querySelectorAll('button')].some(
-          (b) => b.textContent?.includes('Show my code') && !b.disabled,
-        ),
-    );
-    if (!(await qrDialog.count())) await showCode.click();
-    await up.locator('.qr-panel code').waitFor({ state: 'attached' });
-    const fresh = (await up.locator('.qr-panel code').textContent())!.trim();
-    await cp
-      .getByLabel("Or type the 6 digits on the customer's phone", { exact: true })
-      .fill(fresh);
-    await cp.getByRole('button', { name: 'Read request code', exact: true }).click();
-    await cp.getByText('Customer code scanned.', { exact: true }).waitFor();
-  }
-  await scanRequestCard();
-  await cp.getByLabel('Request receipt number', { exact: true }).fill('BROWSER-' + stamp + '-3');
+  await cp.getByLabel('Receipt number', { exact: true }).fill('BROWSER-' + stamp + '-3');
   await cp.getByRole('button', { name: 'More stamps', exact: true }).click();
   let decisionResolved!: () => void, decisionRejected!: (error: Error) => void;
   const committedDecision = new Promise<void>((resolve, reject) => {
@@ -1207,11 +1195,11 @@ try {
     },
     { times: 1 },
   );
-  await cp.getByRole('button', { name: 'Stamp request', exact: true }).click();
+  await cp.getByRole('button', { name: 'Grant stamp', exact: true }).click();
   await committedDecision;
-  await reloadPage(cp);
-  await cp.getByRole('button', { name: 'Check the same decision', exact: true }).click();
-  await cp.getByRole('status').filter({ hasText: 'Transaction saved:' }).waitFor();
+  // The answer was lost after the stamp was saved: the screen asks again with the same key and shows
+  // the saved stamp, never a second one.
+  await cp.getByRole('status').filter({ hasText: 'Stamp added:' }).waitFor();
   await reloadPage(up);
   await up.getByRole('status').filter({ hasText: 'Request approved' }).waitFor();
   const afterRequests = (await (await call(owner, '/merchants/' + mid + '/overview')).json())
@@ -1219,42 +1207,18 @@ try {
   assert.equal(afterRequests.stamps, 7);
   assert.equal(afterRequests.visits, 3);
   ok(
-    'Inline branch queue requires a customer QR scan and receipt, approves in one tap without a confirmation dialog, and recovers a lost response once',
+    'Branch queue approves a request from the receipt alone in one tap, and a lost answer replays the same decision once',
   );
-  // A second request never reaches the server on the first attempt.
+  // A second request: the first attempt never reaches the server, the retry gives one stamp.
   await up.getByRole('button', { name: 'Request stamp', exact: true }).click();
-  await requestNumber.waitFor();
-  await scanRequestCard();
-  await cp.getByRole('button', { name: 'Stamp request', exact: true }).waitFor();
-  await cp.getByLabel('Request receipt number', { exact: true }).fill('BROWSER-' + stamp + '-4');
-  await cp.route('**/stamp-requests/*/decision', (route) => route.abort('failed'), { times: 1 });
-  await cp.getByRole('button', { name: 'Stamp request', exact: true }).click();
-  await cp
-    .getByText('NETWORK UNCERTAIN', { exact: false })
-    .first()
-    .waitFor()
-    .catch(() => {});
-  const savedDecision = await cp.evaluate(
-    () =>
-      Object.keys(sessionStorage)
-        .filter((k) => k.startsWith('nuqta-request-decision-'))
-        .map((k) => JSON.parse(sessionStorage.getItem(k)!))[0],
-  );
-  assert.ok(savedDecision?.body?.award);
-  assert.equal('code' in savedDecision.body, false);
-  assert.equal('presentationContext' in savedDecision.body.award, false);
-  assert.equal('code' in savedDecision.request, false);
+  await waitingForCashier.waitFor();
   await reloadPage(cp);
-  await cp.getByRole('button', { name: 'Check the same decision', exact: true }).click();
-  // Resuming needs the same customer code again; the saved attempt keeps the receipt.
-  await cp.getByRole('button', { name: 'Scan the customer code first', exact: true }).waitFor();
-  assert.equal(
-    await cp.getByLabel('Request receipt number', { exact: true }).inputValue(),
-    'BROWSER-' + stamp + '-4',
-  );
-  await scanRequestCard();
-  await cp.getByRole('button', { name: 'Stamp request', exact: true }).click();
-  await cp.getByRole('status').filter({ hasText: 'Transaction saved:' }).waitFor();
+  await cp.getByLabel('Receipt number', { exact: true }).fill('BROWSER-' + stamp + '-3');
+  // The same receipt again: a warning, never a refusal.
+  await cp.getByText('This receipt was already used', { exact: false }).waitFor();
+  await cp.route('**/stamp-requests/*/decision', (route) => route.abort('failed'), { times: 1 });
+  await cp.getByRole('button', { name: 'Grant stamp', exact: true }).click();
+  await cp.getByRole('status').filter({ hasText: 'Stamp added:' }).waitFor();
   assert.equal(
     (
       await db.query(
@@ -1265,7 +1229,7 @@ try {
     4,
   );
   ok(
-    'Unknown request decision after reload restores its immutable command without stored QR credentials and completes once after a fresh customer scan',
+    'An approval that never reached the server is retried with the same key and stamps once; a reused receipt only warns',
   );
   await merchantTab(op, 'Customers and segments');
   await op.getByRole('button', { name: 'Browser Customer', exact: true }).click();

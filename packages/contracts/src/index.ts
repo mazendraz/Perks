@@ -99,7 +99,10 @@ export interface AwardResult {
   operationId: string;
   transactionId: string;
   reference: string;
-  purchaseId: string;
+  // Null for a stamp approved from a scan request: its receipt is a note, not a unique purchase.
+  purchaseId: string | null;
+  // Scan approvals only: the same receipt was already used at this shop (a warning, never a refusal).
+  receiptAlreadyUsed?: boolean;
   membershipId: string;
   quantity: number;
   balanceAfter: number;

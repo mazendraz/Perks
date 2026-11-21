@@ -561,7 +561,7 @@ try {
           throw error;
         }
       }
-      await page.locator('small').filter({ hasText: 'Request number:' }).locator('bdi').waitFor();
+      await page.getByText('Your request reached the cashier', { exact: false }).waitFor();
       await page.waitForFunction(() => !new URLSearchParams(location.search).has('auto'));
       assert.equal(
         await page.evaluate(
@@ -585,7 +585,7 @@ try {
       1,
     );
     await page.reload({ waitUntil: 'domcontentloaded' });
-    await page.locator('small').filter({ hasText: 'Request number:' }).locator('bdi').waitFor();
+    await page.getByText('Your request reached the cashier', { exact: false }).waitFor();
     assert.equal(
       (
         await db.query('SELECT count(*)::int AS n FROM stamp_requests WHERE membership_id=$1', [
@@ -594,7 +594,8 @@ try {
       ).rows[0].n,
       1,
     );
-    await page.getByRole('button', { name: 'Close code', exact: true }).click();
+    // A waiting request no longer opens the customer's QR: the cashier approves from the receipt.
+    assert.equal(await page.getByRole('dialog', { name: 'Personal QR', exact: true }).count(), 0);
     await page.getByRole('button', { name: 'Cancel request', exact: true }).click();
     await page.getByRole('button', { name: 'Request stamp', exact: true }).waitFor();
     pass(
@@ -605,32 +606,26 @@ try {
       project.name +
         ': interruption, session expiry during POST and a lost committed reply restore the device session and retry the same request key without a duplicate',
     );
-    let firstToken = '';
-    await page.route(
-      '**/presentation-tokens',
-      async (route) => {
-        const response = await route.fetch(),
-          value = await response.json();
-        firstToken = value.token;
-        await route.fulfill({
-          status: response.status(),
-          json: { ...value, expiresAt: new Date(Date.now() + 21000).toISOString() },
-        });
+    // The card offers its QR only from a reward's Redeem button now; the token the cashier scans here
+    // comes from the same authenticated endpoint.
+    assert.equal(await page.getByRole('button', { name: 'Show my code', exact: true }).count(), 0);
+    const customerSession = await (
+      await page.request.get('/api/v1/session', { headers: { 'x-nuqta-workspace': 'customer' } })
+    ).json();
+    const presented = await page.request.post(
+      '/api/v1/me/memberships/' + memberId + '/presentation-tokens',
+      {
+        headers: {
+          origin,
+          'x-csrf-token': customerSession.csrfToken,
+          'idempotency-key': randomUUID(),
+          'x-nuqta-workspace': 'customer',
+        },
+        data: {},
       },
-      { times: 1 },
     );
-    await page.getByRole('button', { name: 'Show my code', exact: true }).click();
-    await page.locator('.qr-panel code').waitFor({ state: 'attached' });
-    assert.notEqual(firstToken, '');
-    await page.waitForFunction((old) => {
-      const code = document.querySelector('.qr-panel code')?.textContent;
-      return !!code && code !== old;
-    }, firstToken);
-    pass(
-      project.name +
-        ': a shortened display-expiry fixture refreshes the QR automatically before expiration',
-    );
-    const token = (await page.locator('.qr-panel code').textContent())!.trim();
+    assert.equal(presented.status(), 200, await presented.text());
+    const token = ((await presented.json()).token as string).trim();
     await login(cp, cashierEmail);
     await cp.locator('[data-portal="cashier"]').waitFor();
     await cp.getByRole('button', { name: 'Scan card', exact: true }).click();
@@ -1109,7 +1104,10 @@ try {
       assert.ok(
         !/[A-Z]{3,}_|[a-f0-9]{8}-[a-f0-9]{4}-/.test(await page.getByRole('alert').innerText()),
       );
-      assert.equal(await page.locator('small').filter({ hasText: 'Request number:' }).count(), 0);
+      assert.equal(
+        await page.getByText('Your request reached the cashier', { exact: false }).count(),
+        0,
+      );
     } finally {
       await db.query("UPDATE branches SET status='active' WHERE id=$1", [branch]);
       await db.query('UPDATE placements SET status=$2 WHERE public_code=$1', [

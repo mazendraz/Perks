@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { Grant, Language } from '../../../../packages/contracts/src/index.js';
 import type { AutoStampFeedItem } from '../../../../packages/contracts/src/commands.js';
-import { api, ApiError, errorText } from '../api.js';
+import { api, errorText } from '../api.js';
 import { useLiveRefresh } from '../live-events.js';
-import { FieldErrors } from '../FieldErrors.js';
 import { intlLocale } from '../locale.js';
+import { BlockDialog, RevokeDialog } from './ScanActions.js';
 
 // Stamps customers collected on their own (sticker or welcome) at this branch, live.
 // The list comes only from the branch-scoped API and stream, so another branch never appears.
@@ -26,11 +26,8 @@ export function AutoStampFeed({
     [toast, setToast] = useState<AutoStampFeedItem | null>(null),
     [confirming, setConfirming] = useState<{
       stamp: AutoStampFeedItem;
-      reason: string;
-      key: string;
+      kind: 'revoke' | 'block';
     } | null>(null),
-    [validation, setValidation] = useState<ApiError | null>(null),
-    [busy, setBusy] = useState(false),
     [, setTick] = useState(0);
   const seen = useRef<Set<string> | null>(null),
     generation = useRef(0),
@@ -129,45 +126,6 @@ export function AutoStampFeed({
   const time = (value: string) =>
     new Date(value).toLocaleTimeString(intlLocale(lang), { hour: 'numeric', minute: '2-digit' });
 
-  const revoke = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!confirming) return;
-    setBusy(true);
-    setValidation(null);
-    try {
-      // The key is fixed when the dialog opens, so a retried tap never revokes twice.
-      await api(
-        '/merchants/' +
-          grant.merchant_id +
-          '/auto-stamps/' +
-          confirming.stamp.transactionId +
-          '/revoke',
-        { method: 'POST', key: confirming.key, body: { reason: confirming.reason.trim() } },
-      );
-      setNotice(
-        ar
-          ? 'اتلغى ختم ' + confirming.stamp.alias + '. الكارت اتحدّث.'
-          : 'Stamp revoked for ' + confirming.stamp.alias + '. The card is updated.',
-      );
-      setConfirming(null);
-      onChanged?.();
-      await load();
-    } catch (e) {
-      setValidation(e instanceof ApiError ? e : null);
-      setError(errorText(e, lang));
-      // A final answer (already revoked, window closed...) closes the dialog; a network doubt keeps it.
-      if (e instanceof ApiError && [403, 404, 409].includes(e.status)) {
-        setConfirming(null);
-        await load();
-      }
-    } finally {
-      setBusy(false);
-    }
-  };
-  const reasons = ar
-    ? ['العميل مكانش في المحل', 'ختم مكرر بالغلط']
-    : ['Customer was not in the shop', 'Duplicate stamp by mistake'];
-
   return (
     <section className="panel auto-stamp-feed" aria-labelledby="auto-stamp-heading">
       <div className="section-heading">
@@ -207,16 +165,20 @@ export function AutoStampFeed({
                 {s.source === 'welcome' ? (ar ? ' · ترحيب' : ' · welcome') : ''}
                 {s.rewardEarned ? (ar ? ' · كسب مكافأة 🎁' : ' · earned a reward 🎁') : ''}
               </small>
+              {s.customerBlocked && <small className="muted">{ar ? 'محظور' : 'Blocked'}</small>}
               {s.revoked ? (
                 <small className="muted">{ar ? 'اتلغى' : 'Revoked'}</small>
+              ) : s.usedInRedeemedReward ? (
+                <small className="muted">
+                  {ar ? 'اتحسب في هدية اتصرفت' : 'Counted in a redeemed reward'}
+                </small>
               ) : (
                 revocable(s) && (
                   <button
                     className="danger-outline small revoke-link"
                     onClick={() => {
-                      setValidation(null);
                       setError('');
-                      setConfirming({ stamp: s, reason: '', key: crypto.randomUUID() });
+                      setConfirming({ stamp: s, kind: 'revoke' });
                     }}
                   >
                     {ar ? 'إلغاء الختم' : 'Revoke stamp'}
@@ -227,6 +189,17 @@ export function AutoStampFeed({
                     </small>
                   </button>
                 )
+              )}
+              {!s.customerBlocked && (
+                <button
+                  className="text-button small"
+                  onClick={() => {
+                    setError('');
+                    setConfirming({ stamp: s, kind: 'block' });
+                  }}
+                >
+                  {ar ? 'حظر العميل' : 'Block customer'}
+                </button>
               )}
             </div>
             <strong>{s.revoked ? <s>+{s.quantity}</s> : '+' + s.quantity}</strong>
@@ -239,68 +212,43 @@ export function AutoStampFeed({
             : 'No automatic stamps at this branch in the last 12 hours.'}
         </p>
       )}
-      {confirming && (
-        <div className="modal-backdrop">
-          <form
-            className="dialog"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="revoke-heading"
-            onSubmit={(e) => void revoke(e)}
-          >
-            <h2 id="revoke-heading">{ar ? 'إلغاء الختم؟' : 'Revoke this stamp?'}</h2>
-            <p>
-              <bdi>{confirming.stamp.alias}</bdi> · +{confirming.stamp.quantity} ·{' '}
-              {time(confirming.stamp.at)}
-            </p>
-            <p className="muted">
-              {confirming.stamp.rewardEarned
-                ? ar
-                  ? 'الختم ده كمّل الكارت، فالمكافأة اللي جت منه هتتلغي كمان.'
-                  : 'This stamp completed the card, so the reward it earned is cancelled too.'
-                : ar
-                  ? 'الختم هيتشال من كارت العميل وكارت المحفظة هيتحدث.'
-                  : 'The stamp comes off the customer’s card and their wallet pass updates.'}
-            </p>
-            <div className="chip-row">
-              {reasons.map((r) => (
-                <button
-                  type="button"
-                  className="secondary small"
-                  key={r}
-                  onClick={() => setConfirming({ ...confirming, reason: r })}
-                >
-                  {r}
-                </button>
-              ))}
-            </div>
-            <label>
-              {ar ? 'السبب' : 'Reason'}
-              <textarea
-                autoFocus
-                minLength={4}
-                maxLength={1000}
-                required
-                value={confirming.reason}
-                onChange={(e) => setConfirming({ ...confirming, reason: e.target.value })}
-              />
-            </label>
-            <FieldErrors error={validation} lang={lang} />
-            <div className="form-actions">
-              <button
-                type="button"
-                className="secondary"
-                data-dialog-close
-                onClick={() => setConfirming(null)}
-              >
-                {ar ? 'رجوع' : 'Back'}
-              </button>
-              <button className="danger" disabled={busy} aria-busy={busy}>
-                {ar ? 'إلغاء الختم' : 'Revoke stamp'}
-              </button>
-            </div>
-          </form>
-        </div>
+      {confirming?.kind === 'revoke' && (
+        <RevokeDialog
+          grant={grant}
+          lang={lang}
+          stamp={confirming.stamp}
+          onClose={() => setConfirming(null)}
+          onRevoked={() => {
+            setNotice(
+              ar
+                ? 'اتلغى ختم ' + confirming.stamp.alias + '. الكارت اتحدّث.'
+                : 'Stamp revoked for ' + confirming.stamp.alias + '. The card is updated.',
+            );
+            setConfirming(null);
+            onChanged?.();
+            void load();
+          }}
+        />
+      )}
+      {confirming?.kind === 'block' && (
+        <BlockDialog
+          grant={grant}
+          lang={lang}
+          alias={confirming.stamp.alias}
+          membershipId={confirming.stamp.membershipId}
+          origin="auto_stamp"
+          originId={confirming.stamp.transactionId}
+          onClose={() => setConfirming(null)}
+          onBlocked={() => {
+            setNotice(
+              ar
+                ? confirming.stamp.alias + ' اتحظر. تلاقيه في قائمة السبام.'
+                : confirming.stamp.alias + ' is blocked. See the Spam list.',
+            );
+            setConfirming(null);
+            void load();
+          }}
+        />
       )}
     </section>
   );

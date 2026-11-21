@@ -72,8 +72,8 @@ export function CustomerCode({
         </div>
         <p>
           {ar
-            ? 'ورّي الكود للكاشير. أول ما الختم يتحفظ هتشوفه على الكارت.'
-            : 'Show this code to the cashier. Your card appears when the stamp is saved.'}
+            ? 'ورّي الكود للكاشير علشان يصرفلك المكافأة.'
+            : 'Show this code to the cashier to redeem your reward.'}
         </p>
         <img src={qr.qrDataUrl} alt={ar ? 'QR العضوية للكاشير' : 'Membership QR for the cashier'} />
         {/* The raw token stays in the page (copy/paste fallback and automated checks) but is not shown

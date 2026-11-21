@@ -26,8 +26,10 @@ self.addEventListener('activate', event => {
   })());
 });
 /* Cashier notifications (Web Push). The payload is composed by the server and is generic by design:
-   { title, body, url, tag, lang, dir } where body is a branch name. Nothing here is cached or trusted
-   beyond showing it; a tap only ever opens a same-origin cashier page. */
+   { title, body, url, tag, lang, dir, actions? }: a first name, the branch and up to two buttons. Nothing
+   here is cached or trusted beyond showing it; a tap or a button only ever opens a same-origin cashier
+   page (a button adds ?do=<action>, and that page asks the cashier to confirm before anything happens). */
+const PUSH_ACTIONS = ['revoke', 'block', 'reject-block'];
 self.addEventListener('push', event => {
   const data = (() => { try { return (event.data && event.data.json()) || {}; } catch { return {}; } })();
   const text = value => (typeof value === 'string' ? value.slice(0, 200) : '');
@@ -39,6 +41,10 @@ self.addEventListener('push', event => {
     dir: data.dir === 'ltr' ? 'ltr' : 'rtl',
     data: { url: typeof data.url === 'string' ? data.url : '/cashier' }
   };
+  // Android and desktop Chrome show the buttons; iPhone ignores them and the tap opens the screen.
+  if(Array.isArray(data.actions)) options.actions = data.actions
+    .filter(a => a && PUSH_ACTIONS.includes(a.action) && typeof a.title === 'string')
+    .slice(0, 2).map(a => ({ action: a.action, title: text(a.title) }));
   // The same tag replaces the earlier notification instead of stacking, and still buzzes.
   if(typeof data.tag === 'string' && data.tag) { options.tag = text(data.tag); options.renotify = true; }
   // A push that shows nothing makes the browser show its own generic notice, so always show one.
@@ -51,6 +57,7 @@ self.addEventListener('notificationclick', event => {
     const wanted = new URL((event.notification.data && event.notification.data.url) || '/cashier', self.location.origin);
     if(wanted.origin === self.location.origin && /^\/cashier(?:\/|$)/.test(wanted.pathname)) target = wanted;
   } catch { /* keep the default */ }
+  if(PUSH_ACTIONS.includes(event.action)) target.searchParams.set('do', event.action);
   event.waitUntil((async()=>{
     const windows = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
     for(const client of windows) {

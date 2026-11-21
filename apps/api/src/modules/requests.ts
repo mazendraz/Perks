@@ -1,4 +1,5 @@
 import {
+  receiptNote,
   requestDecisionInput,
   stampRequestInput,
 } from '../../../../packages/contracts/src/commands.js';
@@ -7,11 +8,11 @@ import { z } from 'zod';
 import type { Config } from '../config.js';
 import { authenticated } from '../auth.js';
 import { audit, transaction, type Pools, type DB, type Actor } from '../db.js';
-import { keyedHash, tokenHash, safeEqual } from '../crypto.js';
+import { keyedHash, tokenHash } from '../crypto.js';
 import { requireCondition } from '../errors.js';
 import { idempotencyKey, operation, expectedRevision } from '../operations.js';
 import { merchantGrant } from '../policy.js';
-import { award } from './loyalty.js';
+import { award, receiptAlreadyUsed } from './loyalty.js';
 import { requireEarning } from '../subscriptions.js';
 import { webPushConfig } from '../webpush.js';
 function code(nonce: string, c: Config) {
@@ -76,6 +77,12 @@ export async function createStampRequest(
         actor,
         { scope: 'request.create', key, payload: p, merchantId: ms.merchant_id },
         async () => {
+          // A customer this shop blocked creates no request and rings no phone; the attempt is
+          // counted on the Spam list. The answer stays neutral so the block is not advertised.
+          if (
+            (await db.query('SELECT note_blocked_attempt($1) AS hit', [ms.merchant_id])).rows[0].hit
+          )
+            return { blocked: true };
           await requireEarning(db, ms.merchant_id);
           await db.query('SELECT pg_advisory_xact_lock(hashtextextended($1,0))', [
             'request:' + p.membershipId,
@@ -148,6 +155,7 @@ export async function createStampRequest(
     },
     actor,
   );
+  requireCondition(!('blocked' in r), 'STAMP_UNAVAILABLE', 409);
   requireCondition(!('limited' in r), 'REQUEST_DAILY_LIMIT', 429);
   requireCondition(!('ineligible' in r), 'COLLECTION_LIMIT', 409);
   return { ...r, nonce: undefined, code: code(r.nonce, c) };
@@ -275,12 +283,47 @@ export function requestsModule(app: FastifyInstance, pools: Pools, c: Config) {
       actor,
     );
   });
+  // One request, for the screen a cashier notification opens. Branch grant required.
+  app.get('/api/v1/merchants/:m/stamp-requests/:id', async (req) => {
+    const actor = authenticated(req),
+      { m, id } = z.object({ m: z.uuid(), id: z.uuid() }).parse(req.params);
+    return transaction(
+      pools.pool,
+      async (db) => {
+        await merchantGrant(db, actor, m);
+        const row = (
+          await db.query(
+            "SELECT r.id,r.membership_id,r.branch_id,b.name AS branch_name,CASE WHEN r.status='pending' AND r.expires_at<=clock_timestamp() THEN 'expired' ELSE r.status END AS status,r.expires_at,r.created_at,r.result,r.receipt_note,r.reason,cp.alias,least(v.max_per_tx,CASE WHEN cs.allow_multiple THEN cs.max_stamps_per_collection ELSE cs.default_stamps END) AS max_per_tx,cs.default_stamps,cs.allow_multiple,v.threshold,a.balance,customer_blocked(r.merchant_id,r.user_id) AS blocked FROM stamp_requests r JOIN branches b ON b.id=r.branch_id AND b.merchant_id=r.merchant_id JOIN stamp_collection_settings cs ON cs.merchant_id=r.merchant_id JOIN memberships ms ON ms.id=r.membership_id JOIN tenant_customer_profiles cp ON cp.id=ms.profile_id JOIN program_versions v ON v.id=ms.program_version_id JOIN loyalty_accounts a ON a.membership_id=ms.id WHERE r.merchant_id=$1 AND r.id=$2",
+            [m, id],
+          )
+        ).rows[0];
+        requireCondition(row, 'NOT_FOUND', 404);
+        await merchantGrant(db, actor, m, undefined, row.branch_id);
+        return { request: row };
+      },
+      actor,
+    );
+  });
+  // "This receipt was already used": a warning shown while the cashier types, never a refusal.
+  app.get('/api/v1/merchants/:m/receipts/used', async (req) => {
+    const actor = authenticated(req),
+      { m } = z.object({ m: z.uuid() }).parse(req.params),
+      { receipt } = z.object({ receipt: receiptNote }).parse(req.query);
+    return transaction(
+      pools.pool,
+      async (db) => {
+        await merchantGrant(db, actor, m);
+        return { used: await receiptAlreadyUsed(db, m, receipt) };
+      },
+      actor,
+    );
+  });
   app.post('/api/v1/merchants/:m/stamp-requests/:id/decision', async (req) => {
     const actor = authenticated(req),
       { m, id } = z.object({ m: z.uuid(), id: z.uuid() }).parse(req.params),
       p = requestDecisionInput.parse(req.body),
       key = idempotencyKey(req);
-    const result = await transaction(
+    return transaction(
       pools.pool,
       async (db) => {
         await merchantGrant(db, actor, m, undefined, undefined, true);
@@ -292,64 +335,66 @@ export function requestsModule(app: FastifyInstance, pools: Pools, c: Config) {
         ).rows[0];
         requireCondition(r, 'NOT_FOUND', 404);
         await merchantGrant(db, actor, m, undefined, r.branch_id, true);
-        if (p.approve) {
-          requireCondition(
-            p.award.membershipId === r.membership_id && p.award.branchId === r.branch_id,
-            'REQUEST_CONTEXT_MISMATCH',
-            422,
+        // Approval: the receipt the cashier typed is the whole decision. award() re-checks the request
+        // (pending, not expired) under the card lock, the shop's limits and the customer's block, and a
+        // replay with the same key returns the stamp already given instead of a second one.
+        if (p.approve)
+          return award(
+            db,
+            actor,
+            m,
+            key,
+            {
+              membershipId: r.membership_id,
+              branchId: r.branch_id,
+              quantity: p.quantity,
+              receipt: p.receipt,
+            },
+            'request',
+            id,
           );
-          // A committed replay remains retrievable after expiry; fresh keys cannot reuse the request.
-          if (r.status !== 'approved') {
-            requireCondition(
-              r.status === 'pending',
-              r.status === 'expired' ? 'REQUEST_EXPIRED' : 'REQUEST_ALREADY_DECIDED',
-              r.status === 'expired' ? 410 : 409,
-            );
-            requireCondition(
-              r.expires_at > (await db.query('SELECT clock_timestamp() AS at')).rows[0].at,
-              'REQUEST_EXPIRED',
-              410,
-            );
-            requireCondition(r.failed_matches < 5, 'MATCH_ATTEMPTS_EXHAUSTED', 429);
-            if (!safeEqual(tokenHash(p.code), r.code_hash)) {
-              await db.query(
-                'UPDATE stamp_requests SET failed_matches=failed_matches+1 WHERE id=$1',
-                [id],
-              );
-              await event(db, actor, m, id, 'match_failed');
-              return { matchFailed: true };
-            }
-          }
-          return award(db, actor, m, key, p.award, 'request', id);
-        }
         return operation(
           db,
           actor,
           { scope: 'request.reject:' + id, key, payload: p, merchantId: m },
           async () => {
-            requireCondition(
-              r.status === 'pending',
-              r.status === 'expired' ? 'REQUEST_EXPIRED' : 'REQUEST_ALREADY_DECIDED',
-              r.status === 'expired' ? 410 : 409,
-            );
-            requireCondition(
-              r.expires_at > (await db.query('SELECT clock_timestamp() AS at')).rows[0].at,
-              'REQUEST_EXPIRED',
-              410,
-            );
-            await db.query(
-              "UPDATE stamp_requests SET status='rejected',reason=$1,decided_by=$2,decided_at=clock_timestamp() WHERE id=$3",
-              [p.reason, actor.id, id],
-            );
-            await event(db, actor, m, id, 'rejected');
-            await audit(db, actor, 'request.reject', m, id, { reason: p.reason });
-            return { status: 'rejected', id };
+            const open =
+              r.status === 'pending' &&
+              r.expires_at > (await db.query('SELECT clock_timestamp() AS at')).rows[0].at;
+            // "Reject & Block" from a notification still blocks when the request already timed out.
+            if (!p.block || open) {
+              requireCondition(
+                r.status === 'pending',
+                r.status === 'expired' ? 'REQUEST_EXPIRED' : 'REQUEST_ALREADY_DECIDED',
+                r.status === 'expired' ? 410 : 409,
+              );
+              requireCondition(open, 'REQUEST_EXPIRED', 410);
+              const reason = p.reason || 'BLOCKED';
+              await db.query(
+                "UPDATE stamp_requests SET status='rejected',reason=$1,decided_by=$2,decided_at=clock_timestamp() WHERE id=$3",
+                [reason, actor.id, id],
+              );
+              await event(db, actor, m, id, 'rejected');
+              await audit(db, actor, 'request.reject', m, id, { reason, block: p.block });
+            }
+            const blocked = p.block
+              ? ((
+                  await db.query('SELECT block_customer($1,$2,$3) AS value', [
+                    r.membership_id,
+                    'request',
+                    id,
+                  ])
+                ).rows[0].value as { blockId: string })
+              : undefined;
+            return {
+              status: 'rejected' as const,
+              id,
+              ...(blocked ? { blocked: true, blockId: blocked.blockId } : {}),
+            };
           },
         );
       },
       actor,
     );
-    requireCondition(!('matchFailed' in result), 'MATCH_CODE_INVALID', 422);
-    return result;
   });
 }

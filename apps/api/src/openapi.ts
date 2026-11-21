@@ -53,6 +53,10 @@ import {
   autoCollectBlockInput,
   autoCollectBlockOutput,
   autoStampFeedOutput,
+  autoStampFeedItem,
+  customerBlockInput,
+  customerBlockOutput,
+  spamListOutput,
 } from '../../../packages/contracts/src/commands.js';
 import { provisioningInput } from '../../../packages/contracts/src/provisioning.js';
 import { experienceInput } from './modules/experience.js';
@@ -341,6 +345,21 @@ const contracts: Record<string, Contract> = {
     key: true,
   },
   'GET /api/v1/merchants/:m/auto-stamps': { response: autoStampFeedOutput },
+  'GET /api/v1/merchants/:m/auto-stamps/:txId': {
+    response: z.object({ serverTime: z.string(), stamp: autoStampFeedItem }),
+  },
+  'GET /api/v1/merchants/:m/receipts/used': { response: z.object({ used: z.boolean() }) },
+  'GET /api/v1/merchants/:m/customer-blocks': { response: spamListOutput },
+  'POST /api/v1/merchants/:m/customer-blocks': {
+    body: customerBlockInput,
+    response: customerBlockOutput,
+    key: true,
+  },
+  'POST /api/v1/merchants/:m/customer-blocks/:id/unblock': {
+    body: z.object({}).strict(),
+    response: customerBlockOutput,
+    key: true,
+  },
   'POST /api/v1/merchants/:m/auto-stamps/:txId/revoke': {
     body: autoStampRevokeInput,
     response: autoStampRevokeOutput,

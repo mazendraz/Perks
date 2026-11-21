@@ -18,6 +18,7 @@ import { requireCondition } from '../errors.js';
 import { expectedRevision, idempotencyKey, operation } from '../operations.js';
 import { platform } from '../policy.js';
 import { createStampRequest } from './requests.js';
+import { webPushConfig } from '../webpush.js';
 
 const columns =
   'require_location AS "requireLocation",require_cashier AS "requireCashier",max_accuracy_m AS "maxAccuracy",collections_per_day AS "collectionsPerDay",stamps_per_day AS "stampsPerDay",limit_window AS "limitWindow",cooldown_minutes AS "cooldownMinutes",default_stamps AS "defaultStamps",allow_multiple AS "allowMultiple",max_stamps_per_collection AS "maxStampsPerCollection",welcome_stamps AS "welcomeStamps",auto_branch_hourly_cap AS "autoBranchHourlyCap",open_collection_acknowledged AS "openCollectionAcknowledged",revoke_window_minutes AS "revokeWindowMinutes",revision';
@@ -242,6 +243,25 @@ export function collectionModule(
             rewardEarned: (earlier.rewardGrants as unknown[]).length > 0,
             transactionId: earlier.transactionId as string,
           };
+        // Blocked at this shop: no stamp, no request, no push. The attempt is counted for the Spam
+        // list, and the customer reads the same neutral line as for any other refusal.
+        if (
+          (await db.query('SELECT note_blocked_attempt($1) AS hit', [context.merchantId])).rows[0]
+            .hit
+        ) {
+          await record('spam_blocked');
+          return { outcome: 'not_eligible' as const, reason: 'unavailable' };
+        }
+        // Scans per customer per shop, counted under a lock so parallel taps cannot slip through.
+        // The first half of a location check (no position sent yet) is not a scan of its own.
+        if (
+          !(context.requireLocation && !p.location) &&
+          !(await db.query('SELECT scan_attempt_allowed($1) AS ok', [context.merchantId])).rows[0]
+            .ok
+        ) {
+          await record('rate_limited');
+          return { outcome: 'not_eligible' as const, reason: 'rate_limited' };
+        }
         if (!context.eligibility.eligible) {
           await record(context.eligibility.reason === 'cooldown' ? 'cooldown' : 'limit_reached');
           return {
@@ -304,25 +324,33 @@ export function collectionModule(
             ).rows[0].value as Record<string, unknown>,
         );
         if (!result.eligible) {
-          const blocked = result.reason === 'blocked';
+          const blocked = result.reason === 'blocked',
+            spam = result.reason === 'spam_blocked';
           await record(
             blocked
               ? 'blocked'
-              : result.reason === 'busy'
-                ? 'busy'
-                : result.reason === 'cooldown'
-                  ? 'cooldown'
-                  : 'limit_reached',
+              : spam
+                ? 'spam_blocked'
+                : result.reason === 'duplicate'
+                  ? 'duplicate'
+                  : result.reason === 'busy'
+                    ? 'busy'
+                    : result.reason === 'cooldown'
+                      ? 'cooldown'
+                      : 'limit_reached',
             distance,
             accuracy,
           );
           return {
             outcome: 'not_eligible' as const,
-            reason: blocked ? 'cashier_required' : (result.reason as string),
+            reason: blocked ? 'cashier_required' : spam ? 'unavailable' : (result.reason as string),
             nextAt: result.nextAt as string | undefined,
           };
         }
         await record('awarded', distance, accuracy);
+        // Same transaction as the stamp: a stamp that rolls back never rings a phone.
+        if (webPushConfig(c))
+          await db.query('SELECT enqueue_auto_stamp_push($1)', [result.transactionId]);
         return {
           outcome: 'awarded' as const,
           quantity: result.quantity as number,

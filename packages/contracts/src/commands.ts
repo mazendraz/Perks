@@ -141,16 +141,55 @@ export const redemptionDecisionInput = z
 export const preferenceInput = z
   .object({ channel: z.enum(['email', 'sms', 'whatsapp', 'push']), granted: z.boolean() })
   .strict();
+// The receipt number the cashier types to approve: free text, stored as typed, never unique.
+export const receiptNote = z.string().trim().min(1).max(120);
+// Approving a customer's scan needs only the receipt (and how many stamps). Rejecting can also block
+// the customer at this shop; a plain rejection still needs a reason.
 export const requestDecisionInput = z.discriminatedUnion('approve', [
   z
     .object({
       approve: z.literal(true),
-      code: z.string().regex(/^\d{6}$/),
-      award: awardInput,
+      receipt: receiptNote,
+      quantity: z.number().int().min(1).max(100),
     })
     .strict(),
-  z.object({ approve: z.literal(false), reason: z.string().trim().min(4).max(500) }).strict(),
+  z
+    .object({
+      approve: z.literal(false),
+      reason: z.string().trim().max(500).optional(),
+      block: z.boolean().default(false),
+    })
+    .strict()
+    .refine((v) => v.block || (v.reason?.length ?? 0) >= 4, {
+      path: ['reason'],
+      message: 'A rejection needs a reason.',
+    }),
 ]);
+// Block the customer behind a card at this shop. Where it came from is kept for the audit log.
+export const customerBlockInput = z
+  .object({
+    membershipId: z.uuid(),
+    origin: z.enum(['auto_stamp', 'request', 'manual']).default('manual'),
+    originId: z.uuid().optional(),
+  })
+  .strict();
+export const customerBlockOutput = z.object({
+  blockId: z.uuid(),
+  blocked: z.boolean(),
+  changed: z.boolean(),
+  operationId: z.uuid().optional(),
+});
+export const spamListItem = z.object({
+  blockId: z.uuid(),
+  membershipId: z.uuid().nullable(),
+  alias: z.string(),
+  attempts: z.number().int(),
+  lastAttemptAt: z.string().nullable(),
+  blockedAt: z.string(),
+  origin: z.enum(['auto_stamp', 'request', 'manual']),
+});
+export type SpamListItem = z.infer<typeof spamListItem>;
+export const spamListOutput = z.object({ blocks: z.array(spamListItem) });
 export const enrollmentOutput = z.object({
   membershipId: z.uuid(),
   alreadyMember: z.boolean(),
@@ -160,7 +199,10 @@ export const awardOutput = z.object({
   operationId: z.uuid(),
   transactionId: z.uuid(),
   reference: z.string(),
-  purchaseId: z.uuid(),
+  // Null for an approved scan: its receipt is a note on the stamp, not a unique purchase.
+  purchaseId: z.uuid().nullable(),
+  // Approved scans only: the same receipt was already used at this shop (a warning, never a refusal).
+  receiptAlreadyUsed: z.boolean().optional(),
   membershipId: z.uuid(),
   quantity: z.number().int(),
   balanceAfter: z.number().int(),
@@ -319,9 +361,13 @@ export const autoStampFeedItem = z.object({
   at: z.string(),
   quantity: z.number().int(),
   source: z.enum(['auto', 'welcome']),
+  branchId: z.uuid(),
   balanceAfter: z.number().int(),
   rewardEarned: z.boolean(),
   revoked: z.boolean(),
+  // Counted toward a reward that was already redeemed: never revocable, for any role.
+  usedInRedeemedReward: z.boolean(),
+  customerBlocked: z.boolean(),
   revocableUntil: z.string().nullable(),
 });
 export type AutoStampFeedItem = z.infer<typeof autoStampFeedItem>;

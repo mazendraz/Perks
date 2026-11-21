@@ -3,7 +3,7 @@ import { z } from 'zod';
 import type { Config } from '../config.js';
 import { authenticated } from '../auth.js';
 import { transaction, type Pools } from '../db.js';
-import { AppError, requireCondition } from '../errors.js';
+import { requireCondition } from '../errors.js';
 import { testNotice } from '../push-notices.js';
 import {
   b64urlDecode,
@@ -56,11 +56,11 @@ export function pushModule(
     return transaction(
       pools.pool,
       async (db) => {
-        // Only people who work a branch have a use for it; a customer's session is refused here.
+        // Only people who work at a shop have a use for it; a customer's session is refused here.
         requireCondition(
           (
             await db.query(
-              "SELECT 1 FROM staff_memberships WHERE user_id=$1 AND role IN ('cashier','manager') AND status='active' LIMIT 1",
+              "SELECT 1 FROM staff_memberships WHERE user_id=$1 AND role IN ('owner','manager','cashier') AND status='active' LIMIT 1",
               [actor.id],
             )
           ).rowCount,
@@ -118,7 +118,9 @@ export function pushModule(
           actor,
         )
       ).rows[0];
-      requireCondition(sub, 'NOT_FOUND', 404);
+      // This browser holds a subscription the server does not know (dropped after a sign-out or
+      // repeated failures): say so, so the screen can offer to turn notifications on again.
+      if (!sub) return { delivered: false, reason: 'NOT_REGISTERED' };
       // Sent with no transaction open: a push service may take seconds to answer.
       const result = await sendPush(sub, { ...testNotice(sub.language) }, config!, {
         topic: 'test',
@@ -130,8 +132,15 @@ export function pushModule(
           (db) => db.query('DELETE FROM push_subscriptions WHERE id=$1', [sub.id]),
           actor,
         );
-      if (!delivered(result)) throw new AppError('PUSH_NOT_DELIVERED', 502, !gone(result));
-      return { delivered: true };
+      // The push service's own answer goes back to the cashier: 201 = accepted, 403 = key/subject
+      // refused (VAPID), 404/410 = this subscription is gone, 0 = the service could not be reached.
+      if (!delivered(result))
+        return {
+          delivered: false,
+          reason: gone(result) ? 'SUBSCRIPTION_GONE' : 'PUSH_SERVICE_REFUSED',
+          status: result.status,
+        };
+      return { delivered: true, status: result.status };
     },
   );
 }

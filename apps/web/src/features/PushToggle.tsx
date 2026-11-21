@@ -1,6 +1,54 @@
 import { useEffect, useState } from 'react';
 import type { Language } from '../../../../packages/contracts/src/index.js';
-import { enablePush, pushState, sendTestPush, unlinkPushDevice, type PushState } from '../push.js';
+import {
+  enablePush,
+  pushState,
+  sendTestPush,
+  unlinkPushDevice,
+  type PushState,
+  type TestPushResult,
+} from '../push.js';
+
+// What the test told us, in words a cashier can act on (and read out to support).
+function testMessage(result: TestPushResult, ar: boolean) {
+  if (result.delivered)
+    return ar
+      ? 'خدمة الإشعارات استلمت التجربة (' +
+          result.status +
+          '). لو ماظهرش إشعار في ثواني، راجع إعدادات الإشعارات لـ Perks على الموبايل ووضع التركيز / عدم الإزعاج.'
+      : 'The push service accepted the test (' +
+          result.status +
+          '). If nothing shows within a few seconds, check Perks in the phone’s notification settings and Focus / Do Not Disturb.';
+  switch (result.reason) {
+    case 'NO_SUBSCRIPTION':
+    case 'SUBSCRIPTION_GONE':
+      return ar
+        ? 'اشتراك الإشعارات على الجهاز ده خلص. اضغط "فعّل الإشعارات" تاني.'
+        : 'This device’s notification subscription has expired. Tap “Enable notifications” again.';
+    case 'NOT_REGISTERED':
+      return ar
+        ? 'السيرفر مش لاقي الجهاز ده حتى بعد ما سجلناه تاني. اقفل الإشعارات وافتحها تاني.'
+        : 'The server still cannot find this device after registering it again. Turn notifications off and on.';
+    case 'PUSH_SERVICE_REFUSED':
+      return ar
+        ? 'خدمة الإشعارات رفضت الإرسال (كود ' +
+            (result.status ?? 0) +
+            '). ' +
+            (result.status === 403
+              ? 'غالبًا مفتاح VAPID على السيرفر. بلّغ الدعم.'
+              : 'جرّب كمان شوية.')
+        : 'The push service refused the send (code ' +
+            (result.status ?? 0) +
+            '). ' +
+            (result.status === 403
+              ? 'Most likely the server’s VAPID key. Tell support.'
+              : 'Try again in a moment.');
+    default:
+      return ar
+        ? 'ماقدرناش نوصل للسيرفر. اتأكد من النت وجرّب تاني.'
+        : 'Could not reach the server. Check the connection and try again.';
+  }
+}
 
 // "Enable notifications" for a cashier's phone. Renders nothing while the server has Web Push off.
 export function PushToggle({ lang }: { lang: Language }) {
@@ -41,13 +89,13 @@ export function PushToggle({ lang }: { lang: Language }) {
   };
   return (
     <section className="panel push-toggle" aria-labelledby="push-toggle-title">
-      <h2 id="push-toggle-title">{ar ? 'إشعارات طلبات الأختام' : 'Stamp request notifications'}</h2>
+      <h2 id="push-toggle-title">{ar ? 'إشعارات السكان' : 'Scan notifications'}</h2>
       {state === 'on' ? (
         <>
           <p className="muted">
             {ar
-              ? 'الإشعارات شغالة على الجهاز ده. هيوصلك تنبيه لما عميل يبعت طلب ختم لفرعك.'
-              : 'Notifications are on for this device. You will be alerted when a customer sends a stamp request to your branch.'}
+              ? 'الإشعارات شغالة على الجهاز ده. هيوصلك تنبيه مع كل سكان من عميل في فرعك.'
+              : 'Notifications are on for this device. You will be alerted on every customer scan at your branch.'}
           </p>
           <div className="button-row">
             <button
@@ -55,19 +103,17 @@ export function PushToggle({ lang }: { lang: Language }) {
               disabled={busy}
               onClick={() =>
                 void run(async () => {
-                  setMessage(
-                    (await sendTestPush())
-                      ? ar
-                        ? 'بعتنا إشعار تجربة.'
-                        : 'Test notification sent.'
-                      : ar
-                        ? 'الإشعار ماوصلش. جرّب تفعّل الإشعارات تاني.'
-                        : 'The test did not arrive. Try turning notifications on again.',
-                  );
+                  const result = await sendTestPush(lang);
+                  setMessage(testMessage(result, ar));
+                  if (
+                    !result.delivered &&
+                    (result.reason === 'NO_SUBSCRIPTION' || result.reason === 'SUBSCRIPTION_GONE')
+                  )
+                    setState('off');
                 })
               }
             >
-              {ar ? 'ابعت إشعار تجربة' : 'Send a test'}
+              {ar ? 'ابعت إشعار تجربة' : 'Send test notification'}
             </button>
             <button
               className="text-button"
@@ -103,8 +149,8 @@ export function PushToggle({ lang }: { lang: Language }) {
         <>
           <p className="muted">
             {ar
-              ? 'اعرف فورًا لما عميل يبعت طلب ختم، حتى والتطبيق مقفول.'
-              : 'Know right away when a customer sends a stamp request, even with the app closed.'}
+              ? 'اعرف فورًا مع كل سكان من عميل، حتى والتطبيق مقفول.'
+              : 'Know right away about every customer scan, even with the app closed.'}
           </p>
           <button
             className="primary small"

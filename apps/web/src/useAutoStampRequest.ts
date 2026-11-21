@@ -38,11 +38,19 @@ export type CollectionNotice = { tone: 'info' | 'error'; text: string; retry?: b
 // and worked around. Never shown with a stamp animation.
 export function collectionReason(result: Collection, lang: Language) {
   const ar = lang === 'ar';
-  if (result.reason === 'limit_reached' || result.reason === 'cooldown')
+  // A double tap or a second scan right after the first: the first one counted.
+  if (
+    result.reason === 'limit_reached' ||
+    result.reason === 'cooldown' ||
+    result.reason === 'duplicate'
+  )
     return ar ? 'ختمك اتسجل خلاص ✓' : 'Your stamp is already counted ✓';
-  return ar
-    ? 'ورّي كارتك للكاشير وهو يضيف ختمك.'
-    : 'Show your card to the cashier to add your stamp.';
+  if (result.reason === 'rate_limited')
+    return ar
+      ? 'محاولات كتير ورا بعض. استنى شوية وجرّب تاني.'
+      : 'Too many tries in a row. Please wait a little and try again.';
+  // Everything else, a blocked customer included ('unavailable'), reads the same.
+  return ar ? 'اطلب من الكاشير يضيف ختمك.' : 'Ask the cashier to add your stamp.';
 }
 const locate = () =>
   new Promise<Position | 'denied' | 'unavailable'>((resolve) => {

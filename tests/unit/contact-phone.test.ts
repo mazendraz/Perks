@@ -5,7 +5,17 @@ import {
   staffSecurityCommand,
 } from '../../packages/contracts/src/account-management.js';
 test('contact numbers normalize supported local/international input and reject executable, ambiguous and overlong destinations', () => {
-  for (const input of ['01012345678', '+20 (10) 1234-5678', '00201012345678'])
+  for (const input of [
+    '01012345678',
+    '+20 (10) 1234-5678',
+    '00201012345678',
+    // How customers really type it: no leading 0, no plus, an extra 0, Arabic digits.
+    '1012345678',
+    '201012345678',
+    '+2001012345678',
+    '٠١٠١٢٣٤٥٦٧٨',
+    '010.1234.5678',
+  ])
     assert.equal(contactPhone.parse(input), '+201012345678');
   assert.equal(contactPhone.parse(' +1 555 555 0101 '), '+15555550101');
   assert.equal(contactPhone.parse(''), '');

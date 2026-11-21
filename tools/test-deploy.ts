@@ -310,6 +310,14 @@ try {
     'Deployment smoke failed; inspect local Docker privately. Secrets/config were not included in evidence.';
   process.exitCode = 1;
   console.error(report.reason);
+  if (started) {
+    // Service names, states, exit codes and health only: no logs, env or rendered config.
+    const states = await command(
+      [...prefix, 'ps', '-a', '--format', '{{.Service}} {{.State}} exit={{.ExitCode}} {{.Health}}'],
+      30000,
+    );
+    if (states.code === 0) console.error(states.out.trim());
+  }
 } finally {
   if (started) {
     const cleanup = await command([...prefix, 'down', '--volumes', '--remove-orphans'], 60000);

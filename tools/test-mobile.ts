@@ -330,6 +330,11 @@ try {
       errors: string[] = [];
     for (const target of [page, cp])
       target.on('pageerror', (error) => {
+        // WebKit reports a same-origin request cancelled by a page navigation as "Fetch API cannot
+        // load … due to access control checks". Everything here is same-origin, so it is never a real
+        // CORS failure; any other error still fails the run.
+        if (project.type === webkit && /due to access control checks\.$/.test(error.message))
+          return;
         errors.push(error.message);
         console.error(
           'MOBILE_PAGE_ERROR ' +

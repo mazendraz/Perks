@@ -1967,6 +1967,17 @@ try {
         .catch(() => []);
       if (alerts.length) console.error('UI errors:', alerts.join(' | '));
     }
+  // Session state only (flags and times, never tokens) to explain an unexpected sign-out.
+  await db
+    .query(
+      "SELECT u.global_role,s.portal,s.auth_method,s.revoked_at IS NOT NULL AS revoked,s.expires_at<now() AS expired,s.credential_version=u.password_version AS credential_ok,u.status,password_session_portal(u.id) AS current_portal,s.created_at,s.revoked_at FROM sessions s JOIN users u ON u.id=s.user_id WHERE u.global_role='platform_admin' ORDER BY s.created_at DESC LIMIT 6",
+    )
+    .then((r) => console.error('Admin sessions:', JSON.stringify(r.rows)))
+    .catch(() => undefined);
+  await db
+    .query('SELECT action,at FROM audit_events ORDER BY at DESC LIMIT 12')
+    .then((r) => console.error('Recent audit actions:', JSON.stringify(r.rows)))
+    .catch(() => undefined);
   console.error(
     'Browser verification failed:',
     e instanceof Error

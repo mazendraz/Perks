@@ -317,6 +317,20 @@ try {
       30000,
     );
     if (states.code === 0) console.error(states.out.trim());
+    // A container that never started keeps the daemon's start error: a reason, not config.
+    const ids = await command([...prefix, 'ps', '-aq'], 30000);
+    if (ids.code === 0 && ids.out.trim()) {
+      const errors = await command(
+        [
+          'inspect',
+          '--format',
+          '{{.Name}} error={{.State.Error}} restarts={{.RestartCount}}',
+          ...ids.out.trim().split(/\s+/),
+        ],
+        30000,
+      );
+      if (errors.code === 0) console.error(errors.out.trim());
+    }
   }
 } finally {
   if (started) {

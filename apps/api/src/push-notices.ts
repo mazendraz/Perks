@@ -85,7 +85,9 @@ export function rewardEarnedNotice(
       branchName.trim().slice(0, 80) +
       ' · ' +
       (title?.trim().slice(0, 60) || (en ? 'reward' : 'المكافأة')) +
-      (en ? ' · scan their Redeem code to hand it over' : ' · امسح كود الاستبدال علشان تسلّمها'),
+      (en
+        ? ' · they tap Redeem on their phone to claim it'
+        : ' · العميل يدوس استبدل من موبايله علشان ياخدها'),
     url: '/cashier',
     tag: 'reward-earned:' + rewardId,
     lang,
@@ -111,6 +113,30 @@ export function rewardRedeemedNotice(
       (cycle ? (en ? ' · card ' + cycle + ' started' : ' · بدأ كارت ' + cycle) : ''),
     url: '/cashier',
     tag: 'reward-redeemed:' + rewardId,
+    lang,
+    dir: direction(lang),
+  };
+}
+// A customer tapped Redeem: confirm or reject it on the screen this opens. The match number is the one
+// on the customer's phone, so the cashier hands the reward to the right person.
+export function rewardRequestNotice(
+  lang: PushLanguage,
+  requestId: string,
+  branchName: string,
+  alias?: string | null,
+  title?: string | null,
+  match?: number | null,
+): PushNotice {
+  const en = lang === 'en';
+  return {
+    title: titled(en ? 'Redeem request' : 'طلب استبدال', firstName(alias)),
+    body:
+      (title?.trim().slice(0, 60) || (en ? 'reward' : 'المكافأة')) +
+      (match ? (en ? ' · match ' : ' · رقم ') + match : '') +
+      ' · ' +
+      branchName.trim().slice(0, 80),
+    url: '/cashier/redeem/' + requestId,
+    tag: 'reward-request:' + requestId,
     lang,
     dir: direction(lang),
   };

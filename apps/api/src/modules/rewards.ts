@@ -6,7 +6,7 @@ import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { randomUUID } from 'node:crypto';
 import { authenticated } from '../auth.js';
-import { audit, transaction, type Pools } from '../db.js';
+import { audit, transaction, type Actor, type DB, type Pools } from '../db.js';
 import type { Config } from '../config.js';
 import { requireCondition } from '../errors.js';
 import { merchantGrant } from '../policy.js';
@@ -16,6 +16,82 @@ import { readPresentationToken } from './enrollment.js';
 import { emitOutbox } from '../outbox.js';
 const matchCode = (id: string, pepper: string) =>
   String(parseInt(keyedHash('holder:' + id, pepper).slice(0, 8), 16) % 1_000_000).padStart(6, '0');
+// Hands a reward over, once: the redeem transaction, the immutable redemption row (its primary key is
+// the reward, so a second one cannot exist), the reward marked redeemed, the challenge or request
+// closed, the 'redeemed' event (which rings the branch), a new card cycle and the audit row. The caller
+// holds the card and reward locks and has checked the reward is available, unexpired and redeemable at
+// `branchId`.
+export async function consumeReward(
+  db: DB,
+  actor: Actor,
+  p: {
+    merchantId: string;
+    reward: { id: string; membership_id: string; program_version_id: string; title: string };
+    challengeId: string;
+    holderUserId: string;
+    branchId: string;
+    staffId: string;
+    operationId: string;
+    committedAt: Date;
+    auditDetail: Record<string, unknown>;
+  },
+) {
+  const m = p.merchantId,
+    r = p.reward,
+    txId = randomUUID(),
+    reference = 'TX-' + txId.slice(0, 8).toUpperCase() + '-' + txId.slice(9, 13).toUpperCase();
+  await db.query(
+    "INSERT INTO loyalty_transactions(id,public_reference,merchant_id,membership_id,program_version_id,branch_id,staff_id,operation_id,type,quantity,source) VALUES($1,$2,$3,$4,$5,$6,$7,$8,'redeem',0,'redemption')",
+    [txId, reference, m, r.membership_id, r.program_version_id, p.branchId, p.staffId, p.operationId],
+  );
+  await db.query(
+    'INSERT INTO reward_redemptions(reward_id,merchant_id,challenge_id,transaction_id,holder_user_id) VALUES($1,$2,$3,$4,$5)',
+    [r.id, m, p.challengeId, txId, p.holderUserId],
+  );
+  await db.query(
+    "UPDATE reward_grants SET status='redeemed',redeemed_at=clock_timestamp() WHERE id=$1",
+    [r.id],
+  );
+  await db.query(
+    "UPDATE redemption_challenges SET status='completed',completed_transaction_id=$1 WHERE id=$2",
+    [txId, p.challengeId],
+  );
+  await db.query(
+    "INSERT INTO reward_events(merchant_id,reward_id,event_type,actor_id,transaction_id) VALUES($1,$2,'redeemed',$3,$4)",
+    [m, r.id, actor.id, txId],
+  );
+  const account = (
+    await db.query(
+      'UPDATE loyalty_accounts SET revision=revision+1,cycle_number=cycle_number+1,cycle_renewed_at=clock_timestamp() WHERE membership_id=$1 RETURNING revision,cycle_number,balance',
+      [r.membership_id],
+    )
+  ).rows[0];
+  await audit(db, actor, 'reward.redeem', m, r.id, {
+    transactionId: txId,
+    branchId: p.branchId,
+    ...p.auditDetail,
+  });
+  await emitOutbox(db, {
+    merchantId: m,
+    eventType: 'reward.redeemed',
+    aggregateId: r.membership_id,
+    revision: account.revision,
+    payload: { rewardId: r.id, transactionId: txId },
+    dedupeKey: 'redeem:' + r.id,
+    kind: 'domain_event',
+  });
+  return {
+    transactionId: txId,
+    reference,
+    rewardId: r.id,
+    title: r.title,
+    status: 'redeemed',
+    cycleNumber: account.cycle_number as number,
+    balanceAfter: account.balance as number,
+    accountRevision: account.revision as number,
+    committedAt: p.committedAt,
+  };
+}
 export function rewardsModule(app: FastifyInstance, pools: Pools, c: Config) {
   app.get('/api/v1/me/redemption-challenges', async (req) => {
     const actor = authenticated(req);
@@ -118,12 +194,13 @@ export function rewardsModule(app: FastifyInstance, pools: Pools, c: Config) {
               410,
             );
             await db.query(
-              "UPDATE redemption_challenges SET status='expired' WHERE reward_id=$1 AND status IN ('awaiting_holder','confirmed') AND expires_at<=clock_timestamp()",
+              "UPDATE redemption_challenges SET status='expired' WHERE reward_id=$1 AND status IN ('requested','awaiting_holder','confirmed') AND expires_at<=clock_timestamp()",
               [r],
             );
+            // A customer's open redeem request holds the reward too: it is decided from the request.
             const active = (
               await db.query(
-                "SELECT id,expires_at,branch_id,cashier_user_id,cashier_session_id FROM redemption_challenges WHERE reward_id=$1 AND status IN ('awaiting_holder','confirmed')",
+                "SELECT id,expires_at,branch_id,cashier_user_id,cashier_session_id FROM redemption_challenges WHERE reward_id=$1 AND status IN ('requested','awaiting_holder','confirmed')",
                 [r],
               )
             ).rows[0];
@@ -311,69 +388,17 @@ export function rewardsModule(app: FastifyInstance, pools: Pools, c: Config) {
               'REWARD_BRANCH_UNAUTHORIZED',
               403,
             );
-            const txId = randomUUID(),
-              reference =
-                'TX-' + txId.slice(0, 8).toUpperCase() + '-' + txId.slice(9, 13).toUpperCase();
-            await db.query(
-              "INSERT INTO loyalty_transactions(id,public_reference,merchant_id,membership_id,program_version_id,branch_id,staff_id,operation_id,type,quantity,source) VALUES($1,$2,$3,$4,$5,$6,$7,$8,'redeem',0,'redemption')",
-              [
-                txId,
-                reference,
-                m,
-                r.membership_id,
-                r.program_version_id,
-                ch.branch_id,
-                staff.id,
-                operationId,
-              ],
-            );
-            await db.query(
-              'INSERT INTO reward_redemptions(reward_id,merchant_id,challenge_id,transaction_id,holder_user_id) VALUES($1,$2,$3,$4,$5)',
-              [r.id, m, id, txId, ch.holder_user_id],
-            );
-            await db.query(
-              "UPDATE reward_grants SET status='redeemed',redeemed_at=clock_timestamp() WHERE id=$1",
-              [r.id],
-            );
-            await db.query(
-              "UPDATE redemption_challenges SET status='completed',completed_transaction_id=$1 WHERE id=$2",
-              [txId, id],
-            );
-            await db.query(
-              "INSERT INTO reward_events(merchant_id,reward_id,event_type,actor_id,transaction_id) VALUES($1,$2,'redeemed',$3,$4)",
-              [m, r.id, actor.id, txId],
-            );
-            const account = (
-              await db.query(
-                'UPDATE loyalty_accounts SET revision=revision+1,cycle_number=cycle_number+1,cycle_renewed_at=clock_timestamp() WHERE membership_id=$1 RETURNING revision,cycle_number,balance',
-                [r.membership_id],
-              )
-            ).rows[0];
-            await audit(db, actor, 'reward.redeem', m, r.id, {
-              transactionId: txId,
-              challengeId: id,
-              branchId: ch.branch_id,
-            });
-            await emitOutbox(db, {
+            return consumeReward(db, actor, {
               merchantId: m,
-              eventType: 'reward.redeemed',
-              aggregateId: r.membership_id,
-              revision: account.revision,
-              payload: { rewardId: r.id, transactionId: txId },
-              dedupeKey: 'redeem:' + r.id,
-              kind: 'domain_event',
-            });
-            return {
-              transactionId: txId,
-              reference,
-              rewardId: r.id,
-              title: r.title,
-              status: 'redeemed',
-              cycleNumber: account.cycle_number,
-              balanceAfter: account.balance,
-              accountRevision: account.revision,
+              reward: r,
+              challengeId: id,
+              holderUserId: ch.holder_user_id,
+              branchId: ch.branch_id,
+              staffId: staff.id,
+              operationId,
               committedAt: clock,
-            };
+              auditDetail: { challengeId: id },
+            });
           },
         );
       },

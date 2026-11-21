@@ -32,6 +32,8 @@ import {
   draftActivationInput,
   redemptionStartInput,
   redemptionDecisionInput,
+  redeemRequestInput,
+  redeemDecisionInput,
   redemptionOutput,
   requestDecisionInput,
   stampRequestInput,
@@ -337,6 +339,11 @@ const contracts: Record<string, Contract> = {
   'POST /api/v1/merchants/:m/redemption-challenges/:id/complete': {
     body: z.object({}).strict(),
     response: redemptionOutput,
+    key: true,
+  },
+  'POST /api/v1/me/rewards/:r/redeem-requests': { body: redeemRequestInput, key: true },
+  'POST /api/v1/merchants/:m/redeem-requests/:id/decision': {
+    body: redeemDecisionInput,
     key: true,
   },
   'POST /api/v1/merchants/:m/stamp-requests/:id/decision': {

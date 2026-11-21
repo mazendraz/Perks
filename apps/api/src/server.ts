@@ -35,6 +35,7 @@ import { cardCorrectionsModule } from './modules/card-corrections.js';
 import { reportingModule } from './modules/reporting.js';
 import { collectionModule } from './modules/collection.js';
 import { requestsModule } from './modules/requests.js';
+import { redeemRequestsModule } from './modules/redeem-requests.js';
 import { customersModule } from './modules/customers.js';
 import { materialsModule } from './modules/materials.js';
 import { platformModule } from './modules/platform.js';
@@ -173,6 +174,7 @@ export async function buildApp(
   cardCorrectionsModule(app, pools);
   reportingModule(app, pools);
   requestsModule(app, pools, c);
+  redeemRequestsModule(app, pools, c);
   collectionModule(app, pools, c, options.mapsFetch);
   liveEventsModule(app, pools, c);
   pushModule(app, pools, c, { transport: options.pushTransport });

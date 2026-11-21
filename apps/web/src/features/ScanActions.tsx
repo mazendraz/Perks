@@ -14,6 +14,7 @@ import {
   type DecisionOutcome,
   type StampRequestRow,
 } from './RequestQueue.js';
+import { CashierRedeemScreen } from './RedeemRequests.js';
 
 // What a cashier can do about one scan, from the branch screen or from the notification it rang.
 // A notification's button only opens these screens (with ?do=<action>); nothing changes until the
@@ -616,7 +617,7 @@ export function CashierScanRoute({
   grants: Grant[];
   preferred: Grant;
   lang: Language;
-  kind: 'request' | 'stamp';
+  kind: 'request' | 'stamp' | 'redeem';
   id: string;
 }) {
   const [grant, setGrant] = useState<Grant | null>(grants.length === 1 ? preferred : null);
@@ -641,7 +642,11 @@ export function CashierScanRoute({
           await api(
             '/merchants/' +
               g.merchant_id +
-              (kind === 'request' ? '/stamp-requests/' : '/auto-stamps/') +
+              (kind === 'request'
+                ? '/stamp-requests/'
+                : kind === 'redeem'
+                  ? '/redeem-requests/'
+                  : '/auto-stamps/') +
               id,
           );
           if (live) setGrant(g);
@@ -658,7 +663,9 @@ export function CashierScanRoute({
     };
   }, [id, kind, preferred.id]);
   if (!grant) return <p className="muted">{lang === 'ar' ? 'بيحمّل…' : 'Loading…'}</p>;
-  return kind === 'request' ? (
+  return kind === 'redeem' ? (
+    <CashierRedeemScreen grant={grant} lang={lang} requestId={id} />
+  ) : kind === 'request' ? (
     <CashierRequestScreen grant={grant} lang={lang} requestId={id} action={action} />
   ) : (
     <CashierStampScreen grant={grant} lang={lang} transactionId={id} action={action} />

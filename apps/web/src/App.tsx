@@ -479,7 +479,7 @@ function Workspace({
     content = <CashierPage key={grant.id} grant={grant} lang={lang} />;
   else if (route === '/cashier/spam' && grant)
     content = <SpamList key={grant.id} grant={grant} lang={lang} />;
-  else if (/^\/cashier\/(requests|stamps)\/[0-9a-f-]{36}$/.test(route) && grant) {
+  else if (/^\/cashier\/(requests|stamps|redeem)\/[0-9a-f-]{36}$/.test(route) && grant) {
     const [, , kind, id] = route.split('/');
     content = (
       <CashierScanRoute
@@ -487,7 +487,7 @@ function Workspace({
         grants={grants}
         preferred={grant}
         lang={lang}
-        kind={kind === 'requests' ? 'request' : 'stamp'}
+        kind={kind === 'requests' ? 'request' : kind === 'redeem' ? 'redeem' : 'stamp'}
         id={id!}
       />
     );

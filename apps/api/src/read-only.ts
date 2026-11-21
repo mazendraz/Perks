@@ -7,6 +7,7 @@ import { AppError } from './errors.js';
 const stillAllowed = [
   /^redemption-challenges\/[^/]+\/(cancel|complete)$/,
   /^rewards\/[^/]+\/redemption-challenges$/,
+  /^redeem-requests\/[^/]+\/decision$/,
   /^customer-pairings(\/[^/]+\/decision)?$/,
   /^customer-recovery\/search$/,
   /^plan\/requests(\/[^/]+\/withdraw)?$/,

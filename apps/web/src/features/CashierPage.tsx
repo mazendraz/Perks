@@ -6,6 +6,7 @@ import { PushToggle } from './PushToggle.js';
 import { unlinkPushDevice } from '../push.js';
 import { TeamCustomerRecovery } from './CustomerRecovery.js';
 import { AutoStampFeed } from './AutoStampFeed.js';
+import { CashierRedeemQueue } from './RedeemRequests.js';
 import { useEffect, useState, type FormEvent, type CSSProperties } from 'react';
 import { CameraScanner } from './CameraScanner.js';
 import type {
@@ -35,22 +36,6 @@ interface PendingAward {
   key: string;
   body: Omit<AwardInput, 'presentationContext'>;
 }
-interface Redemption {
-  challengeId: string;
-  code: string;
-  expiresAt: string;
-  status: string;
-  key: string;
-}
-interface RedeemResult {
-  cycleNumber: number;
-  balanceAfter: number;
-  transactionId: string;
-  reference: string;
-  rewardId: string;
-  title: string;
-  status: string;
-}
 interface Recent {
   id: string;
   public_reference: string;
@@ -72,16 +57,13 @@ function dayLabel(at: string, lang: Language) {
 }
 export function CashierPage({ grant, lang }: { grant: Grant; lang: Language }) {
   const ar = lang === 'ar',
-    storageKey = 'nuqta-pending-' + grant.id,
-    redemptionKey = 'nuqta-redemption-' + grant.id;
+    storageKey = 'nuqta-pending-' + grant.id;
   const [branch, setBranch] = useState(grant.branches[0]?.id || ''),
     [step, setStep] = useState<
-      'home' | 'scan' | 'member' | 'stamp' | 'review' | 'pending' | 'result' | 'redeem' | 'redeemed'
+      'home' | 'scan' | 'member' | 'stamp' | 'review' | 'pending' | 'result'
     >('home'),
     [member, setMember] = useState<Member | null>(null),
     [rewards, setRewards] = useState<Reward[]>([]),
-    // The reward the customer pressed Redeem on, from the code they showed.
-    [requested, setRequested] = useState<string | null>(null),
     [context, setContext] = useState(''),
     [manual, setManual] = useState(''),
     [receipt, setReceipt] = useState(''),
@@ -90,13 +72,11 @@ export function CashierPage({ grant, lang }: { grant: Grant; lang: Language }) {
     [busy, setBusy] = useState(false),
     [pending, setPending] = useState<PendingAward | null>(null),
     [result, setResult] = useState<AwardResult | null>(null),
-    [redemption, setRedemption] = useState<Redemption | null>(null),
-    [redeemed, setRedeemed] = useState<RedeemResult | null>(null),
     [recent, setRecent] = useState<Recent[]>([]),
     [correction, setCorrection] = useState<{ tx: Recent; reason: string } | null>(null),
     [notice, setNotice] = useState('');
   const [validation, setValidation] = useState<ApiError | null>(null);
-  // Any step past home is a stamp/redeem in progress; a silent update must not reset it.
+  // Any step past home is a stamp in progress; a silent update must not reset it.
   useEffect(() => (step === 'home' ? undefined : holdUpdates()), [step]);
   const refreshRecent = async () => {
     try {
@@ -112,17 +92,12 @@ export function CashierPage({ grant, lang }: { grant: Grant; lang: Language }) {
   useEffect(() => {
     void refreshRecent();
     try {
-      const p = sessionStorage.getItem(storageKey),
-        r = sessionStorage.getItem(redemptionKey);
+      const p = sessionStorage.getItem(storageKey);
       if (p) {
         const saved = JSON.parse(p) as PendingAward;
         setPending(saved);
         setBranch(saved.body.branchId);
         setStep('pending');
-      } else if (r) {
-        const saved = JSON.parse(r) as Redemption;
-        setRedemption(saved);
-        setStep('redeem');
       }
     } catch {
       setError(
@@ -173,7 +148,6 @@ export function CashierPage({ grant, lang }: { grant: Grant; lang: Language }) {
         membership: Member;
         rewards: Reward[];
         presentationContext: string;
-        requestedRewardId?: string | null;
       }>('/cashier/scans/resolve', {
         method: 'POST',
         body: { merchantId: grant.merchant_id, branchId: branch, token: value.trim() },
@@ -188,7 +162,6 @@ export function CashierPage({ grant, lang }: { grant: Grant; lang: Language }) {
       }
       setMember(r.membership);
       setRewards(r.rewards);
-      setRequested(r.requestedRewardId ?? null);
       setContext(r.presentationContext);
       if (pending) {
         setQty(pending.body.quantity);
@@ -252,120 +225,14 @@ export function CashierPage({ grant, lang }: { grant: Grant; lang: Language }) {
       setBusy(false);
     }
   };
-  const startRedemption = async (reward: Reward) => {
-    setBusy(true);
-    setError('');
-    try {
-      const r = await api<{ challengeId: string; code: string; expiresAt: string }>(
-        '/merchants/' + grant.merchant_id + '/rewards/' + reward.id + '/redemption-challenges',
-        {
-          method: 'POST',
-          key: crypto.randomUUID(),
-          body: { branchId: branch, presentationContext: context },
-        },
-      );
-      const saved = { ...r, status: 'awaiting_holder', key: crypto.randomUUID() };
-      setRedemption(saved);
-      sessionStorage.setItem(redemptionKey, JSON.stringify(saved));
-      setStep('redeem');
-    } catch (e) {
-      setValidation(e instanceof ApiError ? e : null);
-      setError(errorText(e, lang));
-    } finally {
-      setBusy(false);
-    }
-  };
-  const pollRedemption = async () => {
-    if (!redemption) return;
-    try {
-      const r = await api<{ challenge: { status: string; code: string; expires_at: string } }>(
-        '/merchants/' + grant.merchant_id + '/redemption-challenges/' + redemption.challengeId,
-      );
-      setRedemption((v) => (v ? { ...v, status: r.challenge.status } : v));
-      if (r.challenge.status === 'completed') {
-        const saved = await api<{ status: string; result: RedeemResult }>(
-          '/operations/by-key?scope=' +
-            encodeURIComponent('redemption.complete:' + redemption.challengeId) +
-            '&key=' +
-            redemption.key,
-        );
-        if (saved.status === 'committed') {
-          setRedeemed(saved.result);
-          setStep('redeemed');
-          sessionStorage.removeItem(redemptionKey);
-        }
-      }
-    } catch (e) {
-      setValidation(e instanceof ApiError ? e : null);
-      setError(errorText(e, lang));
-    }
-  };
-  useEffect(() => {
-    if (step !== 'redeem' || !redemption) return;
-    void pollRedemption();
-    const iv = setInterval(() => {
-      if (!document.hidden) void pollRedemption();
-    }, 1800);
-    return () => clearInterval(iv);
-  }, [step, redemption?.challengeId]);
-  const complete = async () => {
-    if (!redemption) return;
-    setBusy(true);
-    setError('');
-    try {
-      const r = await api<RedeemResult>(
-        '/merchants/' +
-          grant.merchant_id +
-          '/redemption-challenges/' +
-          redemption.challengeId +
-          '/complete',
-        { method: 'POST', key: redemption.key, body: {} },
-      );
-      setRedeemed(r);
-      setStep('redeemed');
-      sessionStorage.removeItem(redemptionKey);
-      void refreshRecent();
-    } catch (e) {
-      setValidation(e instanceof ApiError ? e : null);
-      setError(errorText(e, lang));
-      if (e instanceof ApiError && e.status === 0) void pollRedemption();
-    } finally {
-      setBusy(false);
-    }
-  };
-  const cancel = async () => {
-    if (!redemption) return;
-    setBusy(true);
-    try {
-      await api(
-        '/merchants/' +
-          grant.merchant_id +
-          '/redemption-challenges/' +
-          redemption.challengeId +
-          '/cancel',
-        { method: 'POST', body: {} },
-      );
-      sessionStorage.removeItem(redemptionKey);
-      setRedemption(null);
-      setStep(member ? 'member' : 'home');
-    } catch (e) {
-      setValidation(e instanceof ApiError ? e : null);
-      setError(errorText(e, lang));
-    } finally {
-      setBusy(false);
-    }
-  };
   const next = () => {
     setMember(null);
     setRewards([]);
-    setRequested(null);
     setContext('');
     setManual('');
     setReceipt('');
     setQty(1);
     setResult(null);
-    setRedeemed(null);
-    setRedemption(null);
     setNotice('');
     setError('');
     setStep('scan');
@@ -421,7 +288,7 @@ export function CashierPage({ grant, lang }: { grant: Grant; lang: Language }) {
           {ar ? 'الفرع' : 'Branch'}
           <Select
             value={branch}
-            disabled={!!pending || !!redemption}
+            disabled={!!pending}
             onChange={(e) => {
               setBranch(e.target.value);
               setStep('home');
@@ -448,6 +315,12 @@ export function CashierPage({ grant, lang }: { grant: Grant; lang: Language }) {
       )}
       {step === 'home' && (
         <div className="action-stack">
+          <CashierRedeemQueue
+            grant={grant}
+            branch={branch}
+            lang={lang}
+            onRedeemed={() => void refreshRecent()}
+          />
           <CashierRequests
             grant={grant}
             branch={branch}
@@ -560,54 +433,28 @@ export function CashierPage({ grant, lang }: { grant: Grant; lang: Language }) {
       )}
       {step === 'member' && member && (
         <>
-          {(() => {
-            const ready = rewards
-              .filter((r) => r.status === 'available')
-              .sort((a, b) => (a.id === requested ? -1 : b.id === requested ? 1 : 0));
-            if (!ready.length) return null;
-            return (
-              <section className="panel reward-ready" aria-live="polite">
-                <div className="reward-ready-heading">
-                  <Icon name="gift" size={26} />
-                  <h2>
-                    {member.alias} · {ar ? 'الكارت كمل' : 'Card full'}
-                  </h2>
-                </div>
-                <strong className="match-code">
-                  {member.threshold}/{member.threshold}
-                </strong>
-                <p className="muted">
-                  {ar
-                    ? 'المكافأة جاهزة. اضغط استبدال، والعميل يأكد من موبايله.'
-                    : 'Reward ready. Tap Redeem; the customer confirms on their phone.'}
-                </p>
-                {ready.map((r) => (
-                  <div
-                    className={'reward-row' + (r.id === requested ? ' requested' : '')}
-                    key={r.id}
-                  >
-                    <div>
-                      <strong>{r.title}</strong>
-                      {r.id === requested && (
-                        <small>
-                          {ar ? 'العميل طلب استبدالها' : 'The customer asked for this one'}
-                        </small>
-                      )}
-                      <small>{new Date(r.expires_at).toLocaleDateString(intlLocale(lang))}</small>
-                    </div>
-                    <button
-                      className="primary"
-                      disabled={busy}
-                      aria-busy={busy}
-                      onClick={() => void startRedemption(r)}
-                    >
-                      <ActionLabel icon="gift">{ar ? 'استبدال' : 'Redeem'}</ActionLabel>
-                    </button>
-                  </div>
-                ))}
-              </section>
-            );
-          })()}
+          {rewards.some((r) => r.status === 'available') && (
+            <section className="panel reward-ready" aria-live="polite">
+              <div className="reward-ready-heading">
+                <Icon name="gift" size={26} />
+                <h2>
+                  {member.alias} · {ar ? 'الكارت كمل' : 'Card full'}
+                </h2>
+              </div>
+              <strong className="match-code">
+                {member.threshold}/{member.threshold}
+              </strong>
+              <p className="muted">
+                {ar
+                  ? 'المكافأة جاهزة: ' +
+                    rewards.find((r) => r.status === 'available')!.title +
+                    '. العميل يدوس استبدل من موبايله، والطلب يظهر لك علشان تأكده.'
+                  : 'Reward ready: ' +
+                    rewards.find((r) => r.status === 'available')!.title +
+                    '. The customer taps Redeem on their phone; the request shows up here to confirm.'}
+              </p>
+            </section>
+          )}
           <section className="panel">
             <h2>{member.alias}</h2>
             <strong className="match-code">
@@ -776,66 +623,6 @@ export function CashierPage({ grant, lang }: { grant: Grant; lang: Language }) {
           )}
           <bdi>{result.reference}</bdi>
           <p className="muted">{new Date(result.committedAt).toLocaleString(intlLocale(lang))}</p>
-          <button className="primary full" onClick={next}>
-            {ar ? 'العميل اللي بعده' : 'Next customer'}
-          </button>
-        </section>
-      )}
-      {step === 'redeem' && redemption && (
-        <section className="panel">
-          <h2>{ar ? 'تأكيد حامل الكارت' : 'Cardholder confirmation'}</h2>
-          <div className="match-code">{redemption.code}</div>
-          <p>
-            {ar
-              ? 'العميل لازم يطابق الرقم ويأكد من حسابه.'
-              : 'The customer must match the code and confirm from their account.'}
-          </p>
-          <p className="notice" role="status">
-            {redemption.status === 'confirmed'
-              ? ar
-                ? 'العميل أكد. تقدر تكمل الاستبدال.'
-                : 'Customer confirmed. You can complete redemption.'
-              : redemption.status === 'declined'
-                ? ar
-                  ? 'العميل رفض الطلب.'
-                  : 'The customer declined.'
-                : ar
-                  ? 'مستني تأكيد العميل…'
-                  : 'Waiting for the customer…'}
-          </p>
-          <div className="action-stack">
-            <button
-              className="primary"
-              disabled={busy || redemption.status !== 'confirmed'}
-              onClick={() => void complete()}
-            >
-              {ar ? 'تأكيد الاستبدال' : 'Complete redemption'}
-            </button>
-            <button
-              className="secondary"
-              disabled={busy}
-              aria-busy={busy}
-              onClick={() => void cancel()}
-            >
-              {ar ? 'إلغاء الاستبدال' : 'Cancel redemption'}
-            </button>
-          </div>
-        </section>
-      )}
-      {step === 'redeemed' && redeemed && (
-        <section className="panel receipt-result" role="status">
-          <div className="result-icon">★</div>
-          <h2>{ar ? 'المكافأة اتصرفت' : 'Reward redeemed'}</h2>
-          <p>{redeemed.title}</p>
-          <p className="notice success">
-            {ar ? 'بدأ كارت رقم ' : 'New card started: '}
-            {redeemed.cycleNumber} · {ar ? 'رصيد الأختام: ' : 'Stamp balance: '}
-            {redeemed.balanceAfter}
-          </p>
-          <bdi>{redeemed.reference}</bdi>
-          <p className="muted">
-            {ar ? 'سلّم المكافأة للعميل.' : 'Hand the reward to the customer.'}
-          </p>
           <button className="primary full" onClick={next}>
             {ar ? 'العميل اللي بعده' : 'Next customer'}
           </button>

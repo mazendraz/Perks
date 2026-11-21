@@ -802,7 +802,7 @@ try {
     },
   );
   assert.equal(presentation.status(), 200, await presentation.text());
-  let token = (await presentation.json()).token as string;
+  const token = (await presentation.json()).token as string;
   assert.match(token, /^NQP:/);
   ok('Device-bound customer receives a persisted branded card and real QR without email/password');
   const customerSession = await (
@@ -1058,19 +1058,27 @@ try {
   ok(
     'The completed card remains full and celebrates the committed reward until cashier redemption',
   );
-  // The completed card's reward is redeemed with the customer's QR, opened from the reward itself.
-  await up.getByRole('button', { name: 'Redeem', exact: true }).first().click();
-  await up.locator('.qr-panel code').waitFor({ state: 'attached' });
-  token = (await up.locator('.qr-panel code').textContent())!;
   ok(
     'Two purchases award five stamps, conserve the balance and unlock one independent reward across sessions',
   );
-  await cp.getByRole('button', { name: 'Next customer', exact: true }).click();
-  await cp.getByLabel("Or type the 6 digits on the customer's phone", { exact: true }).fill(token);
-  await cp.getByRole('button', { name: 'Read code', exact: true }).click();
-  // A full card reads as full on the till, with the reward the customer pressed Redeem on first.
-  await cp.getByText('The customer asked for this one', { exact: true }).waitFor();
-  await cp.getByText('Stamps saved for the next card', { exact: true }).waitFor();
+  // Redeem by request: the customer taps Redeem, with no QR to show and nothing for the till to scan.
+  await up.getByRole('button', { name: 'Redeem', exact: true }).first().click();
+  const waiting = up.getByRole('status', { name: 'Redeem request', exact: true });
+  await waiting.getByText('Waiting for cashier…', { exact: true }).waitFor();
+  const matchNumber = (await waiting.locator('[data-match-number]').innerText()).trim();
+  assert.match(matchNumber, /^[1-9]\d$/);
+  assert.equal(await up.getByRole('dialog', { name: 'Personal QR', exact: true }).count(), 0);
+  const redeemRequest = (
+    await db.query(
+      "SELECT id FROM redemption_challenges WHERE membership_id=$1 AND status='requested'",
+      [membership],
+    )
+  ).rows[0].id as string;
+  // The till lists it with the customer's name and the same number, without a scan.
+  await navigateTo(cp, '/cashier');
+  const queued = cp.locator('.redeem-request[data-request-id="' + redeemRequest + '"]');
+  await queued.waitFor();
+  assert.equal((await queued.locator('[data-match-number]').innerText()).trim(), matchNumber);
   await up.evaluate(() => {
     const events: string[] = [];
     (window as unknown as { motionEvents: string[] }).motionEvents = events;
@@ -1084,22 +1092,23 @@ try {
       attributeFilter: ['data-card-motion'],
     });
   });
-  await cp.getByRole('button', { name: 'Redeem', exact: true }).click();
-  // No reload: the customer's phone brings the confirmation up by itself.
-  await up.getByRole('button', { name: 'Yes, I am redeeming', exact: true }).click();
-  await cp.getByRole('button', { name: 'Complete redemption', exact: true }).click();
-  await cp.getByRole('heading', { name: 'Reward redeemed', exact: true }).waitFor();
-  // A second hand-over of the same reward is refused, whatever key it carries.
-  const redeemedChallenge = (
-    await db.query(
-      "SELECT id FROM redemption_challenges WHERE membership_id=$1 AND status='completed'",
-      [membership],
-    )
-  ).rows[0].id;
+  // The cashier's notification opens the request; Confirm hands the reward over.
+  await navigateTo(cp, '/cashier/redeem/' + redeemRequest);
+  await cp.getByRole('heading', { name: /^Redeem request · / }).waitFor();
+  assert.equal(
+    (await cp.locator('.redeem-screen [data-match-number]').innerText()).trim(),
+    matchNumber,
+  );
+  await cp.getByRole('button', { name: 'Confirm redeem', exact: true }).click();
+  await cp.getByText('Reward redeemed ✅', { exact: true }).waitFor();
+  // No reload: the customer's screen turns to Redeemed and the new card starts.
+  await up.getByRole('heading', { name: 'Redeemed ✅', exact: true }).waitFor();
+  ok('A redeem request needs no QR: the cashier confirms it and the customer sees Redeemed live');
+  // A second confirmation of the same request is refused, whatever key it carries.
   const doubled = await call(
     cashier,
-    '/merchants/' + mid + '/redemption-challenges/' + redeemedChallenge + '/complete',
-    {},
+    '/merchants/' + mid + '/redeem-requests/' + redeemRequest + '/decision',
+    { approve: true, branchId: branch },
     randomUUID(),
   );
   assert.equal(doubled.status(), 409);
@@ -1113,7 +1122,7 @@ try {
     1,
   );
   ok('A double redemption is refused and the reward is redeemed exactly once');
-  const reference = (await cp.locator('.receipt-result bdi').textContent())!;
+  const reference = (await cp.locator('.redeem-reference').textContent())!;
   await up.getByText('Redeemed', { exact: true }).waitFor();
   assert.equal(await up.locator(mainCardFilled).count(), 0);
   assert.equal(await up.locator('.card-cycle').innerText(), 'Card 2');
@@ -1131,7 +1140,6 @@ try {
   ok(
     'Cashier redemption starts card two at zero, animates renewal and respects reduced-motion settings',
   );
-  ok('Authenticated holder confirmation completes one redemption and updates the customer card');
   await navigateTo(op, '/merchant');
   await op.getByText('Registered customers', { exact: true }).waitFor();
   const overview = await call(owner, '/merchants/' + mid + '/overview');

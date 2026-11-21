@@ -310,11 +310,74 @@ td small {
   flex: 0 0 auto;
   white-space: nowrap;
 }
-.reward-row.requested {
-  margin-inline: -12px;
-  padding-inline: 12px;
-  border-radius: 12px;
+/* Redeem by request: the customer's waiting screen and its outcome, and the cashier's list. */
+.redeem-waiting,
+.redeem-outcome {
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+  text-align: center;
+  margin: 4px 0 12px;
+  padding: 18px 16px;
+  border-radius: 16px;
   background: #fff7e8;
+}
+.redeem-waiting h3,
+.redeem-outcome h3 {
+  margin: 0;
+}
+.redeem-waiting .match-code {
+  font-size: 56px;
+  line-height: 1;
+  letter-spacing: 6px;
+  margin: 2px 0;
+}
+.redeem-waiting-text {
+  margin: 0;
+  font-weight: 700;
+}
+.redeem-outcome.completed {
+  background: #edf3e4;
+}
+.redeem-outcome.rejected,
+.redeem-outcome.expired {
+  background: #f3f3f6;
+}
+.redeem-request {
+  display: grid;
+  gap: 10px;
+  padding: 14px 0;
+  border-bottom: 1px solid #eee;
+}
+.redeem-request:last-child {
+  border-bottom: 0;
+}
+.redeem-request-heading {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+}
+.redeem-request-heading > div:first-child {
+  display: grid;
+  min-width: 0;
+}
+.redeem-request-heading small {
+  color: #6b7180;
+}
+.redeem-match {
+  display: grid;
+  justify-items: center;
+  flex: 0 0 auto;
+}
+.redeem-match .match-code {
+  font-size: 34px;
+  line-height: 1;
+}
+.redeem-queue h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 .reward-ready-heading {
   display: flex;
@@ -926,37 +989,6 @@ button[aria-busy='true']::after {
   50% {
     opacity: 0.25;
   }
-}
-.customer-code-backdrop {
-  padding: 0;
-  background: #fff;
-}
-.customer-code-dialog.dialog {
-  width: 100%;
-  max-width: 560px;
-  max-height: 100%;
-  min-height: 100%;
-  margin: auto;
-  border: 0;
-  border-radius: 0;
-  box-shadow: none;
-  background: #fff;
-  color: #181b38;
-  padding: calc(20px + env(safe-area-inset-top, 0px)) calc(20px + env(safe-area-inset-right, 0px))
-    calc(20px + env(safe-area-inset-bottom, 0px)) calc(20px + env(safe-area-inset-left, 0px));
-  animation: none;
-}
-.customer-code-dialog.qr-panel img {
-  display: block;
-  width: min(100%, 420px);
-  max-width: 100%;
-  margin: 20px auto;
-  image-rendering: pixelated;
-}
-.customer-code-dialog code {
-  overflow-wrap: anywhere;
-  word-break: break-all;
-  font-size: 11px;
 }
 .install-card-offer {
   display: flex;

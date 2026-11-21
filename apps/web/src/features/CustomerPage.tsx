@@ -8,7 +8,7 @@ import { CustomerRequests } from './StampRequests.js';
 import { useLiveRefresh } from '../live-events.js';
 import { RefreshQueue } from '../refresh-queue.js';
 import { ActionLabel } from '../../../../packages/ui/src/Icon.js';
-import { CustomerCode } from './CustomerCode.js';
+import { RedeemRewards } from './RedeemRewards.js';
 import { InstallCard } from './InstallCard.js';
 import { WalletPanel } from './WalletPanel.js';
 import { useCardExperience } from '../useCardExperience.js';
@@ -32,17 +32,6 @@ import { api, errorText, ApiError, setCsrf } from '../api.js';
 import { DeviceNotices } from './CustomerRecovery.js';
 import { navigate } from '../useRoute.js';
 import { intlLocale } from '../locale.js';
-interface HolderChallenge {
-  id: string;
-  merchant_id: string;
-  membership_id: string;
-  reward_id: string;
-  status: string;
-  expires_at: string;
-  title: string;
-  terms: string;
-  code: string;
-}
 /** Card reveal (720ms) plus a short pause so the new card is seen before the code. */
 export const FIRST_CARD_MOMENT_MS = 1600;
 
@@ -494,7 +483,6 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
     [cards, setCards] = useState<SavedCard[]>([]),
     [error, setError] = useState(''),
     [loaded, setLoaded] = useState(false),
-    [qr, setQr] = useState<{ token: string; qrDataUrl: string; expiresAt: string } | null>(null),
     [rewards, setRewards] = useState<Reward[]>([]),
     [activity, setActivity] = useState<
       {
@@ -506,14 +494,12 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
         source?: string;
       }[]
     >([]),
-    [challenges, setChallenges] = useState<HolderChallenge[]>([]),
     [busy, setBusy] = useState(false),
     [tab, setTab] = useState<'card' | 'history' | 'preferences'>('card'),
     [preferences, setPreferences] = useState<{ channel: string; granted: boolean }[]>([]);
   const [waiting, setWaiting] = useState(false);
   const [visitNotice, setVisitNotice] = useState<VisitNotice | null>(null);
   const preferenceGeneration = useRef(0);
-  const qrEpoch = useRef(0);
   const loadGeneration = useRef(0);
   const cardsQueue = useRef(new RefreshQueue());
   const detailsQueue = useRef(new RefreshQueue());
@@ -524,8 +510,7 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
     const generation = loadGeneration.current;
     void detailsQueue.current.run(async () => {
       try {
-        const [h, r, a] = await Promise.all([
-          api<{ challenges: HolderChallenge[] }>('/me/redemption-challenges', { timeoutMs: 10000 }),
+        const [r, a] = await Promise.all([
           membershipId
             ? api<{ rewards: Reward[] }>('/me/memberships/' + membershipId + '/rewards', {
                 timeoutMs: 10000,
@@ -538,7 +523,6 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
             : undefined,
         ]);
         if (generation !== loadGeneration.current) return;
-        setChallenges(h.challenges);
         if (r) setRewards(r.rewards);
         if (a) setActivity(a.activity);
         setDetailsError('');
@@ -569,8 +553,6 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
     setLoaded(false);
     setLoadError('');
     setDetailsError('');
-    setQr(null);
-    qrEpoch.current++;
     setWaiting(false);
     setTab('card');
     preferenceGeneration.current++;
@@ -585,30 +567,6 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
   }, [membershipId]);
   const card = cards.find((x) => x.id === membershipId);
   useCardExperience(card?.id);
-  // The reward whose Redeem button opened the code; a refreshed code stays bound to it.
-  const qrReward = useRef<string | undefined>(undefined);
-  const showQr = async (rewardId = qrReward.current) => {
-    if (!card) return;
-    qrReward.current = rewardId;
-    const epoch = ++qrEpoch.current;
-    setBusy(true);
-    try {
-      const code = await api<{ token: string; qrDataUrl: string; expiresAt: string }>(
-        '/me/memberships/' + card.id + '/presentation-tokens',
-        {
-          method: 'POST',
-          key: crypto.randomUUID(),
-          body: rewardId ? { rewardId } : {},
-        },
-      );
-      if (epoch === qrEpoch.current) setQr(code);
-      setError('');
-    } catch (e) {
-      setError(errorText(e, lang));
-    } finally {
-      setBusy(false);
-    }
-  };
   // When the cashier approves (or a sticker visit is awarded), the card comes up full-screen
   // and the new stamp is pressed in front of the customer.
   const [moment, setMoment] = useState<StampMoment | null>(null),
@@ -625,43 +583,6 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
   useEffect(() => {
     if (moment && moment.to.id !== membershipId) setMoment(null);
   }, [membershipId]);
-  const lastRevision = useRef<{ id: string; revision: number } | null>(null);
-  useLayoutEffect(() => {
-    if (!card) return;
-    const previous = lastRevision.current;
-    if (previous?.id === card.id && card.revision > previous.revision) {
-      qrEpoch.current++;
-      setQr(null);
-    }
-    lastRevision.current = { id: card.id, revision: card.revision };
-  }, [card?.id, card?.revision]);
-  // The personal QR is only for redeeming a reward now: a stamp comes from the shop's sticker and the
-  // cashier's receipt, so neither a Wallet open nor a waiting request opens the code by itself.
-  useEffect(() => {
-    if (challenges.some((ch) => ch.status === 'awaiting_holder')) {
-      qrEpoch.current++;
-      setQr(null);
-    }
-  }, [challenges]);
-  // While the Redeem code is on screen the cashier's request must reach this phone even if the live
-  // stream has stalled (a dimmed screen, a captive network): ask directly every few seconds.
-  useEffect(() => {
-    if (!qr) return;
-    let alive = true;
-    const timer = window.setInterval(() => {
-      if (document.hidden) return;
-      void api<{ challenges: HolderChallenge[] }>('/me/redemption-challenges', { timeoutMs: 8000 })
-        .then((h) => {
-          if (alive && h.challenges.some((ch) => ch.status === 'awaiting_holder'))
-            setChallenges(h.challenges);
-        })
-        .catch(() => {});
-    }, 3000);
-    return () => {
-      alive = false;
-      window.clearInterval(timer);
-    };
-  }, [!!qr]);
   // A stamp that lands while a reward is waiting does not move the full card: say where it went.
   const savedBalance = useRef<{ id: string; balance: number } | null>(null);
   useEffect(() => {
@@ -680,21 +601,6 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
             '). Redeem your reward to start the new card.',
       });
   }, [card?.id, card?.balance, card?.pending_rewards]);
-  const decide = async (ch: HolderChallenge, approve: boolean) => {
-    setBusy(true);
-    try {
-      await api('/me/redemption-challenges/' + ch.id + '/decision', {
-        method: 'POST',
-        key: crypto.randomUUID(),
-        body: { approve, code: ch.code },
-      });
-      await load();
-    } catch (e) {
-      setError(errorText(e, lang));
-    } finally {
-      setBusy(false);
-    }
-  };
   const refreshPreferences = async () => {
     if (!card) return;
     const generation = ++preferenceGeneration.current;
@@ -729,57 +635,11 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
       setBusy(false);
     }
   };
-  const holder = challenges.find((c) => c.status === 'awaiting_holder');
-  // A pending redemption must never sit behind the full-screen customer code: the code is
-  // hidden while the holder decides, and the confirmation is brought into view.
-  useEffect(() => {
-    if (!holder) return;
-    document
-      .querySelector('.holder-confirm')
-      ?.scrollIntoView({ block: 'start', behavior: 'instant' as ScrollBehavior });
-  }, [holder?.id]);
   return (
     <>
       <DeviceNotices lang={lang} />
-      {moment && !holder && (
-        <StampCelebration moment={moment} lang={lang} onClose={() => setMoment(null)} />
-      )}
-      {holder && (
-        <section
-          className="panel holder-confirm"
-          role="region"
-          aria-label={ar ? 'تأكيد استبدال مكافأة' : 'Confirm reward redemption'}
-        >
-          <span className="badge">{ar ? 'طلب استبدال' : 'Redemption request'}</span>
-          <h2>{holder.title}</h2>
-          <p>
-            {ar
-              ? 'لازم الرقم ده يطابق الرقم عند الكاشير. وافق بس لو إنت اللي بتستبدل دلوقتي.'
-              : 'The code must match the cashier screen. Confirm only if you are redeeming now.'}
-          </p>
-          <div className="match-code">{holder.code}</div>
-          <p className="muted">{holder.terms}</p>
-          <div className="form-actions">
-            <button
-              className="secondary"
-              disabled={busy}
-              aria-busy={busy}
-              onClick={() => void decide(holder, false)}
-            >
-              {ar ? 'لا، مش أنا' : 'No, not me'}
-            </button>
-            <button
-              className="primary"
-              disabled={busy}
-              aria-busy={busy}
-              onClick={() => void decide(holder, true)}
-            >
-              {ar ? 'أيوه، أنا اللي بستبدل' : 'Yes, I am redeeming'}
-            </button>
-          </div>
-        </section>
-      )}
-      {(error || loadError || detailsError) && !qr && (
+      {moment && <StampCelebration moment={moment} lang={lang} onClose={() => setMoment(null)} />}
+      {(error || loadError || detailsError) && (
         <div className="notice error" role="alert">
           {error || loadError || detailsError}
           {(loadError || detailsError) && (
@@ -890,77 +750,7 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
                       <ActionLabel icon="clock">{ar ? 'آخر نشاط' : 'Recent activity'}</ActionLabel>
                     </button>
                   </div>
-                  {qr && !holder && (
-                    <CustomerCode
-                      qr={qr}
-                      lang={lang}
-                      busy={busy}
-                      error={error}
-                      onRefresh={() => showQr()}
-                      onClose={() => {
-                        qrEpoch.current++;
-                        qrReward.current = undefined;
-                        setQr(null);
-                      }}
-                    />
-                  )}
-                  <section className="panel">
-                    <h2>{ar ? 'مكافآتك' : 'Your rewards'}</h2>
-                    {rewards.some((r) => r.status === 'available') && (
-                      <p className="muted">
-                        {ar
-                          ? 'دوس استبدل ووري الكود للكاشير. بعد ما تأكد من موبايلك يبدأ كارت جديد.'
-                          : 'Tap Redeem and show the code to the cashier. Once you confirm on your phone, a new card starts.'}
-                      </p>
-                    )}
-                    {rewards.length ? (
-                      rewards.map((r) => (
-                        <div className="reward-row" key={r.id}>
-                          <div>
-                            <strong>{r.title}</strong>
-                            <small>{r.terms}</small>
-                            <small>
-                              {ar ? 'صالحة لحد ' : 'Valid until '}
-                              {new Date(r.expires_at).toLocaleDateString(intlLocale(lang))}
-                            </small>
-                          </div>
-                          {r.status === 'available' && (
-                            <button
-                              className="primary small"
-                              disabled={busy}
-                              aria-busy={busy}
-                              onClick={() => void showQr(r.id)}
-                            >
-                              <ActionLabel icon="qr">{ar ? 'استبدل' : 'Redeem'}</ActionLabel>
-                            </button>
-                          )}
-                          <span className="badge">
-                            {r.status === 'available'
-                              ? ar
-                                ? 'متاحة'
-                                : 'Available'
-                              : r.status === 'redeemed'
-                                ? ar
-                                  ? 'اتصرفت'
-                                  : 'Redeemed'
-                                : r.status === 'expired'
-                                  ? ar
-                                    ? 'انتهت'
-                                    : 'Expired'
-                                  : ar
-                                    ? 'اتلغت'
-                                    : 'Voided'}
-                          </span>
-                        </div>
-                      ))
-                    ) : (
-                      <p className="muted">
-                        {ar
-                          ? 'أول مكافأة هتظهر لما توصل للعتبة.'
-                          : 'Your first reward appears when you reach the threshold.'}
-                      </p>
-                    )}
-                  </section>
+                  <RedeemRewards card={card} rewards={rewards} lang={lang} onChanged={load} />
                   <WalletPanel
                     membershipId={card.id}
                     lang={lang}

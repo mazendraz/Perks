@@ -138,6 +138,10 @@ export const redemptionStartInput = z
 export const redemptionDecisionInput = z
   .object({ approve: z.boolean(), code: z.string().regex(/^\d{6}$/) })
   .strict();
+// The customer asks to redeem a reward; the branch they came through (from the shop's sticker) when known.
+export const redeemRequestInput = z.object({ branchId: z.uuid().optional() }).strict();
+// A cashier confirms or rejects a customer's redeem request at their branch.
+export const redeemDecisionInput = z.object({ approve: z.boolean(), branchId: z.uuid() }).strict();
 export const preferenceInput = z
   .object({ channel: z.enum(['email', 'sms', 'whatsapp', 'push']), granted: z.boolean() })
   .strict();

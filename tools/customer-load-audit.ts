@@ -16,7 +16,7 @@ export async function auditCustomerLoading(page: Page, project: string, director
   const gate = new Promise<void>((resolve) => {
     release = resolve;
   });
-  const pattern = '**/api/v1/me/redemption-challenges';
+  const pattern = '**/api/v1/me/redeem-requests';
   await page.route(pattern, async (route) => {
     await gate;
     await route.continue().catch(() => {});

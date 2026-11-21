@@ -9,26 +9,30 @@ import {
 } from './portals.js';
 import { initialLanguage } from './locale.js';
 import { PwaStatus } from './pwa.js';
-import { unlinkPushDevice } from './push.js';
 import { networkUnavailable } from './network.js';
 import { Icon } from '../../../packages/ui/src/Icon.js';
 import { Login, ResetPassword, PasswordSettings } from './features/Auth.js';
 import { PlatformMfa } from './features/PlatformMfa.js';
 import { LegalPage } from './features/Legal.js';
 import { DeleteCustomerAccount, CustomerDeletionComplete } from './features/CustomerPrivacy.js';
+import { CustomerPhoneSettings, WhatsAppRestorePage } from './features/CustomerWhatsApp.js';
 import { useDialogAccessibility } from './dialog-accessibility.js';
 import { Operations } from './features/Operations.js';
+import { PhoneRelease } from './features/PhoneRelease.js';
 import { PlacementPage } from './features/Materials.js';
 import {
   CustomerCardUnavailable,
   CustomerDeviceHelp,
   CustomerRecoveryPage,
+  RestoreCardsPage,
+  WalletOpenPage,
 } from './features/CustomerRecovery.js';
 import { useCallback, useEffect, useRef, useState, lazy, Suspense, type ReactNode } from 'react';
 import type { Session, Language } from '../../../packages/contracts/src/index.js';
 import { api, ApiError, errorText, setCsrf } from './api.js';
 import { navigate, useRoute } from './useRoute.js';
 import { SuspendedNotice } from './features/SuspendedNotice.js';
+import { useSignOut } from './sign-out.js';
 
 // Where "/" leads someone without a staff session: their card when this device holds one
 // (the customer session is restored from the device cookie), otherwise the sign-in page.
@@ -155,6 +159,15 @@ export function App() {
     void refresh();
   }, [refresh]);
   useEffect(() => {
+    if (portal !== 'customer' || session) return;
+    // Another tab can link the browser while this one still shows the anonymous form.
+    const resume = () => {
+      if (!document.hidden) void refresh();
+    };
+    document.addEventListener('visibilitychange', resume);
+    return () => document.removeEventListener('visibilitychange', resume);
+  }, [portal, session, refresh]);
+  useEffect(() => {
     const verify = () => {
       void refresh();
     };
@@ -198,8 +211,8 @@ export function App() {
       setNotice(
         portal === 'customer'
           ? lang === 'ar'
-            ? 'الكارت مش مربوط بالجهاز ده. اطلب من الكاشير يرجعهولك على واتساب.'
-            : 'Your card is not linked to this device. Ask the cashier to restore it on WhatsApp.'
+            ? 'الكارت مش مربوط بالجهاز ده. افتحه من الـWallet، أو اطلب من الكاشير في أي محل Perks يرجعهولك.'
+            : 'Your card is not linked to this device. Open it from your Wallet, or ask the cashier at any Perks shop to restore it.'
           : lang === 'ar'
             ? 'الجلسة انتهت. سجّل دخولك تاني لمتابعة العملية بأمان.'
             : 'Your session expired. Sign in again to safely continue.',
@@ -220,18 +233,17 @@ export function App() {
     document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
   }, [lang]);
   const ar = lang === 'ar';
-  const logout = async () => {
-    try {
-      // Unlink this device's notifications while the session is still valid to say so.
-      await unlinkPushDevice();
-      await api('/auth/logout', { method: 'POST' });
+  // Staff holding a customer card on the same browser are asked whether to keep it.
+  const signOut = useSignOut(
+    lang,
+    () => {
       setSession(null);
       setCsrf('');
       navigate(portal === 'customer' ? '/customer/login' : '/login');
-    } catch (e) {
-      setNotice(errorText(e, lang));
-    }
-  };
+    },
+    (e) => setNotice(errorText(e, lang)),
+  );
+  const logout = () => signOut.request();
   if (loading || sessionPortal !== portal)
     return (
       <main className="loading-screen" role="status">
@@ -241,6 +253,7 @@ export function App() {
   return (
     <ControlLocale.Provider value={lang}>
       <PwaStatus lang={lang} />
+      {signOut.dialog}
       <a className="skip-link" href="#main">
         {ar ? 'روح للمحتوى' : 'Skip to content'}
       </a>
@@ -294,6 +307,12 @@ export function App() {
       )}
       {route === '/customer/deleted' && accountDeleted ? (
         <CustomerDeletionComplete lang={lang} />
+      ) : route === '/customer/open' ? (
+        <WalletOpenPage lang={lang} refresh={refresh} />
+      ) : route === '/customer/restore' ? (
+        <RestoreCardsPage lang={lang} />
+      ) : route === '/customer/restore/whatsapp' ? (
+        <WhatsAppRestorePage lang={lang} refresh={refresh} />
       ) : route === '/privacy' || route === '/terms' ? (
         <LegalPage kind={route === '/privacy' ? 'privacy' : 'terms'} lang={lang} />
       ) : route.startsWith('/reset-password/') ? (
@@ -469,20 +488,21 @@ function Workspace({
           <>
             <p className="panel">
               {ar
-                ? 'كارتك مربوط بالجهاز ده. لو غيرت الموبايل، اطلب من الكاشير يرجعهولك على واتساب. مش محتاج باسورد.'
-                : 'Your card is linked to this device. If you change phones, ask the cashier to restore it on WhatsApp. You do not need a password.'}
+                ? 'كارتك مربوط بالجهاز ده. لو غيّرت موبايلك، افتح كارتك من الـWallet أو اطلب من الكاشير يرجعهولك. مش محتاج باسورد.'
+                : 'Your card is linked to this device. If you change phones, open your card from your Wallet or ask the cashier to restore it. You do not need a password.'}
             </p>
             <section className="panel">
               <h2>{ar ? 'الخروج من الجهاز ده' : 'Sign out on this device'}</h2>
               <p className="muted">
                 {ar
-                  ? 'كروتك مش هتضيع، بس عشان ترجع لها على الجهاز ده هتحتاج الكاشير يرجعهالك على واتساب.'
-                  : 'Your cards are kept, but to see them on this device again the cashier will need to restore them on WhatsApp.'}
+                  ? 'كروتك مش هتضيع. عشان ترجعلها على الجهاز ده، افتحها من الـWallet أو اطلب من الكاشير يرجعهالك.'
+                  : 'Your cards are kept. To see them on this device again, open them from your Wallet or ask the cashier to restore them.'}
               </p>
               <button className="danger-outline" onClick={() => void onLogout()}>
                 {ar ? 'خروج' : 'Sign out'}
               </button>
             </section>
+            <CustomerPhoneSettings lang={lang} />
             <DeleteCustomerAccount lang={lang} />
           </>
         ) : (
@@ -505,6 +525,7 @@ function Workspace({
             </div>
           </div>
           <Operations lang={lang} admin={session.user.role === 'platform_admin'} />
+          {session.user.role === 'platform_admin' && <PhoneRelease lang={lang} />}
         </>
       );
     else content = <PlatformPage lang={lang} userId={session.user.id} />;
@@ -533,7 +554,7 @@ function Workspace({
       />
     );
   } else if (route === '/customer' || (route.startsWith('/customer/') && route !== account))
-    content = <CustomerPage lang={lang} membershipId={route.split('/')[2]} />;
+    content = <CustomerPage key={session.user.id} lang={lang} membershipId={route.split('/')[2]} />;
   else if (route.startsWith('/invite/'))
     content = <InvitePage token={route.split('/')[2] || ''} lang={lang} refresh={refresh} />;
   const previewMerchant = /^\/platform\/merchants\/([a-f0-9-]{36})\/owner-view$/.exec(route)?.[1];

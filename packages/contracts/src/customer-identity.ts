@@ -31,8 +31,19 @@ export const customerPairingClaimInput = z
     requestedByCustomer: z.literal(true),
   })
   .strict();
-export const customerPairingStartInput = z.object({ merchantId: z.uuid() }).strict();
+// With a phone: joining this shop with a number already on Perks (049). The staff member must
+// type the same number with the code.
+export const customerPairingStartInput = z
+  .object({ merchantId: z.uuid(), phone: customerPhone.optional() })
+  .strict();
+export const customerJoinClaimInput = z
+  .object({ branchId: z.uuid(), phone: customerPhone, code: pairingCode })
+  .strict();
 export const customerPairingDecisionInput = z.object({ approve: z.boolean() }).strict();
 export const deviceNoticeInput = z.object({ removeDevice: z.boolean() }).strict();
+export const whatsappProofInput = z
+  .object({ phone: customerPhone, purpose: z.enum(['restore', 'update']) })
+  .strict();
+export type WhatsAppProofPurpose = z.infer<typeof whatsappProofInput>['purpose'];
 export type PairingStatus =
   'waiting' | 'awaiting_approval' | 'approved' | 'consumed' | 'rejected' | 'cancelled' | 'expired';

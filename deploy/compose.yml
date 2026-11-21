@@ -167,6 +167,11 @@ services:
       AUTH_DATABASE_URL: postgresql://nuqta_auth:${NUQTA_AUTH_DB_PASSWORD}@postgres:5432/nuqta
       MONITORING_TOKEN: ${MONITORING_TOKEN:?Independent operations token required}
       BACKUP_STATUS_ROOT: /var/lib/nuqta/backup-health
+      WHATSAPP_RECOVERY_ENABLED: ${WHATSAPP_RECOVERY_ENABLED:-false}
+      WHATSAPP_RECOVERY_NUMBER: ${WHATSAPP_RECOVERY_NUMBER:-}
+      WHATSAPP_RECOVERY_NUMBER_ID: ${WHATSAPP_RECOVERY_NUMBER_ID:-}
+      WHATSAPP_RECOVERY_APP_SECRET: ${WHATSAPP_RECOVERY_APP_SECRET:-}
+      WHATSAPP_RECOVERY_VERIFY_TOKEN: ${WHATSAPP_RECOVERY_VERIFY_TOKEN:-}
     volumes:
       - files:/var/lib/nuqta/files
       - database_backup_state:/var/lib/nuqta/backup-health/database:ro

@@ -11,6 +11,7 @@ import { ActionLabel } from '../../../../packages/ui/src/Icon.js';
 import { RedeemRewards } from './RedeemRewards.js';
 import { InstallCard } from './InstallCard.js';
 import { WalletPanel } from './WalletPanel.js';
+import { CardDetailSwitcher, CardWallet } from './CardSwitcher.js';
 import { useCardExperience } from '../useCardExperience.js';
 import { StampCelebration, gainedStamp, type StampMoment } from './StampCelebration.js';
 import {
@@ -29,7 +30,7 @@ import type {
 } from '../../../../packages/contracts/src/index.js';
 import { LoyaltyCard } from '../../../../packages/ui/src/LoyaltyCard.js';
 import { api, errorText, ApiError, setCsrf } from '../api.js';
-import { DeviceNotices } from './CustomerRecovery.js';
+import { DeviceNotices, JoinWithCode } from './CustomerRecovery.js';
 import { navigate } from '../useRoute.js';
 import { intlLocale } from '../locale.js';
 /** Card reveal (720ms) plus a short pause so the new card is seen before the code. */
@@ -78,6 +79,13 @@ export function EnrollmentPage({
     [prepared, setPrepared] = useState(deviceBound),
     [error, setError] = useState(''),
     [validation, setValidation] = useState<ApiError | null>(null);
+  // A new card is tied to the number: the customer sees it once more before it is saved, since a
+  // wrong digit means a second account (or someone else's number).
+  // The number already has cards on another phone: this phone joins through the cashier (049).
+  const [joinCode, setJoinCode] = useState<Record<string, unknown> | null>(null);
+  const [askPhone, setAskPhone] = useState(false),
+    phoneConfirmed = useRef(false),
+    joinForm = useRef<HTMLFormElement>(null);
   useEffect(() => {
     let active = true;
     setTerms(false);
@@ -142,7 +150,14 @@ export function EnrollmentPage({
     if (!info || !prepared || !legal || legal.locale !== lang) return;
     const chosen = info.programs.find((p) => p.id === program);
     if (!chosen) return;
+    if (!deviceBound && !phoneConfirmed.current) {
+      setAskPhone(true);
+      return;
+    }
+    phoneConfirmed.current = false;
+    setAskPhone(false);
     setBusy(true);
+    let enrollBody: Record<string, unknown> | null = null;
     setError('');
     setValidation(null);
     const query = new URLSearchParams(location.search),
@@ -160,7 +175,7 @@ export function EnrollmentPage({
       return;
     }
     try {
-      const common = {
+      const common = (enrollBody = {
         merchantId: info.merchant.id,
         programId: chosen.id,
         programVersionId: chosen.versionId,
@@ -171,7 +186,7 @@ export function EnrollmentPage({
         acceptedPrivacyHash: legal.acceptance.hash,
         acceptedPrivacyLocale: legal.locale,
         source: query.get('src') === 'nfc' ? 'nfc' : query.get('src') === 'qr' ? 'qr' : 'link',
-      };
+      });
       if (deviceBound) {
         const result = await api<{ membershipId: string; alreadyMember: boolean }>(
           '/me/memberships',
@@ -225,6 +240,12 @@ export function EnrollmentPage({
           /* Keep the form and original network error for a deliberate retry. */
         }
       }
+      // The number has cards on another phone: confirm it through the cashier instead of a dead end.
+      if (error instanceof ApiError && error.code === 'CUSTOMER_PHONE_EXISTS' && enrollBody) {
+        setJoinCode({ ...enrollBody, alias });
+        setBusy(false);
+        return;
+      }
       setValidation(error instanceof ApiError ? error : null);
       setError(errorText(error, lang).split(' · ')[0]!);
       if (
@@ -275,143 +296,224 @@ export function EnrollmentPage({
               {ar ? 'كل زيارة بتقرّبك لمكافأة.' : 'Every visit brings you closer to a reward.'}
             </p>
           </div>
-          <form className="panel customer-first-visit" onSubmit={(event) => void join(event)}>
-            <FieldErrors error={validation} lang={lang} />
-            {error && (
-              <p className="notice error" role="alert">
-                {error}
-              </p>
-            )}
-            {info.programs.length > 1 && (
-              <label>
-                {ar ? 'اختار كارتك' : 'Choose your card'}
-                <Select
-                  value={program}
-                  onChange={(event) => {
-                    setProgram(event.target.value);
-                    setTerms(false);
-                  }}
-                >
-                  {info.programs.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name}
-                    </option>
-                  ))}
-                </Select>
-              </label>
-            )}
-            {info.programs.find((p) => p.id === program) && (
-              <div className="join-program">
-                <strong>{info.programs.find((p) => p.id === program)!.rewardTitle}</strong>
-                <span>
-                  {info.programs.find((p) => p.id === program)!.threshold}{' '}
-                  {ar ? 'أختام للمكافأة' : 'stamps to your reward'}
-                </span>
-              </div>
-            )}
-            {!deviceBound && (
-              <>
-                <label>
-                  {ar ? 'اسمك' : 'Your name'}
-                  <input
-                    required
-                    autoComplete="name"
-                    maxLength={60}
-                    {...fieldProps(validation, 'displayName')}
-                    value={alias}
-                    onChange={(event) => setAlias(event.target.value)}
-                  />
-                </label>
-                <label>
-                  {ar ? 'رقم موبايلك' : 'Mobile number'}
-                  <PhoneInput
-                    lang={lang}
-                    aria-label={ar ? 'رقم موبايلك' : 'Mobile number'}
-                    required
-                    {...fieldProps(validation, 'phone')}
-                    value={phone}
-                    onChange={(event) => setPhone(event.target.value)}
-                  />
-                </label>
-              </>
-            )}
-            <details>
-              <summary>{ar ? 'الشروط والخصوصية' : 'Terms and privacy'}</summary>
-              <p>{info.merchant.terms}</p>
-              <p>{info.programs.find((p) => p.id === program)?.rewardTerms}</p>
-              <p>
-                {ar
-                  ? 'بنحفظ اسمك ورقمك للكارت واسترجاعه بطلبك، وبنربطه بالجهاز ده. ممكن نستخدم موقعك لحظة السكان بس لتأكيد الزيارة، ومش بنحفظه. التسجيل مش موافقة على التسويق.'
-                  : 'Your name and number are used for your card and recovery you request. The card is linked to this device. Your location may be used only at the moment you scan, to confirm the visit, and is never stored. Registration does not opt you into marketing.'}
-              </p>
-              {import.meta.env.DEV && (
-                <p className="muted">
-                  {ar
-                    ? 'مسودة محلية، والمراجعة القانونية مطلوبة قبل الإطلاق.'
-                    : 'Local draft. Legal review is required before launch.'}
+          {joinCode ? (
+            <JoinWithCode
+              merchantId={info.merchant.id}
+              merchantName={info.merchant.name}
+              phone={phone}
+              lang={lang}
+              onBack={() => setJoinCode(null)}
+              onLinked={async () => {
+                await refresh();
+                const result = await api<{ membershipId: string; alreadyMember: boolean }>(
+                  '/me/memberships',
+                  { method: 'POST', key: crypto.randomUUID(), body: joinCode },
+                );
+                await saveNotify(info.merchant.id);
+                await openCard(result);
+              }}
+            />
+          ) : (
+            <form
+              ref={joinForm}
+              className="panel customer-first-visit"
+              onSubmit={(event) => void join(event)}
+            >
+              <FieldErrors error={validation} lang={lang} />
+              {error && (
+                <p className="notice error" role="alert">
+                  {error}
                 </p>
               )}
-              <nav
-                className="legal-links"
-                aria-label={ar ? 'اقرأ الشروط والخصوصية' : 'Read terms and privacy'}
+              {info.programs.length > 1 && (
+                <label>
+                  {ar ? 'اختار كارتك' : 'Choose your card'}
+                  <Select
+                    value={program}
+                    onChange={(event) => {
+                      setProgram(event.target.value);
+                      setTerms(false);
+                    }}
+                  >
+                    {info.programs.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name}
+                      </option>
+                    ))}
+                  </Select>
+                </label>
+              )}
+              {info.programs.find((p) => p.id === program) && (
+                <div className="join-program">
+                  <strong>{info.programs.find((p) => p.id === program)!.rewardTitle}</strong>
+                  <span>
+                    {info.programs.find((p) => p.id === program)!.threshold}{' '}
+                    {ar ? 'أختام للمكافأة' : 'stamps to your reward'}
+                  </span>
+                </div>
+              )}
+              {deviceBound && (
+                <p className="join-welcome">
+                  <strong>
+                    {session?.user.displayName
+                      ? (ar ? 'أهلًا ' : 'Welcome back, ') + session.user.displayName
+                      : ar
+                        ? 'أهلًا بيك تاني'
+                        : 'Welcome back'}
+                  </strong>
+                  <span>
+                    {ar
+                      ? 'الموبايل ده عارفك. الكارت ده هيتضاف لكروتك على طول.'
+                      : 'This phone knows you. This card joins your cards right away.'}
+                  </span>
+                </p>
+              )}
+              {!deviceBound && (
+                <>
+                  <label>
+                    {ar ? 'اسمك' : 'Your name'}
+                    <input
+                      required
+                      autoComplete="name"
+                      maxLength={60}
+                      {...fieldProps(validation, 'displayName')}
+                      value={alias}
+                      onChange={(event) => setAlias(event.target.value)}
+                    />
+                  </label>
+                  <label>
+                    {ar ? 'رقم موبايلك' : 'Mobile number'}
+                    <PhoneInput
+                      lang={lang}
+                      aria-label={ar ? 'رقم موبايلك' : 'Mobile number'}
+                      required
+                      {...fieldProps(validation, 'phone')}
+                      value={phone}
+                      onChange={(event) => {
+                        setPhone(event.target.value);
+                        setAskPhone(false);
+                      }}
+                    />
+                  </label>
+                </>
+              )}
+              <details>
+                <summary>{ar ? 'الشروط والخصوصية' : 'Terms and privacy'}</summary>
+                <p>{info.merchant.terms}</p>
+                <p>{info.programs.find((p) => p.id === program)?.rewardTerms}</p>
+                <p>
+                  {ar
+                    ? 'بنحفظ اسمك ورقمك للكارت واسترجاعه بطلبك، وبنربطه بالجهاز ده. ممكن نستخدم موقعك لحظة السكان بس لتأكيد الزيارة، ومش بنحفظه. التسجيل مش موافقة على التسويق.'
+                    : 'Your name and number are used for your card and recovery you request. The card is linked to this device. Your location may be used only at the moment you scan, to confirm the visit, and is never stored. Registration does not opt you into marketing.'}
+                </p>
+                {import.meta.env.DEV && (
+                  <p className="muted">
+                    {ar
+                      ? 'مسودة محلية، والمراجعة القانونية مطلوبة قبل الإطلاق.'
+                      : 'Local draft. Legal review is required before launch.'}
+                  </p>
+                )}
+                <nav
+                  className="legal-links"
+                  aria-label={ar ? 'اقرأ الشروط والخصوصية' : 'Read terms and privacy'}
+                >
+                  <a href={'/privacy?lang=' + lang} target="_blank" rel="noopener noreferrer">
+                    {ar ? 'الخصوصية كاملة' : 'Full privacy notice'}
+                  </a>
+                  <a href={'/terms?lang=' + lang} target="_blank" rel="noopener noreferrer">
+                    {ar ? 'شروط الاستخدام' : 'Terms of use'}
+                  </a>
+                </nav>
+              </details>
+              <label className="checkbox-label">
+                <input
+                  required
+                  type="checkbox"
+                  {...fieldProps(validation, 'acceptedTerms')}
+                  checked={terms}
+                  onChange={(event) => setTerms(event.target.checked)}
+                />
+                {ar
+                  ? 'موافق على شروط البرنامج والمكافأة والخصوصية'
+                  : 'I accept the program, reward and privacy terms'}
+              </label>
+              <label className="checkbox-label join-notify">
+                <input
+                  type="checkbox"
+                  checked={notify}
+                  onChange={(event) => setNotify(event.target.checked)}
+                />
+                <span>
+                  <strong>
+                    {ar
+                      ? 'فكّرني لما مكافأتي تقرب أو تجهز'
+                      : 'Remind me when my reward is close or ready'}
+                  </strong>
+                  <small>
+                    {ar
+                      ? 'على الموبايل وواتساب، من المحل ده بس. تقدر تقفلها في أي وقت.'
+                      : 'On your phone and WhatsApp, from this shop only. Turn it off any time.'}
+                  </small>
+                </span>
+              </label>
+              {askPhone && (
+                <div className="join-phone-check" role="alert">
+                  <span>{ar ? 'ده رقمك؟' : 'Is this your number?'}</span>
+                  <bdi dir="ltr" className="join-phone-number">
+                    {phone}
+                  </bdi>
+                  <small>
+                    {ar
+                      ? 'ده اللي هيرجّعلك كروتك لو غيّرت موبايلك، فاتأكد إنه صح.'
+                      : 'It brings your cards back if you change phones, so make sure it is right.'}
+                  </small>
+                  <div className="form-actions">
+                    <button
+                      type="button"
+                      className="primary"
+                      disabled={busy}
+                      onClick={() => {
+                        phoneConfirmed.current = true;
+                        joinForm.current?.requestSubmit();
+                      }}
+                    >
+                      {ar ? 'أيوه، افتح الكارت' : 'Yes, open my card'}
+                    </button>
+                    <button
+                      type="button"
+                      className="secondary"
+                      onClick={() => {
+                        setAskPhone(false);
+                        joinForm.current
+                          ?.querySelector<HTMLInputElement>('input[type=tel],input[inputmode=tel]')
+                          ?.focus();
+                      }}
+                    >
+                      {ar ? 'عدّل الرقم' : 'Change it'}
+                    </button>
+                  </div>
+                </div>
+              )}
+              <button
+                className="primary full"
+                hidden={askPhone}
+                disabled={busy || !prepared || !program || !legal || legal.locale !== lang}
               >
-                <a href={'/privacy?lang=' + lang} target="_blank" rel="noopener noreferrer">
-                  {ar ? 'الخصوصية كاملة' : 'Full privacy notice'}
-                </a>
-                <a href={'/terms?lang=' + lang} target="_blank" rel="noopener noreferrer">
-                  {ar ? 'شروط الاستخدام' : 'Terms of use'}
-                </a>
-              </nav>
-            </details>
-            <label className="checkbox-label">
-              <input
-                required
-                type="checkbox"
-                {...fieldProps(validation, 'acceptedTerms')}
-                checked={terms}
-                onChange={(event) => setTerms(event.target.checked)}
-              />
-              {ar
-                ? 'موافق على شروط البرنامج والمكافأة والخصوصية'
-                : 'I accept the program, reward and privacy terms'}
-            </label>
-            <label className="checkbox-label join-notify">
-              <input
-                type="checkbox"
-                checked={notify}
-                onChange={(event) => setNotify(event.target.checked)}
-              />
-              <span>
-                <strong>
-                  {ar
-                    ? 'فكّرني لما مكافأتي تقرب أو تجهز'
-                    : 'Remind me when my reward is close or ready'}
-                </strong>
-                <small>
-                  {ar
-                    ? 'على الموبايل وواتساب، من المحل ده بس. تقدر تقفلها في أي وقت.'
-                    : 'On your phone and WhatsApp, from this shop only. Turn it off any time.'}
-                </small>
-              </span>
-            </label>
-            <button
-              className="primary full"
-              disabled={busy || !prepared || !program || !legal || legal.locale !== lang}
-            >
-              {busy
-                ? ar
-                  ? 'بنجهّز كارتك…'
-                  : 'Preparing your card…'
-                : ar
-                  ? 'افتح الكارت'
-                  : 'Open my card'}
-            </button>
-            <p className="muted">
-              {ar
-                ? 'كارتك هيفضل على الجهاز ده. لو غيّرت الموبايل، اطلب من الكاشير يرجعهولك على واتساب.'
-                : 'Your card stays on this device. If you change phones, ask the cashier to restore it on WhatsApp.'}
-            </p>
-          </form>
+                {busy
+                  ? ar
+                    ? 'بنجهّز كارتك…'
+                    : 'Preparing your card…'
+                  : ar
+                    ? 'افتح الكارت'
+                    : 'Open my card'}
+              </button>
+              <p className="muted">
+                {ar
+                  ? 'كارتك هيفضل على الجهاز ده. لو غيّرت موبايلك، افتحه من الـWallet أو اطلب من الكاشير في أي محل Perks يرجعهولك.'
+                  : 'Your card stays on this device. If you change phones, open it from your Wallet or ask the cashier at any Perks shop to restore it.'}
+              </p>
+            </form>
+          )}
         </>
       ) : error ? (
         <p className="notice error" role="alert">
@@ -545,14 +647,16 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
     });
   };
   useLiveRefresh('/me/events', load);
-  useEffect(() => {
+  useLayoutEffect(() => {
     loadGeneration.current++;
     cardsQueue.current.invalidate();
     detailsQueue.current.invalidate();
-    setCards([]);
-    setLoaded(false);
+    setError('');
     setLoadError('');
     setDetailsError('');
+    setRewards([]);
+    setActivity([]);
+    setVisitNotice(null);
     setWaiting(false);
     setTab('card');
     preferenceGeneration.current++;
@@ -663,17 +767,7 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
             </div>
           </div>
           <InstallCard lang={lang} />
-          <div className="cards-grid">
-            {cards.map((c) => (
-              <button
-                className="card-open"
-                key={c.id}
-                onClick={() => navigate('/customer/' + c.id)}
-              >
-                <LoyaltyCard card={c} lang={lang} />
-              </button>
-            ))}
-          </div>
+          <CardWallet lang={lang} cards={cards} />
           {loaded && !loadError && !cards.length && (
             <div className="empty-state">
               <h2>{ar ? 'لسه مفيش كروت' : 'No cards yet'}</h2>
@@ -695,13 +789,20 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
           </button>
           <div className="membership-layout">
             <aside className="membership-aside">
-              <LoyaltyCard
-                card={card}
+              <CardDetailSwitcher
+                cards={cards}
+                cardId={card.id}
                 lang={lang}
-                motion={moment ? 'quiet' : 'normal'}
-                waiting={waiting}
-                reveal={new URLSearchParams(location.search).get('new') === '1'}
-              />
+                disabled={busy || !!moment}
+              >
+                <LoyaltyCard
+                  card={card}
+                  lang={lang}
+                  motion={moment ? 'quiet' : 'normal'}
+                  waiting={waiting}
+                  reveal={new URLSearchParams(location.search).get('new') === '1'}
+                />
+              </CardDetailSwitcher>
               {visitNotice && (
                 <div
                   className={
@@ -750,7 +851,13 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
                       <ActionLabel icon="clock">{ar ? 'آخر نشاط' : 'Recent activity'}</ActionLabel>
                     </button>
                   </div>
-                  <RedeemRewards card={card} rewards={rewards} lang={lang} onChanged={load} />
+                  <RedeemRewards
+                    key={card.id}
+                    card={card}
+                    rewards={rewards}
+                    lang={lang}
+                    onChanged={load}
+                  />
                   <WalletPanel
                     membershipId={card.id}
                     lang={lang}

@@ -43,22 +43,37 @@ export function WalletPanel({
   onPreferences?: () => void;
 }) {
   const ar = lang === 'ar';
-  const [wallets, setWallets] = useState<{ apple: boolean; google: boolean } | null>(null);
+  type Availability = { apple: boolean; google?: boolean; recoveryRequired?: boolean };
+  const [wallets, setWallets] = useState<Availability | null>(null);
   useEffect(() => {
     let live = true;
-    api<{ apple: boolean; google?: boolean }>('/wallet/availability', { workspace: 'shared' })
-      .then((r) => live && setWallets({ apple: r.apple, google: !!r.google }))
+    api<Availability>('/wallet/availability', { workspace: 'customer' })
+      .then((r) => live && setWallets(r))
       .catch(() => live && setWallets({ apple: false, google: false }));
     return () => {
       live = false;
     };
-  }, []);
+  }, [membershipId]);
   const iphone = canAddToAppleWallet(),
     android = isAndroid();
   const apple = !!wallets?.apple && iphone,
     google = !!wallets?.google && android;
   // Nothing to offer when Wallet is not set up on the server: no panel at all.
   if (!wallets || (!wallets.apple && !wallets.google)) return null;
+  if (wallets.recoveryRequired)
+    return (
+      <section className="panel wallet-panel">
+        <h2>{ar ? 'كارتك في Wallet' : 'Your card in Wallet'}</h2>
+        <p className="muted">
+          {ar
+            ? 'رجّع كل كروتك على الجهاز ده علشان تقدر تضيف كارت للـWallet.'
+            : 'Restore all your cards on this device to add a card to Wallet.'}
+        </p>
+        <a className="secondary small" href="/customer/restore">
+          {ar ? 'رجّع كروتك' : 'Restore my cards'}
+        </a>
+      </section>
+    );
   return (
     <section className={'panel wallet-panel' + (apple || google ? ' wallet-panel-ready' : '')}>
       <h2>{ar ? 'كارتك في Wallet' : 'Your card in Wallet'}</h2>

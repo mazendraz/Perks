@@ -48,7 +48,16 @@ export interface WalletCard {
   } | null;
   /** A message the shop sent by hand, while it is being delivered to this card. */
   manual_message?: { id: string; ar: string; en: string } | null;
+  /** Generation of the Wallet restore key (048); it moves on each time the link is used. */
+  restore_generation?: number;
+  /** The pass link with its restore key (wallet/restore.ts); absent in design previews. */
+  open_url?: string;
 }
+// The link text hides the key, so a photo of the back of the card does not give it away.
+const openLink = (card: WalletCard, text: string) =>
+  card.open_url ? `<a href="${escapeXml(card.open_url)}">${escapeXml(text)}</a>` : undefined;
+// Lock-screen line the first time a restore link is used (and on each use after that).
+const securityKey = (card: WalletCard) => 'security_' + (card.restore_generation ?? 1);
 export interface AppleWalletSigner {
   passTypeIdentifier: string;
   teamIdentifier: string;
@@ -171,6 +180,16 @@ export function texts(card: WalletCard) {
       ...(reminderKey(card) ? { [reminderKey(card)]: reminderTexts(card)!.ar } : {}),
       open_label: 'افتح الكارت',
       open_value: 'علشان تاخد ختم، افتح كارتك واعرض الكود للكاشير',
+      ...(card.open_url
+        ? {
+            open_link: openLink(card, 'افتح كارتك ←')!,
+            security_label: 'لو غيّرت موبايلك',
+            [securityKey(card)]:
+              (card.restore_generation ?? 1) > 1
+                ? 'كروتك اتفتحت على موبايل جديد. لو مش إنت، شيله من صفحة الكارت.'
+                : 'دوس «افتح كارتك» من هنا، وكل كروتك هترجع على الموبايل الجديد.',
+          }
+        : {}),
       terms_label: 'الشروط',
       about_label: 'عن Perks',
       about_value: 'كارت الولاء بتاعك على موبايلك. الكارت ده بيتحدث لوحده بعد كل ختم.',
@@ -199,6 +218,16 @@ export function texts(card: WalletCard) {
       ...(reminderKey(card) ? { [reminderKey(card)]: reminderTexts(card)!.en } : {}),
       open_label: 'Open your card',
       open_value: 'To get a stamp, open your card and show the code to the cashier',
+      ...(card.open_url
+        ? {
+            open_link: openLink(card, 'Open your card →')!,
+            security_label: 'If you change phones',
+            [securityKey(card)]:
+              (card.restore_generation ?? 1) > 1
+                ? 'Your cards were opened on a new phone. If this wasn’t you, remove it from the card page.'
+                : 'Tap “Open your card” here and all your cards come back on the new phone.',
+          }
+        : {}),
       terms_label: 'Terms',
       about_label: 'About Perks',
       about_value: 'Your loyalty card on your phone. This card updates itself after every stamp.',
@@ -380,12 +409,25 @@ export function passJson(
           value: 'status_value',
           changeMessage: 'status_change',
         },
-        {
-          key: 'open',
-          label: 'open_label',
-          value: 'open_value',
-          attributedValue: `<a href="${escapeXml(cardUrl)}">${escapeXml(cardUrl)}</a>`,
-        },
+        card.open_url
+          ? // Localized: the strings file holds the link, so its key stays out of pass.json text.
+            { key: 'open', label: 'open_label', value: 'open_value', attributedValue: 'open_link' }
+          : {
+              key: 'open',
+              label: 'open_label',
+              value: 'open_value',
+              attributedValue: `<a href="${escapeXml(cardUrl)}">${escapeXml(cardUrl)}</a>`,
+            },
+        ...(card.open_url
+          ? [
+              {
+                key: 'security',
+                label: 'security_label',
+                value: securityKey(card),
+                changeMessage: '%@',
+              },
+            ]
+          : []),
         ...(card.reward_terms
           ? [{ key: 'terms', label: 'terms_label', value: card.reward_terms }]
           : []),

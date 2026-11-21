@@ -55,6 +55,11 @@ const schema = z.object({
     .regex(/^\d{10,25}$/)
     .optional(),
   GOOGLE_WALLET_SERVICE_ACCOUNT_FILE: z.string().optional(),
+  WHATSAPP_RECOVERY_ENABLED: z.enum(['true', 'false']).default('false'),
+  WHATSAPP_RECOVERY_NUMBER: z.string().default(''),
+  WHATSAPP_RECOVERY_NUMBER_ID: z.string().default(''),
+  WHATSAPP_RECOVERY_APP_SECRET: z.string().default(''),
+  WHATSAPP_RECOVERY_VERIFY_TOKEN: z.string().default(''),
   // Web Push for cashier devices. Off unless both halves of the VAPID pair are set
   // (generate one with `npm run push:keys`). The subject defaults to PUBLIC_APP_ORIGIN.
   WEB_PUSH_VAPID_PUBLIC_KEY: z.string().optional(),
@@ -110,6 +115,18 @@ export function readMigrationConfig() {
 }
 function validateConfig(c: ServiceConfig & Partial<Pick<Config, DatabaseKeys>>) {
   trustedProxies(c.TRUSTED_PROXIES);
+  if (
+    c.WHATSAPP_RECOVERY_ENABLED === 'true' &&
+    (!/^[1-9]\d{7,14}$/.test(c.WHATSAPP_RECOVERY_NUMBER) ||
+      !/^\d{5,30}$/.test(c.WHATSAPP_RECOVERY_NUMBER_ID) ||
+      c.WHATSAPP_RECOVERY_APP_SECRET.trim().length < 32 ||
+      c.WHATSAPP_RECOVERY_VERIFY_TOKEN.trim().length < 32 ||
+      new Set([c.AUTH_PEPPER, c.WHATSAPP_RECOVERY_APP_SECRET, c.WHATSAPP_RECOVERY_VERIFY_TOKEN])
+        .size !== 3)
+  )
+    throw new Error(
+      'WhatsApp recovery requires the business number, number ID and independent app secret and verify token.',
+    );
   if (
     c.GOOGLE_WALLET_ENABLED === 'true' &&
     (!c.GOOGLE_WALLET_ISSUER_ID || !c.GOOGLE_WALLET_SERVICE_ACCOUNT_FILE)

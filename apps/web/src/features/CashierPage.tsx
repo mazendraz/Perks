@@ -3,7 +3,7 @@ import { ActionLabel, Icon } from '../../../../packages/ui/src/Icon.js';
 import { FieldErrors, fieldProps } from '../FieldErrors.js';
 import { CashierRequests } from './StampRequests.js';
 import { PushToggle } from './PushToggle.js';
-import { unlinkPushDevice } from '../push.js';
+import { useSignOut } from '../sign-out.js';
 import { TeamCustomerRecovery } from './CustomerRecovery.js';
 import { AutoStampFeed } from './AutoStampFeed.js';
 import { CashierRedeemQueue } from './RedeemRequests.js';
@@ -58,6 +58,12 @@ function dayLabel(at: string, lang: Language) {
 export function CashierPage({ grant, lang }: { grant: Grant; lang: Language }) {
   const ar = lang === 'ar',
     storageKey = 'nuqta-pending-' + grant.id;
+  // Ending the shift asks before removing a customer card this phone also holds.
+  const signOut = useSignOut(
+    lang,
+    () => location.assign('/cashier/login'),
+    (e) => setError(errorText(e, lang)),
+  );
   const [branch, setBranch] = useState(grant.branches[0]?.id || ''),
     [step, setStep] = useState<
       'home' | 'scan' | 'member' | 'stamp' | 'review' | 'pending' | 'result'
@@ -266,20 +272,13 @@ export function CashierPage({ grant, lang }: { grant: Grant; lang: Language }) {
   };
   return (
     <div className="mobile-cashier" style={{ '--brand': grant.primary_color } as CSSProperties}>
+      {signOut.dialog}
       <div className="page-heading">
         <div>
           <span className="eyebrow">{grant.name}</span>
           <h1>{ar ? 'الكاشير' : 'Cashier'}</h1>
         </div>
-        <button
-          className="secondary small"
-          onClick={() =>
-            void unlinkPushDevice()
-              .then(() => api('/auth/logout', { method: 'POST' }))
-              .then(() => location.assign('/cashier/login'))
-              .catch((e) => setError(errorText(e, lang)))
-          }
-        >
+        <button className="secondary small" onClick={() => void signOut.request()}>
           {ar ? 'قفل الوردية' : 'Lock shift'}
         </button>
       </div>

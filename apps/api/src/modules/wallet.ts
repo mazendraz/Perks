@@ -1,9 +1,10 @@
+import { withOpenUrl } from '../wallet/restore.js';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import type { Config } from '../config.js';
 import { authenticated } from '../auth.js';
-import { transaction, type Pools } from '../db.js';
+import { transaction, type DB, type Pools } from '../db.js';
 import { requireCondition } from '../errors.js';
 import { safeEqual, tokenHash } from '../crypto.js';
 import { createFileStore } from '../storage/file-store.js';
@@ -31,6 +32,9 @@ import {
 
 const device = z.string().regex(/^[A-Za-z0-9._-]{1,128}$/);
 const serial = z.uuid();
+const fullWalletAccess = async (db: DB) =>
+  (await db.query('SELECT customer_scope_unrestricted() AS allowed')).rows[0].allowed as boolean;
+
 export function walletModule(app: FastifyInstance, pools: Pools, c: Config) {
   const signer: AppleWalletSigner | null = loadAppleSigner(c);
   const files = createFileStore(c);
@@ -64,19 +68,33 @@ export function walletModule(app: FastifyInstance, pools: Pools, c: Config) {
       .send(body);
   }
   const google = loadGoogleWallet(c);
-  app.get('/api/v1/wallet/availability', async () => ({ apple: !!signer, google: !!google }));
+  app.get('/api/v1/wallet/availability', async (req) => {
+    const availability = { apple: !!signer, google: !!google };
+    if ((signer || google) && req.actor?.authMethod === 'device') {
+      const allowed = await transaction(pools.pool, fullWalletAccess, req.actor);
+      if (!allowed) return { ...availability, recoveryRequired: true };
+    }
+    return availability;
+  });
   app.get('/api/v1/me/memberships/:id/wallet/google', async (req, reply) => {
     const actor = authenticated(req),
       { id } = z.object({ id: z.uuid() }).parse(req.params);
-    requireCondition(google, 'WALLET_UNAVAILABLE', 404);
     const issued = await transaction(
       pools.pool,
-      async (db) =>
-        (await db.query('SELECT google_wallet_issue($1,$2) AS value', [id, randomUUID()])).rows[0]
-          .value as { object_key: string; card: WalletCard & { logo_asset_id?: string } } | null,
+      async (db) => {
+        // A newly issued pass can unlock the entire account. A shop-scoped session cannot mint it.
+        requireCondition(await fullWalletAccess(db), 'DEVICE_SCOPE_RECOVERY_REQUIRED', 409);
+        requireCondition(google, 'WALLET_UNAVAILABLE', 404);
+        return (await db.query('SELECT google_wallet_issue($1,$2) AS value', [id, randomUUID()]))
+          .rows[0].value as {
+          object_key: string;
+          card: WalletCard & { logo_asset_id?: string };
+        } | null;
+      },
       actor,
     );
     requireCondition(issued, 'NOT_FOUND', 404);
+    issued.card = withOpenUrl(issued.card, c.PUBLIC_APP_ORIGIN, c.AUTH_PEPPER);
     // Tests never call Google; everywhere else the stored card is refreshed first.
     if (c.APP_ENV !== 'test')
       await refreshSavedGoogleCard(
@@ -147,11 +165,12 @@ export function walletModule(app: FastifyInstance, pools: Pools, c: Config) {
   app.get('/api/v1/me/memberships/:id/wallet/apple', async (req, reply) => {
     const actor = authenticated(req),
       { id } = z.object({ id: z.uuid() }).parse(req.params);
-    requireCondition(signer, 'WALLET_UNAVAILABLE', 404);
     const candidate = randomUUID();
     const issued = await transaction(
       pools.pool,
       async (db) => {
+        requireCondition(await fullWalletAccess(db), 'DEVICE_SCOPE_RECOVERY_REQUIRED', 409);
+        requireCondition(signer, 'WALLET_UNAVAILABLE', 404);
         const s = (
           await db.query('SELECT wallet_issue_pass($1,$2,$3) AS serial', [
             id,
@@ -167,7 +186,7 @@ export function walletModule(app: FastifyInstance, pools: Pools, c: Config) {
           ])
         ).rows[0].card as WalletCard | null;
         requireCondition(card, 'NOT_FOUND', 404);
-        return { serial: s, card };
+        return { serial: s, card: withOpenUrl(card, c.PUBLIC_APP_ORIGIN, c.AUTH_PEPPER) };
       },
       actor,
     );
@@ -261,7 +280,7 @@ export function walletModule(app: FastifyInstance, pools: Pools, c: Config) {
     const since = Date.parse(String(req.headers['if-modified-since'] || ''));
     if (!Number.isNaN(since) && modified.getTime() <= since) return reply.code(304).send();
     reply.header('Last-Modified', modified.toUTCString());
-    return send(reply, card, p.data.serial);
+    return send(reply, withOpenUrl(card, c.PUBLIC_APP_ORIGIN, c.AUTH_PEPPER), p.data.serial);
   });
   app.post(
     wallet + '/log',

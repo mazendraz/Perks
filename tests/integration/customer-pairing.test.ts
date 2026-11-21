@@ -239,6 +239,13 @@ test('owner pairing: only the requesting device can consume; old devices keep wo
     (await app.inject({ url: '/api/v1/me/memberships/' + cardB, headers: paired })).statusCode,
     404,
   );
+  for (const provider of ['apple', 'google']) {
+    const wallet = await app.inject({
+      url: '/api/v1/me/memberships/' + h.membershipId + '/wallet/' + provider,
+      headers: paired,
+    });
+    assert.equal(wallet.json().error.code, 'DEVICE_SCOPE_RECOVERY_REQUIRED');
+  }
   const qrB = await app.inject({
     method: 'POST',
     url: '/api/v1/me/memberships/' + cardB + '/presentation-tokens',
@@ -315,9 +322,29 @@ test('owner pairing: only the requesting device can consume; old devices keep wo
   assert.ok(!JSON.stringify(audit).includes(h.phone.slice(1)));
 });
 
-test('a staff-paired device cannot join another shop by phone or by enrolling', async () => {
-  const h = await holder(),
-    owner = await login(app, 'owner@bunn.test', origin),
+// A shop where the customer has NO card may be added (049, covered in customer-identity-flows);
+// a shop where they already have one stays closed to a phone restored elsewhere.
+test('a staff-paired device cannot open another shop where the customer has a card', async () => {
+  const h = await holder();
+  const ownB = await app.inject({
+    method: 'POST',
+    url: '/api/v1/me/memberships',
+    headers: { ...h.session, ...key() },
+    payload: {
+      merchantId: ids.merchantB,
+      programId: programB,
+      programVersionId: versionB,
+      branchId: ids.branchB,
+      alias: 'Synthetic holder',
+      acceptedTerms: true,
+      acceptedTermsHash: termsB,
+      acceptedPrivacyVersion: notice.acceptance.version,
+      acceptedPrivacyHash: notice.acceptance.hash,
+      acceptedPrivacyLocale: notice.locale,
+    },
+  });
+  assert.equal(ownB.statusCode, 200, ownB.body);
+  const owner = await login(app, 'owner@bunn.test', origin),
     device = await boot(),
     pairing = await startPairing(device);
   await claim(owner, h.uid, pairing.code);
@@ -372,7 +399,8 @@ test('a staff-paired device cannot join another shop by phone or by enrolling', 
         [h.uid, ids.merchantB],
       )
     ).rows[0].n,
-    0,
+    1,
+    'still only the card the customer made on their own phone',
   );
 });
 
@@ -502,6 +530,11 @@ test('every SECURITY DEFINER function that trusts customer ownership also checks
     'acting_staff',
     'is_active_owner',
     'merchant_owner',
+    // A staff member's own wrong 6-digit customer codes (047).
+    'short_code_attempt_allowed',
+    'short_code_failed',
+    // Widens the session's own device scope to a shop where the customer has no card (049).
+    'customer_join_new_shop',
   ]);
   const rows = (
     await db.query(

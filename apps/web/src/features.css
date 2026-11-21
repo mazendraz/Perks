@@ -2292,3 +2292,71 @@ input[inputmode='numeric'] {
   gap: 8px;
   min-height: 40px;
 }
+
+/* Enrollment on a phone that already holds the customer's cards: say so. */
+.join-welcome {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--lime) 28%, #fff);
+  color: var(--ink);
+}
+.join-welcome strong {
+  font-size: 17px;
+}
+.join-welcome span {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* One more look at the number before a new card is tied to it. */
+.join-phone-check {
+  display: grid;
+  gap: 6px;
+  justify-items: start;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: #fff;
+}
+.join-phone-number {
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+}
+.join-phone-check small {
+  color: var(--muted);
+  font-size: 13px;
+}
+.join-phone-check .form-actions {
+  width: 100%;
+}
+
+/* /customer/restore: the ways back to the cards. */
+.restore-list {
+  display: grid;
+  gap: 12px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: door;
+}
+.restore-list li {
+  display: grid;
+  gap: 4px;
+  justify-items: start;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: #fff;
+}
+.restore-list li span {
+  color: var(--muted);
+  font-size: 14px;
+}
+.restore-list li:first-child {
+  border-color: var(--ink);
+}

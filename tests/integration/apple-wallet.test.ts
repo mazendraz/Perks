@@ -23,6 +23,8 @@ const overrides = {
   LOG_LEVEL: 'silent' as const,
   PUBLIC_APP_ORIGIN: origin,
   APPLE_WALLET_ENABLED: 'true' as const,
+  // Only Apple here, whatever the developer's own .env turns on.
+  GOOGLE_WALLET_ENABLED: 'false' as const,
   APPLE_PASS_TYPE_ID: passTypeId,
   APPLE_TEAM_ID: 'ABCDE12345',
   ...certs.files,
@@ -164,12 +166,21 @@ test('a customer downloads a signed pass for their own card only', async () => {
   assert.equal(pass.storeCard.headerFields[0].value, '2/5');
   assert.equal(pass.barcodes, undefined, 'the pass is a card face with no QR');
   assert.equal(pass.barcode, undefined);
-  const cardLink = origin + '/customer/' + m.id + '?wallet=1';
-  assert.ok(
-    pass.storeCard.backFields
-      .find((field: { key: string }) => field.key === 'open')
-      .attributedValue.includes(cardLink),
+  // The link carries the Wallet restore key, so it lives in the strings files, not in pass.json.
+  const cardLink = origin + '/customer/open?w=' + m.id + '.1.';
+  assert.equal(
+    pass.storeCard.backFields.find((field: { key: string }) => field.key === 'open')
+      .attributedValue,
+    'open_link',
   );
+  assert.ok(!files.get('pass.json')!.toString().includes('?w='));
+  for (const lang of ['ar', 'en'])
+    assert.ok(
+      files
+        .get(lang + '.lproj/pass.strings')!
+        .toString('utf16le')
+        .includes(cardLink),
+    );
   assert.equal(
     pass.storeCard.backFields.find((field: { key: string }) => field.key === 'member').value,
     'عميل والت',

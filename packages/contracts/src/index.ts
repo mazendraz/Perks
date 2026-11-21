@@ -29,6 +29,8 @@ export interface Session {
     email: string | null;
     displayName?: string;
     deviceBound?: boolean;
+    /** Staff session only: this browser also holds an active customer card. */
+    customerCardHere?: boolean;
     role: 'platform_admin' | 'platform_support' | 'customer';
     mfaVerified: boolean;
     mfaRequired?: boolean;

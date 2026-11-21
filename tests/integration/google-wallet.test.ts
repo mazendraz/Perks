@@ -34,6 +34,8 @@ const overrides = {
   LOG_LEVEL: 'silent' as const,
   PUBLIC_APP_ORIGIN: origin,
   GOOGLE_WALLET_ENABLED: 'true' as const,
+  // Only Google here, whatever the developer's own .env turns on.
+  APPLE_WALLET_ENABLED: 'false' as const,
   GOOGLE_WALLET_ISSUER_ID: issuer,
   GOOGLE_WALLET_SERVICE_ACCOUNT_FILE: accountFile,
 };
@@ -160,7 +162,10 @@ test('the save link is a signed JWT with the member name and no QR', async () =>
   assert.equal(object.state, 'ACTIVE');
   assert.equal(object.barcode, undefined, 'the card carries no QR');
   assert.deepEqual(object.secondaryLoyaltyPoints.balance, { int: 3 });
-  assert.equal(object.linksModuleData.uris[0].uri, origin + '/customer/' + m.id + '?wallet=1');
+  // The link carries the Wallet restore key (behind a description, never shown as text).
+  const link = object.linksModuleData.uris[0].uri as string;
+  assert.ok(link.startsWith(origin + '/customer/open?w=' + m.id + '.1.'), link);
+  assert.equal(link.split('.').at(-1)!.length, 32);
   assert.equal(object.accountName, 'عميل جوجل');
   const publicCard = (
     await db.query('SELECT google_wallet_strip($1) AS card', [object.id.split('perks-card-')[1]])

@@ -1,4 +1,5 @@
 import { APPLE_SERVICE_PREFIX } from './wallet/constants.js';
+import { WHATSAPP_RECOVERY_WEBHOOK } from './modules/customer-whatsapp.js';
 import { passwordAuth } from './password-auth.js';
 import { requestPortal, portalCookies, portalAllowed } from './portal-auth.js';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
@@ -42,6 +43,11 @@ export function authModule(app: FastifyInstance, pools: Pools, c: Config) {
     if (!req.url.startsWith('/api/')) return;
     // Apple's pass web service carries its own per-pass token and never browser cookies.
     if (req.url.startsWith(APPLE_SERVICE_PREFIX + '/v1/')) return;
+    if (
+      c.WHATSAPP_RECOVERY_ENABLED === 'true' &&
+      req.routeOptions.url === WHATSAPP_RECOVERY_WEBHOOK
+    )
+      return;
     if (!['GET', 'HEAD', 'OPTIONS'].includes(req.method))
       requireCondition(req.headers.origin === c.PUBLIC_APP_ORIGIN, 'ORIGIN_REJECTED', 403);
     const portal = requestPortal(
@@ -118,6 +124,7 @@ export function authModule(app: FastifyInstance, pools: Pools, c: Config) {
     // staff/platform credential by changing a header or a cookie name.
     if (
       row.auth_method === 'device' &&
+      req.routeOptions.url !== '/api/v1/wallet/availability' &&
       !/^\/api\/v1\/(?:session(?:\?|$)|me\/|customer\/|public\/|auth\/logout(?:\?|$))/.test(req.url)
     ) {
       req.actor = null;
@@ -336,12 +343,25 @@ export function authModule(app: FastifyInstance, pools: Pools, c: Config) {
         ).rows,
       actor,
     );
+    // A staff browser that also holds a customer's card: sign-out asks whether to keep it.
+    const device = req.cookies[deviceCookie(c)];
+    const customerCardHere =
+      actor.authMethod !== 'device' &&
+      !!device &&
+      /^[A-Za-z0-9_-]{43}$/.test(device) &&
+      !!(
+        await pools.authPool.query(
+          'SELECT 1 FROM customer_devices WHERE token_hash=$1 AND revoked_at IS NULL AND expires_at>clock_timestamp()',
+          [tokenHash(device)],
+        )
+      ).rowCount;
     return {
       user: {
         id: actor.id,
         email: actor.email,
         displayName: actor.displayName,
         deviceBound: actor.authMethod === 'device',
+        customerCardHere,
         role: actor.role,
         mfaRequired: actor.mfaRequired || !['password', 'device'].includes(actor.authMethod || ''),
         mfaVerified: !!actor.mfaAt && Date.now() - actor.mfaAt.getTime() < 900_000,
@@ -354,6 +374,11 @@ export function authModule(app: FastifyInstance, pools: Pools, c: Config) {
   mfaModule(app, pools, c);
   app.post('/api/v1/auth/logout', async (req, reply) => {
     const actor = authenticated(req);
+    // Staff on their own phone keep the customer card they hold there; a shared shop phone does not.
+    const { keepCustomerCard } = z
+      .object({ keepCustomerCard: z.boolean().optional() })
+      .strict()
+      .parse(req.body ?? {});
     await pools.authPool.query('UPDATE sessions SET revoked_at=now() WHERE id=$1', [
       actor.sessionId,
     ]);
@@ -374,10 +399,12 @@ export function authModule(app: FastifyInstance, pools: Pools, c: Config) {
     }
     // One phone, one sign-out: leaving any portal also ends the customer card this browser
     // holds (the device link and its sessions), so a shared home-screen app never reopens
-    // someone's card after staff sign out. The holder restores it through the cashier.
-    const device = req.cookies[deviceCookie(c)],
+    // someone's card after staff sign out. Staff are asked first (customerCardHere on the
+    // session) and keep the card when the phone is their own (keepCustomerCard).
+    const keep = keepCustomerCard === true && actor.authMethod !== 'device';
+    const device = keep ? undefined : req.cookies[deviceCookie(c)],
       customer = portalCookies(c, 'customer'),
-      customerToken = req.cookies[customer.session];
+      customerToken = keep ? undefined : req.cookies[customer.session];
     if (device && /^[A-Za-z0-9_-]{43}$/.test(device)) {
       await pools.authPool.query(
         'UPDATE sessions SET revoked_at=now() WHERE revoked_at IS NULL AND customer_device_id IN (SELECT id FROM customer_devices WHERE token_hash=$1)',

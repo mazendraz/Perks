@@ -2,7 +2,7 @@ import { createHash, createHmac, randomBytes, randomInt, timingSafeEqual } from 
 export const opaqueToken = () => randomBytes(32).toString('base64url');
 export const tokenHash = (token: string) => createHash('sha256').update(token).digest('hex');
 export const otpCode = () => String(randomInt(0, 1_000_000)).padStart(6, '0');
-export const keyedHash = (value: string, pepper: string) =>
+export const keyedHash = (value: string | Buffer, pepper: string) =>
   createHmac('sha256', pepper).update(value).digest('hex');
 export function safeEqual(a: string, b: string) {
   const x = Buffer.from(a),

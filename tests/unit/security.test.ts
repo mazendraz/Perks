@@ -29,6 +29,8 @@ test('RFC6238 SHA1 TOTP vector and one-time token primitives', () => {
   assert.notEqual(keyedHash('code', 'a'), keyedHash('code', 'b'));
 });
 test('deployment fails closed with local authentication or insecure cookies', () => {
+  // Only what the test passes: a developer's own .env (Wallet, Push...) must not change the result.
+  const isolated = (overrides: Parameters<typeof readConfig>[0]) => readConfig(overrides, {});
   const base = {
     DATABASE_URL: 'postgresql://runtime@localhost/nuqta_test',
     AUTH_DATABASE_URL: 'postgresql://auth@localhost/nuqta_test',
@@ -42,12 +44,12 @@ test('deployment fails closed with local authentication or insecure cookies', ()
     SMTP_FROM: 'test@nuqta.test',
   };
   assert.throws(
-    () => readConfig({ ...base, APP_ENV: 'production', AUTH_PROVIDER: 'local' }),
+    () => isolated({ ...base, APP_ENV: 'production', AUTH_PROVIDER: 'local' }),
     /Local authentication is forbidden/,
   );
   assert.throws(
     () =>
-      readConfig({
+      isolated({
         ...base,
         APP_ENV: 'production',
         AUTH_PROVIDER: 'password',
@@ -55,7 +57,7 @@ test('deployment fails closed with local authentication or insecure cookies', ()
       }),
     /HTTPS/,
   );
-  assert.throws(() => readConfig({ ...base, HOST: '0.0.0.0', AUTH_PROVIDER: 'local' }), /loopback/);
+  assert.throws(() => isolated({ ...base, HOST: '0.0.0.0', AUTH_PROVIDER: 'local' }), /loopback/);
   const production = {
     ...base,
     APP_ENV: 'production' as const,
@@ -63,19 +65,19 @@ test('deployment fails closed with local authentication or insecure cookies', ()
     COOKIE_SECURE: 'true' as const,
     PUBLIC_APP_ORIGIN: 'https://nuqta.example.test',
   };
-  assert.throws(() => readConfig({ ...production, MAIL_TRANSPORT: 'file' }), /file mail sink/);
-  assert.throws(() => readConfig({ ...production, SMTP_HOST: '' }), /SMTP_HOST/);
-  assert.throws(() => readConfig({ ...production, STORAGE_ROOT: '.local' }), /STORAGE_ROOT/);
+  assert.throws(() => isolated({ ...production, MAIL_TRANSPORT: 'file' }), /file mail sink/);
+  assert.throws(() => isolated({ ...production, SMTP_HOST: '' }), /SMTP_HOST/);
+  assert.throws(() => isolated({ ...production, STORAGE_ROOT: '.local' }), /STORAGE_ROOT/);
   assert.throws(
-    () => readConfig({ ...production, STORAGE_ROOT: resolve('private-files') }),
+    () => isolated({ ...production, STORAGE_ROOT: resolve('private-files') }),
     /outside/,
   );
   assert.throws(
-    () => readConfig({ ...production, SMTP_STARTTLS: 'false', SMTP_SECURE: 'false' }),
+    () => isolated({ ...production, SMTP_STARTTLS: 'false', SMTP_SECURE: 'false' }),
     /TLS/,
   );
   assert.equal(
-    readConfig({
+    isolated({
       ...base,
       APP_ENV: 'production',
       AUTH_PROVIDER: 'password',
@@ -86,7 +88,7 @@ test('deployment fails closed with local authentication or insecure cookies', ()
   );
   assert.throws(
     () =>
-      readConfig({
+      isolated({
         ...base,
         APP_ENV: 'production',
         AUTH_PROVIDER: 'password',

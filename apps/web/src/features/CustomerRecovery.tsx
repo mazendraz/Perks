@@ -5,7 +5,10 @@ import { api, errorText, setCsrf } from '../api.js';
 import { PhoneInput } from '../controls/PhoneInput.js';
 import { Select } from '../controls/Select.js';
 import { navigate } from '../useRoute.js';
+import { WhatsAppRestoreLink } from './CustomerWhatsApp.js';
 
+// Perks support on WhatsApp (same number as the business page and the plan sheets).
+const SUPPORT_PHONE = '201006111380';
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export function CustomerDeviceHelp({ lang }: { lang: Language }) {
@@ -17,9 +20,14 @@ export function CustomerDeviceHelp({ lang }: { lang: Language }) {
         <h1>{ar ? 'الكارت مش على الجهاز ده' : 'Your card is not on this device'}</h1>
         <p>
           {ar
-            ? 'افتح كارتك من سكان كود المحل، أو اطلب من الكاشير يرجّعهولك بكود يظهر على موبايلك. مش محتاج إيميل أو باسورد.'
-            : 'Scan the shop code to open your card, or ask the cashier to restore it with a code shown on your phone. You do not need an email or password.'}
+            ? 'افتح كارتك من الـWallet، أو اعمل سكان لكود أي محل واكتب رقمك. مش محتاج إيميل أو باسورد.'
+            : 'Open your card from your Wallet, or scan any shop’s code and type your number. You do not need an email or password.'}
         </p>
+        <div className="form-actions">
+          <button type="button" className="primary" onClick={() => navigate('/customer/restore')}>
+            {ar ? 'رجّع كروتك' : 'Restore my cards'}
+          </button>
+        </div>
         {/* Staff open the same home-screen app; without this they have no way to their sign-in. */}
         <a
           className="staff-sign-in"
@@ -70,6 +78,258 @@ export function CustomerCardUnavailable({
         </button>
       </section>
     </main>
+  );
+}
+
+// /customer/open?w=<key>: the "Open your card" link on an Apple or Google Wallet pass. On the phone
+// that holds the card it just opens it; on a new phone it brings every card of the customer back.
+export function WalletOpenPage({
+  lang,
+  refresh,
+}: {
+  lang: Language;
+  refresh: () => Promise<void>;
+}) {
+  const ar = lang === 'ar',
+    [error, setError] = useState(''),
+    started = useRef(false);
+  useEffect(() => {
+    if (started.current) return;
+    started.current = true;
+    const token = new URLSearchParams(location.search).get('w') || '';
+    void (async () => {
+      try {
+        const boot = await api<{ csrfToken: string }>('/customer/bootstrap');
+        setCsrf(boot.csrfToken);
+        const result = await api<{ membershipId: string; csrfToken: string }>(
+          '/customer/wallet-restore',
+          { method: 'POST', body: { token } },
+        );
+        setCsrf(result.csrfToken);
+        await refresh();
+        navigate('/customer/' + result.membershipId);
+      } catch (e) {
+        setError(errorText(e, lang));
+      }
+    })();
+  }, []);
+  return (
+    <main id="main" className="join-page">
+      <section className="panel wallet-open">
+        <span className="eyebrow">{ar ? 'من الـWallet' : 'From your Wallet'}</span>
+        {error ? (
+          <>
+            <h1>{ar ? 'الرابط ده مش شغال' : 'This link did not work'}</h1>
+            <p className="notice error" role="alert">
+              {error}
+            </p>
+            <p>
+              {ar
+                ? 'لو كارتك لسه متحدّثش، استنى دقيقة وافتحه تاني من الـWallet. أو رجّع كروتك من هنا.'
+                : 'If your card has not updated yet, wait a minute and open it again from Wallet. Or bring your cards back here.'}
+            </p>
+            <div className="form-actions">
+              <button
+                type="button"
+                className="primary"
+                onClick={() => navigate('/customer/restore')}
+              >
+                {ar ? 'رجّع كروتك' : 'Restore my cards'}
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <h1>{ar ? 'بنفتح كروتك…' : 'Opening your cards…'}</h1>
+            <p role="status">
+              {ar
+                ? 'لو ده موبايل جديد، كل كروتك هترجع عليه.'
+                : 'If this is a new phone, all your cards come back to it.'}
+            </p>
+          </>
+        )}
+      </section>
+    </main>
+  );
+}
+
+// /customer/restore: every way back to the cards, in the order that is easiest for the customer.
+// No number is typed here: nothing on this page tells anyone whether a number has cards.
+export function RestoreCardsPage({ lang }: { lang: Language }) {
+  const ar = lang === 'ar';
+  const support =
+    'https://wa.me/' +
+    SUPPORT_PHONE +
+    '?text=' +
+    encodeURIComponent(
+      ar
+        ? 'حد سجّل في Perks برقمي ده، وأنا عايز أسجّل بيه.'
+        : 'Someone registered on Perks with this number of mine, and I want to use it.',
+    );
+  return (
+    <main id="main" className="join-page">
+      <section className="panel restore-doors">
+        <span className="eyebrow">{ar ? 'كروتك مش ضايعة' : 'Your cards are safe'}</span>
+        <h1>{ar ? 'رجّع كروتك' : 'Restore my cards'}</h1>
+        <ol className="restore-list">
+          <li>
+            <strong>{ar ? 'من الـWallet (الأسرع)' : 'From your Wallet (fastest)'}</strong>
+            <span>
+              {ar
+                ? 'عندك كارت Perks في Apple Wallet أو Google Wallet؟ افتحه، ودوس «افتح كارتك». كل كروتك هترجع على الموبايل ده.'
+                : 'Have a Perks card in Apple Wallet or Google Wallet? Open it and tap “Open your card”. All your cards come back to this phone.'}
+            </span>
+          </li>
+          <li>
+            <strong>{ar ? 'من أي محل عليه Perks' : 'At any Perks shop'}</strong>
+            <span>
+              {ar
+                ? 'اعمل سكان لكود المحل واكتب رقمك. هيظهرلك كود، ورّيه للكاشير وكارتك هناك هيتفتح.'
+                : 'Scan the shop’s code and type your number. A code appears: show it to the cashier and your card there opens.'}
+            </span>
+          </li>
+          <WhatsAppRestoreLink lang={lang} />
+          <li>
+            <strong>
+              {ar
+                ? 'لو فتحت من واتساب أو إنستجرام'
+                : 'If you opened a link in WhatsApp or Instagram'}
+            </strong>
+            <span>
+              {ar
+                ? 'افتح نفس الرابط في Safari أو Chrome. التطبيقات دي ليها متصفح لوحدها مش شايف كارتك.'
+                : 'Open the same link in Safari or Chrome. Those apps have their own browser that cannot see your card.'}
+            </span>
+          </li>
+          <li>
+            <strong>{ar ? 'حد سجّل برقمك؟' : 'Someone used your number?'}</strong>
+            <span>
+              {ar
+                ? 'ابعتلنا واتساب من نفس الرقم، وهنرجّعهولك.'
+                : 'Message us on WhatsApp from that number and we will give it back to you.'}
+            </span>
+            <a className="secondary small" href={support} target="_blank" rel="noopener noreferrer">
+              {ar ? 'ابعت واتساب للدعم' : 'WhatsApp support'}
+            </a>
+          </li>
+        </ol>
+      </section>
+    </main>
+  );
+}
+
+// Enrollment with a number that already has cards on another phone (049): this phone shows a
+// code, the cashier types the customer's number and the code, and a new card starts here.
+export function JoinWithCode({
+  merchantId,
+  merchantName,
+  phone,
+  lang,
+  onLinked,
+  onBack,
+}: {
+  merchantId: string;
+  merchantName: string;
+  phone: string;
+  lang: Language;
+  onLinked: () => Promise<void>;
+  onBack: () => void;
+}) {
+  const ar = lang === 'ar',
+    [pairing, setPairing] = useState<PairingState | null>(null),
+    [error, setError] = useState(''),
+    started = useRef(false),
+    linking = useRef(false);
+  useEffect(() => {
+    if (started.current) return;
+    started.current = true;
+    void api<PairingState>('/customer/pairings', {
+      method: 'POST',
+      body: { merchantId, phone },
+    })
+      .then(setPairing)
+      .catch((e) => setError(errorText(e, lang).split(' · ')[0]!));
+  }, []);
+  useEffect(() => {
+    if (!pairing || !['waiting', 'approved'].includes(pairing.status)) return;
+    if (pairing.status === 'approved') {
+      if (linking.current) return;
+      linking.current = true;
+      void (async () => {
+        try {
+          const result = await api<{ csrfToken: string }>(
+            '/customer/pairings/' + pairing.id + '/consume',
+            { method: 'POST', body: {} },
+          );
+          setCsrf(result.csrfToken);
+          await onLinked();
+        } catch (e) {
+          linking.current = false;
+          setError(errorText(e, lang).split(' · ')[0]!);
+        }
+      })();
+      return;
+    }
+    const timer = setInterval(() => {
+      void api<PairingState>('/customer/pairings/' + pairing.id)
+        .then((next) => setPairing((current) => (current ? { ...current, ...next } : next)))
+        .catch(() => {
+          /* Keep polling; the code stays visible. */
+        });
+    }, 3000);
+    return () => clearInterval(timer);
+  }, [pairing?.id, pairing?.status]);
+  const status = pairing?.status;
+  return (
+    <section className="panel pairing-panel" aria-live="polite">
+      <span className="eyebrow">{merchantName}</span>
+      <h2>{ar ? 'الرقم ده عليه كروت في Perks' : 'This number already has Perks cards'}</h2>
+      {error && (
+        <p className="notice error" role="alert">
+          {error}
+        </p>
+      )}
+      {status === 'waiting' && pairing?.code && (
+        <>
+          <p>
+            {ar
+              ? 'عشان نتأكد إنه رقمك، ورّي الكود ده للكاشير. هو هيكتب رقمك والكود، وكارتك هنا هيتفتح لوحده.'
+              : 'To confirm it is your number, show this code to the cashier. They type your number and the code, and your card here opens by itself.'}
+          </p>
+          <div
+            className="match-code pairing-code"
+            dir="ltr"
+            aria-label={ar ? 'كود الكاشير' : 'Code for the cashier'}
+          >
+            {pairing.code.slice(0, 3)} {pairing.code.slice(3)}
+          </div>
+          <p className="muted" role="status">
+            {ar ? 'مستنيين الكاشير يدخّل الكود…' : 'Waiting for the cashier to enter the code…'}
+          </p>
+        </>
+      )}
+      {status === 'approved' && <p role="status">{ar ? 'بنفتح كارتك…' : 'Opening your card…'}</p>}
+      {status && ['rejected', 'expired', 'cancelled'].includes(status) && (
+        <p className="notice error" role="alert">
+          {ar
+            ? 'الكود ده خلص. ارجع واطلب كود جديد.'
+            : 'This code ended. Go back and get a new one.'}
+        </p>
+      )}
+      <p className="muted">
+        {ar
+          ? 'كروتك في المحلات التانية فاضلة على موبايلك القديم. عشان ترجعها كلها هنا، افتح أي كارت من الـWallet.'
+          : 'Your other shops’ cards stay on your old phone. To bring them all here, open any card from your Wallet.'}
+      </p>
+      <div className="form-actions">
+        <button type="button" className="text-button" onClick={onBack}>
+          {ar ? 'رجوع' : 'Back'}
+        </button>
+        <button type="button" className="text-button" onClick={() => navigate('/customer/restore')}>
+          {ar ? 'طرق تانية ترجّع كروتك' : 'Other ways to restore your cards'}
+        </button>
+      </div>
+    </section>
   );
 }
 
@@ -260,14 +520,36 @@ export function TeamCustomerRecovery({
     [error, setError] = useState(''),
     [busy, setBusy] = useState(false),
     [code, setCode] = useState(''),
-    [result, setResult] = useState<'approved' | 'awaiting_approval' | null>(null);
+    [result, setResult] = useState<'approved' | 'awaiting_approval' | null>(null),
+    [joined, setJoined] = useState(false);
   const base = '/merchants/' + grant.merchant_id;
+  // No card here, but the customer's phone shows a code: their number is on Perks elsewhere.
+  // The number and the code must both match; a new, empty card then starts at this shop.
+  const join = async (event: FormEvent) => {
+    event.preventDefault();
+    if (busy) return;
+    setBusy(true);
+    setError('');
+    try {
+      await api(base + '/customer-pairings/join', {
+        method: 'POST',
+        body: { branchId: branch, phone, code: code.replace(/\D/g, '') },
+      });
+      setJoined(true);
+      setCode('');
+    } catch (e) {
+      setError(errorText(e, lang));
+    } finally {
+      setBusy(false);
+    }
+  };
   const reset = () => {
     setFound(null);
     setSearched(false);
     setRequested(false);
     setCode('');
     setResult(null);
+    setJoined(false);
   };
   useEffect(() => {
     setBranch(branchId || grant.branches[0]?.id || '');
@@ -387,11 +669,45 @@ export function TeamCustomerRecovery({
         </p>
       )}
       {searched && !found && (
-        <p role="status">
-          {ar
-            ? 'مفيش كارت بالرقم ده في نطاق الفرع.'
-            : 'No card with this number is available in this branch.'}
-        </p>
+        <div className="subpanel stack">
+          <p role="status">
+            {ar
+              ? 'مفيش كارت بالرقم ده في نطاق الفرع.'
+              : 'No card with this number is available in this branch.'}
+          </p>
+          {joined ? (
+            <p className="notice success" role="status">
+              {ar
+                ? 'تمام. كارت العميل الجديد هيتفتح على موبايله دلوقتي.'
+                : 'Done. The customer’s new card opens on their phone now.'}
+            </p>
+          ) : (
+            <form className="stack" onSubmit={(e) => void join(e)}>
+              <p className="muted">
+                {ar
+                  ? 'لو العميل قدامك وعلى موبايله كود من 6 أرقام (رقمه متسجّل في Perks في محل تاني)، اكتبه هنا.'
+                  : 'If the customer is here and their phone shows a 6-digit code (their number is on Perks at another shop), type it here.'}
+              </p>
+              <label>
+                {ar ? 'الكود اللي على موبايل العميل' : 'Code on the customer’s phone'}
+                <input
+                  inputMode="numeric"
+                  autoComplete="off"
+                  maxLength={7}
+                  required
+                  pattern="[0-9 ]{6,7}"
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                />
+              </label>
+              <div className="form-actions">
+                <button className="primary" disabled={busy}>
+                  {ar ? 'افتح له كارت هنا' : 'Start their card here'}
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
       )}
       {found && (
         <div className="subpanel stack">
@@ -580,7 +896,8 @@ export function PairingApprovals({ merchantId, lang }: { merchantId: string; lan
 
 interface DeviceNotice {
   id: string;
-  merchantName: string;
+  kind: 'device_paired' | 'wallet_restored' | 'phone_verified';
+  merchantName: string | null;
   createdAt: string;
   deviceFamily: string;
   canRemove: boolean;
@@ -617,9 +934,17 @@ export function DeviceNotices({ lang }: { lang: Language }) {
         <section className="panel notice device-notice" role="alert" key={notice.id}>
           <strong>{ar ? 'اتضاف موبايل جديد لكارتك' : 'A new phone was added to your card'}</strong>
           <p>
-            {ar
-              ? `${notice.merchantName} ربط جهاز (${notice.deviceFamily}) بكارتك في ${new Date(notice.createdAt).toLocaleString('ar-EG-u-nu-latn')}. لو مش إنت، شيله.`
-              : `${notice.merchantName} linked a device (${notice.deviceFamily}) to your card on ${new Date(notice.createdAt).toLocaleString('en-GB')}. If this wasn’t you, remove it.`}
+            {notice.kind === 'wallet_restored'
+              ? ar
+                ? `كروتك اتفتحت على جهاز جديد (${notice.deviceFamily}) من كارت ${notice.merchantName} في الـWallet، في ${new Date(notice.createdAt).toLocaleString('ar-EG-u-nu-latn')}. لو مش إنت، شيله.`
+                : `Your cards were opened on a new device (${notice.deviceFamily}) from the ${notice.merchantName} card in Wallet, on ${new Date(notice.createdAt).toLocaleString('en-GB')}. If this wasn’t you, remove it.`
+              : notice.kind === 'phone_verified'
+                ? ar
+                  ? `كروتك اتفتحت على جهاز جديد (${notice.deviceFamily}) بعد تأكيد رقمك على واتساب، في ${new Date(notice.createdAt).toLocaleString('ar-EG-u-nu-latn')}. لو مش إنت، شيله.`
+                  : `Your cards were opened on a new device (${notice.deviceFamily}) after your number was confirmed on WhatsApp, on ${new Date(notice.createdAt).toLocaleString('en-GB')}. If this wasn’t you, remove it.`
+                : ar
+                  ? `${notice.merchantName} ربط جهاز (${notice.deviceFamily}) بكارتك في ${new Date(notice.createdAt).toLocaleString('ar-EG-u-nu-latn')}. لو مش إنت، شيله.`
+                  : `${notice.merchantName} linked a device (${notice.deviceFamily}) to your card on ${new Date(notice.createdAt).toLocaleString('en-GB')}. If this wasn’t you, remove it.`}
           </p>
           {error && (
             <p className="error-text" role="alert">

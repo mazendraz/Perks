@@ -424,8 +424,12 @@ const messages: Record<string, Line> = {
     'The owner or a manager restores cards.',
   ],
   PAIRING_CODE_INVALID: [
-    'الكود غلط أو خلص. خلّي الزبون يطلب كود جديد من موبايله.',
-    'Wrong or expired code. Ask the customer for a new one.',
+    'الكود أو الرقم مش مطابقين، أو الكود خلص. اتأكد إن الرقم هو اللي الزبون كتبه، أو خلّيه يطلب كود جديد.',
+    'The code or the number does not match, or the code ended. Check it is the number the customer typed, or ask for a new code.',
+  ],
+  CUSTOMER_HAS_CARD_HERE: [
+    'العميل ده عنده كارت هنا أصلًا. دوّر برقمه في الفرع اللي اتسجّل فيه ورجّعله الكارت.',
+    'This customer already has a card here. Search their number at the branch where they joined and restore it.',
   ],
   PAIRING_NOT_PENDING: [
     'الطلب ده اتقرر أو خلص وقته.',
@@ -523,20 +527,36 @@ const messages: Record<string, Line> = {
     'Your card opens from the shop code or your WhatsApp link. Email and password are for the team.',
   ],
   CUSTOMER_PHONE_EXISTS: [
-    'الرقم ده عليه كارت. اطلب من الكاشير يبعتهولك على واتساب.',
-    'This number already has a card. Ask the cashier to send it on WhatsApp.',
+    'الرقم ده عليه كروت على موبايل تاني. رجّعها من «رجّع كروتك».',
+    'This number has cards on another phone. Bring them back from “Restore my cards”.',
   ],
   CUSTOMER_DEVICE_REVOKED: [
-    'كارتك مش على الموبايل ده. اطلب من الكاشير يبعتهولك على واتساب.',
-    'Your card is not on this phone. Ask the cashier to send it on WhatsApp.',
+    'كارتك مش على الموبايل ده. افتحه من الـWallet، أو اطلب من الكاشير في أي محل Perks يرجعهولك.',
+    'Your card is not on this phone. Open it from your Wallet, or ask the cashier at any Perks shop to restore it.',
   ],
   CUSTOMER_REGISTRATION_LIMIT: [
     'محاولات كتير. جرّب بعد ساعة أو اطلب من الكاشير يساعدك.',
     'Too many tries. Try in an hour or ask the cashier.',
   ],
   DEVICE_SCOPE_RECOVERY_REQUIRED: [
-    'الموبايل ده مربوط بكارت محل واحد. علشان تفتح كروت تانية، اطلبها من المحل نفسه.',
-    'This phone is linked to one shop’s card. Ask other shops to restore their cards.',
+    'الموبايل ده مربوط بكروت محلات معيّنة. عشان تفتح كل كروتك، افتح أي كارت من الـWallet.',
+    'This phone is linked to some shops’ cards. To open all your cards, open any card from your Wallet.',
+  ],
+  WALLET_LINK_INVALID: [
+    'لينك الكارت ده قديم أو اتستخدم على موبايل تاني. افتح الكارت من الـWallet بعد ما يتحدّث، أو رجّع كروتك.',
+    'This card link is old or was used on another phone. Open the card from Wallet once it updates, or restore your cards.',
+  ],
+  WHATSAPP_PROOF_EXPIRED: [
+    'الكود ده انتهى. اطلب رسالة جديدة من هنا.',
+    'This code expired. Request a new message here.',
+  ],
+  WHATSAPP_RECOVERY_UNAVAILABLE: [
+    'واتساب مقدرش يرجّع كروتك. افتح أي كارت من الـWallet أو اطلب مساعدة الكاشير.',
+    'WhatsApp couldn’t restore your cards. Open a card from Wallet or ask the cashier for help.',
+  ],
+  WHATSAPP_PHONE_IN_USE: [
+    'الرقم ده مربوط بحساب تاني. تواصل مع دعم Perks من نفس الرقم.',
+    'This number is linked to another account. Contact Perks support from that same number.',
   ],
   RECOVERY_LINK_INVALID: [
     'الرابط ده اتستخدم أو خلص. اطلب من الكاشير رابط جديد.',

@@ -165,7 +165,8 @@ export function googleObject(
       uris: [
         {
           id: 'card',
-          uri: origin + '/customer/' + card.id + '?wallet=1',
+          // With its restore key: on a new phone this brings every card back (wallet/restore.ts).
+          uri: card.open_url ?? origin + '/customer/' + card.id + '?wallet=1',
           localizedDescription: localized(t.ar.open_label, t.en.open_label),
         },
       ],

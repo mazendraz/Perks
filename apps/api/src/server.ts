@@ -10,6 +10,7 @@ import { pushModule } from './modules/push.js';
 import { experienceModule } from './modules/experience.js';
 import { customerIdentityModule } from './modules/customer-identity.js';
 import { customerRecoveryModule } from './modules/customer-recovery.js';
+import { customerWhatsAppModule } from './modules/customer-whatsapp.js';
 import { customerPrivacyModule } from './modules/customer-privacy.js';
 import { subscriptionsModule } from './modules/subscriptions.js';
 import { billingModule } from './modules/billing.js';
@@ -181,6 +182,7 @@ export async function buildApp(
   experienceModule(app, pools);
   customerIdentityModule(app, pools, c);
   customerRecoveryModule(app, pools, c);
+  customerWhatsAppModule(app, pools, c);
   customerPrivacyModule(app, pools, c);
   subscriptionsModule(app, pools);
   billingModule(app, pools);

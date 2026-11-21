@@ -78,14 +78,18 @@ export async function login(
     'x-csrf-token': result.json().csrfToken as string,
   };
 }
-export async function adminLogin(app: FastifyInstance, db: pg.Client) {
+export async function adminLogin(
+  app: FastifyInstance,
+  db: pg.Client,
+  origin = readConfig().PUBLIC_APP_ORIGIN,
+) {
   const email = 'admin-' + randomUUID() + '@nuqta.test',
     secret = randomBytes(20).toString('hex');
   await db.query(
     "INSERT INTO users(email,display_name,global_role,totp_secret) VALUES($1,'Test admin','platform_admin',$2)",
     [email, secret],
   );
-  const headers = await login(app, email);
+  const headers = await login(app, email, origin);
   const result = await app.inject({
     method: 'POST',
     url: '/api/v1/auth/mfa/verify',

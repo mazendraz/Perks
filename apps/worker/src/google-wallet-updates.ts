@@ -1,3 +1,4 @@
+import { withOpenUrl } from '../../api/src/wallet/restore.js';
 import type pg from 'pg';
 import type { ServiceConfig } from '../../api/src/config.js';
 import type { WalletCard } from '../../api/src/wallet/apple-pass.js';
@@ -33,7 +34,13 @@ export async function runGoogleWalletUpdates(
   ).rows;
   let updated = 0;
   for (const { object_key, card } of changes) {
-    const object = googleObject(g, card, object_key, c.PUBLIC_APP_ORIGIN, stripVersion(card));
+    const object = googleObject(
+      g,
+      withOpenUrl(card, c.PUBLIC_APP_ORIGIN, c.AUTH_PEPPER),
+      object_key,
+      c.PUBLIC_APP_ORIGIN,
+      stripVersion(card),
+    );
     let status: number;
     try {
       status = await putGoogle(g, 'loyaltyObject', objectId(g, object_key), {

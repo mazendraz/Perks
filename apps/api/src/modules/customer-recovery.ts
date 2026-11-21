@@ -6,7 +6,7 @@ import type { Config } from '../config.js';
 import { keyedHash, otpCode, tokenHash } from '../crypto.js';
 import { AppError, requireCondition } from '../errors.js';
 import { expectedRevision } from '../operations.js';
-import { merchantGrant } from '../policy.js';
+import { merchantGrant, platform } from '../policy.js';
 import {
   deviceCookie,
   deviceCsrf,
@@ -16,11 +16,14 @@ import {
 import {
   customerLookupInput,
   customerPairingClaimInput,
+  customerJoinClaimInput,
+  customerPhone,
   customerPairingStartInput,
   customerPairingDecisionInput,
   deviceNoticeInput,
 } from '../../../../packages/contracts/src/customer-identity.js';
 import { customerLimit } from './customer-identity.js';
+import { readWalletRestoreToken } from '../wallet/restore.js';
 
 const idParams = z.object({ id: z.uuid() });
 // The code is bound to one merchant and peppered, so a leaked hash is not brute-forceable offline.
@@ -98,6 +101,66 @@ export function customerRecoveryModule(app: FastifyInstance, pools: Pools, c: Co
     requireCondition(!result.limited, 'CUSTOMER_RECOVERY_LIMIT', 429);
     return { id: result.id, status: result.status };
   });
+
+  // Staff: a customer whose number is already on Perks joins this shop. The number they typed on
+  // their phone and the code it shows must both match; a new, empty card starts here.
+  app.post('/api/v1/merchants/:m/customer-pairings/join', async (req) => {
+    const actor = authenticated(req),
+      { m } = z.object({ m: z.uuid() }).parse(req.params),
+      p = customerJoinClaimInput.parse(req.body);
+    requireCondition(
+      await customerLimit(pools, c, 'customer-pairing-claim:' + actor.id, 20, 3600),
+      'CUSTOMER_RECOVERY_LIMIT',
+      429,
+    );
+    const result = await transaction(
+      pools.pool,
+      async (db) => {
+        await merchantGrant(db, actor, m, undefined, p.branchId);
+        return (
+          await db.query('SELECT claim_customer_join($1,$2,$3,$4) AS value', [
+            m,
+            p.branchId,
+            p.phone,
+            pairingCodeHash(c, m, p.code),
+          ])
+        ).rows[0].value as {
+          id?: string;
+          status?: string;
+          invalid?: boolean;
+          hasCard?: boolean;
+          limited?: boolean;
+        };
+      },
+      actor,
+    );
+    requireCondition(!result.invalid, 'PAIRING_CODE_INVALID', 422);
+    requireCondition(!result.hasCard, 'CUSTOMER_HAS_CARD_HERE', 409);
+    requireCondition(!result.limited, 'CUSTOMER_RECOVERY_LIMIT', 429);
+    return { id: result.id, status: result.status };
+  });
+
+  // Platform admin: free a number someone registered without owning it (050). The real owner
+  // proves it by messaging support on WhatsApp from that number first.
+  app.post(
+    '/api/v1/platform/customer-phones/release',
+    { config: { rateLimit: { max: 10, timeWindow: '10 minutes' } } },
+    async (req) => {
+      const actor = authenticated(req);
+      platform(actor);
+      const p = z
+        .object({ phone: customerPhone, reason: z.string().trim().min(10).max(500) })
+        .strict()
+        .parse(req.body);
+      return transaction(
+        pools.pool,
+        async (db) =>
+          (await db.query('SELECT release_customer_phone($1,$2) AS value', [p.phone, p.reason]))
+            .rows[0].value as { released: boolean; shops?: number },
+        actor,
+      );
+    },
+  );
 
   // Owner/manager: cashier requests waiting for approval + staff with unusual counts.
   app.get('/api/v1/merchants/:m/customer-pairings', async (req) => {
@@ -191,11 +254,18 @@ export function customerRecoveryModule(app: FastifyInstance, pools: Pools, c: Co
         try {
           const result = (
             await transaction(pools.authPool, (db) =>
-              db.query('SELECT start_customer_pairing($1,$2,$3) AS value', [
-                p.merchantId,
-                device,
-                pairingCodeHash(c, p.merchantId, code),
-              ]),
+              p.phone
+                ? db.query('SELECT start_customer_join($1,$2,$3,$4) AS value', [
+                    p.merchantId,
+                    device,
+                    pairingCodeHash(c, p.merchantId, code),
+                    p.phone,
+                  ])
+                : db.query('SELECT start_customer_pairing($1,$2,$3) AS value', [
+                    p.merchantId,
+                    device,
+                    pairingCodeHash(c, p.merchantId, code),
+                  ]),
             )
           ).rows[0].value;
           requireCondition(!result.limited, 'CUSTOMER_RECOVERY_LIMIT', 429);
@@ -247,6 +317,43 @@ export function customerRecoveryModule(app: FastifyInstance, pools: Pools, c: Co
         ).rows[0].value;
       });
       requireCondition(result, 'RECOVERY_LINK_INVALID', 410);
+      requireCondition(!result.deviceConflict, 'DEVICE_ALREADY_BOUND', 409);
+      const session = await issueDeviceSession(pools, c, req, reply);
+      requireCondition(session, 'CUSTOMER_DEVICE_REVOKED', 401);
+      return { membershipId: result.membershipId, csrfToken: session.csrfToken };
+    },
+  );
+
+  // The Wallet door: the link on the pass brings every card back on this browser.
+  app.post(
+    '/api/v1/customer/wallet-restore',
+    { config: { rateLimit: { max: 10, timeWindow: '1 minute' } } },
+    async (req, reply) => {
+      const device = deviceCsrf(req, c),
+        { token } = z.object({ token: z.string().max(120) }).strict().parse(req.body);
+      const key = readWalletRestoreToken(token, c.AUTH_PEPPER);
+      requireCondition(
+        await customerLimit(pools, c, 'wallet-restore-ip:' + req.ip, 20, 3600),
+        'CUSTOMER_RECOVERY_LIMIT',
+        429,
+      );
+      requireCondition(key, 'WALLET_LINK_INVALID', 410);
+      const result = await transaction(pools.authPool, async (db) => {
+        const owner = (
+          await db.query('SELECT wallet_restore_owner($1) AS id', [key.membershipId])
+        ).rows[0]?.id as string | null;
+        if (!owner) return null;
+        await customerLifecycleLock(db, owner);
+        return (
+          await db.query('SELECT consume_wallet_restore($1,$2,$3,$4) AS value', [
+            key.membershipId,
+            key.generation,
+            device,
+            deviceAgentFamily(String(req.headers['user-agent'] || '')),
+          ])
+        ).rows[0].value as { membershipId: string; deviceConflict?: boolean } | null;
+      });
+      requireCondition(result, 'WALLET_LINK_INVALID', 410);
       requireCondition(!result.deviceConflict, 'DEVICE_ALREADY_BOUND', 409);
       const session = await issueDeviceSession(pools, c, req, reply);
       requireCondition(session, 'CUSTOMER_DEVICE_REVOKED', 401);

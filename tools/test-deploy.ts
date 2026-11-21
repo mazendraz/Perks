@@ -14,9 +14,9 @@ await mkdir(directory, { recursive: true, mode: 0o700 });
 const values: Record<string, string> = {
   APP_ENV: 'production',
   DOMAIN: 'localhost',
-  PUBLIC_APP_ORIGIN: 'https://localhost:56443',
-  HTTP_BIND: '127.0.0.1:56180',
-  HTTPS_BIND: '127.0.0.1:56443',
+  PUBLIC_APP_ORIGIN: 'https://localhost:28443',
+  HTTP_BIND: '127.0.0.1:28180',
+  HTTPS_BIND: '127.0.0.1:28443',
   NUQTA_IMAGE: 'nuqta-smoke-app:' + stamp,
   NUQTA_WEB_IMAGE: 'nuqta-smoke-web:' + stamp,
   NUQTA_POSTGRES_IMAGE: 'nuqta-smoke-postgres:' + stamp,
@@ -136,7 +136,7 @@ async function request(path: string, headers: Record<string, string> = {}) {
       const req = https.get(
         {
           hostname: 'localhost',
-          port: 56443,
+          port: 28443,
           path,
           headers,
           rejectUnauthorized: false,

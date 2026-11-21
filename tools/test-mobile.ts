@@ -675,15 +675,24 @@ try {
       .getByLabel('Receipt number', { exact: true })
       .fill('MOBILE-' + stamp + '-' + project.name);
     await cp.getByRole('button', { name: 'Review award', exact: true }).click();
-    const stampStarted = Date.now();
+    // Time from the commit (the award response) to the customer's card, not the cashier's own UI.
+    const committed = cp.waitForResponse(
+      (response) =>
+        response.request().method() === 'POST' &&
+        /\/api\/v1\/merchants\/[^/]+\/stamp-awards$/.test(response.url()) &&
+        response.ok(),
+    );
     await cp.getByRole('button', { name: 'Confirm stamps', exact: true }).click();
-    await cp.getByText('Saved balance: 1', { exact: true }).waitFor();
+    await committed;
+    const stampStarted = Date.now();
     await page.waitForFunction(
       () => document.querySelector('[role="progressbar"]')?.getAttribute('aria-valuenow') === '1',
     );
+    const stampVisibleMs = Date.now() - stampStarted;
+    await cp.getByText('Saved balance: 1', { exact: true }).waitFor();
     assert.ok(
-      Date.now() - stampStarted < 1000,
-      'first committed stamp must be visible in under one second locally',
+      stampVisibleMs < 1000,
+      `first committed stamp must be visible in under one second locally (${stampVisibleMs}ms)`,
     );
     await page
       .getByRole('dialog', { name: 'Personal QR', exact: true })

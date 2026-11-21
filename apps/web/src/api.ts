@@ -113,6 +113,9 @@ async function send<T>(path: string, options: ApiOptions, restoreDevice: boolean
     clearTimeout(timer);
   }
   setNetworkUnavailable(false);
+  // Set when the device restore below could not get an answer (offline, timeout, 5xx): the
+  // card may still be on this device, so this must not be reported as an expired session.
+  let restoreUncertain = false;
   if (
     restoreDevice &&
     portal === 'customer' &&
@@ -127,13 +130,15 @@ async function send<T>(path: string, options: ApiOptions, restoreDevice: boolean
       // Authentication/CSRF rejected the first attempt before its handler ran.
       // Retry once, retaining the exact commercial command and idempotency key.
       return send<T>(path, options, false);
-    } catch {
+    } catch (restoreError) {
       /* A revoked or absent device must still receive the original failure. */
+      restoreUncertain = !(restoreError instanceof ApiError && restoreError.status === 401);
     }
   }
   if (response.status === 403 && body.error?.code === 'MFA_REQUIRED')
     window.dispatchEvent(new Event('nuqta:mfa-required'));
   if (
+    !restoreUncertain &&
     path !== '/session' &&
     response.status === 401 &&
     csrf &&

@@ -19,8 +19,12 @@ import { DeleteCustomerAccount, CustomerDeletionComplete } from './features/Cust
 import { useDialogAccessibility } from './dialog-accessibility.js';
 import { Operations } from './features/Operations.js';
 import { PlacementPage } from './features/Materials.js';
-import { CustomerDeviceHelp, CustomerRecoveryPage } from './features/CustomerRecovery.js';
-import { useCallback, useEffect, useState, lazy, Suspense, type ReactNode } from 'react';
+import {
+  CustomerCardUnavailable,
+  CustomerDeviceHelp,
+  CustomerRecoveryPage,
+} from './features/CustomerRecovery.js';
+import { useCallback, useEffect, useRef, useState, lazy, Suspense, type ReactNode } from 'react';
 import type { Session, Language } from '../../../packages/contracts/src/index.js';
 import { api, ApiError, errorText, setCsrf } from './api.js';
 import { navigate, useRoute } from './useRoute.js';
@@ -28,12 +32,14 @@ import { SuspendedNotice } from './features/SuspendedNotice.js';
 
 // Where "/" leads someone without a staff session: their card when this device holds one
 // (the customer session is restored from the device cookie), otherwise the sign-in page.
+// Only a definite 401 means "no card here"; a failed or garbled reply opens the card page,
+// which retries instead of sending a card holder to the staff sign-in.
 async function customerHome() {
   try {
     await api<Session>('/session', { workspace: 'customer' }, false);
     return '/customer';
-  } catch {
-    return '/login';
+  } catch (e) {
+    return e instanceof ApiError && e.status === 401 ? '/login' : '/customer';
   }
 }
 const PlatformPage = lazy(() =>
@@ -83,6 +89,13 @@ export function App() {
   const [session, setSession] = useState<Session | null>(null),
     [loading, setLoading] = useState(true),
     [notice, setNotice] = useState('');
+  // Customer portal: the session read failed without the server saying "signed out" (offline,
+  // timeout, 5xx, a proxy error page). The device may well hold a card, so never show
+  // "not on this device" for it; show a retry instead.
+  const [unknownFailures, setUnknownFailures] = useState(0);
+  // Which portal the current `session` was read for, so a kept session is never a stale
+  // staff session shown on the customer page.
+  const sessionFor = useRef<Portal | undefined>(undefined);
   const [accountDeleted, setAccountDeleted] = useState(false);
   useEffect(() => {
     const deleted = () => {
@@ -100,13 +113,26 @@ export function App() {
       const s = await api<Session>('/session');
       setCsrf(s.csrfToken);
       setSession(s);
+      sessionFor.current = portal;
+      setUnknownFailures(0);
     } catch (e) {
       const signedOut = e instanceof ApiError && e.status === 401;
       // Offline is already shown by the connection banner; do not stack a second message.
       const offline =
         e instanceof ApiError && (e.code === 'NETWORK_UNCERTAIN' || e.code === 'REQUEST_TIMEOUT');
+      if (portal === 'customer' && !signedOut) {
+        // Not an answer about the card: keep the card already on screen, or offer a retry.
+        // The device cookie and CSRF token are left exactly as they are.
+        if (sessionFor.current !== 'customer') setSession(null);
+        setUnknownFailures((n) => n + 1);
+        setSessionPortal(portal);
+        setLoading(false);
+        return;
+      }
       if (!signedOut && !offline) setNotice(errorText(e, lang));
       setSession(null);
+      sessionFor.current = undefined;
+      setUnknownFailures(0);
       // A customer without a session may already have the anonymous bootstrap
       // CSRF token. A language refresh must not erase it before registration.
       if (portal !== 'customer') setCsrf('');
@@ -166,6 +192,8 @@ export function App() {
   useEffect(() => {
     const expired = () => {
       setSession(null);
+      sessionFor.current = undefined;
+      setUnknownFailures(0);
       setCsrf('');
       setNotice(
         portal === 'customer'
@@ -180,6 +208,13 @@ export function App() {
     window.addEventListener('nuqta:session-expired', expired);
     return () => window.removeEventListener('nuqta:session-expired', expired);
   }, [lang, portal]);
+  // A card holder whose session read failed: try again a few times by itself (also on "online",
+  // above), so a brief signal drop on a phone does not need a manual refresh.
+  useEffect(() => {
+    if (!unknownFailures || session || unknownFailures > 5) return;
+    const timer = window.setTimeout(() => void refresh(), 2000 * 2 ** (unknownFailures - 1));
+    return () => window.clearTimeout(timer);
+  }, [unknownFailures, session, refresh]);
   useEffect(() => {
     document.documentElement.lang = lang;
     document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
@@ -273,7 +308,12 @@ export function App() {
           refresh={refresh}
         />
       ) : portal === 'customer' && !session && route.startsWith('/customer') ? (
-        <CustomerDeviceHelp lang={lang} />
+        // "Not on this device" only after the server said so (401). Anything else is a retry.
+        unknownFailures ? (
+          <CustomerCardUnavailable lang={lang} retry={refresh} />
+        ) : (
+          <CustomerDeviceHelp lang={lang} />
+        )
       ) : route.startsWith('/join/') ? (
         <EnrollmentPage
           slug={route.split('/')[2] || ''}
@@ -296,6 +336,7 @@ export function App() {
             const next = await api<Session>('/session', { workspace: signedPortal || 'shared' });
             setCsrf(next.csrfToken);
             setSession(next);
+            sessionFor.current = portal;
             setSessionPortal(portal);
             setNotice('');
             if (!route.startsWith('/join/') && !route.startsWith('/invite/'))

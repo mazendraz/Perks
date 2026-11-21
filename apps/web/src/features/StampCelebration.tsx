@@ -65,16 +65,14 @@ export function StampCelebration({
     const t = window.setTimeout(dismiss, (reward ? 6500 : 4200) + (added - 1) * 350);
     return () => window.clearTimeout(t);
   }, [moment.to, reward, added]);
+  // Scrolling behind the moment is locked by useDialogAccessibility (it owns body overflow for
+  // every aria-modal dialog). Saving/restoring it here too raced that hook: after a sync close
+  // (Done with Reduce Motion on) it restored "hidden" last, leaving the page unable to scroll.
   useEffect(() => {
     button.current?.focus({ preventScroll: true });
     const key = (e: KeyboardEvent) => e.key === 'Escape' && dismiss();
     document.addEventListener('keydown', key);
-    const overflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.removeEventListener('keydown', key);
-      document.body.style.overflow = overflow;
-    };
+    return () => document.removeEventListener('keydown', key);
   }, []);
   return createPortal(
     <div

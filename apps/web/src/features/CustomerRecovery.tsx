@@ -36,6 +36,43 @@ export function CustomerDeviceHelp({ lang }: { lang: Language }) {
   );
 }
 
+// The card could not be read just now (offline, timeout, server error). The device link is
+// untouched, so this never says the card is missing: it says try again.
+export function CustomerCardUnavailable({
+  lang,
+  retry,
+}: {
+  lang: Language;
+  retry: () => Promise<void>;
+}) {
+  const ar = lang === 'ar',
+    [busy, setBusy] = useState(false);
+  return (
+    <main id="main" className="join-page">
+      <section className="panel" role="status">
+        <span className="eyebrow">{ar ? 'كارتك معاك' : 'Your loyalty card'}</span>
+        <h1>{ar ? 'مش قادرين نفتح كارتك دلوقتي' : 'We could not open your card just now'}</h1>
+        <p>
+          {ar
+            ? 'كارتك لسه محفوظ على الجهاز ده. اتأكد من النت وجرّب تاني.'
+            : 'Your card is still saved on this device. Check your connection and try again.'}
+        </p>
+        <button
+          className="primary full"
+          disabled={busy}
+          aria-busy={busy}
+          onClick={() => {
+            setBusy(true);
+            void retry().finally(() => setBusy(false));
+          }}
+        >
+          {ar ? 'جرّب تاني' : 'Try again'}
+        </button>
+      </section>
+    </main>
+  );
+}
+
 type PairingState = {
   id: string;
   status: string;

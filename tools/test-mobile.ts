@@ -689,6 +689,10 @@ try {
       .getByRole('dialog', { name: 'Personal QR', exact: true })
       .waitFor({ state: 'hidden' });
     assert.equal(await page.locator('.install-card-link,.install-card-guide').count(), 0);
+    // Read the settled card: a closing dialog or stamp motion can briefly leave a second copy.
+    await page.waitForFunction(
+      () => document.querySelectorAll('.filled .nq-stamp-ink').length === 1,
+    );
     const angles = await page.locator('.filled .nq-stamp-ink').evaluateAll((elements) =>
       elements.map((el) => ({
         seed: el.getAttribute('data-ink-seed'),

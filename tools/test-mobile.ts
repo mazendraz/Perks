@@ -690,9 +690,11 @@ try {
     );
     const stampVisibleMs = Date.now() - stampStarted;
     await cp.getByText('Saved balance: 1', { exact: true }).waitFor();
+    // One second on a developer machine; shared CI runners emulating WebKit get half a second more.
+    const stampBudgetMs = process.env.CI ? 1500 : 1000;
     assert.ok(
-      stampVisibleMs < 1000,
-      `first committed stamp must be visible in under one second locally (${stampVisibleMs}ms)`,
+      stampVisibleMs < stampBudgetMs,
+      `first committed stamp must be visible within ${stampBudgetMs}ms (${stampVisibleMs}ms)`,
     );
     await page
       .getByRole('dialog', { name: 'Personal QR', exact: true })

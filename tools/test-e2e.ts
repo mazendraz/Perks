@@ -1149,6 +1149,15 @@ try {
   ok('Platform operation reference traces committed transaction and related audit/jobs');
   const foreign = await context(),
     fp = await foreign.newPage();
+  // A second shop for the isolation check. The CI database is migrated but not seeded, so the shop
+  // and its branch are created here (a no-op where the local seed already made them).
+  await db.query(
+    "INSERT INTO merchants(id,slug,name,primary_color,accent_color,surface_color,terms,contact_email) VALUES('10000000-0000-4000-8000-000000000002',$1,'Browser foreign shop','#5E2750','#E7A9C8','#FBF4F8','Browser foreign terms.',$2) ON CONFLICT DO NOTHING",
+    ['browser-foreign-' + stamp, email('foreign-shop')],
+  );
+  await db.query(
+    "INSERT INTO branches(id,merchant_id,name) VALUES('20000000-0000-4000-8000-000000000003','10000000-0000-4000-8000-000000000002','Browser foreign branch') ON CONFLICT DO NOTHING",
+  );
   const foreignId = (
     await db.query(
       'INSERT INTO users(email,display_name,password_hash,password_version) VALUES($1,$2,$3,1) RETURNING id',

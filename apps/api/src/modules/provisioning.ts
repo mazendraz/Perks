@@ -25,7 +25,7 @@ import {
 import { authenticated } from '../auth.js';
 import { audit, transaction, type Pools, type DB, type Actor } from '../db.js';
 import { deployed, type Config } from '../config.js';
-import { requireCondition } from '../errors.js';
+import { AppError, requireCondition } from '../errors.js';
 import { merchantGrant, platform } from '../policy.js';
 import { expectedRevision, idempotencyKey, operation } from '../operations.js';
 import { emitOutbox, seal } from '../outbox.js';
@@ -91,6 +91,12 @@ async function createAccount(
       reason: 'Replaced by an explicitly created password account',
     });
   return account;
+}
+// Each shop needs its own enrollment link; say so plainly instead of a generic conflict.
+async function assertSlugFree(db: DB, slug: unknown) {
+  if (typeof slug !== 'string' || !slug) return;
+  const taken = await db.query('SELECT 1 FROM merchants WHERE slug=$1', [slug.toLowerCase()]);
+  if (taken.rowCount) throw new AppError('SLUG_TAKEN', 409);
 }
 export function provisioningModule(app: FastifyInstance, pools: Pools, c: Config) {
   const files = createFileStore(c);
@@ -177,15 +183,17 @@ export function provisioningModule(app: FastifyInstance, pools: Pools, c: Config
     const key = idempotencyKey(req);
     return transaction(
       pools.pool,
-      (db) =>
-        operation(db, actor, { scope: 'draft.create', key, payload: body }, async () => ({
+      async (db) => {
+        await assertSlugFree(db, body.data.slug);
+        return operation(db, actor, { scope: 'draft.create', key, payload: body }, async () => ({
           draft: (
             await db.query(
               'INSERT INTO provisioning_drafts(created_by,data) VALUES($1,$2) RETURNING *',
               [actor.id, body.data],
             )
           ).rows[0],
-        })),
+        }));
+      },
       actor,
     );
   });
@@ -198,6 +206,7 @@ export function provisioningModule(app: FastifyInstance, pools: Pools, c: Config
     return transaction(
       pools.pool,
       async (db) => {
+        await assertSlugFree(db, body.data.slug);
         const row = (
           await db.query(
             "UPDATE provisioning_drafts SET data=$1,revision=revision+1,updated_at=now() WHERE id=$2 AND revision=$3 AND status='draft' AND created_by=$4 RETURNING *",
@@ -279,6 +288,7 @@ export function provisioningModule(app: FastifyInstance, pools: Pools, c: Config
           'PLAN_LIMIT',
           409,
         );
+        await assertSlugFree(db, d.slug);
         return operation(
           db,
           actor,

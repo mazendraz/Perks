@@ -138,6 +138,10 @@ const messages: Record<string, Line> = {
     'حسابات الفريق بيعملها صاحب المحل. لو انت زبون، افتح الكارت من كود المحل.',
     'Team accounts are created by the shop owner. Customers open their card from the shop code.',
   ],
+  SLUG_TAKEN: [
+    'اسم رابط التسجيل ده مستخدم لمحل تاني. اختار اسم رابط مختلف.',
+    'This enrollment slug is already used by another business. Choose a different one.',
+  ],
   ACCOUNT_EXISTS_USE_INVITATION: [
     'الإيميل ده عليه حساب. ابعتله دعوة بدل ما تعمله باسورد جديد.',
     'This email already has an account. Send an invitation instead of a new password.',

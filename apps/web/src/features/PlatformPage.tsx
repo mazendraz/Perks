@@ -408,6 +408,7 @@ export function PlatformPage({ lang, userId }: { lang: Language; userId: string 
         ['STAFF_PASSWORD_REQUIRED', 'ACCOUNT_EXISTS_USE_INVITATION'].includes(e.code)
       )
         setStep(3);
+      if (e instanceof ApiError && e.code === 'SLUG_TAKEN') setStep(0);
       showError(e);
     } finally {
       setBusy(false);

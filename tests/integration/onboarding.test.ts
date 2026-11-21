@@ -195,6 +195,15 @@ test('onboarding stages private sanitized logos and hashed credentials, activate
     payload: activationBody,
   });
   assert.deepEqual(replay.json(), result);
+  // A second shop cannot take the same enrollment slug; the admin gets a clear code.
+  const sameSlug = await app.inject({
+    method: 'POST',
+    url: '/api/v1/platform/provisioning-drafts',
+    headers: { ...pa, ...key() },
+    payload: { data: { ...d, slug: result.merchant.slug } },
+  });
+  assert.equal(sameSlug.statusCode, 409, sameSlug.body);
+  assert.equal(sameSlug.json().code ?? sameSlug.json().error?.code, 'SLUG_TAKEN');
   // Admin-set passwords are replaced by their holders before any other request.
   const owner = await replaceAssignedPassword(
       app,

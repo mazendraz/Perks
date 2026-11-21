@@ -2,6 +2,8 @@ import type pg from 'pg';
 import type { ServiceConfig } from '../../api/src/config.js';
 import {
   autoStampNotice,
+  rewardEarnedNotice,
+  rewardRedeemedNotice,
   stampRequestNotice,
   type PushLanguage,
 } from '../../api/src/push-notices.js';
@@ -15,16 +17,19 @@ interface Target {
   language: PushLanguage;
   branch_name: string;
   alias: string | null;
-  quantity: number | null;
+  quantity?: number | null;
+  title?: string | null;
+  cycle_number?: number | null;
 }
 export interface PushJobOutcome {
   outcome: 'succeeded' | 'failed' | 'blocked';
   error: string | null;
 }
 
-// The `cashier_push` job: ring the staff of the branch where a customer just scanned. Two kinds:
-// a request waiting for approval (payload without `kind`, as queued since phase 1) or an automatic
-// stamp already given (`kind: 'auto_stamp'`).
+// The `cashier_push` job: ring the staff of the branch where a customer just scanned or a card moved
+// on. Kinds: a request waiting for approval (payload without `kind`, as queued since phase 1), an
+// automatic stamp already given (`kind: 'auto_stamp'`), a card that just filled
+// (`kind: 'reward_earned'`) and a reward handed over (`kind: 'reward_redeemed'`).
 //
 // Targets are read at send time (the request may have been decided or expired, the customer blocked,
 // a person signed out, lost the branch or been disabled since it was queued), the network calls are
@@ -38,9 +43,20 @@ export async function runCashierPushJob(
 ): Promise<PushJobOutcome> {
   const config = webPushConfig(c);
   if (!config) return { outcome: 'blocked', error: 'PUSH_NOT_CONFIGURED' };
-  const kind = job.payload.kind === 'auto_stamp' ? 'auto_stamp' : 'request';
+  const kind =
+    job.payload.kind === 'auto_stamp' ||
+    job.payload.kind === 'reward_earned' ||
+    job.payload.kind === 'reward_redeemed'
+      ? job.payload.kind
+      : 'request';
+  const reward = kind === 'reward_earned' || kind === 'reward_redeemed';
   const targets = (
-    await pool.query<Target>('SELECT * FROM push_targets_for_scan($1,$2)', [kind, job.aggregate_id])
+    await pool.query<Target>(
+      reward
+        ? 'SELECT * FROM push_targets_for_reward($1,$2)'
+        : 'SELECT * FROM push_targets_for_scan($1,$2)',
+      [kind, job.aggregate_id],
+    )
   ).rows;
   if (!targets.length) return { outcome: 'succeeded', error: 'NO_RECIPIENTS' };
   let sent = 0,
@@ -50,25 +66,44 @@ export async function runCashierPushJob(
     await Promise.all(
       targets.slice(i, i + 25).map(async (target) => {
         const notice =
-          kind === 'auto_stamp'
-            ? autoStampNotice(
+          kind === 'reward_earned'
+            ? rewardEarnedNotice(
                 target.language,
                 job.aggregate_id,
                 target.branch_name,
                 target.alias,
-                target.quantity,
+                target.title,
               )
-            : stampRequestNotice(
-                target.language,
-                job.aggregate_id,
-                target.branch_name,
-                target.alias,
-              );
+            : kind === 'reward_redeemed'
+              ? rewardRedeemedNotice(
+                  target.language,
+                  job.aggregate_id,
+                  target.branch_name,
+                  target.alias,
+                  target.title,
+                  target.cycle_number,
+                )
+              : kind === 'auto_stamp'
+                ? autoStampNotice(
+                    target.language,
+                    job.aggregate_id,
+                    target.branch_name,
+                    target.alias,
+                    target.quantity,
+                  )
+                : stampRequestNotice(
+                    target.language,
+                    job.aggregate_id,
+                    target.branch_name,
+                    target.alias,
+                  );
         const result = await sendPush(target, { ...notice }, config, {
           // A request's notice is worth holding for an offline phone only while it can be approved.
           ttl: kind === 'request' ? 600 : 1800,
           topic:
-            (kind === 'request' ? 'r' : 'a') + job.aggregate_id.replaceAll('-', '').slice(0, 30),
+            ({ request: 'r', auto_stamp: 'a', reward_earned: 'e', reward_redeemed: 'd' } as const)[
+              kind
+            ] + job.aggregate_id.replaceAll('-', '').slice(0, 30),
           transport,
         });
         await pool.query('SELECT push_record_result($1,$2,$3)', [

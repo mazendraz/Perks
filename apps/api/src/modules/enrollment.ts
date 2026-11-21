@@ -143,6 +143,11 @@ export function enrollmentModule(app: FastifyInstance, pools: Pools, c: Config) 
   app.post('/api/v1/me/memberships/:id/presentation-tokens', async (req) => {
     const actor = authenticated(req),
       { id } = z.object({ id: z.uuid() }).parse(req.params),
+      // A reward's Redeem button names the reward, so the cashier lands on it after the scan.
+      { rewardId } = z
+        .object({ rewardId: z.uuid().optional() })
+        .strict()
+        .parse(req.body ?? {}),
       key = idempotencyKey(req);
     const issued = await transaction(
       pools.pool,
@@ -155,12 +160,30 @@ export function enrollmentModule(app: FastifyInstance, pools: Pools, c: Config) 
         return operation(
           db,
           actor,
-          { scope: 'presentation.issue', key, payload: { id }, merchantId: member.merchant_id },
+          {
+            scope: 'presentation.issue',
+            key,
+            payload: rewardId ? { id, rewardId } : { id },
+            merchantId: member.merchant_id,
+          },
           async (operationId) => {
+            if (rewardId) {
+              const reward = (
+                await db.query(
+                  'SELECT status,expires_at>clock_timestamp() AS live FROM reward_grants WHERE id=$1 AND membership_id=$2',
+                  [rewardId, id],
+                )
+              ).rows[0];
+              requireCondition(reward, 'NOT_FOUND', 404);
+              requireCondition(reward.status === 'available', 'REWARD_UNAVAILABLE', 409);
+              requireCondition(reward.live, 'REWARD_EXPIRED', 410);
+            }
             const token = keyedHash('presentation:' + operationId + ':' + actor.id, c.AUTH_PEPPER);
+            // A Redeem code lives three minutes: the counter needs time to open the scanner, and
+            // the reward still needs the holder's own confirmation before it is handed over.
             const p = (
               await db.query(
-                "INSERT INTO presentation_tokens(merchant_id,membership_id,created_by,purpose,token_hash,session_id,expires_at,short_code_hash) VALUES($1,$2,$3,'customer_presentation',$4,$5,clock_timestamp()+interval '90 seconds',$6) RETURNING id,expires_at",
+                "INSERT INTO presentation_tokens(merchant_id,membership_id,created_by,purpose,token_hash,session_id,expires_at,short_code_hash,reward_id) VALUES($1,$2,$3,'customer_presentation',$4,$5,clock_timestamp()+CASE WHEN $7::uuid IS NULL THEN interval '90 seconds' ELSE interval '180 seconds' END,$6,$7) RETURNING id,expires_at",
                 [
                   member.merchant_id,
                   id,
@@ -168,6 +191,7 @@ export function enrollmentModule(app: FastifyInstance, pools: Pools, c: Config) 
                   tokenHash(token),
                   actor.sessionId,
                   shortCodeHash(member.merchant_id, shortCode(token, c.AUTH_PEPPER), c.AUTH_PEPPER),
+                  rewardId ?? null,
                 ],
               )
             ).rows[0];
@@ -212,7 +236,7 @@ export function enrollmentModule(app: FastifyInstance, pools: Pools, c: Config) 
         );
         const rows = (
           await db.query(
-            "SELECT t.id,t.source_presentation_id,t.expires_at,t.purpose,t.created_by,t.session_id,t.branch_id,m.id AS membership_id,m.status,m.program_version_id,p.alias,a.balance,a.revision,v.threshold,v.reward_title,least(v.max_per_tx,CASE WHEN cs.allow_multiple THEN cs.max_stamps_per_collection ELSE cs.default_stamps END) AS max_per_tx,cs.default_stamps,cs.allow_multiple FROM presentation_tokens t JOIN stamp_collection_settings cs ON cs.merchant_id=t.merchant_id JOIN memberships m ON m.id=t.membership_id AND m.merchant_id=t.merchant_id JOIN tenant_customer_profiles p ON p.id=m.profile_id JOIN loyalty_accounts a ON a.membership_id=m.id JOIN program_versions v ON v.id=m.program_version_id WHERE (CASE WHEN $3::text IS NULL THEN t.token_hash=$1 ELSE t.short_code_hash=$3 AND t.purpose='customer_presentation' END) AND t.merchant_id=$2 AND t.expires_at>clock_timestamp() ORDER BY t.created_at DESC LIMIT 2",
+            "SELECT t.id,t.source_presentation_id,coalesce(t.reward_id,(SELECT o.reward_id FROM presentation_tokens o WHERE o.id=t.source_presentation_id)) AS reward_id,t.expires_at,t.purpose,t.created_by,t.session_id,t.branch_id,m.id AS membership_id,m.status,m.program_version_id,p.alias,a.balance,a.revision,v.threshold,v.reward_title,least(v.max_per_tx,CASE WHEN cs.allow_multiple THEN cs.max_stamps_per_collection ELSE cs.default_stamps END) AS max_per_tx,cs.default_stamps,cs.allow_multiple FROM presentation_tokens t JOIN stamp_collection_settings cs ON cs.merchant_id=t.merchant_id JOIN memberships m ON m.id=t.membership_id AND m.merchant_id=t.merchant_id JOIN tenant_customer_profiles p ON p.id=m.profile_id JOIN loyalty_accounts a ON a.membership_id=m.id JOIN program_versions v ON v.id=m.program_version_id WHERE (CASE WHEN $3::text IS NULL THEN t.token_hash=$1 ELSE t.short_code_hash=$3 AND t.purpose='customer_presentation' END) AND t.merchant_id=$2 AND t.expires_at>clock_timestamp() ORDER BY t.created_at DESC LIMIT 2",
             [
               isShort ? null : tokenHash(token),
               body.merchantId,
@@ -259,11 +283,15 @@ export function enrollmentModule(app: FastifyInstance, pools: Pools, c: Config) 
         });
         const rewards = (
           await db.query(
-            "SELECT id,title,terms,CASE WHEN status='available' AND expires_at<=clock_timestamp() THEN 'expired' ELSE status END AS status,earned_at,expires_at,redeemed_at FROM reward_grants WHERE merchant_id=$1 AND membership_id=$2 AND $3::uuid=ANY(branch_ids) ORDER BY earned_at DESC LIMIT 20",
+            "SELECT id,title,terms,CASE WHEN status='available' AND expires_at<=clock_timestamp() THEN 'expired' ELSE status END AS status,earned_at,expires_at,redeemed_at FROM reward_grants WHERE merchant_id=$1 AND membership_id=$2 AND reward_redeemable_at(reward_grants,$3) ORDER BY earned_at DESC LIMIT 20",
             [body.merchantId, r.membership_id, body.branchId],
           )
         ).rows;
+        // The reward the customer pressed Redeem on, when it can still be handed over here.
+        const requestedRewardId =
+          rewards.find((x) => x.id === r.reward_id && x.status === 'available')?.id ?? null;
         return {
+          requestedRewardId,
           membership: {
             id: r.membership_id,
             alias: r.alias,

@@ -585,8 +585,11 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
   }, [membershipId]);
   const card = cards.find((x) => x.id === membershipId);
   useCardExperience(card?.id);
-  const showQr = async () => {
+  // The reward whose Redeem button opened the code; a refreshed code stays bound to it.
+  const qrReward = useRef<string | undefined>(undefined);
+  const showQr = async (rewardId = qrReward.current) => {
     if (!card) return;
+    qrReward.current = rewardId;
     const epoch = ++qrEpoch.current;
     setBusy(true);
     try {
@@ -595,7 +598,7 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
         {
           method: 'POST',
           key: crypto.randomUUID(),
-          body: {},
+          body: rewardId ? { rewardId } : {},
         },
       );
       if (epoch === qrEpoch.current) setQr(code);
@@ -640,6 +643,43 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
       setQr(null);
     }
   }, [challenges]);
+  // While the Redeem code is on screen the cashier's request must reach this phone even if the live
+  // stream has stalled (a dimmed screen, a captive network): ask directly every few seconds.
+  useEffect(() => {
+    if (!qr) return;
+    let alive = true;
+    const timer = window.setInterval(() => {
+      if (document.hidden) return;
+      void api<{ challenges: HolderChallenge[] }>('/me/redemption-challenges', { timeoutMs: 8000 })
+        .then((h) => {
+          if (alive && h.challenges.some((ch) => ch.status === 'awaiting_holder'))
+            setChallenges(h.challenges);
+        })
+        .catch(() => {});
+    }, 3000);
+    return () => {
+      alive = false;
+      window.clearInterval(timer);
+    };
+  }, [!!qr]);
+  // A stamp that lands while a reward is waiting does not move the full card: say where it went.
+  const savedBalance = useRef<{ id: string; balance: number } | null>(null);
+  useEffect(() => {
+    if (!card) return;
+    const before = savedBalance.current;
+    savedBalance.current = { id: card.id, balance: card.balance };
+    if (before?.id === card.id && (card.pending_rewards ?? 0) > 0 && card.balance > before.balance)
+      setVisitNotice({
+        tone: 'info',
+        text: ar
+          ? 'الختم اتحفظ للكارت الجاي (' +
+            card.balance +
+            '). استبدل مكافأتك علشان يبدأ الكارت الجديد.'
+          : 'Stamp saved for your next card (' +
+            card.balance +
+            '). Redeem your reward to start the new card.',
+      });
+  }, [card?.id, card?.balance, card?.pending_rewards]);
   const decide = async (ch: HolderChallenge, approve: boolean) => {
     setBusy(true);
     try {
@@ -850,26 +890,29 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
                       <ActionLabel icon="clock">{ar ? 'آخر نشاط' : 'Recent activity'}</ActionLabel>
                     </button>
                   </div>
-                  <WalletPanel
-                    membershipId={card.id}
-                    lang={lang}
-                    onPreferences={() => setTab('preferences')}
-                  />
                   {qr && !holder && (
                     <CustomerCode
                       qr={qr}
                       lang={lang}
                       busy={busy}
                       error={error}
-                      onRefresh={showQr}
+                      onRefresh={() => showQr()}
                       onClose={() => {
                         qrEpoch.current++;
+                        qrReward.current = undefined;
                         setQr(null);
                       }}
                     />
                   )}
                   <section className="panel">
                     <h2>{ar ? 'مكافآتك' : 'Your rewards'}</h2>
+                    {rewards.some((r) => r.status === 'available') && (
+                      <p className="muted">
+                        {ar
+                          ? 'دوس استبدل ووري الكود للكاشير. بعد ما تأكد من موبايلك يبدأ كارت جديد.'
+                          : 'Tap Redeem and show the code to the cashier. Once you confirm on your phone, a new card starts.'}
+                      </p>
+                    )}
                     {rewards.length ? (
                       rewards.map((r) => (
                         <div className="reward-row" key={r.id}>
@@ -886,7 +929,7 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
                               className="primary small"
                               disabled={busy}
                               aria-busy={busy}
-                              onClick={() => void showQr()}
+                              onClick={() => void showQr(r.id)}
                             >
                               <ActionLabel icon="qr">{ar ? 'استبدل' : 'Redeem'}</ActionLabel>
                             </button>
@@ -918,6 +961,11 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
                       </p>
                     )}
                   </section>
+                  <WalletPanel
+                    membershipId={card.id}
+                    lang={lang}
+                    onPreferences={() => setTab('preferences')}
+                  />
                   <CustomerRequests
                     card={card}
                     lang={lang}

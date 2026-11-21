@@ -68,12 +68,12 @@ export async function auditWalletPresentation(page: Page, project: string, direc
     }
     await page.getByRole('button', { name: 'English', exact: true }).click();
     await page.goto(current.origin + memberPath + '?wallet=1', { waitUntil: 'domcontentloaded' });
-    await page.getByRole('dialog', { name: 'Personal QR', exact: true }).waitFor();
-    assert.match(
-      (await page.locator('.qr-panel code').textContent())!.trim(),
-      /^NQP:[a-f0-9]{64}$/,
-    );
-    await page.getByRole('button', { name: 'Close code', exact: true }).click();
+    // The Wallet link opens the card; the personal QR opens only from a reward's Redeem button.
+    await page.locator('.loyalty-card').first().waitFor();
+    assert.equal(await page.getByRole('dialog', { name: 'Personal QR', exact: true }).count(), 0);
+    // Let the card's own requests finish before leaving it (WebKit reports an aborted fetch).
+    await page.getByRole('heading', { name: 'Your rewards', exact: true }).waitFor();
+    await page.waitForTimeout(1500);
     await page.getByRole('button', { name: 'Back to my cards', exact: true }).click();
     await page.locator('.card-open').first().click();
   } finally {

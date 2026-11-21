@@ -27,10 +27,10 @@ export function reportingModule(app: FastifyInstance, pools: Pools) {
                (SELECT count(*) FROM reward_grants g WHERE g.merchant_id=$1 AND g.status='available'
                   AND g.expires_at>clock_timestamp()
                   AND EXISTS(SELECT 1 FROM unnest(g.branch_ids) b WHERE branch_access(g.merchant_id,b)))::int AS rewards_ready,
-               (SELECT count(DISTINCT purchase_id) FROM tx WHERE type='award' AND source<>'welcome')::int AS visits,
+               (SELECT count(DISTINCT coalesce(purchase_id,CASE WHEN receipt_note IS NOT NULL THEN id END)) FROM tx WHERE type='award' AND source<>'welcome')::int AS visits,
                (SELECT coalesce(sum(quantity),0) FROM tx WHERE type='award' AND source<>'welcome')::int AS stamps,
                (SELECT count(*) FROM tx WHERE type='redeem')::int AS redeemed,
-               (SELECT count(DISTINCT purchase_id) FROM tx WHERE type='award' AND source<>'welcome' AND staff_id=$2)::int AS my_visits,
+               (SELECT count(DISTINCT coalesce(purchase_id,CASE WHEN receipt_note IS NOT NULL THEN id END)) FROM tx WHERE type='award' AND source<>'welcome' AND staff_id=$2)::int AS my_visits,
                (SELECT coalesce(sum(quantity),0) FROM tx WHERE type='award' AND source<>'welcome' AND staff_id=$2)::int AS my_stamps,
                (SELECT count(*) FROM tx WHERE type='redeem' AND staff_id=$2)::int AS my_redeemed,
                (SELECT min(at) FROM tx WHERE staff_id=$2) AS my_first_at`,
@@ -135,7 +135,7 @@ export function reportingModule(app: FastifyInstance, pools: Pools) {
         ).rows[0];
         const transactions = (
           await db.query(
-            "SELECT coalesce(sum(quantity) FILTER(WHERE type='award'),0)::int AS stamps,count(DISTINCT purchase_id) FILTER(WHERE type='award')::int AS visits,count(*) FILTER(WHERE type='redeem')::int AS rewards_redeemed,coalesce(sum(quantity) FILTER(WHERE type='correction'),0)::int AS corrections,max(at) AS watermark FROM loyalty_transactions WHERE merchant_id=$1 AND branch_access(merchant_id,branch_id) AND ($2::uuid IS NULL OR branch_id=$2) AND at>=clock_timestamp()-$3*interval '1 day'",
+            "SELECT coalesce(sum(quantity) FILTER(WHERE type='award'),0)::int AS stamps,count(DISTINCT coalesce(purchase_id,CASE WHEN receipt_note IS NOT NULL THEN id END)) FILTER(WHERE type='award')::int AS visits,count(*) FILTER(WHERE type='redeem')::int AS rewards_redeemed,coalesce(sum(quantity) FILTER(WHERE type='correction'),0)::int AS corrections,max(at) AS watermark FROM loyalty_transactions WHERE merchant_id=$1 AND branch_access(merchant_id,branch_id) AND ($2::uuid IS NULL OR branch_id=$2) AND at>=clock_timestamp()-$3*interval '1 day'",
             [m, q.branchId || null, q.days],
           )
         ).rows[0];
@@ -153,7 +153,7 @@ export function reportingModule(app: FastifyInstance, pools: Pools) {
         ).rows[0].n;
         const branches = (
           await db.query(
-            "SELECT b.id,b.name,count(DISTINCT t.purchase_id) FILTER(WHERE t.type='award')::int AS visits,coalesce(sum(t.quantity) FILTER(WHERE t.type='award'),0)::int AS stamps,count(t.id) FILTER(WHERE t.type='redeem')::int AS redeemed FROM branches b LEFT JOIN loyalty_transactions t ON t.branch_id=b.id AND t.at>=clock_timestamp()-$3*interval '1 day' WHERE b.merchant_id=$1 AND ($2::uuid IS NULL OR b.id=$2) GROUP BY b.id,b.name ORDER BY b.name",
+            "SELECT b.id,b.name,count(DISTINCT coalesce(t.purchase_id,CASE WHEN t.receipt_note IS NOT NULL THEN t.id END)) FILTER(WHERE t.type='award')::int AS visits,coalesce(sum(t.quantity) FILTER(WHERE t.type='award'),0)::int AS stamps,count(t.id) FILTER(WHERE t.type='redeem')::int AS redeemed FROM branches b LEFT JOIN loyalty_transactions t ON t.branch_id=b.id AND t.at>=clock_timestamp()-$3*interval '1 day' WHERE b.merchant_id=$1 AND ($2::uuid IS NULL OR b.id=$2) GROUP BY b.id,b.name ORDER BY b.name",
             [m, q.branchId || null, q.days],
           )
         ).rows;
@@ -165,7 +165,7 @@ export function reportingModule(app: FastifyInstance, pools: Pools) {
         ).rows[0];
         const trend = (
           await db.query(
-            "SELECT (t.at AT TIME ZONE $4)::date::text AS day,count(DISTINCT t.purchase_id)::int AS visits,count(DISTINCT ms.profile_id)::int AS buyers FROM loyalty_transactions t JOIN memberships ms ON ms.id=t.membership_id WHERE t.merchant_id=$1 AND t.type='award' AND branch_access(t.merchant_id,t.branch_id) AND ($2::uuid IS NULL OR t.branch_id=$2) AND t.at>=now()-$3*interval '1 day' GROUP BY day ORDER BY day",
+            "SELECT (t.at AT TIME ZONE $4)::date::text AS day,count(DISTINCT coalesce(t.purchase_id,CASE WHEN t.receipt_note IS NOT NULL THEN t.id END))::int AS visits,count(DISTINCT ms.profile_id)::int AS buyers FROM loyalty_transactions t JOIN memberships ms ON ms.id=t.membership_id WHERE t.merchant_id=$1 AND t.type='award' AND branch_access(t.merchant_id,t.branch_id) AND ($2::uuid IS NULL OR t.branch_id=$2) AND t.at>=now()-$3*interval '1 day' GROUP BY day ORDER BY day",
             [m, q.branchId || null, q.days, meta.timezone],
           )
         ).rows;
@@ -201,7 +201,8 @@ export function reportingModule(app: FastifyInstance, pools: Pools) {
           customerScope:
             meta.full_scope && !q.branchId ? 'merchant' : 'attributed_to_authorized_branches',
           definitions: {
-            visits: 'One distinct confirmed purchase; card opens and scans do not count.',
+            visits:
+              'One distinct confirmed purchase (a scanned receipt or an approved receipt number); card opens and scans do not count.',
             stamps: 'Gross awarded stamp units; corrections are separate.',
             active: 'Distinct customers with a confirmed purchase in the last 30 days.',
             returnRate:

@@ -80,6 +80,8 @@ export function CashierPage({ grant, lang }: { grant: Grant; lang: Language }) {
     >('home'),
     [member, setMember] = useState<Member | null>(null),
     [rewards, setRewards] = useState<Reward[]>([]),
+    // The reward the customer pressed Redeem on, from the code they showed.
+    [requested, setRequested] = useState<string | null>(null),
     [context, setContext] = useState(''),
     [manual, setManual] = useState(''),
     [receipt, setReceipt] = useState(''),
@@ -167,13 +169,15 @@ export function CashierPage({ grant, lang }: { grant: Grant; lang: Language }) {
     setBusy(true);
     setError('');
     try {
-      const r = await api<{ membership: Member; rewards: Reward[]; presentationContext: string }>(
-        '/cashier/scans/resolve',
-        {
-          method: 'POST',
-          body: { merchantId: grant.merchant_id, branchId: branch, token: value.trim() },
-        },
-      );
+      const r = await api<{
+        membership: Member;
+        rewards: Reward[];
+        presentationContext: string;
+        requestedRewardId?: string | null;
+      }>('/cashier/scans/resolve', {
+        method: 'POST',
+        body: { merchantId: grant.merchant_id, branchId: branch, token: value.trim() },
+      });
       if (pending && r.membership.id !== pending.body.membershipId) {
         setError(
           ar
@@ -184,6 +188,7 @@ export function CashierPage({ grant, lang }: { grant: Grant; lang: Language }) {
       }
       setMember(r.membership);
       setRewards(r.rewards);
+      setRequested(r.requestedRewardId ?? null);
       setContext(r.presentationContext);
       if (pending) {
         setQty(pending.body.quantity);
@@ -353,6 +358,7 @@ export function CashierPage({ grant, lang }: { grant: Grant; lang: Language }) {
   const next = () => {
     setMember(null);
     setRewards([]);
+    setRequested(null);
     setContext('');
     setManual('');
     setReceipt('');
@@ -554,14 +560,70 @@ export function CashierPage({ grant, lang }: { grant: Grant; lang: Language }) {
       )}
       {step === 'member' && member && (
         <>
+          {(() => {
+            const ready = rewards
+              .filter((r) => r.status === 'available')
+              .sort((a, b) => (a.id === requested ? -1 : b.id === requested ? 1 : 0));
+            if (!ready.length) return null;
+            return (
+              <section className="panel reward-ready" aria-live="polite">
+                <div className="reward-ready-heading">
+                  <Icon name="gift" size={26} />
+                  <h2>
+                    {member.alias} · {ar ? 'الكارت كمل' : 'Card full'}
+                  </h2>
+                </div>
+                <strong className="match-code">
+                  {member.threshold}/{member.threshold}
+                </strong>
+                <p className="muted">
+                  {ar
+                    ? 'المكافأة جاهزة. اضغط استبدال، والعميل يأكد من موبايله.'
+                    : 'Reward ready. Tap Redeem; the customer confirms on their phone.'}
+                </p>
+                {ready.map((r) => (
+                  <div
+                    className={'reward-row' + (r.id === requested ? ' requested' : '')}
+                    key={r.id}
+                  >
+                    <div>
+                      <strong>{r.title}</strong>
+                      {r.id === requested && (
+                        <small>
+                          {ar ? 'العميل طلب استبدالها' : 'The customer asked for this one'}
+                        </small>
+                      )}
+                      <small>{new Date(r.expires_at).toLocaleDateString(intlLocale(lang))}</small>
+                    </div>
+                    <button
+                      className="primary"
+                      disabled={busy}
+                      aria-busy={busy}
+                      onClick={() => void startRedemption(r)}
+                    >
+                      <ActionLabel icon="gift">{ar ? 'استبدال' : 'Redeem'}</ActionLabel>
+                    </button>
+                  </div>
+                ))}
+              </section>
+            );
+          })()}
           <section className="panel">
             <h2>{member.alias}</h2>
             <strong className="match-code">
               {member.balance}/{member.threshold}
             </strong>
-            <p className="muted">{member.rewardTitle}</p>
+            <p className="muted">
+              {rewards.some((r) => r.status === 'available')
+                ? ar
+                  ? 'أختام محفوظة للكارت الجاي'
+                  : 'Stamps saved for the next card'
+                : member.rewardTitle}
+            </p>
             <button
-              className="primary full"
+              className={
+                rewards.some((r) => r.status === 'available') ? 'secondary full' : 'primary full'
+              }
               onClick={() => {
                 setQty(member.defaultStamps);
                 setReceipt('');
@@ -571,30 +633,12 @@ export function CashierPage({ grant, lang }: { grant: Grant; lang: Language }) {
               <ActionLabel icon="stamp">{ar ? 'إضافة ختم' : 'Add stamps'}</ActionLabel>
             </button>
           </section>
-          <section className="panel">
-            <h2>{ar ? 'المكافآت' : 'Rewards'}</h2>
-            {rewards
-              .filter((r) => r.status === 'available')
-              .map((r) => (
-                <div className="reward-row" key={r.id}>
-                  <div>
-                    <strong>{r.title}</strong>
-                    <small>{new Date(r.expires_at).toLocaleDateString(intlLocale(lang))}</small>
-                  </div>
-                  <button
-                    className="secondary small"
-                    disabled={busy}
-                    aria-busy={busy}
-                    onClick={() => void startRedemption(r)}
-                  >
-                    <ActionLabel icon="gift">{ar ? 'استبدال' : 'Redeem'}</ActionLabel>
-                  </button>
-                </div>
-              ))}
-            {!rewards.some((r) => r.status === 'available') && (
+          {!rewards.some((r) => r.status === 'available') && (
+            <section className="panel">
+              <h2>{ar ? 'المكافآت' : 'Rewards'}</h2>
               <p className="muted">{ar ? 'مفيش مكافأة متاحة.' : 'No reward is available.'}</p>
-            )}
-          </section>
+            </section>
+          )}
           <button className="text-button" onClick={next}>
             {ar ? 'عميل تاني' : 'Another customer'}
           </button>

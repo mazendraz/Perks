@@ -82,7 +82,12 @@ export function rewardsModule(app: FastifyInstance, pools: Pools, c: Config) {
               410,
             );
             requireCondition(
-              reward.branch_ids.includes(body.branchId),
+              (
+                await db.query(
+                  'SELECT reward_redeemable_at(r,$2) AS ok FROM reward_grants r WHERE r.id=$1',
+                  [r, body.branchId],
+                )
+              ).rows[0].ok,
               'REWARD_BRANCH_UNAUTHORIZED',
               403,
             );
@@ -297,7 +302,12 @@ export function rewardsModule(app: FastifyInstance, pools: Pools, c: Config) {
             requireCondition(ch.expires_at > clock, 'CHALLENGE_EXPIRED', 410);
             requireCondition(ch.status === 'confirmed', 'HOLDER_NOT_CONFIRMED', 409);
             requireCondition(
-              r.branch_ids.includes(ch.branch_id),
+              (
+                await db.query(
+                  'SELECT reward_redeemable_at(r,$2) AS ok FROM reward_grants r WHERE r.id=$1',
+                  [r.id, ch.branch_id],
+                )
+              ).rows[0].ok,
               'REWARD_BRANCH_UNAUTHORIZED',
               403,
             );

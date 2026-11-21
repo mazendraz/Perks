@@ -300,6 +300,30 @@ td small {
 .reward-row small {
   color: #6b7180;
 }
+.reward-row > div {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+/* A reward's actions never get squeezed into one letter per line by a long title. */
+.reward-row > button,
+.reward-row > .badge {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+.reward-row.requested {
+  margin-inline: -12px;
+  padding-inline: 12px;
+  border-radius: 12px;
+  background: #fff7e8;
+}
+.reward-ready-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.reward-ready-heading .match-code {
+  margin: 0;
+}
 .modal-backdrop {
   position: fixed;
   inset: 0;

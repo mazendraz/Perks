@@ -427,7 +427,12 @@ try {
       .getByLabel('I accept the program, reward and privacy terms', { exact: true })
       .check();
     await firstPage.getByRole('button', { name: 'Open my card', exact: true }).click();
-    await firstPage.getByRole('dialog', { name: 'Personal QR', exact: true }).waitFor();
+    // The first scan lands on the card itself; the personal QR opens only from a reward's Redeem.
+    await firstPage.getByRole('progressbar', { name: 'Stamp progress', exact: true }).waitFor();
+    assert.equal(
+      await firstPage.getByRole('dialog', { name: 'Personal QR', exact: true }).count(),
+      0,
+    );
     assert.ok(Date.now() - firstStarted < 30000);
     await firstPage.waitForFunction(() => !new URLSearchParams(location.search).has('auto'));
     const firstMember = new URL(firstPage.url()).pathname.split('/').at(-1)!;
@@ -1072,15 +1077,15 @@ try {
       await page.evaluate(async () => {
         await (await navigator.serviceWorker.getRegistration())!.update();
       });
-      await page.getByRole('button', { name: 'Update now', exact: true }).waitFor();
-      await Promise.all([
-        page.waitForEvent('load'),
-        page.getByRole('button', { name: 'Update now', exact: true }).click(),
-      ]);
+      // Updates apply silently (no prompt); the next load runs the new release with the same card.
+      await page.waitForFunction(
+        async () => !(await navigator.serviceWorker.getRegistration())?.waiting,
+      );
+      await page.reload({ waitUntil: 'domcontentloaded' });
       await page.getByRole('progressbar', { name: 'Stamp progress', exact: true }).waitFor();
       assert.equal(await page.getByRole('button', { name: 'Update now', exact: true }).count(), 0);
       pass(
-        'PWA: a waiting update activates and reloads after the user taps Update now, preserving the authenticated card',
+        'PWA: a new release activates without a prompt and the next load keeps the authenticated card',
       );
     }
     if (project.type === webkit)

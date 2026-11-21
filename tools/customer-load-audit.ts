@@ -6,7 +6,12 @@ export async function auditCustomerLoading(page: Page, project: string, director
   // UI and let its current request settle before this test navigates away.
   const closeCode = page.getByRole('button', { name: /Close code|اقفل الكود/, exact: true });
   if (await closeCode.isVisible()) await closeCode.click();
-  await page.locator('.card-actions button.primary:not(:disabled)').waitFor();
+  // The card page has settled once its progress and actions are on screen.
+  await page
+    .getByRole('progressbar', { name: /Stamp progress|/ })
+    .first()
+    .waitFor();
+  await page.locator('.card-actions button:not(:disabled)').first().waitFor();
   let release!: () => void;
   const gate = new Promise<void>((resolve) => {
     release = resolve;

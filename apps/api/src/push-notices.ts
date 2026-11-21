@@ -67,6 +67,54 @@ export function autoStampNotice(
     ],
   };
 }
+// A card just filled: the customer's reward is waiting to be handed over at this branch.
+export function rewardEarnedNotice(
+  lang: PushLanguage,
+  rewardId: string,
+  branchName: string,
+  alias?: string | null,
+  title?: string | null,
+): PushNotice {
+  const en = lang === 'en';
+  return {
+    title: titled(
+      en ? 'Card full · reward ready' : 'الكارت كمل · المكافأة جاهزة',
+      firstName(alias),
+    ),
+    body:
+      branchName.trim().slice(0, 80) +
+      ' · ' +
+      (title?.trim().slice(0, 60) || (en ? 'reward' : 'المكافأة')) +
+      (en ? ' · scan their Redeem code to hand it over' : ' · امسح كود الاستبدال علشان تسلّمها'),
+    url: '/cashier',
+    tag: 'reward-earned:' + rewardId,
+    lang,
+    dir: direction(lang),
+  };
+}
+// A reward was handed over; the card has started its next cycle.
+export function rewardRedeemedNotice(
+  lang: PushLanguage,
+  rewardId: string,
+  branchName: string,
+  alias?: string | null,
+  title?: string | null,
+  cycle?: number | null,
+): PushNotice {
+  const en = lang === 'en';
+  return {
+    title: titled(en ? 'Reward redeemed' : 'المكافأة اتصرفت', firstName(alias)),
+    body:
+      branchName.trim().slice(0, 80) +
+      ' · ' +
+      (title?.trim().slice(0, 60) || (en ? 'reward' : 'المكافأة')) +
+      (cycle ? (en ? ' · card ' + cycle + ' started' : ' · بدأ كارت ' + cycle) : ''),
+    url: '/cashier',
+    tag: 'reward-redeemed:' + rewardId,
+    lang,
+    dir: direction(lang),
+  };
+}
 export function testNotice(lang: PushLanguage): PushNotice {
   return {
     title: lang === 'en' ? 'Notifications are on' : 'الإشعارات شغالة',

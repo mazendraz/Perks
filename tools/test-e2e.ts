@@ -1068,8 +1068,9 @@ try {
   await cp.getByRole('button', { name: 'Next customer', exact: true }).click();
   await cp.getByLabel("Or type the 6 digits on the customer's phone", { exact: true }).fill(token);
   await cp.getByRole('button', { name: 'Read code', exact: true }).click();
-  await cp.getByRole('button', { name: 'Redeem', exact: true }).click();
-  await reloadPage(up);
+  // A full card reads as full on the till, with the reward the customer pressed Redeem on first.
+  await cp.getByText('The customer asked for this one', { exact: true }).waitFor();
+  await cp.getByText('Stamps saved for the next card', { exact: true }).waitFor();
   await up.evaluate(() => {
     const events: string[] = [];
     (window as unknown as { motionEvents: string[] }).motionEvents = events;
@@ -1083,9 +1084,35 @@ try {
       attributeFilter: ['data-card-motion'],
     });
   });
+  await cp.getByRole('button', { name: 'Redeem', exact: true }).click();
+  // No reload: the customer's phone brings the confirmation up by itself.
   await up.getByRole('button', { name: 'Yes, I am redeeming', exact: true }).click();
   await cp.getByRole('button', { name: 'Complete redemption', exact: true }).click();
   await cp.getByRole('heading', { name: 'Reward redeemed', exact: true }).waitFor();
+  // A second hand-over of the same reward is refused, whatever key it carries.
+  const redeemedChallenge = (
+    await db.query(
+      "SELECT id FROM redemption_challenges WHERE membership_id=$1 AND status='completed'",
+      [membership],
+    )
+  ).rows[0].id;
+  const doubled = await call(
+    cashier,
+    '/merchants/' + mid + '/redemption-challenges/' + redeemedChallenge + '/complete',
+    {},
+    randomUUID(),
+  );
+  assert.equal(doubled.status(), 409);
+  assert.equal(
+    (
+      await db.query(
+        'SELECT count(*)::int AS n FROM reward_redemptions rd JOIN reward_grants g ON g.id=rd.reward_id WHERE g.membership_id=$1',
+        [membership],
+      )
+    ).rows[0].n,
+    1,
+  );
+  ok('A double redemption is refused and the reward is redeemed exactly once');
   const reference = (await cp.locator('.receipt-result bdi').textContent())!;
   await up.getByText('Redeemed', { exact: true }).waitFor();
   assert.equal(await up.locator(mainCardFilled).count(), 0);
@@ -1619,6 +1646,50 @@ try {
   ok(
     'Expired customer sessions resume the same card automatically from the valid device credential',
   );
+  // A card left holding a full card's worth of stamps with no reward (what a stuck card looks like)
+  // is completed by the repair with no stamp lost, and the customer can redeem it.
+  const stuck = (
+    await db.query(
+      `SELECT ms.program_version_id,v.threshold,a.balance,(SELECT branch_id FROM loyalty_transactions WHERE membership_id=ms.id ORDER BY sequence DESC LIMIT 1) AS branch_id
+       FROM memberships ms JOIN loyalty_accounts a ON a.membership_id=ms.id JOIN program_versions v ON v.id=ms.program_version_id WHERE ms.id=$1`,
+      [membership],
+    )
+  ).rows[0];
+  const stuckOp = (
+    await db.query(
+      "INSERT INTO operations(actor_id,merchant_id,scope,idempotency_key,request_hash,status,committed_at) SELECT user_id,merchant_id,'test.stuck',$2,'x','committed',clock_timestamp() FROM memberships WHERE id=$1 RETURNING id",
+      [membership, randomUUID()],
+    )
+  ).rows[0].id;
+  const stuckTx = randomUUID(),
+    extra = stuck.threshold + 1 - stuck.balance;
+  await db.query(
+    "INSERT INTO loyalty_transactions(id,public_reference,merchant_id,membership_id,program_version_id,branch_id,operation_id,type,quantity,source) VALUES($1,$2,$3,$4,$5,$6,$7,'award',$8,'auto')",
+    [
+      stuckTx,
+      'TX-STUCK-' + stuckTx.slice(0, 8),
+      mid,
+      membership,
+      stuck.program_version_id,
+      stuck.branch_id,
+      stuckOp,
+      extra,
+    ],
+  );
+  await db.query(
+    "INSERT INTO ledger_entries(merchant_id,membership_id,transaction_id,program_version_id,type,amount) VALUES($1,$2,$3,$4,'earn',$5)",
+    [mid, membership, stuckTx, stuck.program_version_id, extra],
+  );
+  await db.query('UPDATE loyalty_accounts SET balance=$2 WHERE membership_id=$1', [
+    membership,
+    stuck.threshold + 1,
+  ]);
+  assert.equal(Number((await db.query('SELECT repair_full_cards() AS n')).rows[0].n), 1);
+  await navigateTo(up, '/customer/' + membership);
+  await up.getByText('Your reward is ready!', { exact: true }).first().waitFor();
+  await up.getByRole('button', { name: 'Redeem', exact: true }).first().waitFor();
+  await up.getByText('1 stamps saved for your next card', { exact: true }).waitFor();
+  ok('A card stuck full without a reward is repaired with no stamp lost and offers Redeem');
   if ((await op.locator('html').getAttribute('lang')) === 'ar')
     await op.getByRole('button', { name: 'English', exact: true }).click();
   await login(op, email('owner'), '/login', true, ownerNewPassword);

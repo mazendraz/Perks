@@ -785,13 +785,23 @@ try {
   // The card no longer offers its QR for stamps (only a reward's Redeem button opens it); the token the
   // cashier scans comes from the same authenticated endpoint that button uses.
   assert.equal(await up.getByRole('button', { name: 'Show my code', exact: true }).count(), 0);
-  const presentation = await call(
-    customer,
-    '/me/memberships/' + membership + '/presentation-tokens',
-    {},
-    randomUUID(),
+  // A customer's device session is read through the customer workspace, as the card page does.
+  const holder = await (
+    await customer.request.get('/api/v1/session', { headers: { 'x-nuqta-workspace': 'customer' } })
+  ).json();
+  const presentation = await customer.request.post(
+    '/api/v1/me/memberships/' + membership + '/presentation-tokens',
+    {
+      headers: {
+        origin,
+        'x-csrf-token': holder.csrfToken,
+        'idempotency-key': randomUUID(),
+        'x-nuqta-workspace': 'customer',
+      },
+      data: {},
+    },
   );
-  assert.equal(presentation.status(), 200);
+  assert.equal(presentation.status(), 200, await presentation.text());
   let token = (await presentation.json()).token as string;
   assert.match(token, /^NQP:/);
   ok('Device-bound customer receives a persisted branded card and real QR without email/password');

@@ -238,8 +238,8 @@ const messages: Record<string, Line> = {
     'You already have an open request with the Perks team. Wait for our reply or withdraw it in My plan.',
   ],
   NO_RECIPIENTS: [
-    'مفيش عملاء توصلهم الرسالة دي دلوقتي. اختار مجموعة تانية، واللي وصلتله رسالة النهارده مش هيتبعتله تاني.',
-    'Nobody would get this message right now. Pick another group; anyone messaged today is skipped.',
+    'مفيش عملاء ممكن توصلهم الرسالة دي دلوقتي. راجع عدد المستلمين وسبب الاستبعاد.',
+    'Nobody can receive this message right now. Check the recipient count for the reason.',
   ],
   WALLET_MESSAGES_UNAVAILABLE: [
     'رسايل Wallet لسه متفعلتش. كلّم Perks على 01006111380.',

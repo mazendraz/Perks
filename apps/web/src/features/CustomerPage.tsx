@@ -861,7 +861,7 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
                   <WalletPanel
                     membershipId={card.id}
                     lang={lang}
-                    onPreferences={() => setTab('preferences')}
+                    onPreferences={() => void preferenceTab()}
                   />
                   <CustomerRequests
                     card={card}
@@ -961,8 +961,8 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
                               ? 'رسايل واتساب من المحل'
                               : 'WhatsApp messages from the shop',
                             push: ar
-                              ? 'تذكيرات على الموبايل لما مكافأتك تقرب'
-                              : 'Phone reminders when your reward is close',
+                              ? 'إشعارات الـWallet من المحل'
+                              : 'Wallet notifications from this shop',
                           } as Record<string, string>
                         )[p.channel] || p.channel}
                       </label>

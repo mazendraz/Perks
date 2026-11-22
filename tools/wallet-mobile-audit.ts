@@ -67,6 +67,10 @@ export async function auditWalletPresentation(page: Page, project: string, direc
       }
     }
     await page.getByRole('button', { name: 'English', exact: true }).click();
+    await page.getByRole('button', { name: 'Wallet notification settings', exact: true }).click();
+    await page
+      .getByRole('checkbox', { name: 'Wallet notifications from this shop', exact: true })
+      .waitFor();
     await page.goto(current.origin + memberPath + '?wallet=1', { waitUntil: 'domcontentloaded' });
     // The Wallet link opens the card; the personal QR opens only from a reward's Redeem button.
     await page.locator('.loyalty-card').first().waitFor();

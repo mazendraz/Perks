@@ -98,7 +98,7 @@ export function WalletPanel({
       )}
       {(wallets.apple || wallets.google) && onPreferences && (
         <button className="text-button" onClick={onPreferences}>
-          {ar ? 'اختار تذكيرات ورسائل المحل' : 'Choose business reminders and messages'}
+          {ar ? 'إعدادات إشعارات الـWallet' : 'Wallet notification settings'}
         </button>
       )}
     </section>

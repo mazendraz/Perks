@@ -10,14 +10,15 @@ import { api, ApiError, errorText } from '../../api.js';
 import { Icon } from '../../../../../packages/ui/src/Icon.js';
 import { pick, say } from './copy.js';
 import { num } from './parts.js';
+import { useWalletMessagePreview, WalletReachDetails } from '../WalletReach.js';
 
 const MAX = 150;
 const t = {
   title: { ar: 'ابعت رسالة على الـWallet', en: 'Send a Wallet message' },
   to: { ar: 'هتوصل لـ', en: 'Goes to' },
   reach: {
-    ar: '{n} زبون عندهم الكارت في الـWallet ووافقوا على الإشعارات',
-    en: '{n} customers with the card in Wallet who allow notifications',
+    ar: 'زبون ممكن توصلهم رسالة الـWallet',
+    en: 'customers can receive this Wallet message',
   },
   reachOf: { ar: '(من {total} في الشريحة)', en: '(of {total} in this group)' },
   counting: { ar: 'بنعدّ…', en: 'Counting…' },
@@ -34,10 +35,6 @@ const t = {
   tooLong: {
     ar: 'اكتب الرسالة في 150 حرف أو أقل. تقدر تستخدم {name} و{business} بس.',
     en: 'Keep it to 150 characters. You can use {name} and {business} only.',
-  },
-  nobody: {
-    ar: 'محدش في الشريحة دي عنده الكارت في الـWallet بإشعارات شغالة دلوقتي.',
-    en: 'Nobody in this group has the card in Wallet with notifications on right now.',
   },
   sent: {
     ar: 'تمام! الرسالة هتوصل لـ{n} زبون {when}.',
@@ -63,7 +60,6 @@ export function SendSheet({
   merchantId,
   audience,
   label,
-  groupSize,
   lang,
   onClose,
   onSent,
@@ -71,15 +67,14 @@ export function SendSheet({
   merchantId: string;
   audience: WalletAudience;
   label: string;
-  groupSize: number;
   lang: Language;
   onClose: () => void;
   onSent: (message: string) => void;
 }) {
   const base = '/merchants/' + merchantId + '/wallet-messages';
   const template = segmentMessages[audience];
+  const { preview, error: previewError, refresh } = useWalletMessagePreview(base, audience);
   const [state, setState] = useState<State | null>(null),
-    [reach, setReach] = useState<number | null>(null),
     [body, setBody] = useState(template?.ar ?? ''),
     [key, setKey] = useState(() => crypto.randomUUID()),
     [busy, setBusy] = useState(false),
@@ -88,12 +83,7 @@ export function SendSheet({
     api<State>(base)
       .then(setState)
       .catch((e) => setError(errorText(e, lang)));
-    api<{ customers: number }>(
-      base + '/preview?audience=' + audience + (audience === 'inactive' ? '&inactiveDays=30' : ''),
-    )
-      .then((r) => setReach(r.customers))
-      .catch(() => setReach(null));
-  }, [merchantId, audience]);
+  }, [merchantId]);
   const left = state && state.limit !== null ? Math.max(0, state.limit - state.used) : null;
   const noProvider = state && !state.providers.apple && !state.providers.google;
   const input = {
@@ -104,7 +94,7 @@ export function SendSheet({
     ...(template && body.trim() === template.ar ? { bodyEn: template.en } : {}),
   };
   const valid = walletMessageInput.safeParse(input).success;
-  const canSend = !!state && !noProvider && valid && reach !== 0 && left !== 0 && !busy;
+  const canSend = !!state && !noProvider && valid && !!preview?.customers && left !== 0 && !busy;
   const send = async () => {
     setBusy(true);
     setError('');
@@ -123,6 +113,7 @@ export function SendSheet({
       );
     } catch (e) {
       setError(errorText(e, lang));
+      if (e instanceof ApiError && e.code === 'NO_RECIPIENTS') refresh();
       if (!(e instanceof ApiError) || e.status !== 0) setKey(crypto.randomUUID());
     } finally {
       setBusy(false);
@@ -154,22 +145,38 @@ export function SendSheet({
             <Icon name="close" />
           </button>
         </header>
-        <p className="an-reach" role="status">
-          {reach === null ? (
-            pick(t.counting, lang)
-          ) : (
-            <>
-              <strong className="an-num">{num(reach, lang)}</strong>{' '}
-              {say(t.reach, lang, { n: '' }).trim()}{' '}
-              {groupSize > reach && (
-                <span className="an-muted">
-                  {say(t.reachOf, lang, { total: num(groupSize, lang) })}
-                </span>
-              )}
-            </>
-          )}
-        </p>
-        {reach === 0 && !noProvider && <p className="an-callout warn">{pick(t.nobody, lang)}</p>}
+        {previewError ? (
+          <div className="an-callout warn" role="alert">
+            <p>{errorText(previewError, lang)}</p>
+            <button className="text-button" type="button" onClick={refresh}>
+              {lang === 'ar' ? 'جرّب تاني' : 'Try again'}
+            </button>
+          </div>
+        ) : (
+          <p className="an-reach" role="status">
+            {!preview ? (
+              pick(t.counting, lang)
+            ) : (
+              <>
+                <strong className="an-num">{num(preview.customers, lang)}</strong>{' '}
+                {pick(t.reach, lang)}{' '}
+                {preview.groupSize > preview.customers && (
+                  <span className="an-muted">
+                    {say(t.reachOf, lang, { total: num(preview.groupSize, lang) })}
+                  </span>
+                )}
+              </>
+            )}
+          </p>
+        )}
+        {preview && !noProvider && (
+          <WalletReachDetails
+            preview={preview}
+            lang={lang}
+            refresh={refresh}
+            className="an-callout warn"
+          />
+        )}
         {noProvider && <p className="an-callout warn">{pick(t.noWallet, lang)}</p>}
         <label className="an-message">
           <span>{pick(t.message, lang)}</span>

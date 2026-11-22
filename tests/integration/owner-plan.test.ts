@@ -354,7 +354,15 @@ test('manual Wallet messages: preview, consent, the monthly allowance and one me
   const base = '/api/v1/merchants/' + s.mid + '/wallet-messages';
   const preview = await app.inject({ url: base + '/preview?audience=all', headers: s.owner });
   assert.equal(preview.statusCode, 200, preview.body);
-  assert.equal(preview.json().customers, 3, 'the customer without consent is left out');
+  assert.deepEqual(preview.json(), {
+    groupSize: 4,
+    customers: 3,
+    apple: 0,
+    google: 3,
+    notLinked: 0,
+    notificationsOff: 1,
+    recentlyContacted: 0,
+  });
   const near = await app.inject({ url: base + '/preview?audience=near_reward', headers: s.owner });
   assert.equal(near.json().customers, 1);
   const bad = await post(s.owner, base, { audience: 'all', bodyAr: 'أهلًا {phone}' });
@@ -369,6 +377,16 @@ test('manual Wallet messages: preview, consent, the monthly allowance and one me
   assert.equal(state.used, 1);
   assert.equal(state.limit, 2);
   assert.equal(state.history[0].waiting, 3);
+  const waiting = await app.inject({ url: base + '/preview?audience=all', headers: s.owner });
+  assert.deepEqual(waiting.json(), {
+    groupSize: 4,
+    customers: 0,
+    apple: 0,
+    google: 0,
+    notLinked: 0,
+    notificationsOff: 1,
+    recentlyContacted: 3,
+  });
   // Same customers, same day: nobody to send to, and the allowance is not used.
   const twice = await post(s.owner, base, { audience: 'all', bodyAr: 'تاني' });
   assert.equal(twice.statusCode, 409);
@@ -388,7 +406,22 @@ test('manual Wallet messages: preview, consent, the monthly allowance and one me
   assert.equal(third.statusCode, 409);
   assert.equal(third.json().error.code, 'PLAN_LIMIT_REACHED');
   assert.equal(third.json().error.limit, 2);
-  assert.ok(list.length === 4);
+  // A preference change can make the saved card reachable without re-adding it to Wallet.
+  await db.query(
+    "UPDATE consent_current SET granted=true WHERE merchant_id=$1 AND user_id=$2 AND channel='push'",
+    [s.mid, list[3]!.user],
+  );
+  await db.query('DELETE FROM google_wallet_objects WHERE membership_id=$1', [list[1]!.membership]);
+  const changed = await app.inject({ url: base + '/preview?audience=all', headers: s.owner });
+  assert.deepEqual(changed.json(), {
+    groupSize: 4,
+    customers: 3,
+    apple: 0,
+    google: 3,
+    notLinked: 1,
+    notificationsOff: 0,
+    recentlyContacted: 0,
+  });
 });
 
 test('a queued message waits for shop hours, then reaches the Google card once', async () => {

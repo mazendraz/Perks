@@ -8,6 +8,7 @@ import {
 import { api, ApiError, errorText } from '../api.js';
 import { Select } from '../controls/Select.js';
 import { day } from './billing-labels.js';
+import { useWalletMessagePreview, WalletReachDetails } from './WalletReach.js';
 
 interface State {
   used: number;
@@ -56,12 +57,12 @@ export function WalletMessages({ merchantId, lang }: { merchantId: string; lang:
     [bodyAr, setBodyAr] = useState(''),
     [bodyEn, setBodyEn] = useState(''),
     [showEn, setShowEn] = useState(false),
-    [count, setCount] = useState<number | null>(null),
-    [confirm, setConfirm] = useState(false),
+    [confirmedReach, setConfirmedReach] = useState<number | null>(null),
     [sendKey, setSendKey] = useState(''),
     [busy, setBusy] = useState(false),
     [formError, setFormError] = useState('');
   const base = '/merchants/' + merchantId + '/wallet-messages';
+  const { preview, error: previewError, refresh } = useWalletMessagePreview(base, audience, days);
   const load = async () => {
     try {
       setState(await api<State>(base));
@@ -72,26 +73,6 @@ export function WalletMessages({ merchantId, lang }: { merchantId: string; lang:
   useEffect(() => {
     void load();
   }, [merchantId]);
-  // Live count of who would get it.
-  useEffect(() => {
-    let live = true;
-    setCount(null);
-    const t = setTimeout(() => {
-      api<{ customers: number }>(
-        base +
-          '/preview?audience=' +
-          audience +
-          (audience === 'inactive' ? '&inactiveDays=' + days : ''),
-      )
-        .then((r) => live && setCount(r.customers))
-        .catch(() => live && setCount(null));
-    }, 250);
-    return () => {
-      live = false;
-      clearTimeout(t);
-    };
-  }, [audience, days, merchantId]);
-
   if (!state)
     return error ? (
       <p role="alert" className="notice error">
@@ -114,6 +95,7 @@ export function WalletMessages({ merchantId, lang }: { merchantId: string; lang:
     ...(showEn && bodyEn.trim() ? { bodyEn: bodyEn.trim() } : {}),
   };
   const review = () => {
+    if (!preview?.customers) return;
     setNotice('');
     const parsed = walletMessageInput.safeParse(body);
     if (!parsed.success) {
@@ -126,7 +108,7 @@ export function WalletMessages({ merchantId, lang }: { merchantId: string; lang:
     }
     setFormError('');
     setSendKey(crypto.randomUUID());
-    setConfirm(true);
+    setConfirmedReach(preview.customers);
   };
   const send = async () => {
     setBusy(true);
@@ -136,7 +118,7 @@ export function WalletMessages({ merchantId, lang }: { merchantId: string; lang:
         key: sendKey,
         body,
       });
-      setConfirm(false);
+      setConfirmedReach(null);
       setBodyAr('');
       setBodyEn('');
       const later = Date.parse(r.sendAfter) > Date.now() + 60000;
@@ -146,9 +128,11 @@ export function WalletMessages({ merchantId, lang }: { merchantId: string; lang:
           : `Done! It reaches ${r.recipients} customers${later ? ' at 10 AM, so nobody is woken up' : ' within minutes'}.`,
       );
       await load();
+      refresh();
     } catch (e) {
-      setConfirm(false);
+      setConfirmedReach(null);
       setFormError(errorText(e, lang));
+      if (e instanceof ApiError && e.code === 'NO_RECIPIENTS') refresh();
       if (!(e instanceof ApiError) || e.status !== 0) setSendKey(crypto.randomUUID());
     } finally {
       setBusy(false);
@@ -225,15 +209,27 @@ export function WalletMessages({ merchantId, lang }: { merchantId: string; lang:
               </Select>
             </label>
           )}
-          <p className="audience-count" role="status">
-            {count === null
-              ? ar
-                ? 'بنعد…'
-                : 'Counting…'
-              : ar
-                ? `هتوصل لـ ${count} عميل`
-                : `Reaches ${count} customers`}
-          </p>
+          {previewError ? (
+            <div className="notice error" role="alert">
+              <p>{errorText(previewError, lang)}</p>
+              <button className="text-button" type="button" onClick={refresh}>
+                {ar ? 'جرّب تاني' : 'Try again'}
+              </button>
+            </div>
+          ) : (
+            <p className="audience-count" role="status">
+              {!preview
+                ? ar
+                  ? 'بنعد…'
+                  : 'Counting…'
+                : ar
+                  ? `هتوصل لـ ${preview.customers} من ${preview.groupSize} عميل`
+                  : `Reaches ${preview.customers} of ${preview.groupSize} customers`}
+            </p>
+          )}
+          {preview && !noProvider && (
+            <WalletReachDetails preview={preview} lang={lang} refresh={refresh} />
+          )}
           <label>
             {ar ? 'الرسالة' : 'Message'}
             <textarea
@@ -285,7 +281,7 @@ export function WalletMessages({ merchantId, lang }: { merchantId: string; lang:
           )}
           <button
             className="primary"
-            disabled={busy || noProvider || !bodyAr.trim() || count === 0 || left === 0}
+            disabled={busy || noProvider || !bodyAr.trim() || !preview?.customers || left === 0}
             onClick={review}
           >
             {left === 0
@@ -296,13 +292,6 @@ export function WalletMessages({ merchantId, lang }: { merchantId: string; lang:
                 ? 'راجع وابعت'
                 : 'Review and send'}
           </button>
-          {count === 0 && (
-            <p className="muted">
-              {ar
-                ? 'مفيش عملاء في المجموعة دي دلوقتي. اللي وصلتله رسالة النهارده مش هيتبعتله تاني.'
-                : 'Nobody is in this group right now. (Anyone who got a message today is skipped.)'}
-            </p>
-          )}
         </div>
         <aside className="lockscreen" aria-label={ar ? 'شكل الإشعار' : 'Notification preview'}>
           <div className="lockscreen-time">9:41</div>
@@ -357,7 +346,7 @@ export function WalletMessages({ merchantId, lang }: { merchantId: string; lang:
         )}
       </section>
 
-      {confirm && (
+      {confirmedReach !== null && (
         <div className="modal-backdrop">
           <section className="dialog" role="dialog" aria-modal="true" aria-labelledby="wm-confirm">
             <h2 id="wm-confirm">{ar ? 'نبعت الرسالة؟' : 'Send this message?'}</h2>
@@ -366,8 +355,8 @@ export function WalletMessages({ merchantId, lang }: { merchantId: string; lang:
             </p>
             <p>
               {ar
-                ? `هتوصل لـ ${count ?? 0} عميل، وهتستخدم رسالة${left !== null ? ` (فاضلك ${left - 1} بعدها الشهر ده)` : ''}. مينفعش ترجع فيها بعد ما تتبعت.`
-                : `It reaches ${count ?? 0} customers and uses one message${left !== null ? ` (${left - 1} left this month)` : ''}. It cannot be undone.`}
+                ? `هتوصل لـ ${confirmedReach} عميل، وهتستخدم رسالة${left !== null ? ` (فاضلك ${left - 1} بعدها الشهر ده)` : ''}. مينفعش ترجع فيها بعد ما تتبعت.`
+                : `It reaches ${confirmedReach} customers and uses one message${left !== null ? ` (${left - 1} left this month)` : ''}. It cannot be undone.`}
             </p>
             <div className="form-actions">
               <button
@@ -375,7 +364,7 @@ export function WalletMessages({ merchantId, lang }: { merchantId: string; lang:
                 className="secondary"
                 data-dialog-close
                 disabled={busy}
-                onClick={() => setConfirm(false)}
+                onClick={() => setConfirmedReach(null)}
               >
                 {ar ? 'رجوع' : 'Go back'}
               </button>

@@ -76,6 +76,16 @@ export const walletPreviewQuery = z
   })
   .strict();
 
+export interface WalletMessagePreview {
+  groupSize: number;
+  customers: number;
+  apple: number;
+  google: number;
+  notLinked: number;
+  notificationsOff: number;
+  recentlyContacted: number;
+}
+
 /** Fills {name} and {business} in a manual Wallet message. */
 export function fillWalletMessage(body: string, name: string, business: string) {
   return body.replaceAll('{name}', name || '').replaceAll('{business}', business);

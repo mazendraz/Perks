@@ -62,9 +62,7 @@ export function AnalyticsPage({
     [error, setError] = useState(''),
     [sheet, setSheet] = useState<SegmentKey | null>(null),
     [cadenceOpen, setCadenceOpen] = useState(false),
-    [send, setSend] = useState<{ audience: WalletAudience; label: string; size: number } | null>(
-      null,
-    ),
+    [send, setSend] = useState<{ audience: WalletAudience; label: string } | null>(null),
     [customer, setCustomer] = useState<string | null>(null),
     [notice, setNotice] = useState('');
   const seq = useRef(0);
@@ -110,15 +108,15 @@ export function AnalyticsPage({
   const open = (key: SegmentKey) => !sample && setSheet(key);
   const onOpenCustomer = (profileId: string) => !sample && setCustomer(profileId);
   // Owners reach a group with a ready Wallet message; managers see who is in it.
-  const sendTo = (key: SegmentKey, size: number) => {
+  const sendTo = (key: SegmentKey) => {
     const audience = audienceFor(key);
     if (!owner || !audience) return false;
-    setSend({ audience, label: pick(copy.segments[key], lang), size });
+    setSend({ audience, label: pick(copy.segments[key], lang) });
     return true;
   };
   const act = (a: ActionCard) => {
     if (sample) return;
-    if (!sendTo(a.key, a.count)) setSheet(a.key);
+    if (!sendTo(a.key)) setSheet(a.key);
   };
 
   return (
@@ -387,7 +385,7 @@ export function AnalyticsPage({
                 onClick={() => {
                   const key = sheet;
                   setSheet(null);
-                  sendTo(key, view.segments[key]);
+                  sendTo(key);
                 }}
               >
                 {pick(copy.sendToGroup, lang)}
@@ -401,7 +399,6 @@ export function AnalyticsPage({
           merchantId={merchantId}
           audience={send.audience}
           label={send.label}
-          groupSize={send.size}
           lang={lang}
           onClose={() => setSend(null)}
           onSent={(message) => {

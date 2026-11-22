@@ -1,3 +1,4 @@
+import { WhyDisabled } from '../controls/WhyDisabled.js';
 import { Select } from '../controls/Select.js';
 import { ActionLabel, Icon } from '../../../../packages/ui/src/Icon.js';
 import { FieldErrors, fieldProps } from '../FieldErrors.js';
@@ -532,6 +533,18 @@ export function CashierPage({ grant, lang }: { grant: Grant; lang: Language }) {
               +
             </button>
           </div>
+          <WhyDisabled>
+            {!member.allowMultiple
+              ? ar
+                ? 'البرنامج ده بختم واحد بس في كل زيارة.'
+                : 'This program gives one stamp per visit.'
+              : Math.min(grant.max_qty, member.maxPerTx) > 1 &&
+                  qty >= Math.min(grant.max_qty, member.maxPerTx)
+                ? ar
+                  ? `أقصى عدد في المرة الواحدة ${Math.min(grant.max_qty, member.maxPerTx)}.`
+                  : `At most ${Math.min(grant.max_qty, member.maxPerTx)} at a time.`
+                : false}
+          </WhyDisabled>
           <p className="muted">
             {ar
               ? 'عملية الشراء دي زيارة واحدة مهما كان عدد الأختام.'
@@ -575,6 +588,12 @@ export function CashierPage({ grant, lang }: { grant: Grant; lang: Language }) {
               {ar ? 'تأكيد الأختام' : 'Confirm stamps'}
             </button>
           </div>
+          <WhyDisabled>
+            {!!sessionStorage.getItem(storageKey) &&
+              (ar
+                ? 'الأختام دي اتبعتت للتأكيد قبل كده، فمينفعش تتعدّل. دوس «تأكيد الأختام» عشان تخلّصها من غير ما تتكرر.'
+                : 'These stamps were already sent for confirmation, so they can’t be edited. Tap Confirm stamps to finish without duplicating them.')}
+          </WhyDisabled>
         </section>
       )}
       {step === 'pending' && (

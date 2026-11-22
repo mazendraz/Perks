@@ -1,0 +1,27 @@
+.why-disabled {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 6px;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--muted, #6b6e80);
+}
+.why-disabled svg {
+  flex: none;
+  margin-top: 3px;
+  opacity: 0.8;
+}
+.form-actions + .why-disabled,
+.why-disabled + .form-actions {
+  margin-top: 8px;
+}
+/* Inside a row of buttons, the reason takes its own line under them. */
+.form-actions > .why-disabled {
+  flex-basis: 100%;
+  order: 99;
+  margin-top: 0;
+}
+.form-actions:has(> .why-disabled) {
+  flex-wrap: wrap;
+}

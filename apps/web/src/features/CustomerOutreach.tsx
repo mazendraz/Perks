@@ -1,3 +1,4 @@
+import { WhyDisabled } from '../controls/WhyDisabled.js';
 import { PhoneInput } from '../controls/PhoneInput.js';
 import { useEffect, useState, useRef } from 'react';
 import type { Language } from '../../../../packages/contracts/src/index.js';
@@ -340,13 +341,17 @@ export function CustomerOutreach({ merchantId, lang }: { merchantId: string; lan
                     >
                       {ar ? 'رسالة واتساب' : 'WhatsApp message'}
                     </button>
-                    {(!c.phonePresent || !c.whatsappConsent) && (
-                      <small className="muted">
-                        {ar
-                          ? 'العميل يقدر يكملها من تفضيلات كارته.'
-                          : 'The customer can update this in card preferences.'}
-                      </small>
-                    )}
+                    <WhyDisabled>
+                      {!c.phonePresent
+                        ? ar
+                          ? 'مفيش رقم موبايل للعميل ده. يقدر يضيفه من تفضيلات كارته.'
+                          : 'No phone number yet. The customer can add it in card preferences.'
+                        : !c.whatsappConsent
+                          ? ar
+                            ? 'العميل مش موافق على رسايل واتساب. يقدر يشغّلها من تفضيلات كارته.'
+                            : 'The customer hasn’t allowed WhatsApp messages. They can turn it on in card preferences.'
+                          : false}
+                    </WhyDisabled>
                   </td>
                 </tr>
               ))}

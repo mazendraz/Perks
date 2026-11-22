@@ -1,3 +1,4 @@
+import { WhyDisabled } from '../controls/WhyDisabled.js';
 import { Select } from '../controls/Select.js';
 import { PasswordField } from '../controls/PasswordField.js';
 import { useState } from 'react';
@@ -154,6 +155,12 @@ export function PlatformAccountForm({
             {error}
           </p>
         )}
+        <WhyDisabled>
+          {!selected.length &&
+            (ar
+              ? 'اختار فرع واحد على الأقل يشتغل فيه الحساب.'
+              : 'Choose at least one branch for this account.')}
+        </WhyDisabled>
         <div className="form-actions">
           <button type="button" className="secondary" data-dialog-close onClick={onClose}>
             {ar ? 'إغلاق' : 'Close'}

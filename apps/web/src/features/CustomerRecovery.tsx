@@ -1,3 +1,4 @@
+import { WhyDisabled } from '../controls/WhyDisabled.js';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import type { Grant, Language, Session } from '../../../../packages/contracts/src/index.js';
 import { customerPhone } from '../../../../packages/contracts/src/customer-identity.js';
@@ -661,6 +662,12 @@ export function TeamCustomerRecovery({
           <button className="secondary" disabled={busy || !branch}>
             {ar ? 'دوّر على الكارت' : 'Find the card'}
           </button>
+          <WhyDisabled>
+            {!branch &&
+              (ar
+                ? 'مفيش فرع شغال تختاره. فعّل فرع الأول من «الفروع».'
+                : 'There is no active branch to choose. Activate one in Branches first.')}
+          </WhyDisabled>
         </div>
       </form>
       {error && (

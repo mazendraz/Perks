@@ -1,3 +1,4 @@
+import { WhyDisabled } from '../controls/WhyDisabled.js';
 import { PhoneInput } from '../controls/PhoneInput.js';
 import { staffRoleLabel, statusLabel, transactionTypeLabel } from '../business-labels.js';
 import { portalAssetUrl } from '../portals.js';
@@ -1120,6 +1121,19 @@ export function MerchantPage({ grant, lang }: { grant: Grant; lang: Language }) 
                       >
                         {ar ? 'مراجعة ونشر العدد الجديد' : 'Review and publish stamp count'}
                       </button>
+                      <WhyDisabled>
+                        {preview.threshold === brandProgram.threshold
+                          ? ar
+                            ? 'غيّر عدد الأختام الأول، وبعدين انشره من هنا.'
+                            : 'Change the stamp count first, then publish it here.'
+                          : !Number.isInteger(preview.threshold) ||
+                              preview.threshold < 2 ||
+                              preview.threshold > 50
+                            ? ar
+                              ? 'عدد الأختام لازم يكون رقم صحيح من 2 لـ 50.'
+                              : 'The stamp count must be a whole number from 2 to 50.'
+                            : false}
+                      </WhyDisabled>
                     </div>
                   )
                 }
@@ -1334,6 +1348,10 @@ export function MerchantPage({ grant, lang }: { grant: Grant; lang: Language }) 
                 onChange={(e) => setInvite({ ...invite, maxQty: Number(e.target.value) })}
               />
             </label>
+            <WhyDisabled>
+              {!invite.branchIds.length &&
+                (ar ? 'اختار فرع واحد على الأقل.' : 'Choose at least one branch.')}
+            </WhyDisabled>
             <div className="form-actions">
               <button
                 type="button"

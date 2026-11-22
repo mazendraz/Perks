@@ -1,3 +1,4 @@
+import { WhyDisabled } from '../controls/WhyDisabled.js';
 import { useEffect, useState, type FormEvent } from 'react';
 import type { Language } from '../../../../packages/contracts/src/index.js';
 import {
@@ -766,6 +767,12 @@ export function PlanBilling({ merchantId, lang }: { merchantId: string; lang: La
                       ? `يوم التجديد ${day(s.currentPeriodEnd, lang)} (للتخفيض)`
                       : `On renewal ${day(s.currentPeriodEnd, lang)} (for downgrades)`}
                   </label>
+                  <WhyDisabled>
+                    {!s.currentPeriodEnd &&
+                      (ar
+                        ? 'الاشتراك ده مالوش تاريخ تجديد، فالتغيير هيبقى من دلوقتي.'
+                        : 'This subscription has no renewal date, so the change applies now.')}
+                  </WhyDisabled>
                 </fieldset>
                 <p className="muted">
                   {selectedPrice

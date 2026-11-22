@@ -1,3 +1,4 @@
+import { WhyDisabled } from '../controls/WhyDisabled.js';
 import { useEffect, useState } from 'react';
 import type { Language } from '../../../../packages/contracts/src/index.js';
 import { api, ApiError, errorText } from '../api.js';
@@ -175,6 +176,12 @@ export function PlatformTeam({ lang }: { lang: Language }) {
                             : 'Disabled'}
                       </span>
                     </button>
+                    <WhyDisabled>
+                      {a.self &&
+                        (ar
+                          ? 'ده حسابك، ومينفعش توقفه بنفسك. مسؤول تاني يقدر.'
+                          : 'This is your account; another administrator can switch it off.')}
+                    </WhyDisabled>
                     {a.lockedUntil && (
                       <small>
                         {ar

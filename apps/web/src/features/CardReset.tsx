@@ -1,3 +1,4 @@
+import { WhyDisabled } from '../controls/WhyDisabled.js';
 import { useState, type FormEvent } from 'react';
 import type { Grant, Language } from '../../../../packages/contracts/src/index.js';
 import { api, ApiError, errorText } from '../api.js';
@@ -130,6 +131,12 @@ export function CardReset({
               {ar ? 'تصفير الكارت' : 'Reset card'}
             </button>
           </div>
+          <WhyDisabled>
+            {reason.trim().length < 4 &&
+              (ar
+                ? 'اكتب السبب الأول (4 حروف على الأقل).'
+                : 'Write the reason first (at least 4 characters).')}
+          </WhyDisabled>
         </form>
       )}
       {!open && error && (

@@ -1,3 +1,4 @@
+import { WhyDisabled } from '../controls/WhyDisabled.js';
 import { useEffect, useState, type FormEvent } from 'react';
 import type { Language } from '../../../../packages/contracts/src/index.js';
 import {
@@ -744,6 +745,18 @@ export function MyPlan({
                             ? 'اطلب الترقية'
                             : 'Request upgrade'}
                     </button>
+                  )}
+                  {!isCurrent && (
+                    <WhyDisabled>
+                      {amount === undefined &&
+                        (ar
+                          ? period === 'annual'
+                            ? 'الباقة دي مش متاحة بالدفع السنوي. جرّب الشهري.'
+                            : 'الباقة دي مش متاحة بالدفع الشهري. جرّب السنوي.'
+                          : period === 'annual'
+                            ? 'Not available yearly. Try monthly.'
+                            : 'Not available monthly. Try yearly.')}
+                    </WhyDisabled>
                   )}
                 </article>
               );

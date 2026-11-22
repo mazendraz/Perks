@@ -1,3 +1,4 @@
+import { WhyDisabled } from '../controls/WhyDisabled.js';
 import { InstallAppButton } from './InstallCard.js';
 import { PhoneInput } from '../controls/PhoneInput.js';
 import { merchantStatusLabel, subscriptionPlanLabel } from '../business-labels.js';
@@ -880,6 +881,10 @@ export function PlatformPage({ lang, userId }: { lang: Language; userId: string 
                 >
                   {ar ? 'إضافة فرع' : 'Add branch'}
                 </button>
+                <WhyDisabled>
+                  {data.branches.length >= 10 &&
+                    (ar ? 'أقصى 10 فروع في الإعداد ده.' : 'Up to 10 branches in this setup.')}
+                </WhyDisabled>
                 <h2>{ar ? 'المالك والفريق' : 'Owner and staff'}</h2>
                 {data.staff.map((s, i) => (
                   <div className="subpanel" key={i}>

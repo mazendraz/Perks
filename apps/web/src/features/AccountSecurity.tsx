@@ -1,3 +1,4 @@
+import { WhyDisabled } from '../controls/WhyDisabled.js';
 import { Select } from '../controls/Select.js';
 import { useEffect, useState } from 'react';
 import type { Language } from '../../../../packages/contracts/src/index.js';
@@ -519,6 +520,11 @@ export function AccountSecurity({
               >
                 {ar ? 'إلغاء' : 'Cancel'}
               </button>
+              <WhyDisabled>
+                {action.type === 'access' &&
+                  !edit.branch_ids.length &&
+                  (ar ? 'اختار فرع واحد على الأقل.' : 'Choose at least one branch.')}
+              </WhyDisabled>
               <button
                 className="primary"
                 disabled={busy || (action.type === 'access' && !edit.branch_ids.length)}

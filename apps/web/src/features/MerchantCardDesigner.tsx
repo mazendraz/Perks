@@ -1,3 +1,4 @@
+import { WhyDisabled } from '../controls/WhyDisabled.js';
 import { PhoneInput } from '../controls/PhoneInput.js';
 import { portalAssetUrl } from '../portals.js';
 import { saveLogo } from '../controls/save-logo.js';
@@ -339,6 +340,19 @@ export function MerchantCardDesigner({
                   >
                     {ar ? 'مراجعة ونشر العدد الجديد' : 'Review and publish stamp count'}
                   </button>
+                  <WhyDisabled>
+                    {card.threshold === program.threshold
+                      ? ar
+                        ? 'غيّر عدد الأختام الأول، وبعدين انشره من هنا.'
+                        : 'Change the stamp count first, then publish it here.'
+                      : !Number.isInteger(card.threshold) ||
+                          card.threshold < 2 ||
+                          card.threshold > 50
+                        ? ar
+                          ? 'عدد الأختام لازم يكون رقم صحيح من 2 لـ 50.'
+                          : 'The stamp count must be a whole number from 2 to 50.'
+                        : false}
+                  </WhyDisabled>
                 </div>
               )
             }

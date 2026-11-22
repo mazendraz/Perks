@@ -1,3 +1,4 @@
+import { WhyDisabled } from '../controls/WhyDisabled.js';
 import { portalAssetUrl } from '../portals.js';
 import { ActionLabel } from '../../../../packages/ui/src/Icon.js';
 import {
@@ -107,6 +108,12 @@ export function EnrollmentCodes({ merchantId, lang }: { merchantId: string; lang
             <button className="primary" disabled={busy || !branch}>
               <ActionLabel icon="qr">{ar ? 'توليد الكود' : 'Generate code'}</ActionLabel>
             </button>
+            <WhyDisabled>
+              {!branch &&
+                (ar
+                  ? 'مفيش فرع شغال تختاره. فعّل فرع الأول من «الفروع».'
+                  : 'There is no active branch to choose. Activate one in Branches first.')}
+            </WhyDisabled>
             <button type="button" className="secondary" onClick={() => setCreating(false)}>
               {ar ? 'إلغاء' : 'Cancel'}
             </button>

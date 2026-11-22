@@ -45,9 +45,14 @@ export interface WalletCard {
   reminder_templates?: {
     wallet: { ar: string; en: string };
     walletReady?: { ar: string; en: string } | null;
+    /** Place in a reminder series; present from the second reminder of one absence. */
+    step?: number;
   } | null;
-  /** A message the shop sent by hand, while it is being delivered to this card. */
-  manual_message?: { id: string; ar: string; en: string } | null;
+  /**
+   * A message the shop sent by hand, while it is being delivered to this card. `repeat`: the same
+   * words already reached this card before.
+   */
+  manual_message?: { id: string; ar: string; en: string; repeat?: boolean } | null;
   /** Generation of the Wallet restore key (048); it moves on each time the link is used. */
   restore_generation?: number;
   /** The pass link with its restore key (wallet/restore.ts); absent in design previews. */
@@ -145,14 +150,29 @@ const reminderTexts = (card: WalletCard) =>
             en: walletReminderText(card.reminder_templates, card, 'en'),
           }
         : null;
-const reminderKey = (card: WalletCard) =>
-  reminderTexts(card)
-    ? 'reminder_' +
-      createHash('sha256')
-        .update(JSON.stringify(reminderTexts(card)))
-        .digest('hex')
-        .slice(0, 24)
-    : '';
+// Wallet announces the reminder field only when its value changes. The value is a hash of the
+// text, so the same words again (a later reminder in a series, or a message the shop repeats) would
+// be silent. Those carry a nonce; every other card keeps the hash it always had.
+const reminderNonce = (card: WalletCard) =>
+  card.manual_message
+    ? card.manual_message.repeat
+      ? card.manual_message.id
+      : null
+    : (card.reminder_templates?.step ?? 1) > 1
+      ? 'step' + card.reminder_templates!.step
+      : null;
+const reminderKey = (card: WalletCard) => {
+  const words = reminderTexts(card);
+  if (!words) return '';
+  const nonce = reminderNonce(card);
+  return (
+    'reminder_' +
+    createHash('sha256')
+      .update(JSON.stringify(nonce ? [words, nonce] : words))
+      .digest('hex')
+      .slice(0, 24)
+  );
+};
 const editionLabels = categoryEditions;
 export function texts(card: WalletCard) {
   const edition = editionLabels[templateCategory(card.template ?? 'classic')];
@@ -307,6 +327,53 @@ export function passJson(
     // Beside the logo, a long name would run into the stamps count: the logo alone says it.
     showName =
       !options.wordmark && !(options.logo && Array.from(card.merchant_name).length > LOGO_TEXT_MAX);
+  // Shared by both layouts. iOS 27 shows the poster and only announces changes to fields the
+  // poster itself has: without these, shop messages and reminders made no banner there.
+  const backFields = [
+    // Always present, even empty: Wallet announces a reminder (changeMessage) only when an
+    // existing field changes value, not when a field first appears.
+    {
+      key: 'reminder',
+      label: 'reminder_label',
+      value: reminderKey(card),
+      changeMessage: '%@',
+    },
+    { key: 'reward_full', label: 'reward_label', value: card.reward_title },
+    {
+      key: 'member',
+      label: 'member_label',
+      value: card.active && card.customer_name ? card.customer_name : 'member_value',
+    },
+    {
+      key: 'status',
+      label: 'status_label',
+      value: 'status_value',
+      changeMessage: 'status_change',
+    },
+    card.open_url
+      ? // Localized: the strings file holds the link, so its key stays out of pass.json text.
+        { key: 'open', label: 'open_label', value: 'open_value', attributedValue: 'open_link' }
+      : {
+          key: 'open',
+          label: 'open_label',
+          value: 'open_value',
+          attributedValue: `<a href="${escapeXml(cardUrl)}">${escapeXml(cardUrl)}</a>`,
+        },
+    ...(card.open_url
+      ? [
+          {
+            key: 'security',
+            label: 'security_label',
+            value: securityKey(card),
+            changeMessage: '%@',
+          },
+        ]
+      : []),
+    ...(card.reward_terms
+      ? [{ key: 'terms', label: 'terms_label', value: card.reward_terms }]
+      : []),
+    { key: 'about', label: 'about_label', value: 'about_value' },
+  ];
   return {
     formatVersion: 1,
     passTypeIdentifier: options.signer.passTypeIdentifier,
@@ -365,6 +432,7 @@ export function passJson(
           textAlignment: 'PKTextAlignmentCenter',
         },
       ],
+      backFields,
     },
     storeCard: {
       headerFields: [
@@ -388,51 +456,7 @@ export function passJson(
           textAlignment: 'PKTextAlignmentRight',
         },
       ],
-      backFields: [
-        // Always present, even empty: Wallet announces a reminder (changeMessage) only when an
-        // existing field changes value, not when a field first appears.
-        {
-          key: 'reminder',
-          label: 'reminder_label',
-          value: reminderKey(card),
-          changeMessage: '%@',
-        },
-        { key: 'reward_full', label: 'reward_label', value: card.reward_title },
-        {
-          key: 'member',
-          label: 'member_label',
-          value: card.active && card.customer_name ? card.customer_name : 'member_value',
-        },
-        {
-          key: 'status',
-          label: 'status_label',
-          value: 'status_value',
-          changeMessage: 'status_change',
-        },
-        card.open_url
-          ? // Localized: the strings file holds the link, so its key stays out of pass.json text.
-            { key: 'open', label: 'open_label', value: 'open_value', attributedValue: 'open_link' }
-          : {
-              key: 'open',
-              label: 'open_label',
-              value: 'open_value',
-              attributedValue: `<a href="${escapeXml(cardUrl)}">${escapeXml(cardUrl)}</a>`,
-            },
-        ...(card.open_url
-          ? [
-              {
-                key: 'security',
-                label: 'security_label',
-                value: securityKey(card),
-                changeMessage: '%@',
-              },
-            ]
-          : []),
-        ...(card.reward_terms
-          ? [{ key: 'terms', label: 'terms_label', value: card.reward_terms }]
-          : []),
-        { key: 'about', label: 'about_label', value: 'about_value' },
-      ],
+      backFields,
     },
   };
 }

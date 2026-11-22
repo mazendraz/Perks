@@ -528,4 +528,21 @@ test('the Apple card carries the newest manual message; customers never see plan
   assert.equal(g.manual_message, undefined);
   for (const field of ['plan', 'limits', 'price_minor', 'subscription'])
     assert.equal(card[field], undefined, field);
+  assert.equal(card.manual_message.repeat, undefined, 'first-time words carry no marker');
+  // The same words again are marked, so the pass value changes and Wallet announces them.
+  const again = (
+    await db.query(
+      `INSERT INTO wallet_messages(merchant_id,audience,body_ar,recipients,send_after,created_by)
+       VALUES($1,'all','عرض النهارده',1,now(),$2) RETURNING id`,
+      [s.mid, s.uid],
+    )
+  ).rows[0].id;
+  await db.query(
+    `INSERT INTO wallet_message_deliveries(message_id,merchant_id,profile_id,membership_id,channel,next_at,status,created_at)
+     SELECT $1,merchant_id,profile_id,id,'apple',now(),'processing',clock_timestamp()+interval '1 second' FROM memberships WHERE id=$2`,
+    [again, first!.membership],
+  );
+  const repeated = (await db.query('SELECT wallet_card_json($1) AS c', [first!.membership])).rows[0]
+    .c;
+  assert.equal(repeated.manual_message.repeat, true);
 });

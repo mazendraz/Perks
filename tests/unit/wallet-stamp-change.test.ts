@@ -53,3 +53,57 @@ test('the stamps field announces every stamp change, added or taken back, in neu
   // Apple requires the placeholder, or the notification is not shown.
   for (const lang of ['ar', 'en'] as const) assert.ok(strings[lang].stamp_change.includes('%@'));
 });
+
+type Field = { key: string; value: string; changeMessage?: string };
+const backOf = (c: WalletCard) =>
+  passJson(c, {
+    serial: c.id,
+    authToken: 'x'.repeat(32),
+    origin: 'https://perks.test',
+    signer,
+  }) as unknown as Record<'posterGeneric' | 'storeCard', { backFields: Field[] }>;
+const reminderValue = (c: WalletCard) =>
+  backOf(c).storeCard.backFields.find((f) => f.key === 'reminder')!.value;
+
+test('the iOS 27 poster carries the message and status fields, so it announces them too', () => {
+  const pass = backOf({
+    ...card,
+    manual_message: { id: '00000000-0000-4000-8000-0000000000aa', ar: 'أهلاً', en: 'Hi' },
+  });
+  for (const style of ['posterGeneric', 'storeCard'] as const) {
+    const reminder = pass[style].backFields.find((f) => f.key === 'reminder');
+    assert.ok(reminder, style + ' has the message field');
+    assert.equal(reminder.changeMessage, '%@');
+    assert.match(reminder.value, /^reminder_[0-9a-f]{24}$/);
+    assert.equal(
+      pass[style].backFields.find((f) => f.key === 'status')?.changeMessage,
+      'status_change',
+    );
+  }
+  assert.deepEqual(pass.posterGeneric.backFields, pass.storeCard.backFields);
+});
+
+test('repeated words still change the message field; first-time words keep their old value', () => {
+  const message = { id: '00000000-0000-4000-8000-0000000000aa', ar: 'أهلاً', en: 'Hi' };
+  const first = reminderValue({ ...card, manual_message: message });
+  // Unchanged formula for a first-time message: passes already on phones are not re-announced.
+  assert.equal(
+    reminderValue({
+      ...card,
+      manual_message: { ...message, id: '00000000-0000-4000-8000-0000000000bb' },
+    }),
+    first,
+  );
+  const again = reminderValue({
+    ...card,
+    manual_message: { ...message, id: '00000000-0000-4000-8000-0000000000bb', repeat: true },
+  });
+  assert.notEqual(again, first);
+  const templates = { wallet: { ar: 'فاضلك {left}', en: '{left} to go' } };
+  const step1 = reminderValue({ ...card, reminder_templates: templates });
+  assert.equal(reminderValue({ ...card, reminder_templates: { ...templates, step: 1 } }), step1);
+  const step2 = reminderValue({ ...card, reminder_templates: { ...templates, step: 2 } });
+  const step3 = reminderValue({ ...card, reminder_templates: { ...templates, step: 3 } });
+  assert.notEqual(step2, step1);
+  assert.notEqual(step3, step2);
+});

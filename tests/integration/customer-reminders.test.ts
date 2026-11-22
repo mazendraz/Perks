@@ -325,6 +325,27 @@ test('settings, customer consent, scheduling, leases, delivery and return tracki
     ).rows[0].steps,
     [1, 2, 3],
   );
+  // A later reminder of the series carries its step, so its words (often the same as the first
+  // one's) still change the pass and Wallet announces it.
+  const third = (
+    await db.query(
+      "SELECT id,status,created_at FROM customer_reminders WHERE profile_id=$1 AND channel='apple' AND step=3",
+      [profile],
+    )
+  ).rows[0];
+  await db.query("UPDATE customer_reminders SET status='accepted',created_at=now() WHERE id=$1", [
+    third.id,
+  ]);
+  assert.equal(
+    (await db.query('SELECT wallet_card_json($1) AS c', [membership])).rows[0].c.reminder_templates
+      .step,
+    3,
+  );
+  await db.query('UPDATE customer_reminders SET status=$2,created_at=$3 WHERE id=$1', [
+    third.id,
+    third.status,
+    third.created_at,
+  ]);
   // A visit restarts the absence: the queued third reminder is dropped before it is sent,
   // and nothing new is scheduled the same day. Collecting a reward counts as a visit too.
   const operation = (

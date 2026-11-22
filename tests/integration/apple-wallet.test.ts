@@ -13,7 +13,11 @@ import { seed, ids } from '../../db/seed.js';
 import { login, key } from '../helpers.js';
 import { businessDate } from '../../packages/domain/src/loyalty.js';
 import { testWalletCertificates } from '../wallet-certs.js';
-import { appleWalletPush, runAppleWalletPushes } from '../../apps/worker/src/apple-wallet-push.js';
+import {
+  appleWalletPush,
+  resetAppleWalletPush,
+  runAppleWalletPushes,
+} from '../../apps/worker/src/apple-wallet-push.js';
 
 const passTypeId = 'pass.test.perks.loyalty',
   origin = 'https://wallet.perks.test';
@@ -363,6 +367,37 @@ test('Apple registers a device, gets pushed after a stamp and fetches the update
     url: service + '/devices/' + deviceId + '/registrations/' + passTypeId,
   });
   assert.deepEqual(stillRegistered.json().serialNumbers, [serial]);
+  // APNs down or throttling: the update is kept and pushed again after a backoff, not lost.
+  await award(m, 1);
+  let calls = 0;
+  const failing = async () => {
+    calls++;
+    return 503;
+  };
+  assert.equal(await runAppleWalletPushes(worker, c, failing), 0);
+  assert.equal(calls, 1);
+  const backoff = (
+    await db.query(
+      'SELECT push_attempts,push_retry_at>now() AS waiting FROM wallet_passes WHERE serial=$1',
+      [serial],
+    )
+  ).rows[0];
+  assert.deepEqual(backoff, { push_attempts: 1, waiting: true });
+  assert.equal(await runAppleWalletPushes(worker, c, failing), 0);
+  assert.equal(calls, 1, 'nothing is pushed while the pass waits for its retry');
+  await db.query(
+    "UPDATE wallet_passes SET push_retry_at=now()-interval '1 second' WHERE serial=$1",
+    [serial],
+  );
+  assert.equal(await runAppleWalletPushes(worker, c, fake), 1, 'the retry goes out');
+  assert.deepEqual(
+    (
+      await db.query('SELECT push_attempts,push_retry_at FROM wallet_passes WHERE serial=$1', [
+        serial,
+      ])
+    ).rows[0],
+    { push_attempts: 0, push_retry_at: null },
+  );
   await db.query("UPDATE wallet_passes SET fingerprint='' WHERE serial=$1", [serial]);
   assert.equal(await runAppleWalletPushes(worker, c, async () => 410), 0);
   assert.equal(
@@ -510,6 +545,47 @@ test('Wallet requests use APNs background priority and an empty payload', async 
     assert.ok(push);
     assert.equal(await push('ab'.repeat(32)), 200);
   } finally {
+    for (const session of sessions) session.destroy();
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+  }
+});
+
+test('APNs refusals with a reason body and unanswered requests never hang the worker', async () => {
+  const server = createServer();
+  const sessions = new Set<ServerHttp2Session>();
+  server.on('session', (session) => {
+    sessions.add(session);
+    session.on('close', () => sessions.delete(session));
+  });
+  server.on('stream', (stream, headers) => {
+    const path = String(headers[':path']);
+    stream.resume();
+    // Silent: accept the request and never answer, like a stalled connection.
+    if (path.endsWith('cd'.repeat(32))) return;
+    const status = path.endsWith('ef'.repeat(32)) ? 410 : 400;
+    stream.respond({ ':status': status, 'content-type': 'application/json' });
+    // APNs always explains a refusal in a JSON body; the old client never read it and hung.
+    stream.end(JSON.stringify({ reason: status === 410 ? 'Unregistered' : 'BadDeviceToken' }));
+  });
+  await new Promise<void>((resolve, reject) => {
+    server.once('error', reject);
+    server.listen(0, '127.0.0.1', resolve);
+  });
+  try {
+    const address = server.address();
+    assert.ok(address && typeof address !== 'string');
+    resetAppleWalletPush(1500);
+    const push = appleWalletPush({ ...c, APPLE_APNS_ORIGIN: `http://127.0.0.1:${address.port}` });
+    assert.ok(push);
+    let started = Date.now();
+    assert.equal(await push('ab'.repeat(32)), 400);
+    assert.equal(await push('ef'.repeat(32)), 410);
+    assert.ok(Date.now() - started < 1000, 'refusals answer at once');
+    started = Date.now();
+    assert.equal(await push('cd'.repeat(32)), 0, 'an unanswered request gives up');
+    assert.ok(Date.now() - started < 4000);
+  } finally {
+    resetAppleWalletPush();
     for (const session of sessions) session.destroy();
     await new Promise<void>((resolve) => server.close(() => resolve()));
   }

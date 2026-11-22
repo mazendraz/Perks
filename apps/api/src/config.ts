@@ -49,6 +49,10 @@ const schema = z.object({
   APPLE_PASS_KEY_PASSPHRASE: z.string().optional(),
   APPLE_WWDR_CERT_FILE: z.string().optional(),
   APPLE_APNS_ORIGIN: z.url().default('https://api.push.apple.com'),
+  // Wallet pass pushes. APNs refuses priority 10 with the background type, so the two move together
+  // (see docs/wallet/APPLE-WALLET.md before changing them).
+  APPLE_APNS_PUSH_TYPE: z.enum(['background', 'alert']).default('background'),
+  APPLE_APNS_PRIORITY: z.enum(['5', '10']).default('5'),
   GOOGLE_WALLET_ENABLED: z.enum(['true', 'false']).default('false'),
   GOOGLE_WALLET_ISSUER_ID: z
     .string()
@@ -147,6 +151,10 @@ function validateConfig(c: ServiceConfig & Partial<Pick<Config, DatabaseKeys>>) 
       );
     if (deployed(c) && !c.PUBLIC_APP_ORIGIN.startsWith('https://'))
       throw new Error('Apple Wallet updates require an HTTPS PUBLIC_APP_ORIGIN.');
+    if ((c.APPLE_APNS_PUSH_TYPE === 'background') !== (c.APPLE_APNS_PRIORITY === '5'))
+      throw new Error(
+        'APPLE_APNS_PUSH_TYPE=background needs APPLE_APNS_PRIORITY=5; alert needs 10.',
+      );
   }
   // Empty values (a blank line in .env) mean "not configured", same as unset.
   const pushPublic = c.WEB_PUSH_VAPID_PUBLIC_KEY?.trim(),

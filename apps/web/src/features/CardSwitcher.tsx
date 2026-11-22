@@ -5,49 +5,6 @@ import { LoyaltyCard } from '../../../../packages/ui/src/LoyaltyCard.js';
 import { navigate } from '../useRoute.js';
 import './card-switcher.css';
 
-function CardControls({
-  lang,
-  index,
-  total,
-  move,
-  disabled = false,
-}: {
-  lang: Language;
-  index: number;
-  total: number;
-  move: (index: number) => void;
-  disabled?: boolean;
-}) {
-  const ar = lang === 'ar';
-  return (
-    <div className="wallet-card-controls">
-      <button
-        type="button"
-        className="secondary wallet-card-arrow"
-        data-step="previous"
-        aria-label={ar ? 'الكارت اللي قبله' : 'Previous card'}
-        disabled={disabled || index === 0}
-        onClick={() => move(index - 1)}
-      >
-        <Icon name="arrow" />
-      </button>
-      <span role="status" aria-atomic="true">
-        {ar ? `${index + 1} من ${total}` : `${index + 1} of ${total}`}
-      </span>
-      <button
-        type="button"
-        className="secondary wallet-card-arrow"
-        data-step="next"
-        aria-label={ar ? 'الكارت اللي بعده' : 'Next card'}
-        disabled={disabled || index === total - 1}
-        onClick={() => move(index + 1)}
-      >
-        <Icon name="arrow" />
-      </button>
-    </div>
-  );
-}
-
 /** Where a card sits in the fanned deck, `p` cards away from the front (negative = before it). */
 function deckPose(p: number, dir: 1 | -1) {
   const a = Math.min(Math.abs(p), 3.6);
@@ -63,7 +20,31 @@ function deckPose(p: number, dir: 1 | -1) {
 
 const pad2 = (n: number) => String(n).padStart(2, '0');
 
-export function CardWallet({ lang, cards }: { lang: Language; cards: SavedCard[] }) {
+/**
+ * Cards fanned like a hand of cards: the current one in front, the others tilted behind it.
+ * Drag sideways (or use the arrows / arrow keys) to bring the next card forward.
+ * `front` replaces the front card's face (the full, interactive card on the detail page);
+ * otherwise the front card opens with `onOpen`.
+ */
+function CardDeck({
+  lang,
+  cards,
+  index,
+  move,
+  front,
+  onOpen,
+  caption = true,
+  disabled = false,
+}: {
+  lang: Language;
+  cards: SavedCard[];
+  index: number;
+  move: (index: number) => void;
+  front?: ReactNode;
+  onOpen?: (card: SavedCard) => void;
+  caption?: boolean;
+  disabled?: boolean;
+}) {
   const ar = lang === 'ar';
   const dir: 1 | -1 = ar ? -1 : 1;
   const stage = useRef<HTMLDivElement>(null);
@@ -71,35 +52,19 @@ export function CardWallet({ lang, cards }: { lang: Language; cards: SavedCard[]
     null,
   );
   const dragged = useRef(false);
-  const [current, setCurrent] = useState(0);
   const [drag, setDrag] = useState(0);
   const [dragging, setDragging] = useState(false);
-  const index = Math.max(0, Math.min(current, cards.length - 1));
   // Same element each render, so a drag frame does not re-render every card face.
   const faces = useMemo(
     () => cards.map((card) => <LoyaltyCard key={card.id} card={card} lang={lang} motion="quiet" />),
     [cards, lang],
   );
-
-  if (cards.length <= 1) {
-    return (
-      <div className="cards-grid">
-        {cards.map((card) => (
-          <button
-            className="card-open"
-            key={card.id}
-            onClick={() => navigate('/customer/' + card.id)}
-          >
-            <LoyaltyCard card={card} lang={lang} />
-          </button>
-        ))}
-      </div>
-    );
-  }
-
   const last = cards.length - 1;
-  const move = (next: number) => setCurrent(Math.max(0, Math.min(last, next)));
-  const front = cards[index]!;
+  const go = (next: number) => {
+    const target = Math.max(0, Math.min(last, next));
+    if (!disabled && target !== index) move(target);
+  };
+  const current = cards[index]!;
 
   const endDrag = (commit: boolean) => {
     const g = gesture.current;
@@ -109,7 +74,7 @@ export function CardWallet({ lang, cards }: { lang: Language; cards: SavedCard[]
       // A short flick moves one card; a long drag can move several.
       const step =
         Math.abs(drag) < 0.18 ? 0 : Math.abs(drag) < 1 ? Math.sign(drag) : Math.round(drag);
-      move(index + step);
+      go(index + step);
     }
     setDrag(0);
   };
@@ -117,6 +82,7 @@ export function CardWallet({ lang, cards }: { lang: Language; cards: SavedCard[]
   return (
     <section
       className="card-deck"
+      data-detail={front ? true : undefined}
       aria-label={ar ? 'تبديل الكروت' : 'Switch cards'}
       aria-roledescription="carousel"
     >
@@ -128,10 +94,10 @@ export function CardWallet({ lang, cards }: { lang: Language; cards: SavedCard[]
         onKeyDown={(event) => {
           if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
           event.preventDefault();
-          move(index + ((event.key === 'ArrowRight') !== ar ? 1 : -1));
+          go(index + ((event.key === 'ArrowRight') !== ar ? 1 : -1));
         }}
         onPointerDown={(event) => {
-          if (event.pointerType === 'mouse' && event.button !== 0) return;
+          if (disabled || (event.pointerType === 'mouse' && event.button !== 0)) return;
           const width =
             stage.current?.querySelector('.card-deck-slide')?.getBoundingClientRect().width ?? 300;
           gesture.current = {
@@ -175,9 +141,8 @@ export function CardWallet({ lang, cards }: { lang: Language; cards: SavedCard[]
         }}
       >
         {cards.map((card, position) => {
-          const p = position - index - drag;
           const isFront = position === index;
-          const pose = deckPose(p, dir);
+          const pose = deckPose(position - index - drag, dir);
           return (
             <div
               className="card-deck-slide"
@@ -186,23 +151,29 @@ export function CardWallet({ lang, cards }: { lang: Language; cards: SavedCard[]
               style={{ ...pose, visibility: pose.opacity === 0 ? 'hidden' : undefined }}
               aria-hidden={!isFront}
             >
-              <button
-                type="button"
-                className="card-open"
-                tabIndex={isFront ? 0 : -1}
-                aria-label={isFront ? card.merchant_name : undefined}
-                onClick={() => (isFront ? navigate('/customer/' + card.id) : move(position))}
-              >
-                {faces[position]}
-              </button>
+              {isFront && front ? (
+                front
+              ) : (
+                <button
+                  type="button"
+                  className="card-open"
+                  tabIndex={isFront ? 0 : -1}
+                  aria-label={isFront ? card.merchant_name : undefined}
+                  onClick={() => (isFront ? onOpen?.(card) : go(position))}
+                >
+                  {faces[position]}
+                </button>
+              )}
             </div>
           );
         })}
       </div>
-      <div className="card-deck-caption" aria-live="polite">
-        <strong>{front.merchant_name}</strong>
-        <span>{front.program_name}</span>
-      </div>
+      {caption && (
+        <div className="card-deck-caption" aria-live="polite">
+          <strong>{current.merchant_name}</strong>
+          <span>{current.program_name}</span>
+        </div>
+      )}
       <div className="card-deck-footer">
         <span className="card-deck-count" aria-hidden="true">
           {pad2(index + 1)} / {pad2(cards.length)}
@@ -216,8 +187,8 @@ export function CardWallet({ lang, cards }: { lang: Language; cards: SavedCard[]
             className="secondary wallet-card-arrow"
             data-step="previous"
             aria-label={ar ? 'الكارت اللي قبله' : 'Previous card'}
-            disabled={index === 0}
-            onClick={() => move(index - 1)}
+            disabled={disabled || index === 0}
+            onClick={() => go(index - 1)}
           >
             <Icon name="arrow" />
           </button>
@@ -226,8 +197,8 @@ export function CardWallet({ lang, cards }: { lang: Language; cards: SavedCard[]
             className="secondary wallet-card-arrow"
             data-step="next"
             aria-label={ar ? 'الكارت اللي بعده' : 'Next card'}
-            disabled={index === last}
-            onClick={() => move(index + 1)}
+            disabled={disabled || index === last}
+            onClick={() => go(index + 1)}
           >
             <Icon name="arrow" />
           </button>
@@ -237,6 +208,36 @@ export function CardWallet({ lang, cards }: { lang: Language; cards: SavedCard[]
   );
 }
 
+/** "My cards": all saved cards as a fanned deck; the front card opens its page. */
+export function CardWallet({ lang, cards }: { lang: Language; cards: SavedCard[] }) {
+  const [current, setCurrent] = useState(0);
+  if (cards.length <= 1) {
+    return (
+      <div className="cards-grid">
+        {cards.map((card) => (
+          <button
+            className="card-open"
+            key={card.id}
+            onClick={() => navigate('/customer/' + card.id)}
+          >
+            <LoyaltyCard card={card} lang={lang} />
+          </button>
+        ))}
+      </div>
+    );
+  }
+  return (
+    <CardDeck
+      lang={lang}
+      cards={cards}
+      index={Math.min(current, cards.length - 1)}
+      move={setCurrent}
+      onOpen={(card) => navigate('/customer/' + card.id)}
+    />
+  );
+}
+
+/** A card's own page: the same deck, with the full interactive card in front. */
 export function CardDetailSwitcher({
   cards,
   cardId,
@@ -251,61 +252,16 @@ export function CardDetailSwitcher({
   children: ReactNode;
 }) {
   const index = cards.findIndex((card) => card.id === cardId);
-  const touch = useRef<{ x: number; y: number } | null>(null);
-  const transition = useRef<{ id: string; offset: number } | null>(null);
-  if (cards.length < 2) return children;
-
-  const move = (next: number) => {
-    const target = cards[next];
-    if (disabled || !target || next === index) return;
-    const direction = lang === 'ar' ? -1 : 1;
-    transition.current = { id: target.id, offset: (next > index ? 1 : -1) * direction * 28 };
-    navigate('/customer/' + target.id);
-  };
-  const offset = transition.current?.id === cardId ? transition.current.offset : 0;
-
+  if (cards.length < 2 || index < 0) return children;
   return (
-    <div className="wallet-card-detail-switcher">
-      <div
-        className="wallet-card-gesture"
-        onTouchStart={(event) => {
-          const start = event.touches.length === 1 ? event.touches[0] : undefined;
-          touch.current = start && !disabled ? { x: start.clientX, y: start.clientY } : null;
-        }}
-        onTouchCancel={() => {
-          touch.current = null;
-        }}
-        onTouchEnd={(event) => {
-          const start = touch.current;
-          touch.current = null;
-          const end = event.changedTouches[0];
-          if (!start || !end) return;
-          const dx = end.clientX - start.x;
-          const dy = end.clientY - start.y;
-          if (Math.abs(dx) < 48 || Math.abs(dx) < 1.5 * Math.abs(dy)) return;
-          move(index + (dx < 0 !== (lang === 'ar') ? 1 : -1));
-        }}
-      >
-        <div
-          key={cardId}
-          className={offset ? 'wallet-card-arriving' : undefined}
-          style={
-            offset ? ({ '--wallet-card-offset': `${offset}px` } as React.CSSProperties) : undefined
-          }
-          onAnimationEnd={() => {
-            transition.current = null;
-          }}
-        >
-          {children}
-        </div>
-      </div>
-      <CardControls
-        lang={lang}
-        index={index}
-        total={cards.length}
-        move={move}
-        disabled={disabled}
-      />
-    </div>
+    <CardDeck
+      lang={lang}
+      cards={cards}
+      index={index}
+      move={(next) => navigate('/customer/' + cards[next]!.id)}
+      front={children}
+      caption={false}
+      disabled={disabled}
+    />
   );
 }

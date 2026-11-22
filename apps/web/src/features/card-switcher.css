@@ -102,31 +102,7 @@
   border-radius: 50%;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .card-deck-slide {
-    transition: opacity 160ms ease-out;
-  }
-}
-
-.wallet-card-controls {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.875rem;
-  margin-block: 0.375rem 0.75rem;
-  font-size: 0.875rem;
-  font-variant-numeric: tabular-nums;
-}
-
-.wallet-card-controls .wallet-card-arrow {
-  display: grid;
-  place-items: center;
-  min-inline-size: 44px;
-  min-block-size: 44px;
-  padding: 0;
-  border-radius: 50%;
-}
-
+/* The arrow icon points forward; flip it for "previous", and mirror both in Arabic. */
 .wallet-card-arrow[data-step='previous'] svg,
 [dir='rtl'] .wallet-card-arrow[data-step='next'] svg {
   transform: rotate(180deg);
@@ -136,21 +112,36 @@
   transform: none;
 }
 
-.wallet-card-gesture {
-  touch-action: pan-y pinch-zoom;
+@media (prefers-reduced-motion: reduce) {
+  .card-deck-slide {
+    transition: opacity 160ms ease-out;
+  }
 }
 
-.wallet-card-arriving {
-  animation: wallet-card-arrive 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+/* On a card's own page the front card is the full card, which may carry the reward banner
+   above it: line the deck up by the bottom so the cards behind sit level with it. */
+.card-deck[data-detail] {
+  overflow-x: clip;
 }
 
-@keyframes wallet-card-arrive {
-  from {
-    transform: translateX(var(--wallet-card-offset));
-    opacity: 0.55;
-  }
-  to {
-    transform: none;
-    opacity: 1;
-  }
+.card-deck[data-detail] .card-deck-stage {
+  place-items: end center;
+  padding-block: 1rem 2.25rem;
+}
+
+.card-deck[data-detail] .card-deck-slide {
+  inline-size: min(84%, 26rem);
+}
+
+/* Only the front card shows its "reward is ready" banner; behind it, it would poke out on top. */
+.card-deck-slide[data-current='false'] .nq-reward-banner {
+  display: none;
+}
+
+.card-deck-slide[data-current='false'] .loyalty-card-shell.live-card {
+  padding-top: 0;
+}
+
+.card-deck[data-detail] .card-deck-footer {
+  margin-block: 0.25rem 0.75rem;
 }

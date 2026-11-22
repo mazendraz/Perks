@@ -1106,3 +1106,68 @@
     grid-column: 1 / -1;
   }
 }
+
+/* Today card when a Wallet message cannot reach the group: say why, offer WhatsApp. */
+.an-action-blocked {
+  font-size: 13px !important;
+  line-height: 1.7;
+  color: #ffd98a !important;
+}
+.an-wa-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.an-wa-count {
+  font-weight: 500;
+  opacity: 0.75;
+}
+.an-wa-how {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.an-wa-list {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: 320px;
+  overflow-y: auto;
+}
+.an-wa-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px 8px 14px;
+  border: 1px solid var(--border, #dcdde4);
+  border-radius: 12px;
+}
+.an-wa-list li > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+.an-wa-list button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.an-wa-button {
+  min-height: 40px;
+  padding-inline: 14px;
+  border: 0;
+  border-radius: 10px;
+  background: #25d366;
+  color: #08331a;
+  font-weight: 700;
+}
+.an-wa-button:disabled {
+  opacity: 0.5;
+}

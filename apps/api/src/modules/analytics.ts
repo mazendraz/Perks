@@ -593,22 +593,32 @@ export function analyticsPageModule(app: FastifyInstance, pools: Pools) {
           ) +
           (isTag ? ' AND $3=ANY(cs.tags)' : ' AND cs.lifecycle=$3') +
           " AND ($4::text IS NULL OR cp.alias ILIKE '%'||$4||'%')";
+        // A number and WhatsApp consent: the owner can open a WhatsApp draft to this customer.
+        const whatsapp = `(cp.contact_phone<>'' AND EXISTS(SELECT 1 FROM consent_current wc WHERE wc.merchant_id=cp.merchant_id AND wc.user_id=cp.user_id AND wc.channel='whatsapp' AND wc.granted))`;
+        const listed = where + (q.whatsapp ? ` AND ${whatsapp}` : '');
         // The search box is plain text: % and _ are not wildcards.
         const params = [m, q.branchId ?? null, key, q.q ? q.q.replace(/[\\%_]/g, '\\$&') : null];
-        const total = (await db.query(`SELECT count(*)::int AS n FROM ${where}`, params)).rows[0].n;
+        const counts = (
+          await db.query(
+            `SELECT count(*)::int AS n,count(*) FILTER (WHERE ${whatsapp})::int AS wa FROM ${where}`,
+            params,
+          )
+        ).rows[0];
         const rows = (
           await db.query(
             `SELECT cs.profile_id AS "profileId",cp.alias,cs.lifecycle,cs.tags,cs.visits_total AS visits,
                cs.since_days AS "sinceDays",round(cs.expected_gap_days)::int AS "expectedGapDays",
-               cs.stamps_to_reward AS "stampsToReward",cs.last_visit_at AS "lastVisitAt"
-             FROM ${where} ORDER BY ${order[key] ?? 'cs.last_visit_on DESC NULLS LAST'},cs.profile_id
+               cs.stamps_to_reward AS "stampsToReward",cs.last_visit_at AS "lastVisitAt",
+               ${whatsapp} AS whatsapp
+             FROM ${listed} ORDER BY ${order[key] ?? 'cs.last_visit_on DESC NULLS LAST'},cs.profile_id
              LIMIT 51 OFFSET ${offset}`,
             params,
           )
         ).rows;
         const page: SegmentPage = {
           key,
-          total,
+          total: counts.n,
+          whatsappReady: counts.wa,
           customers: rows.slice(0, 50),
           nextCursor: rows.length > 50 ? String(offset + 50) : null,
         };

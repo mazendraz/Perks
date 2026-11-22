@@ -260,10 +260,14 @@ export interface SegmentCustomer {
   expectedGapDays: number;
   stampsToReward: number | null;
   lastVisitAt: string | null;
+  /** Has a number and agreed to hear from this shop on WhatsApp. */
+  whatsapp: boolean;
 }
 export interface SegmentPage {
   key: SegmentKey;
   total: number;
+  /** How many in this segment can get a WhatsApp message (number + consent). */
+  whatsappReady: number;
   customers: SegmentCustomer[];
   nextCursor: string | null;
 }
@@ -272,6 +276,8 @@ export const segmentQuery = z
     cursor: z.string().max(200).optional(),
     q: z.string().trim().max(60).optional(),
     branchId: z.uuid().optional(),
+    /** Only customers who can get a WhatsApp message. */
+    whatsapp: z.literal('1').optional(),
   })
   .strict();
 

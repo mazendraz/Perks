@@ -73,6 +73,26 @@ export const copy = {
     },
   } satisfies Record<ActionCard['key'], { unit: T; text: T; cta: T }>,
   seeWho: { ar: 'شوف مين', en: 'See who' },
+  // When a Wallet message cannot reach the group, WhatsApp is offered instead.
+  walletBlocked: {
+    recent: {
+      ar: 'وصلتهم رسالة على الـWallet في آخر 24 ساعة، والرسالة الجاية من بكرة. لو عايز تكلّمهم دلوقتي، ابعتلهم على واتساب.',
+      en: 'They got a Wallet message in the last 24 hours; the next one can go tomorrow. To reach them now, use WhatsApp.',
+    },
+    limit: {
+      ar: 'رسايل الـWallet خلصت الشهر ده. تقدر تكلّمهم على واتساب.',
+      en: 'No Wallet messages left this month. You can reach them on WhatsApp.',
+    },
+    unreachable: {
+      ar: 'رسايل الـWallet مش بتوصلهم (الكارت مش متضاف عندهم أو الإشعارات مقفولة). كلّمهم على واتساب.',
+      en: 'Wallet messages do not reach them (no Wallet card or notifications off). Reach them on WhatsApp.',
+    },
+  },
+  whatsappCta: { ar: 'ابعتلهم على واتساب', en: 'Message on WhatsApp' },
+  todoDone: {
+    ar: 'بعتّ لكل اللي محتاجين تذكير. أول ما يبان حد جديد هتلاقيه هنا.',
+    en: 'Everyone who needed a nudge has been messaged. New chances will show up here.',
+  },
   sendToGroup: { ar: 'ابعت رسالة للمجموعة دي', en: 'Message this group' },
   lastMessage: {
     ar: 'آخر رسالة ليهم: رجع {returned} من {recipients} خلال أسبوعين.',

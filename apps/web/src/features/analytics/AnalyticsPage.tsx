@@ -3,6 +3,7 @@ import type {
   ActionCard,
   AnalyticsResponse,
   SegmentKey,
+  SegmentPage,
 } from '../../../../../packages/contracts/src/analytics.js';
 import type { Branch, Language } from '../../../../../packages/contracts/src/index.js';
 import { api, errorText } from '../../api.js';
@@ -15,9 +16,14 @@ import { sampleAnalytics } from './sample.js';
 import { Cohorts, downloadCsv, HealthBody, ValueCard } from './advanced.js';
 import { SegmentSheet } from './SegmentSheet.js';
 import { SendSheet } from './SendSheet.js';
+import { WhatsAppSheet } from './WhatsAppSheet.js';
 import { CustomerSheet } from './CustomerSheet.js';
 import { audienceFor } from '../../../../../packages/contracts/src/analytics-messages.js';
-import type { WalletAudience } from '../../../../../packages/contracts/src/owner-plan.js';
+import type {
+  WalletAudience,
+  WalletMessagePreview,
+} from '../../../../../packages/contracts/src/owner-plan.js';
+import { Icon } from '../../../../../packages/ui/src/Icon.js';
 import './analytics.css';
 
 type Period = 7 | 30 | 90;
@@ -64,6 +70,8 @@ export function AnalyticsPage({
     [cadenceOpen, setCadenceOpen] = useState(false),
     [send, setSend] = useState<{ audience: WalletAudience; label: string } | null>(null),
     [customer, setCustomer] = useState<string | null>(null),
+    [whatsapp, setWhatsapp] = useState<ActionCard['key'] | null>(null),
+    [reachRevision, setReachRevision] = useState(0),
     [notice, setNotice] = useState('');
   const seq = useRef(0);
   const load = async () => {
@@ -205,7 +213,14 @@ export function AnalyticsPage({
 
       {view && !empty && (
         <>
-          <TodayActions data={view} lang={lang} onAct={act} onSee={(k) => open(k)} />
+          <TodayActions
+            data={view}
+            lang={lang}
+            onAct={act}
+            onSee={(k) => open(k)}
+            onWhatsApp={setWhatsapp}
+            reach={owner && !sample ? { merchantId, branchId, revision: reachRevision } : null}
+          />
           <KpiRow data={view} lang={lang} />
           <div className="an-row">
             <Section
@@ -404,8 +419,20 @@ export function AnalyticsPage({
           onSent={(message) => {
             setSend(null);
             setNotice(message);
+            setReachRevision((n) => n + 1);
             void load();
           }}
+        />
+      )}
+      {whatsapp && audienceFor(whatsapp) && (
+        <WhatsAppSheet
+          merchantId={merchantId}
+          segment={whatsapp}
+          audience={audienceFor(whatsapp)!}
+          label={pick(copy.segments[whatsapp], lang)}
+          branchId={branchId}
+          lang={lang}
+          onClose={() => setWhatsapp(null)}
         />
       )}
       {customer && (
@@ -420,47 +447,131 @@ export function AnalyticsPage({
   );
 }
 
+type Blocked = keyof typeof copy.walletBlocked;
+/** Whether a Wallet message can reach each card's group now, and if not, who WhatsApp can reach. */
+type Reach = { wallet: number; blocked: Blocked; whatsapp: number };
+
+function useActionReach(
+  keys: ActionCard['key'][],
+  scope: { merchantId: string; branchId: string; revision: number } | null,
+) {
+  const [reach, setReach] = useState<Partial<Record<ActionCard['key'], Reach>>>({});
+  const sig = keys.join(',');
+  useEffect(() => {
+    if (!scope || !keys.length) return setReach({});
+    let live = true;
+    const base = '/merchants/' + scope.merchantId;
+    void (async () => {
+      try {
+        const state = await api<{ used: number; limit: number | null }>(base + '/wallet-messages');
+        const noneLeft = state.limit !== null && state.used >= state.limit;
+        const entries = await Promise.all(
+          keys.map(async (key) => {
+            const audience = audienceFor(key);
+            if (!audience) return null;
+            const preview = await api<WalletMessagePreview>(
+              base + '/wallet-messages/preview?audience=' + audience,
+            );
+            const wallet = noneLeft ? 0 : preview.customers;
+            if (wallet > 0) return [key, { wallet, blocked: 'unreachable', whatsapp: 0 }] as const;
+            const params = new URLSearchParams({ whatsapp: '1' });
+            if (scope.branchId) params.set('branchId', scope.branchId);
+            const page = await api<SegmentPage>(base + '/analytics/segments/' + key + '?' + params);
+            const blocked: Blocked = noneLeft
+              ? 'limit'
+              : preview.recentlyContacted > 0
+                ? 'recent'
+                : 'unreachable';
+            return [key, { wallet, blocked, whatsapp: page.whatsappReady }] as const;
+          }),
+        );
+        if (live) setReach(Object.fromEntries(entries.filter((e) => e !== null)));
+      } catch {
+        // Unknown: keep the plain cards rather than hide a real chance.
+        if (live) setReach({});
+      }
+    })();
+    return () => {
+      live = false;
+    };
+  }, [sig, scope?.merchantId, scope?.branchId, scope?.revision]);
+  return reach;
+}
+
 function TodayActions({
   data,
   lang,
   onAct,
   onSee,
+  onWhatsApp,
+  reach: scope,
 }: {
   data: AnalyticsResponse;
   lang: Language;
   onAct: (a: ActionCard) => void;
   onSee: (k: SegmentKey) => void;
+  onWhatsApp: (k: ActionCard['key']) => void;
+  reach: { merchantId: string; branchId: string; revision: number } | null;
 }) {
-  const cards = data.actions.filter((a) => a.count > 0).slice(0, 3);
+  const waiting = data.actions.filter((a) => a.count > 0);
+  const reach = useActionReach(
+    waiting.map((a) => a.key),
+    scope,
+  );
+  // A group that neither a Wallet message nor WhatsApp can reach right now is not a task today.
+  const cards = waiting
+    .filter((a) => {
+      const r = reach[a.key];
+      return !r || r.wallet > 0 || r.whatsapp > 0;
+    })
+    .slice(0, 3);
+  const title = cards.length ? copy.todoTitle : waiting.length ? copy.todoDone : copy.todoNone;
   return (
     <section className="an-today" aria-labelledby="an-today-title">
       <span className="an-today-eyebrow">{pick(copy.todo, lang)}</span>
-      <h2 id="an-today-title">{pick(cards.length ? copy.todoTitle : copy.todoNone, lang)}</h2>
+      <h2 id="an-today-title">{pick(title, lang)}</h2>
       {cards.length > 0 && (
         <div className="an-actions">
           {cards.map((a) => {
             const t = copy.actions[a.key];
+            const r = reach[a.key];
+            const viaWhatsApp = !!r && r.wallet === 0;
+            const last = data.messageImpact.find((m) => m.audience === audienceFor(a.key));
             return (
               <article key={a.key} className="an-action">
                 <p className="an-action-count">
                   <strong className="an-num">{num(a.count, lang)}</strong> {pick(t.unit, lang)}
                 </p>
                 <p>{pick(t.text, lang)}</p>
-                {(() => {
-                  const last = data.messageImpact.find((m) => m.audience === audienceFor(a.key));
-                  return last ? (
+                {viaWhatsApp ? (
+                  <p className="an-action-blocked">{pick(copy.walletBlocked[r.blocked], lang)}</p>
+                ) : (
+                  last && (
                     <p className="an-action-impact">
                       {say(copy.lastMessage, lang, {
                         returned: num(last.returned, lang),
                         recipients: num(last.recipients, lang),
                       })}
                     </p>
-                  ) : null;
-                })()}
+                  )
+                )}
                 <div className="an-action-buttons">
-                  <button className="an-lime-button" onClick={() => onAct(a)}>
-                    {pick(t.cta, lang)}
-                  </button>
+                  {viaWhatsApp ? (
+                    <button className="an-lime-button an-wa-cta" onClick={() => onWhatsApp(a.key)}>
+                      <Icon name="message" size={18} />
+                      {pick(copy.whatsappCta, lang)}
+                      {r.whatsapp < a.count && (
+                        <span className="an-wa-count">
+                          {' '}
+                          ({num(r.whatsapp, lang)}/{num(a.count, lang)})
+                        </span>
+                      )}
+                    </button>
+                  ) : (
+                    <button className="an-lime-button" onClick={() => onAct(a)}>
+                      {pick(t.cta, lang)}
+                    </button>
+                  )}
                   <button className="an-ghost-button" onClick={() => onSee(a.key)}>
                     {pick(copy.seeWho, lang)}
                   </button>

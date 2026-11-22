@@ -126,6 +126,14 @@ test('segment lists open with the most urgent first, and page', async () => {
   assert.ok(page.total >= 5);
   const ratio = page.customers.map((x) => x.sinceDays! / x.expectedGapDays);
   for (let i = 1; i < ratio.length; i++) assert.ok(ratio[i]! <= ratio[i - 1]!);
+  // WhatsApp fallback: who has a number and consent, counted and filterable.
+  assert.equal(typeof page.whatsappReady, 'number');
+  assert.ok(page.customers.every((x) => typeof x.whatsapp === 'boolean'));
+  const reachable = (await get(base + '/segments/at_risk?whatsapp=1')).body as SegmentPage;
+  assert.equal(reachable.total, page.total);
+  assert.equal(reachable.whatsappReady, page.whatsappReady);
+  assert.ok(reachable.customers.every((x) => x.whatsapp));
+  assert.ok(reachable.customers.length <= page.whatsappReady);
   const tagged = (await get(base + '/segments/vip')).body as SegmentPage;
   assert.equal(tagged.key, 'vip');
   assert.equal((await get(base + '/segments/nope')).status, 422);

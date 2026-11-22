@@ -8,6 +8,7 @@ import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { buildApp } from '../../apps/api/src/server.js';
+import { scrubWalletLog } from '../../apps/api/src/modules/wallet.js';
 import { readConfig } from '../../apps/api/src/config.js';
 import { seed, ids } from '../../db/seed.js';
 import { login, key } from '../helpers.js';
@@ -367,6 +368,15 @@ test('Apple registers a device, gets pushed after a stamp and fetches the update
     url: service + '/devices/' + deviceId + '/registrations/' + passTypeId,
   });
   assert.deepEqual(stillRegistered.json().serialNumbers, [serial]);
+  // The refused update waits for a retry (a 400 is usually our own configuration).
+  assert.equal(
+    (await db.query('SELECT push_attempts FROM wallet_passes WHERE serial=$1', [serial])).rows[0]
+      .push_attempts,
+    1,
+  );
+  await db.query('UPDATE wallet_passes SET push_attempts=0,push_retry_at=NULL WHERE serial=$1', [
+    serial,
+  ]);
   // APNs down or throttling: the update is kept and pushed again after a backoff, not lost.
   await award(m, 1);
   let calls = 0;
@@ -589,4 +599,72 @@ test('APNs refusals with a reason body and unanswered requests never hang the wo
     for (const session of sessions) session.destroy();
     await new Promise<void>((resolve) => server.close(() => resolve()));
   }
+});
+
+test('a phone downloading the pass with a shop message confirms that message reached it', async () => {
+  const m = await member();
+  const download = await app.inject({
+    url: '/api/v1/me/memberships/' + m.id + '/wallet/apple',
+    headers: { cookie: m.headers.cookie },
+  });
+  const pass = JSON.parse(unzip(download.rawPayload).get('pass.json')!.toString());
+  const serial = pass.serialNumber as string,
+    auth = { authorization: 'ApplePass ' + pass.authenticationToken };
+  const who = (await db.query('SELECT user_id,profile_id FROM memberships WHERE id=$1', [m.id]))
+    .rows[0];
+  await db.query(
+    `INSERT INTO consent_current(merchant_id,user_id,channel,granted) VALUES($1,$2,'push',true)
+     ON CONFLICT DO NOTHING`,
+    [ids.merchantA, who.user_id],
+  );
+  await db.query(
+    "UPDATE consent_current SET granted=true WHERE merchant_id=$1 AND user_id=$2 AND channel='push'",
+    [ids.merchantA, who.user_id],
+  );
+  const message = (
+    await db.query(
+      `INSERT INTO wallet_messages(merchant_id,audience,body_ar,recipients,send_after,created_by)
+       VALUES($1,'all','عرض النهارده',1,now(),$2) RETURNING id`,
+      [ids.merchantA, ids.ownerA],
+    )
+  ).rows[0].id;
+  const delivery = (
+    await db.query(
+      `INSERT INTO wallet_message_deliveries(message_id,merchant_id,profile_id,membership_id,channel,next_at,status)
+       VALUES($1,$2,$3,$4,'apple',now(),'accepted') RETURNING id`,
+      [message, ids.merchantA, who.profile_id, m.id],
+    )
+  ).rows[0].id;
+  const fetched = async () =>
+    (
+      await db.query(
+        'SELECT fetched_at IS NOT NULL AS f FROM wallet_message_deliveries WHERE id=$1',
+        [delivery],
+      )
+    ).rows[0].f;
+  assert.equal(await fetched(), false);
+  const updated = await app.inject({
+    url: service + '/passes/' + passTypeId + '/' + serial,
+    headers: auth,
+  });
+  assert.equal(updated.statusCode, 200);
+  const back = JSON.parse(unzip(updated.rawPayload).get('pass.json')!.toString());
+  assert.match(
+    back.posterGeneric.backFields.find((f: { key: string }) => f.key === 'reminder').value,
+    /^reminder_/,
+    'the iOS 27 face carries the message too',
+  );
+  assert.equal(await fetched(), true);
+});
+
+test('Wallet device logs keep the reason and drop identifiers', () => {
+  const line =
+    '[2026-11-22 10:00:01 +0200] Get pass task (pass type pass.test.perks.loyalty, serial number ' +
+    '3f6c1d2e-8a41-4b7f-9a0c-2b5e7d9f1a33, if-modified-since 1763800000; with web service url ' +
+    'https://perks.example/api/v1/wallet/apple) encountered error: Authentication token ' +
+    'Zk3mQp9rT2vX8yB1nC5dF7gH0jL4sW6e rejected for device ab12cd34ef56ab12cd34ef56';
+  const scrubbed = scrubWalletLog(line);
+  assert.match(scrubbed, /encountered error: Authentication token/);
+  for (const secret of ['3f6c1d2e', 'perks.example', 'Zk3mQp9r', 'ab12cd34', '1763800000'])
+    assert.ok(!scrubbed.includes(secret), secret);
 });

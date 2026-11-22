@@ -13,9 +13,12 @@ let lastRun = 0;
 // One request never holds the worker longer than this, whatever the connection does.
 let deadlineMs = 10000;
 
-/** A status worth trying again later: APNs unreachable, throttled, failing, or refusing our certificate. */
-export const apnsRetryable = (status: number) =>
-  status === 0 || status === 403 || status === 429 || status >= 500;
+/**
+ * Worth trying again later: everything but success and 410 (the pass is gone from that phone).
+ * Unreachable, 429 and 5xx pass with time; a 400 or 403 is usually our configuration (priority,
+ * topic, certificate), which a fix and a restart cure. Retries are bounded by their callers.
+ */
+export const apnsRetryable = (status: number) => status !== 200 && status !== 410;
 
 function apnsClient(c: ServiceConfig, signer: AppleWalletSigner): Push {
   const cert = forge.pki.certificateToPem(signer.certificate),

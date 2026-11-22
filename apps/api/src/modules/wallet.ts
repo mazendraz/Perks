@@ -31,6 +31,16 @@ import {
 } from '../wallet/google-wallet.js';
 
 const device = z.string().regex(/^[A-Za-z0-9._-]{1,128}$/);
+/** An Apple Wallet device log line without anything that identifies a card, person or device. */
+export const scrubWalletLog = (line: string) =>
+  line
+    .replace(/https?:\/\/\S+/gi, '<url>')
+    .replace(/[^\s@]+@[^\s@]+/g, '<email>')
+    .replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, '<id>')
+    .replace(/\b[0-9a-f]{16,}\b/gi, '<hex>')
+    .replace(/[A-Za-z0-9_-]{24,}/g, '<token>')
+    .replace(/\d{6,}/g, '<n>')
+    .slice(0, 300);
 const serial = z.uuid();
 const fullWalletAccess = async (db: DB) =>
   (await db.query('SELECT customer_scope_unrestricted() AS allowed')).rows[0].allowed as boolean;
@@ -53,19 +63,26 @@ export function walletModule(app: FastifyInstance, pools: Pools, c: Config) {
       return null;
     }
   }
-  async function send(reply: FastifyReply, card: WalletCard, id: string) {
-    const body = await buildPkpass(card, {
-      serial: id,
-      authToken: passAuthToken(id, c.AUTH_PEPPER),
-      origin: c.PUBLIC_APP_ORIGIN,
-      signer: signer!,
-      logo: await logo(card),
-    });
+  function build(card: WalletCard, id: string) {
+    return logo(card).then((image) =>
+      buildPkpass(card, {
+        serial: id,
+        authToken: passAuthToken(id, c.AUTH_PEPPER),
+        origin: c.PUBLIC_APP_ORIGIN,
+        signer: signer!,
+        logo: image,
+      }),
+    );
+  }
+  function deliver(reply: FastifyReply, body: Buffer) {
     return reply
       .type(APPLE_PASS_MIME)
       .header('Content-Disposition', 'attachment; filename="perks-card.pkpass"')
       .header('X-Content-Type-Options', 'nosniff')
       .send(body);
+  }
+  async function send(reply: FastifyReply, card: WalletCard, id: string) {
+    return deliver(reply, await build(card, id));
   }
   const google = loadGoogleWallet(c);
   app.get('/api/v1/wallet/availability', async (req) => {
@@ -280,16 +297,32 @@ export function walletModule(app: FastifyInstance, pools: Pools, c: Config) {
     const since = Date.parse(String(req.headers['if-modified-since'] || ''));
     if (!Number.isNaN(since) && modified.getTime() <= since) return reply.code(304).send();
     reply.header('Last-Modified', modified.toUTCString());
-    return send(reply, withOpenUrl(card, c.PUBLIC_APP_ORIGIN, c.AUTH_PEPPER), p.data.serial);
+    // Built before anything is recorded, so a pass that fails to build confirms nothing.
+    const body = await build(withOpenUrl(card, c.PUBLIC_APP_ORIGIN, c.AUTH_PEPPER), p.data.serial);
+    // The phone is getting the shop's message: that, not APNs taking the push, is "reached".
+    if (card.manual_message?.id)
+      await pools.pool
+        .query('SELECT wallet_pass_fetched($1,$2,$3)', [
+          p.data.serial,
+          hash,
+          card.manual_message.id,
+        ])
+        .catch(() => req.log.warn({ event: 'wallet.fetch_record_failed' }));
+    return deliver(reply, body);
   });
   app.post(
     wallet + '/log',
     { config: { rateLimit: { max: 10, timeWindow: '1 minute' } } },
     async (req, reply) => {
       const logs = z.object({ logs: z.array(z.string().max(500)).max(20) }).safeParse(req.body);
-      // Device log lines can contain identifiers; record only that Wallet reported a problem.
+      // Wallet reports why an update failed (bad signature, unreachable service...). The reason is
+      // kept; serials, tokens, links, addresses and long numbers are blanked first.
       if (logs.success && logs.data.logs.length)
-        req.log.warn({ event: 'wallet.apple_log', count: logs.data.logs.length });
+        req.log.warn({
+          event: 'wallet.apple_log',
+          count: logs.data.logs.length,
+          lines: logs.data.logs.map(scrubWalletLog),
+        });
       return reply.code(200).send();
     },
   );

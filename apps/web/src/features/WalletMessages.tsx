@@ -25,7 +25,10 @@ interface State {
     recipients: number;
     send_after: string;
     created_at: string;
+    /** Customers whose phone has it (Apple: the pass was downloaded; Google: on the card). */
     delivered: number;
+    /** Apple took the push but the phone has not picked it up yet (off, offline, or no banner). */
+    unconfirmed: number;
     waiting: number;
     missed: number;
     returned: number;
@@ -326,6 +329,10 @@ export function WalletMessages({ merchantId, lang }: { merchantId: string; lang:
                     : ar
                       ? `وصلت لـ ${h.delivered} من ${h.recipients}`
                       : `Reached ${h.delivered} of ${h.recipients}`}
+                  {h.unconfirmed > 0 &&
+                    (ar
+                      ? ` · ${h.unconfirmed} لسه موبايلهم ما استلمهاش`
+                      : ` · ${h.unconfirmed} not on their phone yet`)}
                   {h.delivered > 0 && (
                     <span className="message-returned">
                       {Date.now() - Date.parse(h.send_after || h.created_at) < 14 * 86_400_000

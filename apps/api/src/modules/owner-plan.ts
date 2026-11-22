@@ -260,7 +260,14 @@ export function ownerPlanModule(app: FastifyInstance, pools: Pools, c: ServiceCo
         const history = (
           await db.query(
             `SELECT wm.id,wm.audience,wm.inactive_days,wm.body_ar,wm.body_en,wm.recipients,wm.send_after,wm.created_at,
-              count(d.id) FILTER(WHERE d.status='accepted')::int AS delivered,
+              -- Per customer. Apple counts once the phone downloaded the pass with the message;
+              -- APNs taking the push only means "on its way". Google shows it once accepted.
+              count(DISTINCT d.profile_id) FILTER(WHERE (d.channel='apple' AND d.fetched_at IS NOT NULL)
+                OR (d.channel='google' AND d.status='accepted'))::int AS delivered,
+              count(DISTINCT d.profile_id) FILTER(WHERE d.channel='apple' AND d.status='accepted'
+                AND d.fetched_at IS NULL AND NOT EXISTS(SELECT 1 FROM wallet_message_deliveries x
+                 WHERE x.message_id=wm.id AND x.profile_id=d.profile_id
+                 AND ((x.channel='apple' AND x.fetched_at IS NOT NULL) OR (x.channel='google' AND x.status='accepted'))))::int AS unconfirmed,
               count(d.id) FILTER(WHERE d.status IN ('queued','processing','uncertain'))::int AS waiting,
               count(d.id) FILTER(WHERE d.status IN ('failed','skipped'))::int AS missed,
               wallet_message_returns(wm.id) AS returned

@@ -8,7 +8,7 @@ import {
   type GoogleWallet,
 } from '../../api/src/wallet/google-wallet.js';
 import { walletReminderText } from '../../../packages/contracts/src/customer-reminders.js';
-import { appleWalletPush } from './apple-wallet-push.js';
+import { appleWalletPush, apnsRetryable } from './apple-wallet-push.js';
 
 interface ReminderJob {
   id: string;
@@ -78,13 +78,13 @@ export async function deliverWalletNotice(
       if (status === 200) accepted++;
       // A malformed APNs request must not unregister a customer's Wallet card.
       else if (status === 410) await pool.query('SELECT wallet_forget_push_token($1)', [token]);
-      else retry = true;
+      else if (apnsRetryable(status)) retry = true;
     }
+    // One of the customer's phones has it: the pass on their other phones carries the same words
+    // and shows them at its next update. Retrying would not make this delivery any more true.
+    if (accepted) return { outcome: 'accepted', error: null };
     if (retry) return { outcome: 'retry', error: 'APPLE_PUSH_RETRY' };
-    return {
-      outcome: accepted ? 'accepted' : 'skipped',
-      error: accepted ? null : 'PASS_NOT_REGISTERED',
-    };
+    return { outcome: 'skipped', error: 'PASS_NOT_REGISTERED' };
   }
   const g = providers.google;
   if (!g || !job.objectKey) return { outcome: 'retry', error: 'PROVIDER_UNAVAILABLE' };

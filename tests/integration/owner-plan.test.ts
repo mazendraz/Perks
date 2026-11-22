@@ -528,6 +528,23 @@ test('the Apple card carries the newest manual message; customers never see plan
   assert.equal(g.manual_message, undefined);
   for (const field of ['plan', 'limits', 'price_minor', 'subscription'])
     assert.equal(card[field], undefined, field);
+  // APNs taking the push is not "reached": only the phone downloading the pass is.
+  const history = async () =>
+    (await app.inject({ url: '/api/v1/merchants/' + s.mid + '/wallet-messages', headers: s.owner }))
+      .json()
+      .history.find((h: { id: string }) => h.id === msg);
+  assert.deepEqual(
+    { delivered: (await history()).delivered, unconfirmed: (await history()).unconfirmed },
+    { delivered: 0, unconfirmed: 1 },
+  );
+  const delivery = card.manual_message.id;
+  await db.query('SELECT wallet_pass_fetched($1,$2,$3)', [serial, 'e'.repeat(64), delivery]);
+  assert.equal((await history()).delivered, 0, 'a wrong pass token records nothing');
+  await db.query('SELECT wallet_pass_fetched($1,$2,$3)', [serial, 'c'.repeat(64), delivery]);
+  assert.deepEqual(
+    { delivered: (await history()).delivered, unconfirmed: (await history()).unconfirmed },
+    { delivered: 1, unconfirmed: 0 },
+  );
   assert.equal(card.manual_message.repeat, undefined, 'first-time words carry no marker');
   // The same words again are marked, so the pass value changes and Wallet announces them.
   const again = (

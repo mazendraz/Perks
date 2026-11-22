@@ -1,0 +1,222 @@
+/* "Add to home screen" card: real app icon, one line of benefit, one primary action. */
+.install-app-card {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: 12px;
+  margin-block: 0 16px;
+  padding: 12px 12px 12px 14px;
+  border: 1px solid var(--border, #dcdde4);
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 10px 24px -18px rgb(24 27 56 / 0.45);
+  animation: install-app-in 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.install-app-card > img {
+  inline-size: 48px;
+  block-size: 48px;
+  border-radius: 12px;
+}
+
+.install-app-card p {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  min-inline-size: 0;
+}
+
+.install-app-card strong {
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.install-app-card p span {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--muted, #6b6e80);
+}
+
+.install-app-card .primary {
+  min-block-size: 40px;
+  padding-inline: 18px;
+}
+
+.install-app-dismiss {
+  display: grid;
+  place-items: center;
+  inline-size: 32px;
+  block-size: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted, #6b6e80);
+}
+
+.install-app-dismiss:hover {
+  background: #f0f1f5;
+}
+
+/* After a successful install: the mascot's thumbs-up, then the card folds away. */
+.install-app-card[data-done] {
+  grid-template-columns: auto 1fr;
+  background: var(--ink, #181b38);
+  color: #fff;
+  border-color: transparent;
+}
+
+.install-app-card[data-done] p span {
+  color: #d9dbe8;
+}
+
+.install-app-done-mascot {
+  inline-size: 48px;
+  aspect-ratio: 80 / 96;
+  background: url(/mascot/done.png) no-repeat 0 0 / 500% 100%;
+  image-rendering: pixelated;
+}
+
+.install-app-done-mascot[data-talking] {
+  animation: mascot-talk 0.52s steps(1) infinite;
+}
+
+.install-app-card[data-done='leaving'] {
+  animation: install-app-out 320ms ease-in both;
+}
+
+@keyframes install-app-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@keyframes install-app-out {
+  to {
+    opacity: 0;
+    transform: scale(0.96);
+    margin-block-end: -80px;
+  }
+}
+
+/* Guide sheet */
+.install-guide-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.install-guide-head h2 {
+  font-size: 18px;
+}
+
+.install-guide-art {
+  display: block;
+  inline-size: 100%;
+  max-block-size: 90px;
+}
+
+.install-guide-add {
+  padding: 12px;
+  border-radius: 16px;
+  background: #f4f5ef;
+}
+
+.install-guide-add-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border: 3px solid var(--lime, #cbff64);
+  border-radius: 12px;
+  background: #fff;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.install-guide-add-icon {
+  display: grid;
+  place-items: center;
+  inline-size: 28px;
+  block-size: 28px;
+  border: 2px solid var(--ink, #181b38);
+  border-radius: 7px;
+}
+
+.install-guide-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 8px 8px 12px;
+  border-radius: 12px;
+  background: #f4f5ef;
+}
+
+.install-guide-link code {
+  flex: 1;
+  min-inline-size: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}
+
+.install-guide-link button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.install-guide-dots {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+}
+
+.install-guide-dots span {
+  inline-size: 7px;
+  block-size: 7px;
+  border-radius: 4px;
+  background: var(--border, #dcdde4);
+  transition: inline-size 200ms ease;
+}
+
+.install-guide-dots span[data-on='true'] {
+  inline-size: 20px;
+  background: var(--ink, #181b38);
+}
+
+/* Bouncing arrow at the sheet's bottom edge, pointing at Safari's toolbar under it. */
+.install-card-guide {
+  position: relative;
+}
+
+.install-guide-pointer {
+  position: absolute;
+  inset-inline: 0;
+  margin-inline: auto;
+  inset-block-end: calc(4px + env(safe-area-inset-bottom));
+  inline-size: 0;
+  block-size: 0;
+  border-inline: 9px solid transparent;
+  border-block-start: 12px solid var(--ink, #181b38);
+  animation: install-guide-bob 1s ease-in-out infinite;
+}
+
+@keyframes install-guide-bob {
+  50% {
+    transform: translateY(5px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .install-app-card,
+  .install-app-card[data-done='leaving'],
+  .install-app-done-mascot[data-talking],
+  .install-guide-pointer {
+    animation: none;
+  }
+}

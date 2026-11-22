@@ -9,7 +9,7 @@ import { useLiveRefresh } from '../live-events.js';
 import { RefreshQueue } from '../refresh-queue.js';
 import { ActionLabel } from '../../../../packages/ui/src/Icon.js';
 import { RedeemRewards } from './RedeemRewards.js';
-import { InstallCard } from './InstallCard.js';
+import { InstallAppButton } from './InstallCard.js';
 import { WalletPanel } from './WalletPanel.js';
 import { CardDetailSwitcher, CardWallet } from './CardSwitcher.js';
 import { useCardExperience } from '../useCardExperience.js';
@@ -766,7 +766,7 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
               <h1>{ar ? 'كروتي' : 'My cards'}</h1>
             </div>
           </div>
-          <InstallCard lang={lang} />
+          <InstallAppButton lang={lang} portal="customer" />
           <CardWallet lang={lang} cards={cards} />
           {loaded && !loadError && !cards.length && (
             <div className="empty-state">

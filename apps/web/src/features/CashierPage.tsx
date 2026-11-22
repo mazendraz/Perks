@@ -9,6 +9,7 @@ import { AutoStampFeed } from './AutoStampFeed.js';
 import { CashierRedeemQueue } from './RedeemRequests.js';
 import { useEffect, useState, type FormEvent, type CSSProperties } from 'react';
 import { CameraScanner } from './CameraScanner.js';
+import { InstallAppButton } from './InstallCard.js';
 import type {
   AwardResult,
   Grant,
@@ -282,6 +283,7 @@ export function CashierPage({ grant, lang }: { grant: Grant; lang: Language }) {
           {ar ? 'قفل الوردية' : 'Lock shift'}
         </button>
       </div>
+      <InstallAppButton lang={lang} portal="cashier" />
       {grant.branches.length > 1 && (
         <label className="branch-picker">
           {ar ? 'الفرع' : 'Branch'}

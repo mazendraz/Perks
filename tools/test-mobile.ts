@@ -477,7 +477,10 @@ try {
       await page.getByRole('button', { name: 'Add My Cards to home screen', exact: true }).click();
       const guide = page.getByRole('dialog', { name: 'Add My Cards', exact: true });
       await guide.waitFor();
-      assert.equal(await guide.getByRole('img').count(), 2);
+      // The mascot walks through two steps: Share, then Add to Home Screen.
+      assert.equal(await guide.getByRole('img').count(), 1);
+      await guide.getByRole('button', { name: 'Next', exact: true }).click();
+      await guide.getByRole('img', { name: 'Add to Home Screen' }).waitFor();
       await guide.getByRole('button', { name: 'Got it', exact: true }).click();
     } else {
       await page.evaluate(() => {
@@ -504,7 +507,7 @@ try {
     }
     pass(
       project.name +
-        ': first home-screen offer uses the native prompt or the two-step Safari illustration',
+        ': first home-screen offer uses the native prompt or the two-step Safari guide',
     );
     await page.goto(origin + '/customer/' + memberId);
     let lostRequest = false,

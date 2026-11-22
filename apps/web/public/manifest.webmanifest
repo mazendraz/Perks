@@ -12,13 +12,29 @@
   "background_color": "#F5F5F1",
   "prefer_related_applications": false,
   "icons": [
-    { "src": "/icons/perks-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "/icons/perks-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    {
+      "src": "/icons/perks-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/perks-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
     {
       "src": "/icons/perks-maskable-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
+    }
+  ],
+  "related_applications": [
+    {
+      "platform": "webapp",
+      "url": "/manifest.webmanifest"
     }
   ]
 }

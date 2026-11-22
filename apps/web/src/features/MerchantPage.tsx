@@ -10,6 +10,7 @@ import { Subscriptions } from './Subscriptions.js';
 import { MyPlan, PlanBanners, type PlanState } from './MyPlan.js';
 import { WalletMessages } from './WalletMessages.js';
 import { LimitSheet } from './LimitSheet.js';
+import { InstallAppButton } from './InstallCard.js';
 import { LockedBadge } from './LockedBadge.js';
 import { TeamCustomerRecovery, RecoveryPolicy, PairingApprovals } from './CustomerRecovery.js';
 import { AccountSecurity } from './AccountSecurity.js';
@@ -532,6 +533,7 @@ export function MerchantPage({ grant, lang }: { grant: Grant; lang: Language }) 
           <ActionLabel icon="qr">{ar ? 'افتح التسجيل' : 'Open enrollment'}</ActionLabel>
         </a>
       </div>
+      <InstallAppButton lang={lang} portal="merchant" />
       {planState && (
         <PlanBanners
           state={planState}

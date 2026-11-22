@@ -19,7 +19,7 @@ async function main() {
         req.url === '/internal' ||
         req.url.startsWith('/internal/') ||
         req.url.startsWith('/assets/') ||
-        /[.](?:js|css|png|svg|webmanifest|ttf|woff2?)(?:\?|$)/.test(req.url)
+        /[.](?:js|css|png|svg|webmanifest|ttf|woff2?|mp3)(?:\?|$)/.test(req.url)
       )
         return reply.code(404).send({ error: { code: 'NOT_FOUND' } });
       return reply.sendFile('index.html');

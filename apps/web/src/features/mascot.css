@@ -1,0 +1,116 @@
+/* The Perks mascot explaining a step: pixel sprite on the left, speech bubble pointing at him.
+   The row is always left-to-right so his gesture points at the bubble in both languages. */
+.mascot-say {
+  direction: ltr;
+  display: grid;
+  grid-template-columns: 96px 1fr;
+  align-items: end;
+  gap: 6px;
+}
+
+.mascot-sprite {
+  inline-size: 96px;
+  aspect-ratio: 80 / 96;
+  background-repeat: no-repeat;
+  background-size: 500% 100%;
+  background-position: 0% 0;
+  image-rendering: pixelated;
+  animation: mascot-blink 4.2s steps(1) infinite;
+}
+
+.mascot-sprite[data-talking] {
+  animation: mascot-talk 0.52s steps(1) infinite;
+}
+
+@keyframes mascot-talk {
+  0% {
+    background-position: 25% 0;
+  }
+  25% {
+    background-position: 0% 0;
+  }
+  50% {
+    background-position: 75% 0;
+  }
+  75% {
+    background-position: 50% 0;
+  }
+}
+
+@keyframes mascot-blink {
+  0%,
+  100% {
+    background-position: 0% 0;
+  }
+  95% {
+    background-position: 100% 0;
+  }
+}
+
+.mascot-bubble {
+  position: relative;
+  align-self: center;
+  margin-block-end: 18px;
+  padding: 12px 14px;
+  border: 2px solid var(--ink, #181b38);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 3px 3px 0 var(--lime, #cbff64);
+  animation: mascot-bubble-in 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Tail pointing at the mascot. */
+.mascot-bubble::before {
+  content: '';
+  position: absolute;
+  inset-inline-start: -9px;
+  inset-block-end: 16px;
+  inline-size: 14px;
+  block-size: 14px;
+  background: #fff;
+  border-inline-start: 2px solid var(--ink, #181b38);
+  border-block-end: 2px solid var(--ink, #181b38);
+  transform: rotate(45deg);
+}
+
+.mascot-bubble p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.7;
+  font-weight: 600;
+  text-align: start;
+}
+
+.mascot-replay {
+  position: absolute;
+  inset-block-start: -12px;
+  inset-inline-end: -10px;
+  display: grid;
+  place-items: center;
+  inline-size: 30px;
+  block-size: 30px;
+  padding: 0;
+  border-radius: 50%;
+  border: 2px solid var(--ink, #181b38);
+  background: var(--lime, #cbff64);
+  color: var(--ink, #181b38);
+}
+
+@keyframes mascot-bubble-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mascot-sprite,
+  .mascot-sprite[data-talking],
+  .mascot-bubble {
+    animation: none;
+  }
+}

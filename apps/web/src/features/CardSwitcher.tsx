@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useMemo, useRef, useState, type ReactNode } from 'react';
 import type { Language, SavedCard } from '../../../../packages/contracts/src/index.js';
 import { Icon } from '../../../../packages/ui/src/Icon.js';
 import { LoyaltyCard } from '../../../../packages/ui/src/LoyaltyCard.js';
@@ -48,24 +48,38 @@ function CardControls({
   );
 }
 
-export function CardWallet({ lang, cards }: { lang: Language; cards: SavedCard[] }) {
-  const track = useRef<HTMLDivElement>(null);
-  const frame = useRef(0);
-  const [visible, setVisible] = useState(0);
-  const index = Math.min(visible, cards.length - 1);
-  useEffect(() => () => cancelAnimationFrame(frame.current), []);
-
-  const move = (next: number) => {
-    const viewport = track.current;
-    const slide = viewport?.children[next];
-    if (!viewport || !slide) return;
-    const x = slide.getBoundingClientRect();
-    const view = viewport.getBoundingClientRect();
-    viewport.scrollBy({
-      left: x.left + x.width / 2 - (view.left + view.width / 2),
-      behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
-    });
+/** Where a card sits in the fanned deck, `p` cards away from the front (negative = before it). */
+function deckPose(p: number, dir: 1 | -1) {
+  const a = Math.min(Math.abs(p), 3.6);
+  const side = Math.sign(p) * dir;
+  const x = a <= 1 ? a * 24 : 24 + (a - 1) * 9;
+  const opacity = a <= 2.6 ? 1 : Math.max(0, 1 - (a - 2.6));
+  return {
+    transform: `translate3d(${side * x}%, ${a * 2.2}%, 0) rotate(${side * a * 5.5}deg) scale(${1 - a * 0.075})`,
+    zIndex: 100 - Math.round(Math.abs(p) * 10),
+    opacity,
   };
+}
+
+const pad2 = (n: number) => String(n).padStart(2, '0');
+
+export function CardWallet({ lang, cards }: { lang: Language; cards: SavedCard[] }) {
+  const ar = lang === 'ar';
+  const dir: 1 | -1 = ar ? -1 : 1;
+  const stage = useRef<HTMLDivElement>(null);
+  const gesture = useRef<{ id: number; x: number; y: number; width: number; live: boolean } | null>(
+    null,
+  );
+  const dragged = useRef(false);
+  const [current, setCurrent] = useState(0);
+  const [drag, setDrag] = useState(0);
+  const [dragging, setDragging] = useState(false);
+  const index = Math.max(0, Math.min(current, cards.length - 1));
+  // Same element each render, so a drag frame does not re-render every card face.
+  const faces = useMemo(
+    () => cards.map((card) => <LoyaltyCard key={card.id} card={card} lang={lang} motion="quiet" />),
+    [cards, lang],
+  );
 
   if (cards.length <= 1) {
     return (
@@ -83,51 +97,142 @@ export function CardWallet({ lang, cards }: { lang: Language; cards: SavedCard[]
     );
   }
 
-  const onScroll = () => {
-    if (frame.current) return;
-    frame.current = requestAnimationFrame(() => {
-      frame.current = 0;
-      const viewport = track.current;
-      const first = viewport?.children[0];
-      const second = viewport?.children[1];
-      if (!viewport || !first || !second) return;
-      const spacing = Math.abs(
-        first.getBoundingClientRect().left - second.getBoundingClientRect().left,
-      );
-      if (spacing)
-        setVisible(
-          Math.min(
-            viewport.children.length - 1,
-            Math.round(Math.abs(viewport.scrollLeft) / spacing),
-          ),
-        );
-    });
+  const last = cards.length - 1;
+  const move = (next: number) => setCurrent(Math.max(0, Math.min(last, next)));
+  const front = cards[index]!;
+
+  const endDrag = (commit: boolean) => {
+    const g = gesture.current;
+    gesture.current = null;
+    setDragging(false);
+    if (g?.live && commit) {
+      // A short flick moves one card; a long drag can move several.
+      const step =
+        Math.abs(drag) < 0.18 ? 0 : Math.abs(drag) < 1 ? Math.sign(drag) : Math.round(drag);
+      move(index + step);
+    }
+    setDrag(0);
   };
 
   return (
     <section
-      className="wallet-card-carousel"
-      aria-label={lang === 'ar' ? 'تبديل الكروت' : 'Switch cards'}
+      className="card-deck"
+      aria-label={ar ? 'تبديل الكروت' : 'Switch cards'}
+      aria-roledescription="carousel"
     >
       <div
-        className="cards-grid wallet-card-track"
-        ref={track}
-        onScroll={onScroll}
+        className="cards-grid card-deck-stage"
+        ref={stage}
+        data-dragging={dragging || undefined}
+        tabIndex={-1}
         onKeyDown={(event) => {
           if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
           event.preventDefault();
-          move(index + ((event.key === 'ArrowRight') !== (lang === 'ar') ? 1 : -1));
+          move(index + ((event.key === 'ArrowRight') !== ar ? 1 : -1));
+        }}
+        onPointerDown={(event) => {
+          if (event.pointerType === 'mouse' && event.button !== 0) return;
+          const width =
+            stage.current?.querySelector('.card-deck-slide')?.getBoundingClientRect().width ?? 300;
+          gesture.current = {
+            id: event.pointerId,
+            x: event.clientX,
+            y: event.clientY,
+            width,
+            live: false,
+          };
+          dragged.current = false;
+        }}
+        onPointerMove={(event) => {
+          const g = gesture.current;
+          if (!g || g.id !== event.pointerId) return;
+          const dx = event.clientX - g.x;
+          const dy = event.clientY - g.y;
+          if (!g.live) {
+            if (Math.abs(dy) > 10 && Math.abs(dy) > Math.abs(dx)) return endDrag(false);
+            if (Math.abs(dx) < 8) return;
+            g.live = true;
+            dragged.current = true;
+            setDragging(true);
+            stage.current?.setPointerCapture(event.pointerId);
+          }
+          let next = (-dx * dir) / (g.width * 0.55);
+          // Resist past the first and last card.
+          const min = -index,
+            max = last - index;
+          if (next < min) next = min + (next - min) * 0.25;
+          if (next > max) next = max + (next - max) * 0.25;
+          setDrag(next);
+        }}
+        onPointerUp={() => endDrag(true)}
+        onPointerCancel={() => endDrag(false)}
+        onClickCapture={(event) => {
+          if (dragged.current) {
+            event.preventDefault();
+            event.stopPropagation();
+            dragged.current = false;
+          }
         }}
       >
-        {cards.map((card, position) => (
-          <div className="wallet-card-slide" key={card.id} data-current={position === index}>
-            <button className="card-open" onClick={() => navigate('/customer/' + card.id)}>
-              <LoyaltyCard card={card} lang={lang} motion="quiet" />
-            </button>
-          </div>
-        ))}
+        {cards.map((card, position) => {
+          const p = position - index - drag;
+          const isFront = position === index;
+          const pose = deckPose(p, dir);
+          return (
+            <div
+              className="card-deck-slide"
+              key={card.id}
+              data-current={isFront}
+              style={{ ...pose, visibility: pose.opacity === 0 ? 'hidden' : undefined }}
+              aria-hidden={!isFront}
+            >
+              <button
+                type="button"
+                className="card-open"
+                tabIndex={isFront ? 0 : -1}
+                aria-label={isFront ? card.merchant_name : undefined}
+                onClick={() => (isFront ? navigate('/customer/' + card.id) : move(position))}
+              >
+                {faces[position]}
+              </button>
+            </div>
+          );
+        })}
       </div>
-      <CardControls lang={lang} index={index} total={cards.length} move={move} />
+      <div className="card-deck-caption" aria-live="polite">
+        <strong>{front.merchant_name}</strong>
+        <span>{front.program_name}</span>
+      </div>
+      <div className="card-deck-footer">
+        <span className="card-deck-count" aria-hidden="true">
+          {pad2(index + 1)} / {pad2(cards.length)}
+        </span>
+        <span className="sr-only" role="status">
+          {ar ? `${index + 1} من ${cards.length}` : `${index + 1} of ${cards.length}`}
+        </span>
+        <div className="card-deck-arrows">
+          <button
+            type="button"
+            className="secondary wallet-card-arrow"
+            data-step="previous"
+            aria-label={ar ? 'الكارت اللي قبله' : 'Previous card'}
+            disabled={index === 0}
+            onClick={() => move(index - 1)}
+          >
+            <Icon name="arrow" />
+          </button>
+          <button
+            type="button"
+            className="secondary wallet-card-arrow"
+            data-step="next"
+            aria-label={ar ? 'الكارت اللي بعده' : 'Next card'}
+            disabled={index === last}
+            onClick={() => move(index + 1)}
+          >
+            <Icon name="arrow" />
+          </button>
+        </div>
+      </div>
     </section>
   );
 }

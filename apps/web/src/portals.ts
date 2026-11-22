@@ -1,4 +1,7 @@
 import type { Session } from '../../../packages/contracts/src/index.js';
+import { setInstallPortal } from './install-prompt.js';
+import { portalManifests, portalAppTitle } from './portal-apps.js';
+export { portalManifests, portalAppTitle };
 export type Portal = 'platform' | 'merchant' | 'cashier' | 'customer';
 export function portalAssetUrl(path: string) {
   const portal = portalForPath(location.pathname);
@@ -47,20 +50,15 @@ export function portalForPath(path: string): Portal | undefined {
   if (path.startsWith('/customer') || path.startsWith('/join/') || path.startsWith('/p/'))
     return 'customer';
 }
-// The cashier installs as its own home-screen app (own name, start page and scope) so a shop can keep
-// Perks Cashier on the till phone, and iPhone delivers push only to an installed app. Every other
-// portal keeps the customer manifest. Browsers read the link when the app is installed.
-const portalManifests: Partial<Record<Portal, string>> = {
-  cashier: '/manifest-cashier.webmanifest',
-};
 export function applyPortalManifest(portal: Portal | undefined) {
   const link = document.querySelector<HTMLLinkElement>('link[rel="manifest"]');
   if (!link) return;
-  const href = (portal && portalManifests[portal]) || '/manifest.webmanifest';
+  const href = portalManifests[portal ?? 'customer'];
   if (link.getAttribute('href') !== href) link.setAttribute('href', href);
   document
     .querySelector('meta[name="apple-mobile-web-app-title"]')
-    ?.setAttribute('content', portal === 'cashier' ? 'Perks Cashier' : 'My Cards');
+    ?.setAttribute('content', portalAppTitle[portal ?? 'customer']);
+  setInstallPortal(portal ?? 'customer');
 }
 export function defaultPortal(session: Session): Portal {
   return ['platform_admin', 'platform_support'].includes(session.user.role)

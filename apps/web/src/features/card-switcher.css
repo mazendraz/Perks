@@ -1,43 +1,111 @@
-.wallet-card-carousel {
+/* My cards: a fanned deck. The front card sits on top, the rest fan out behind it. */
+.card-deck {
   max-inline-size: 36rem;
   margin-inline: auto;
+  overflow-x: clip;
 }
 
-.cards-grid.wallet-card-track {
+.cards-grid.card-deck-stage {
   grid-template-columns: none;
-  grid-auto-columns: 100%;
-  grid-auto-flow: column;
-  align-items: center;
-  gap: 0.625rem;
-  overflow-x: auto;
-  overscroll-behavior-inline: contain;
-  padding: 0.5rem 1.5rem 0.875rem;
-  scroll-snap-type: x mandatory;
-  scrollbar-width: none;
+  gap: 0;
 }
 
-.wallet-card-track::-webkit-scrollbar {
-  display: none;
+.card-deck-stage {
+  display: grid;
+  place-items: center;
+  padding-block: 2.25rem 2.75rem;
+  touch-action: pan-y pinch-zoom;
+  user-select: none;
+  -webkit-user-select: none;
+  outline: none;
 }
 
-.wallet-card-slide {
-  min-inline-size: 0;
-  scroll-snap-align: center;
-  scroll-snap-stop: always;
-}
-
-.wallet-card-slide .card-open {
-  inline-size: 100%;
-  transform: scale(0.97);
-  opacity: 0.75;
+.card-deck-slide {
+  grid-area: 1 / 1;
+  inline-size: min(74%, 21rem);
+  transform-origin: 50% 85%;
   transition:
-    transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
-    opacity 180ms ease-out;
+    transform 480ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 300ms ease-out;
+  will-change: transform;
 }
 
-.wallet-card-slide[data-current='true'] .card-open {
-  transform: none;
-  opacity: 1;
+.card-deck-stage[data-dragging] .card-deck-slide {
+  transition: none;
+}
+
+.card-deck-slide .card-open {
+  inline-size: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.card-deck-slide .loyalty-card {
+  box-shadow: 0 18px 30px -18px rgb(15 30 40 / 0.45);
+  -webkit-user-drag: none;
+}
+
+.card-deck-slide[data-current='false'] .card-open {
+  cursor: pointer;
+}
+
+.card-deck-slide img {
+  -webkit-user-drag: none;
+  pointer-events: none;
+}
+
+.card-deck-caption {
+  display: grid;
+  justify-items: center;
+  gap: 0.125rem;
+  text-align: center;
+  padding-inline: 1rem;
+}
+
+.card-deck-caption strong {
+  font-size: 1rem;
+  letter-spacing: 0.02em;
+}
+
+.card-deck-caption span {
+  font-size: 0.75rem;
+  color: var(--brand, currentColor);
+  opacity: 0.75;
+}
+
+.card-deck-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-block: 1rem 0.75rem;
+  padding-inline: 0.5rem;
+}
+
+.card-deck-count {
+  font-size: 0.8125rem;
+  letter-spacing: 0.12em;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.6;
+}
+
+.card-deck-arrows {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.card-deck-arrows .wallet-card-arrow {
+  display: grid;
+  place-items: center;
+  min-inline-size: 44px;
+  min-block-size: 44px;
+  padding: 0;
+  border-radius: 50%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card-deck-slide {
+    transition: opacity 160ms ease-out;
+  }
 }
 
 .wallet-card-controls {
@@ -84,11 +152,5 @@
   to {
     transform: none;
     opacity: 1;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .wallet-card-slide .card-open {
-    transform: none;
   }
 }

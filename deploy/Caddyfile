@@ -38,7 +38,7 @@
       rewrite * /business/index.html
       file_server
     }
-    @static path_regexp \.(js|css|png|svg|webmanifest|ttf|woff|woff2)$
+    @static path_regexp \.(js|css|png|svg|webmanifest|ttf|woff|woff2|mp3)$
     handle @static {
       header Cache-Control "no-cache"
       file_server

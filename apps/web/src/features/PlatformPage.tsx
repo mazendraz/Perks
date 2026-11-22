@@ -1,3 +1,4 @@
+import { InstallAppButton } from './InstallCard.js';
 import { PhoneInput } from '../controls/PhoneInput.js';
 import { merchantStatusLabel, subscriptionPlanLabel } from '../business-labels.js';
 import { portalAssetUrl } from '../portals.js';
@@ -1181,6 +1182,7 @@ export function PlatformPage({ lang, userId }: { lang: Language; userId: string 
           {ar ? 'تاجر جديد' : 'New merchant'}
         </button>
       </div>
+      <InstallAppButton lang={lang} portal="platform" />
       {error && (
         <div className="notice error" role="alert">
           {error}

@@ -42,7 +42,8 @@ const segmentOrder: SegmentKey[] = [
 const segmentTone: Partial<Record<SegmentKey, string>> = {
   at_risk: 'warn',
   one_time: 'warn',
-  lost: 'danger',
+  // Not 'danger': that is the app-wide red button class, which turned this tag into a button.
+  lost: 'gone',
   regular: 'ok',
   reactivated: 'ok',
   near_reward: 'lime',

@@ -425,7 +425,7 @@
   background: var(--an-warn-bg);
   color: var(--an-warn);
 }
-.an-tag.danger {
+.an-tag.gone {
   background: var(--an-danger-bg);
   color: var(--an-danger);
 }
@@ -1170,4 +1170,37 @@
 }
 .an-wa-button:disabled {
   opacity: 0.5;
+}
+.an-wa-all,
+.an-wa-next {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 48px;
+  font-size: 15px;
+}
+.an-wa-queue {
+  display: grid;
+  gap: 10px;
+  justify-items: center;
+  text-align: center;
+  padding: 14px;
+  border-radius: 14px;
+  background: #effaf2;
+}
+.an-wa-queue p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.an-wa-progress {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: #08331a;
+}
+.an-wa-queue-actions {
+  display: flex;
+  gap: 18px;
 }

@@ -35,6 +35,16 @@ const t = {
   more: { ar: 'اعرض أكتر', en: 'Show more' },
   loading: { ar: 'بنجيب الأسماء…', en: 'Loading names…' },
   close: { ar: 'إغلاق', en: 'Close' },
+  all: { ar: 'ابعت للكل ({n})', en: 'Send to all ({n})' },
+  next: { ar: 'افتح واتساب لـ{name}', en: 'Open WhatsApp for {name}' },
+  progress: { ar: '{i} من {n}', en: '{i} of {n}' },
+  queueHow: {
+    ar: 'الرسالة هتكون مكتوبة باسمه. دوس «إرسال» في واتساب، وارجع هنا للي بعده.',
+    en: 'The message is written with their name. Tap Send in WhatsApp, then come back for the next one.',
+  },
+  skip: { ar: 'فوّت', en: 'Skip' },
+  stop: { ar: 'وقّف', en: 'Stop' },
+  done: { ar: 'خلصت! فتحت المحادثة لكل الزباين.', en: 'Done! You opened a chat for everyone.' },
 };
 
 /**
@@ -68,6 +78,10 @@ export function WhatsAppSheet({
   const [opened, setOpened] = useState<Set<string>>(() => new Set());
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
+  // "Send to all": one customer after another, one tap each (WhatsApp needs the owner to send).
+  const [queue, setQueue] = useState<SegmentCustomer[] | null>(null);
+  const [step, setStep] = useState(0);
+  const [loadingAll, setLoadingAll] = useState(false);
   const live = useRef(true);
   useEffect(
     () => () => {
@@ -114,6 +128,7 @@ export function WhatsAppSheet({
       if (tab) tab.location.href = r.url;
       else location.href = r.url;
       setOpened((s) => new Set(s).add(c.profileId));
+      if (queue?.[step]?.profileId === c.profileId) setStep((i) => i + 1);
     } catch (e) {
       tab?.close();
       setError(errorText(e, lang));
@@ -121,6 +136,36 @@ export function WhatsAppSheet({
       setBusy('');
     }
   };
+
+  const startAll = async () => {
+    if (!page) return;
+    setLoadingAll(true);
+    setError('');
+    try {
+      // Everyone, not only the first page on screen.
+      let all = rows,
+        cursor = page.nextCursor;
+      while (cursor && all.length < 1000) {
+        const params = new URLSearchParams({ whatsapp: '1', cursor });
+        if (branchId) params.set('branchId', branchId);
+        const next = await api<SegmentPage>(
+          '/merchants/' + merchantId + '/analytics/segments/' + segment + '?' + params,
+        );
+        all = [...all, ...next.customers];
+        cursor = next.nextCursor;
+      }
+      if (!live.current) return;
+      setRows(all);
+      setPage((p) => (p ? { ...p, nextCursor: cursor } : p));
+      setQueue(all.filter((c) => !opened.has(c.profileId)));
+      setStep(0);
+    } catch (e) {
+      if (live.current) setError(errorText(e, lang));
+    } finally {
+      if (live.current) setLoadingAll(false);
+    }
+  };
+  const current = queue?.[step];
 
   return (
     <div className="modal-backdrop sheet-backdrop" onClick={onClose}>
@@ -170,7 +215,51 @@ export function WhatsAppSheet({
             {error}
           </div>
         )}
-        {!page ? (
+        {queue ? (
+          <div className="an-wa-queue" aria-live="polite">
+            {current ? (
+              <>
+                <span className="an-wa-progress">
+                  {say(t.progress, lang, {
+                    i: num(step + 1, lang),
+                    n: num(queue.length, lang),
+                  })}
+                </span>
+                <p className="an-muted">{pick(t.queueHow, lang)}</p>
+                <button
+                  type="button"
+                  className="an-wa-button an-wa-next"
+                  disabled={!body.trim() || busy === current.profileId}
+                  onClick={() => void openChat(current)}
+                >
+                  <Icon name="message" size={18} />
+                  {say(t.next, lang, { name: current.alias })}
+                </button>
+                <div className="an-wa-queue-actions">
+                  <button
+                    type="button"
+                    className="text-button"
+                    onClick={() => setStep((i) => i + 1)}
+                  >
+                    {pick(t.skip, lang)}
+                  </button>
+                  <button type="button" className="text-button" onClick={() => setQueue(null)}>
+                    {pick(t.stop, lang)}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <p>
+                  <strong>{pick(t.done, lang)}</strong>
+                </p>
+                <button type="button" className="secondary" onClick={onClose}>
+                  {pick(t.close, lang)}
+                </button>
+              </>
+            )}
+          </div>
+        ) : !page ? (
           <p className="an-muted">{pick(t.loading, lang)}</p>
         ) : (
           <ul className="an-wa-list">
@@ -190,7 +279,18 @@ export function WhatsAppSheet({
             ))}
           </ul>
         )}
-        {page?.nextCursor && (
+        {page && !queue && page.whatsappReady > 1 && (
+          <button
+            type="button"
+            className="an-wa-button an-wa-all"
+            disabled={!body.trim() || loadingAll}
+            onClick={() => void startAll()}
+          >
+            <Icon name="message" size={18} />
+            {say(t.all, lang, { n: num(page.whatsappReady, lang) })}
+          </button>
+        )}
+        {!queue && page?.nextCursor && (
           <button className="text-button" onClick={() => void load(page.nextCursor!)}>
             {pick(t.more, lang)}
           </button>

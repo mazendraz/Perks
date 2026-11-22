@@ -17,6 +17,13 @@ name, the two numbers and the stamp strip.
   object with `notifyPreference: notifyOnUpdate`, so the phone gets a notification when the stamp
   count changes. Google allows at most 3 notifications per pass per day; past that the update is
   sent silently. A 404 means the customer never saved the card. A network error or 5xx is retried.
+- **Shop messages and reminders** are added with `addMessage` (`TEXT_AND_NOTIFY`, shown for 7 days,
+  `displayInterval.end`). Every update first reads the saved card and sends its live messages back as
+  plain `TEXT`, because the `PUT` would otherwise delete them. If the card cannot be read, nothing is
+  written and the update is retried.
+- **"Accepted" is not "notified".** The same 3-a-day limit covers stamp updates and messages. A
+  customer stamped three times today still gets the message on the card, but without a
+  notification. Google gives no signal either way.
 - **Images and links need a public HTTPS origin:** Google fetches the logo and the strip itself.
 
 ## Turning it on
@@ -28,7 +35,8 @@ name, the two numbers and the stamp strip.
 4. Set `GOOGLE_WALLET_ENABLED=true`, `GOOGLE_WALLET_ISSUER_ID` and
    `GOOGLE_WALLET_SERVICE_ACCOUNT_FILE`.
 5. Until Google approves publishing access, only the test accounts added in the console can save the
-   card ("demo mode").
+   card ("demo mode"). Classes are created with `reviewStatus: UNDER_REVIEW`; check in the Wallet
+   Console that publishing access is approved before judging delivery with real customers.
 
 ## Card face (Nov 2026)
 

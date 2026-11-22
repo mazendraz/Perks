@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from 'react';
 import type { Grant, Language, AwardResult } from '../../../../packages/contracts/src/index.js';
 import { api, ApiError, errorText } from '../api.js';
 import { useLiveRefresh } from '../live-events.js';
+import { useAutoClear } from '../useAutoClear.js';
 import { ActionLabel } from '../../../../packages/ui/src/Icon.js';
 
 export interface StampRequestRow {
@@ -305,6 +306,7 @@ export function CashierRequests({
         return false;
       }
     });
+  useAutoClear(last, () => setLast(null));
   const generation = useRef(0),
     loadSerial = useRef(0),
     seen = useRef<Set<string> | null>(null),

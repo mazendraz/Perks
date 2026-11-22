@@ -4,6 +4,7 @@ import { ActionLabel, Icon } from '../../../../packages/ui/src/Icon.js';
 import type { Grant, Language } from '../../../../packages/contracts/src/index.js';
 import { api, ApiError, errorText } from '../api.js';
 import { useLiveRefresh } from '../live-events.js';
+import { useAutoClear } from '../useAutoClear.js';
 import { intlLocale } from '../locale.js';
 
 // A customer tapped Redeem on their phone. The cashier sees their name, the reward and the 2-digit
@@ -177,6 +178,7 @@ export function CashierRedeemQueue({
   const [requests, setRequests] = useState<RedeemRequestRow[]>([]),
     [done, setDone] = useState<{ id: string; outcome: RedeemOutcome } | null>(null),
     [error, setError] = useState('');
+  useAutoClear(done, () => setDone(null));
   const generation = useRef(0);
   const load = async () => {
     if (!branch) return;

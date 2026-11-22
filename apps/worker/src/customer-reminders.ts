@@ -76,8 +76,8 @@ export async function deliverWalletNotice(
       if (!(await allowed())) return { outcome: 'skipped', error: 'NO_LONGER_ELIGIBLE' };
       const status = await providers.apple(token).catch(() => 0);
       if (status === 200) accepted++;
-      else if (status === 400 || status === 410)
-        await pool.query('SELECT wallet_forget_push_token($1)', [token]);
+      // A malformed APNs request must not unregister a customer's Wallet card.
+      else if (status === 410) await pool.query('SELECT wallet_forget_push_token($1)', [token]);
       else retry = true;
     }
     if (retry) return { outcome: 'retry', error: 'APPLE_PUSH_RETRY' };

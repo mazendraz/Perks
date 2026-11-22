@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import pg from 'pg';
 import { createHash, randomUUID } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
+import { createServer, type ServerHttp2Session } from 'node:http2';
 import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -12,7 +13,7 @@ import { seed, ids } from '../../db/seed.js';
 import { login, key } from '../helpers.js';
 import { businessDate } from '../../packages/domain/src/loyalty.js';
 import { testWalletCertificates } from '../wallet-certs.js';
-import { runAppleWalletPushes } from '../../apps/worker/src/apple-wallet-push.js';
+import { appleWalletPush, runAppleWalletPushes } from '../../apps/worker/src/apple-wallet-push.js';
 
 const passTypeId = 'pass.test.perks.loyalty',
   origin = 'https://wallet.perks.test';
@@ -355,8 +356,14 @@ test('Apple registers a device, gets pushed after a stamp and fetches the update
     ).statusCode,
     401,
   );
-  // A device that removed the pass answers 410; its token is forgotten.
+  // A request error leaves the device registered. A 410 retires its token.
   await award(m, 1);
+  assert.equal(await runAppleWalletPushes(worker, c, async () => 400), 0);
+  const stillRegistered = await app.inject({
+    url: service + '/devices/' + deviceId + '/registrations/' + passTypeId,
+  });
+  assert.deepEqual(stillRegistered.json().serialNumbers, [serial]);
+  await db.query("UPDATE wallet_passes SET fingerprint='' WHERE serial=$1", [serial]);
   assert.equal(await runAppleWalletPushes(worker, c, async () => 410), 0);
   assert.equal(
     (
@@ -468,4 +475,42 @@ test('a closed card pushes a voided pass and then forgets its devices', async ()
     ).statusCode,
     404,
   );
+});
+
+test('Wallet requests use APNs background priority and an empty payload', async () => {
+  const server = createServer();
+  const sessions = new Set<ServerHttp2Session>();
+  server.on('session', (session) => {
+    sessions.add(session);
+    session.on('close', () => sessions.delete(session));
+  });
+  server.on('stream', (stream, headers) => {
+    let body = '';
+    stream.setEncoding('utf8').on('data', (chunk: string) => {
+      body += chunk;
+    });
+    stream.on('end', () => {
+      const valid =
+        headers['apns-push-type'] === 'background' &&
+        headers['apns-priority'] === '5' &&
+        headers['apns-topic'] === passTypeId &&
+        body === '{}';
+      stream.respond({ ':status': valid ? 200 : 400 });
+      stream.end();
+    });
+  });
+  await new Promise<void>((resolve, reject) => {
+    server.once('error', reject);
+    server.listen(0, '127.0.0.1', resolve);
+  });
+  try {
+    const address = server.address();
+    assert.ok(address && typeof address !== 'string');
+    const push = appleWalletPush({ ...c, APPLE_APNS_ORIGIN: `http://127.0.0.1:${address.port}` });
+    assert.ok(push);
+    assert.equal(await push('ab'.repeat(32)), 200);
+  } finally {
+    for (const session of sessions) session.destroy();
+    await new Promise<void>((resolve) => server.close(() => resolve()));
+  }
 });

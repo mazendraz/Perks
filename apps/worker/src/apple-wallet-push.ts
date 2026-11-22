@@ -27,6 +27,8 @@ function apnsClient(c: ServiceConfig, signer: AppleWalletSigner): Push {
         ':path': '/3/device/' + token,
         'apns-topic': signer.passTypeIdentifier,
         'apns-push-type': 'background',
+        // APNs defaults to priority 10, which it rejects for background pushes.
+        'apns-priority': '5',
         'content-type': 'application/json',
       });
       let status = 0;
@@ -73,9 +75,8 @@ export async function runAppleWalletPushes(
     for (const token of change.push_tokens) {
       const status = await push(token);
       if (status === 200) sent++;
-      // 410: the device removed the pass; 400 BadDeviceToken: never valid for this topic.
-      else if (status === 410 || status === 400)
-        await pool.query('SELECT wallet_forget_push_token($1)', [token]);
+      // Only 410 establishes that the token is inactive. A 400 can reject the request itself.
+      else if (status === 410) await pool.query('SELECT wallet_forget_push_token($1)', [token]);
     }
     if (!change.active) await pool.query('SELECT wallet_release_inactive($1)', [change.serial]);
   }

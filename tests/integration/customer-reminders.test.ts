@@ -220,6 +220,16 @@ test('settings, customer consent, scheduling, leases, delivery and return tracki
   assert.ok(
     (texts(card).en as Record<string, string>)[reminderValue]!.includes(stampsLeftText(left, 'en')),
   );
+  const rejected = await deliverCustomerReminder(apple, worker, { apple: async () => 400 });
+  assert.equal(rejected.outcome, 'retry');
+  assert.ok(
+    (
+      await db.query(
+        'SELECT 1 FROM wallet_registrations r JOIN wallet_passes p ON p.serial=r.serial WHERE p.membership_id=$1',
+        [membership],
+      )
+    ).rowCount,
+  );
   let pushes = 0;
   const appleResult = await deliverCustomerReminder(apple, worker, {
     apple: async () => {

@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import vm from 'node:vm';
-import { createDecipheriv, createECDH, createPublicKey, hkdfSync, verify } from 'node:crypto';
+import { createDecipheriv, createECDH, createPublicKey, ECDH, hkdfSync, verify } from 'node:crypto';
 import {
   b64url,
   b64urlDecode,
@@ -129,6 +129,18 @@ test('a pasted key pair that does not belong together is caught', () => {
   assert.ok(keysMatch(one));
   assert.ok(!keysMatch({ publicKey: one.publicKey, privateKey: two.privateKey }));
   assert.ok(!keysMatch({ publicKey: 'nonsense', privateKey: 'nonsense' }));
+});
+
+test('generated VAPID private keys retain leading zero bytes', (t) => {
+  t.mock.method(ECDH.prototype, 'generateKeys', function (this: ECDH) {
+    this.setPrivateKey(Buffer.from([1]));
+    return this.getPublicKey();
+  });
+  const keys = generateVapidKeys();
+  const scalar = Buffer.alloc(32);
+  scalar[31] = 1;
+  assert.deepEqual(b64urlDecode(keys.privateKey), scalar);
+  assert.ok(keysMatch(keys));
 });
 
 test('only the browsers’ push services are endpoints', () => {

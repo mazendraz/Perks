@@ -72,12 +72,19 @@ export async function runOne(pool: pg.Pool, c: ServiceConfig): Promise<boolean> 
           'net_stamps',
           'segment',
         ];
-        const cell = (value: unknown) =>
-          '"' +
-          String(value ?? '')
-            .replace(/^[=+@\-\t\r]/, "'$&")
-            .replaceAll('"', '""') +
-          '"';
+        // Text that a spreadsheet would run as a formula gets a leading quote. A plain number
+        // (net_stamps can be -3) is left alone, or Excel would read it as text and stop adding it.
+        const cell = (value: unknown) => {
+          const text = String(value ?? '');
+          return (
+            '"' +
+            (/^-?\d+(?:\.\d+)?$/.test(text)
+              ? text
+              : text.replace(/^[=+@\-\t\r]/, "'$&")
+            ).replaceAll('"', '""') +
+            '"'
+          );
+        };
         const csv =
           '\uFEFF' +
           [

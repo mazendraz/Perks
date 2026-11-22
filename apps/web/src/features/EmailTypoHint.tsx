@@ -51,7 +51,7 @@ export function EmailTypoHint({
   return (
     <small className="email-typo" role="status">
       {lang === 'ar' ? 'تقصد ' : 'Did you mean '}
-      <button type="button" className="text-button" onClick={() => onUse(fixed)}>
+      <button type="button" className="link-button" onClick={() => onUse(fixed)}>
         <bdi>{fixed}</bdi>
       </button>
       {lang === 'ar' ? '؟' : '?'}

@@ -59,9 +59,13 @@ function ecdhFrom(privateKey: string): ECDH {
 export function generateVapidKeys(): VapidKeys {
   const ecdh = createECDH('prime256v1');
   ecdh.generateKeys();
+  // Node returns the minimal-length scalar. VAPID uses a fixed-width P-256 private key.
+  const scalar = ecdh.getPrivateKey();
+  const privateKey = Buffer.alloc(32);
+  scalar.copy(privateKey, privateKey.length - scalar.length);
   return {
     publicKey: b64url(ecdh.getPublicKey()),
-    privateKey: b64url(ecdh.getPrivateKey()),
+    privateKey: b64url(privateKey),
   };
 }
 

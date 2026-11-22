@@ -1,4 +1,5 @@
 import { Select } from '../controls/Select.js';
+import { PasswordField } from '../controls/PasswordField.js';
 import { useState } from 'react';
 import type { Language } from '../../../../packages/contracts/src/index.js';
 import { api, ApiError, errorText } from '../api.js';
@@ -94,20 +95,16 @@ export function PlatformAccountForm({
           />
           <EmailTypoHint email={email} lang={lang} onUse={setEmail} />
         </label>
-        <label>
-          {ar ? 'باسورد الحساب' : 'Account password'}
-          <input
-            type="password"
-            autoComplete="new-password"
-            dir="ltr"
-            required
-            minLength={10}
-            maxLength={128}
-            value={password}
-            disabled={!!attempt}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-        </label>
+        <PasswordField
+          label={ar ? 'باسورد الحساب' : 'Account password'}
+          lang={lang}
+          autoComplete="new-password"
+          required
+          minLength={10}
+          value={password}
+          disabled={!!attempt}
+          onChange={(e) => setPassword(e.target.value)}
+        />
         <label>
           {ar ? 'الدور' : 'Role'}
           <Select

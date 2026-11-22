@@ -7,7 +7,7 @@ import { buildApp } from '../../apps/api/src/server.js';
 import { b64url, generateVapidKeys } from '../../apps/api/src/webpush.js';
 import { runCashierPushJob } from '../../apps/worker/src/cashier-push.js';
 import { seed, ids } from '../../db/seed.js';
-import { adminLogin, enrollmentTerms, key, login } from '../helpers.js';
+import { adminLogin, enrollmentTerms, key, login, clearOfShopMidnight } from '../helpers.js';
 
 // The whole card cycle through the paths customers use since 038: a full card becomes a reward, the
 // reward is redeemed exactly once from the customer's Redeem code, the next card starts with any
@@ -185,6 +185,7 @@ async function deliver(job: { aggregate_id: string; payload: Record<string, unkn
 }
 
 before(async () => {
+  await clearOfShopMidnight();
   await db.connect();
   await seed(db);
   await app.ready();
@@ -301,8 +302,9 @@ for (const mode of ['auto', 'approval'] as const)
         [c1.balance, c1.display_balance, c1.pending_rewards, c1.cycle_number],
         [0, 5, 1, 1],
       );
-      // Every approved receipt is a visit for the owner (038 left these out).
-      if (mode === 'approval') assert.equal((await overview()).visits - before.visits, 5);
+      // A visit is one customer on one shop day, however the stamps came (040): five stamps
+      // today, automatic or by receipt, are one visit for the owner.
+      assert.equal((await overview()).visits - before.visits, 1);
       const [reward] = (await me(who, '/rewards')).json().rewards;
       assert.equal(reward.status, 'available');
       // The branch is rung once: the card filled.

@@ -34,6 +34,7 @@ import { loyaltyModule } from './modules/loyalty.js';
 import { rewardsModule } from './modules/rewards.js';
 import { cardCorrectionsModule } from './modules/card-corrections.js';
 import { reportingModule } from './modules/reporting.js';
+import { analyticsModule, analyticsPageModule } from './modules/analytics.js';
 import { collectionModule } from './modules/collection.js';
 import { requestsModule } from './modules/requests.js';
 import { redeemRequestsModule } from './modules/redeem-requests.js';
@@ -99,6 +100,9 @@ export async function buildApp(
     skipOnError: false,
   });
   app.addHook('onSend', async (req, reply, payload) => {
+    // A route that answers with an ETag chose its own private revalidation policy; overwriting it
+    // with no-store would stop the browser from ever sending If-None-Match back.
+    if (reply.getHeader('etag')) return payload;
     if (
       (req.url.startsWith('/api/') &&
         req.routeOptions.url !== '/api/v1/public/merchants/:m/logos/:id' &&
@@ -174,6 +178,8 @@ export async function buildApp(
   rewardsModule(app, pools, c);
   cardCorrectionsModule(app, pools);
   reportingModule(app, pools);
+  analyticsModule(app, pools);
+  analyticsPageModule(app, pools);
   requestsModule(app, pools, c);
   redeemRequestsModule(app, pools, c);
   collectionModule(app, pools, c, options.mapsFetch);

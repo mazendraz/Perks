@@ -4,6 +4,7 @@ import { portalAssetUrl } from '../portals.js';
 import { saveLogo } from '../controls/save-logo.js';
 import { FileUpload } from '../controls/FileUpload.js';
 import { Select } from '../controls/Select.js';
+import { PasswordField } from '../controls/PasswordField.js';
 import { CustomerOutreach } from './CustomerOutreach.js';
 import { Subscriptions } from './Subscriptions.js';
 import { MyPlan, PlanBanners, type PlanState } from './MyPlan.js';
@@ -37,7 +38,7 @@ import { Materials } from './Materials.js';
 import { RequestSettings } from './RequestSettings.js';
 import { ExperienceStats } from './ExperienceStats.js';
 import { Customers } from './Customers.js';
-import { useEffect, useState, type FormEvent, type CSSProperties } from 'react';
+import { lazy, Suspense, useEffect, useState, type FormEvent, type CSSProperties } from 'react';
 import type { Grant, Language, CardData } from '../../../../packages/contracts/src/index.js';
 import { LoyaltyCard } from '../../../../packages/ui/src/LoyaltyCard.js';
 import { api, errorText } from '../api.js';
@@ -47,6 +48,11 @@ import { useUrlTab } from '../url-tab.js';
 import { StaffActivity } from './StaffActivity.js';
 import { OwnerToday } from './TodayStrip.js';
 import { SetupChecklist } from './SetupChecklist.js';
+import { ErrorBoundary } from '../ErrorBoundary.js';
+// The analytics page is the owner's first screen but heavy; it loads on its own.
+const AnalyticsPage = lazy(() =>
+  import('./analytics/AnalyticsPage.js').then((m) => ({ default: m.AnalyticsPage })),
+);
 interface Merchant {
   id: string;
   name: string;
@@ -133,6 +139,8 @@ const ownerTabs = [
 ] as const;
 export function MerchantPage({ grant, lang }: { grant: Grant; lang: Language }) {
   const [showAllMetrics, setShowAllMetrics] = useState(false);
+  // The detailed numbers are folded away under analytics; they load only while unfolded.
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const [brandProgramId, setBrandProgramId] = useState(''),
     [previewThreshold, setPreviewThreshold] = useState<number | null>(null);
   const ar = lang === 'ar',
@@ -245,16 +253,17 @@ export function MerchantPage({ grant, lang }: { grant: Grant; lang: Language }) 
   useEffect(() => {
     void load();
   }, [grant.id]);
+  const metricsShown = tab === 'overview' && detailsOpen;
   useEffect(() => {
-    void loadMetrics();
+    if (metricsShown) void loadMetrics();
     const iv = setInterval(() => {
       if (!document.hidden) {
-        void loadMetrics();
+        if (metricsShown) void loadMetrics();
         void load();
       }
     }, 6000);
     return () => clearInterval(iv);
-  }, [grant.id, days, branch]);
+  }, [grant.id, days, branch, metricsShown]);
   const saveBrand = async (e: FormEvent) => {
     e.preventDefault();
     if (!brand || !merchant) return;
@@ -573,23 +582,6 @@ export function MerchantPage({ grant, lang }: { grant: Grant; lang: Language }) 
       {tab === 'messages' && owner && <WalletMessages merchantId={grant.merchant_id} lang={lang} />}
       {tab === 'overview' && (
         <>
-          <section className="business-welcome">
-            <div>
-              <span className="eyebrow">
-                {ar ? 'كل زيارة فرصة لعلاقة أطول' : 'MORE THAN A TRANSACTION'}
-              </span>
-              <h2>{ar ? 'أهلًا بيك في يوم جديد.' : 'A new day. Another reason to return.'}</h2>
-              <p>
-                {ar
-                  ? 'تابع زيارات عملاءك، وشوف الأختام وهي بتتحوّل لعلاقات ومكافآت.'
-                  : 'A clear view of the visits, rewards and people behind your business.'}
-              </p>
-            </div>
-            <div className="welcome-card-mark" aria-hidden="true">
-              <Icon name="spark" size={64} />
-              <span>PERKS / {merchant?.name || grant.name}</span>
-            </div>
-          </section>
           {owner && merchant && (
             <SetupChecklist
               lang={lang}
@@ -602,126 +594,144 @@ export function MerchantPage({ grant, lang }: { grant: Grant; lang: Language }) 
               go={setTab}
             />
           )}
+          {(grant.role === 'owner' || grant.role === 'manager') && (
+            <ErrorBoundary inline>
+              <Suspense fallback={<div className="an-loading" role="status" aria-busy="true" />}>
+                <AnalyticsPage
+                  merchantId={grant.merchant_id}
+                  lang={lang}
+                  role={grant.role}
+                  branches={grant.branches}
+                />
+              </Suspense>
+            </ErrorBoundary>
+          )}
           <OwnerToday
             merchantId={grant.merchant_id}
             lang={lang}
             onOpenOperations={() => setTab('operations')}
           />
-          <div className="filter-row">
-            <label>
-              {ar ? 'الفترة' : 'Period'}
-              <Select value={days} onChange={(e) => setDays(Number(e.target.value))}>
-                {[7, 30, 90].map((n) => (
-                  <option key={n} value={n}>
-                    {ar ? 'آخر ' + n + ' يوم' : 'Last ' + n + ' days'}
-                  </option>
-                ))}
-              </Select>
-            </label>
-            <label>
-              {ar ? 'الفرع' : 'Branch'}
-              <Select value={branch} onChange={(e) => setBranch(e.target.value)}>
-                <option value="">{ar ? 'الفروع المصرح بها' : 'Authorized branches'}</option>
-                {grant.branches.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.name}
-                  </option>
-                ))}
-              </Select>
-            </label>
-          </div>
-          {overview && (
-            <>
-              <small className="muted">
-                {ar ? 'آخر تحديث ' : 'Updated '}
-                {new Date(overview.updatedAt).toLocaleTimeString(intlLocale(lang))} ·
-                {ar ? 'النشاط حسب فروعك المسموحة' : 'Activity follows your allowed branches'}
-              </small>
-              <div className="kpi-grid merchant-metrics">
-                {(
-                  [
-                    ['registered', ar ? 'العملاء المسجلين' : 'Registered customers'],
-                    ['visits', ar ? 'زيارات مؤكدة' : 'Confirmed visits'],
-                    ['rewardsOpen', ar ? 'مكافآت متاحة' : 'Open rewards'],
-                    ['rewardsRedeemed', ar ? 'مكافآت مستبدلة' : 'Redeemed rewards'],
-                    ['active', ar ? 'نشطين آخر 30 يوم' : 'Active in 30 days'],
-                    ['inactive', ar ? 'خاملين' : 'Inactive'],
-                    ['neverActive', ar ? 'لسه مازاروش' : 'Never active'],
-                    ['newSignups', ar ? 'تسجيلات جديدة' : 'New signups'],
-                    ['stamps', ar ? 'أختام ممنوحة' : 'Stamps awarded'],
-                    ['purchasingCustomers', ar ? 'عملاء اشتروا في الفترة' : 'Purchasing customers'],
-                    [
-                      'returningCustomers',
-                      ar ? 'عملاء رجعوا من قبل الفترة' : 'Returning customers',
-                    ],
-                    ['returnRate', ar ? 'نسبة العملاء الراجعين ٪' : 'Returning customer rate %'],
-                  ] as const
-                )
-                  .filter((_, index) => showAllMetrics || index < 4)
-                  .map(([k, l]) => (
-                    <div className="kpi" key={k}>
-                      <span className="metric-icon">
-                        <Icon
-                          name={
-                            k.includes('rewards') ? 'gift' : k === 'visits' ? 'chart' : 'people'
-                          }
-                          size={19}
-                        />
-                      </span>
-                      <small>{l}</small>
-                      <strong>{overview.metrics[k]}</strong>
-                    </div>
+          <details className="an-details" onToggle={(e) => setDetailsOpen(e.currentTarget.open)}>
+            <summary>{ar ? 'أرقام التشغيل التفصيلية' : 'Detailed operating numbers'}</summary>
+            <div className="filter-row">
+              <label>
+                {ar ? 'الفترة' : 'Period'}
+                <Select value={days} onChange={(e) => setDays(Number(e.target.value))}>
+                  {[7, 30, 90].map((n) => (
+                    <option key={n} value={n}>
+                      {ar ? 'آخر ' + n + ' يوم' : 'Last ' + n + ' days'}
+                    </option>
                   ))}
-              </div>
-              <button
-                className="text-button metrics-disclosure"
-                aria-expanded={showAllMetrics}
-                onClick={() => setShowAllMetrics(!showAllMetrics)}
-              >
-                {showAllMetrics
-                  ? ar
-                    ? 'إظهار الأرقام الأساسية'
-                    : 'Show key metrics'
-                  : ar
-                    ? 'تفاصيل الأداء'
-                    : 'More performance details'}
-              </button>
-              <p className="muted">
-                {ar
-                  ? 'الزيارة عملية شراء مؤكدة واحدة، حتى لو فيها أكتر من ختم. فتح الكارت أو مسحه مش زيارة.'
-                  : 'A visit is one confirmed purchase, even with multiple stamps. Card views and scans do not count. Returning rate: purchasers in this period with an earlier purchase before its start, divided by all purchasers in the period.'}
-              </p>
-              <section className="panel">
-                <h2>{ar ? 'أداء الفروع' : 'Branch performance'}</h2>
-                <div className="table-wrap">
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>{ar ? 'الفرع' : 'Branch'}</th>
-                        <th>{ar ? 'الزيارات' : 'Visits'}</th>
-                        <th>{ar ? 'الأختام' : 'Stamps'}</th>
-                        <th>{ar ? 'الاستبدال' : 'Redeemed'}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {overview.branches.map((b) => (
-                        <tr key={b.id}>
-                          <td>{b.name}</td>
-                          <td>{b.visits}</td>
-                          <td>{b.stamps}</td>
-                          <td>{b.redeemed}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                </Select>
+              </label>
+              <label>
+                {ar ? 'الفرع' : 'Branch'}
+                <Select value={branch} onChange={(e) => setBranch(e.target.value)}>
+                  <option value="">{ar ? 'الفروع المصرح بها' : 'Authorized branches'}</option>
+                  {grant.branches.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.name}
+                    </option>
+                  ))}
+                </Select>
+              </label>
+            </div>
+            {overview && (
+              <>
+                <small className="muted">
+                  {ar ? 'آخر تحديث ' : 'Updated '}
+                  {new Date(overview.updatedAt).toLocaleTimeString(intlLocale(lang))} ·
+                  {ar ? 'النشاط حسب فروعك المسموحة' : 'Activity follows your allowed branches'}
+                </small>
+                <div className="kpi-grid merchant-metrics">
+                  {(
+                    [
+                      ['registered', ar ? 'العملاء المسجلين' : 'Registered customers'],
+                      ['visits', ar ? 'الزيارات' : 'Visits'],
+                      ['rewardsOpen', ar ? 'مكافآت متاحة' : 'Open rewards'],
+                      ['rewardsRedeemed', ar ? 'مكافآت مستبدلة' : 'Redeemed rewards'],
+                      ['active', ar ? 'نشطين آخر 30 يوم' : 'Active in 30 days'],
+                      ['inactive', ar ? 'خاملين' : 'Inactive'],
+                      ['neverActive', ar ? 'لسه مازاروش' : 'Never active'],
+                      ['newSignups', ar ? 'تسجيلات جديدة' : 'New signups'],
+                      ['stamps', ar ? 'أختام ممنوحة' : 'Stamps awarded'],
+                      [
+                        'purchasingCustomers',
+                        ar ? 'عملاء اشتروا في الفترة' : 'Purchasing customers',
+                      ],
+                      [
+                        'returningCustomers',
+                        ar ? 'عملاء رجعوا من قبل الفترة' : 'Returning customers',
+                      ],
+                      ['returnRate', ar ? 'نسبة العملاء الراجعين ٪' : 'Returning customer rate %'],
+                    ] as const
+                  )
+                    .filter((_, index) => showAllMetrics || index < 4)
+                    .map(([k, l]) => (
+                      <div className="kpi" key={k}>
+                        <span className="metric-icon">
+                          <Icon
+                            name={
+                              k.includes('rewards') ? 'gift' : k === 'visits' ? 'chart' : 'people'
+                            }
+                            size={19}
+                          />
+                        </span>
+                        <small>{l}</small>
+                        <strong>{overview.metrics[k]}</strong>
+                      </div>
+                    ))}
                 </div>
-              </section>
-              <PurchaseTrend data={overview} lang={lang} />
-              {(grant.role === 'owner' || grant.role === 'manager') && (
-                <StaffActivity merchantId={grant.merchant_id} lang={lang} />
-              )}
-            </>
-          )}
+                <button
+                  className="text-button metrics-disclosure"
+                  aria-expanded={showAllMetrics}
+                  onClick={() => setShowAllMetrics(!showAllMetrics)}
+                >
+                  {showAllMetrics
+                    ? ar
+                      ? 'إظهار الأرقام الأساسية'
+                      : 'Show key metrics'
+                    : ar
+                      ? 'تفاصيل الأداء'
+                      : 'More performance details'}
+                </button>
+                <p className="muted">
+                  {ar
+                    ? 'الزيارة = عميل جه في يوم وأخد ختم (من الكاشير أو أوتوماتيك)، حتى لو أخد أكتر من ختم. فتح الكارت أو مسحه مش زيارة.'
+                    : 'A visit is one customer on one day with at least one stamp (cashier or automatic), even with multiple stamps. Card views and scans do not count. Returning rate: purchasers in this period with an earlier purchase before its start, divided by all purchasers in the period.'}
+                </p>
+                <section className="panel">
+                  <h2>{ar ? 'أداء الفروع' : 'Branch performance'}</h2>
+                  <div className="table-wrap">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>{ar ? 'الفرع' : 'Branch'}</th>
+                          <th>{ar ? 'الزيارات' : 'Visits'}</th>
+                          <th>{ar ? 'الأختام' : 'Stamps'}</th>
+                          <th>{ar ? 'الاستبدال' : 'Redeemed'}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {overview.branches.map((b) => (
+                          <tr key={b.id}>
+                            <td>{b.name}</td>
+                            <td>{b.visits}</td>
+                            <td>{b.stamps}</td>
+                            <td>{b.redeemed}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </section>
+                <PurchaseTrend data={overview} lang={lang} />
+                {(grant.role === 'owner' || grant.role === 'manager') && (
+                  <StaffActivity merchantId={grant.merchant_id} lang={lang} />
+                )}
+              </>
+            )}
+          </details>
           {corrections.filter((c) => ['pending', 'needs_review'].includes(c.status)).length > 0 && (
             <section className="panel">
               <h2>{ar ? 'طلبات تصحيح محتاجة مراجعة' : 'Corrections awaiting review'}</h2>
@@ -1263,25 +1273,22 @@ export function MerchantPage({ grant, lang }: { grant: Grant; lang: Language }) 
               {ar ? 'حساب موجود؟ ابعت دعوة' : 'Existing account? Send an invitation'}
             </label>
             {!invite.existing && (
-              <label>
-                {ar ? 'باسورد الحساب' : 'Account password'}
-                <input
-                  type="password"
-                  aria-label={ar ? 'باسورد الحساب' : 'Account password'}
-                  dir="ltr"
-                  autoComplete="new-password"
-                  required
-                  minLength={10}
-                  maxLength={128}
-                  value={invite.password}
-                  onChange={(e) => setInvite({ ...invite, password: e.target.value })}
-                />
-                <small>
-                  {ar
-                    ? '10 حروف أو أكتر. الموظف يدخل مباشرة بالإيميل والباسورد.'
-                    : 'At least 10 characters. Staff can sign in immediately with email and password.'}
-                </small>
-              </label>
+              <PasswordField
+                label={ar ? 'باسورد الحساب' : 'Account password'}
+                lang={lang}
+                autoComplete="new-password"
+                required
+                minLength={10}
+                value={invite.password}
+                onChange={(e) => setInvite({ ...invite, password: e.target.value })}
+                hint={
+                  <small>
+                    {ar
+                      ? '10 حروف أو أكتر. الموظف يدخل مباشرة بالإيميل والباسورد.'
+                      : 'At least 10 characters. Staff can sign in immediately with email and password.'}
+                  </small>
+                }
+              />
             )}
             <label>
               {ar ? 'الدور' : 'Role'}

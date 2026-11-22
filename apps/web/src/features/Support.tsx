@@ -115,7 +115,7 @@ export function Support({ lang, merchantId }: { lang: Language; merchantId?: str
       {tickets.map((t) => (
         <div className="list-row" key={t.id}>
           <div>
-            <button className="text-button" onClick={() => void open(t.id)}>
+            <button className="link-button" onClick={() => void open(t.id)}>
               {t.subject}
             </button>
             <small>

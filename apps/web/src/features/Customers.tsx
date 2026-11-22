@@ -237,7 +237,7 @@ export function Customers({ grant, lang }: { grant: Grant; lang: Language }) {
               {rows.map((r) => (
                 <tr key={r.id}>
                   <td data-label={ar ? 'العميل' : 'Customer'}>
-                    <button className="text-button" onClick={() => void open(r.id)}>
+                    <button className="link-button" onClick={() => void open(r.id)}>
                       {r.alias}
                     </button>
                     <small>

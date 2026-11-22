@@ -5,7 +5,7 @@ import { randomBytes, randomUUID } from 'node:crypto';
 import { readConfig } from '../../apps/api/src/config.js';
 import { buildApp } from '../../apps/api/src/server.js';
 import { seed, ids } from '../../db/seed.js';
-import { adminLogin, enrollmentTerms, key, login } from '../helpers.js';
+import { adminLogin, clearOfShopMidnight, enrollmentTerms, key, login } from '../helpers.js';
 import { businessDate } from '../../packages/domain/src/loyalty.js';
 import { distanceMeters } from '../../packages/domain/src/geo.js';
 
@@ -152,6 +152,8 @@ async function cashierAward(who: { headers: Headers; membership: string }, quant
   });
 }
 before(async () => {
+  // The cooldown test moves stamps 31 minutes back: keep that inside one shop day.
+  await clearOfShopMidnight('Africa/Cairo', 6, 35);
   await db.connect();
   await seed(db);
   await app.ready();

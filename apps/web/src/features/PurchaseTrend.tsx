@@ -26,11 +26,11 @@ export function PurchaseTrend({ data, lang }: { data: TrendData; lang: Language 
   const max = Math.max(1, ...rows.map((r) => r.visits));
   return (
     <section className="panel">
-      <h2>{ar ? 'اتجاه الزيارات اليومية' : 'Daily purchase trend'}</h2>
+      <h2>{ar ? 'اتجاه الزيارات اليومية' : 'Daily visits'}</h2>
       <p className="muted">
         {ar
-          ? 'زيارات شراء مؤكدة حسب توقيت النشاط. أول وآخر يوم ممكن يكونوا جزء من يوم. نسبة الرجوع = عملاء اشتروا قبل بداية الفترة ورجعوا خلالها ÷ كل العملاء اللي اشتروا خلالها.'
-          : 'Confirmed purchases in the business timezone. Boundary days may be partial. Returning rate = buyers who also purchased before this period, divided by all buyers in this period.'}
+          ? 'الزيارة = عميل واحد في يوم واحد خد فيه ختم أو أكتر، بتوقيت المحل. أول وآخر يوم ممكن يكونوا جزء من يوم. نسبة الرجوع = عملاء زاروا قبل بداية الفترة ورجعوا خلالها ÷ كل اللي زاروا خلالها.'
+          : 'A visit is one customer on one day with at least one stamp, in the shop’s timezone. Boundary days may be partial. Returning rate = customers who also visited before this period, divided by everyone who visited in it.'}
       </p>
       <figure>
         <div

@@ -56,8 +56,8 @@ const messages: Record<string, Line> = {
     'Something was missing from the request. Refresh and try again.',
   ],
   VALIDATION_FAILED: [
-    'فيه خانة محتاجة تتظبط. راجع الخانات المعلّمة تحت.',
-    'A field needs fixing. Check the highlighted fields below.',
+    'فيه خانة محتاجة تتظبط. راجع الخانات المعلّمة بالأحمر.',
+    'A field needs fixing. Check the fields marked in red.',
   ],
   NOT_FOUND: [
     'مش لاقيين الحاجة دي، أو مش ضمن صلاحيات حسابك. ارجع للصفحة الرئيسية وجرّب تاني.',

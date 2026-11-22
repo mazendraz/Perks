@@ -262,7 +262,8 @@ export function ownerPlanModule(app: FastifyInstance, pools: Pools, c: ServiceCo
             `SELECT wm.id,wm.audience,wm.inactive_days,wm.body_ar,wm.body_en,wm.recipients,wm.send_after,wm.created_at,
               count(d.id) FILTER(WHERE d.status='accepted')::int AS delivered,
               count(d.id) FILTER(WHERE d.status IN ('queued','processing','uncertain'))::int AS waiting,
-              count(d.id) FILTER(WHERE d.status IN ('failed','skipped'))::int AS missed
+              count(d.id) FILTER(WHERE d.status IN ('failed','skipped'))::int AS missed,
+              wallet_message_returns(wm.id) AS returned
              FROM wallet_messages wm LEFT JOIN wallet_message_deliveries d ON d.message_id=wm.id
              WHERE wm.merchant_id=$1 GROUP BY wm.id ORDER BY wm.created_at DESC LIMIT 20`,
             [m],

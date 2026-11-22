@@ -32,6 +32,7 @@ import type { Session, Language } from '../../../packages/contracts/src/index.js
 import { api, ApiError, errorText, setCsrf } from './api.js';
 import { navigate, useRoute } from './useRoute.js';
 import { SuspendedNotice } from './features/SuspendedNotice.js';
+import { ErrorBoundary } from './ErrorBoundary.js';
 import { useSignOut } from './sign-out.js';
 
 // Where "/" leads someone without a staff session: their card when this device holds one
@@ -650,7 +651,7 @@ function Workspace({
         <Suspense
           fallback={<p role="status">{ar ? 'بنفتح مساحتك…' : 'Loading your workspace…'}</p>}
         >
-          {content}
+          <ErrorBoundary resetKey={route}>{content}</ErrorBoundary>
         </Suspense>
       </main>
     </div>

@@ -21,17 +21,6 @@ function shortCode(token: string, pepper: string) {
 }
 const shortCodeHash = (merchantId: string, code: string, pepper: string) =>
   keyedHash('short-code:' + merchantId + ':' + code, pepper);
-// Failed short-code attempts per cashier session, so the 6 digits cannot be guessed.
-const shortFailures = new Map<string, number[]>();
-function shortCodeAllowed(sessionId: string) {
-  const now = Date.now(),
-    recent = (shortFailures.get(sessionId) || []).filter((t) => now - t < 10 * 60_000);
-  shortFailures.set(sessionId, recent);
-  return recent.length < 8;
-}
-function shortCodeFailed(sessionId: string) {
-  shortFailures.set(sessionId, [...(shortFailures.get(sessionId) || []), Date.now()]);
-}
 
 export function enrollmentModule(app: FastifyInstance, pools: Pools, c: Config) {
   app.get('/api/v1/public/programs/:id/terms', async (req) => {
@@ -222,8 +211,26 @@ export function enrollmentModule(app: FastifyInstance, pools: Pools, c: Config) 
       token = readPresentationToken(body.token.replace(/[\s-]/g, '')),
       isShort = /^\d{6}$/.test(token);
     requireCondition(isShort || /^[a-f0-9]{64}$/.test(token), 'TOKEN_INVALID', 422);
+    // Wrong 6-digit codes are counted per staff member in the database (047), so the digits
+    // cannot be guessed by retrying, restarting a session, or reaching another server.
     if (isShort)
-      requireCondition(shortCodeAllowed(actor.sessionId), 'MATCH_ATTEMPTS_EXHAUSTED', 429);
+      requireCondition(
+        await transaction(
+          pools.pool,
+          async (db) =>
+            (await db.query('SELECT short_code_attempt_allowed() AS ok')).rows[0].ok as boolean,
+          actor,
+        ),
+        'MATCH_ATTEMPTS_EXHAUSTED',
+        429,
+      );
+    let wrongCode = false;
+    const recordWrongCode = async () => {
+      if (wrongCode)
+        await transaction(pools.pool, (db) => db.query('SELECT short_code_failed()'), actor).catch(
+          () => undefined,
+        );
+    };
     return transaction(
       pools.pool,
       async (db) => {
@@ -245,7 +252,7 @@ export function enrollmentModule(app: FastifyInstance, pools: Pools, c: Config) 
           )
         ).rows;
         // Two live codes with the same 6 digits: ask for the QR instead of guessing.
-        if (isShort && rows.length !== 1) shortCodeFailed(actor.sessionId);
+        if (isShort && rows.length !== 1) wrongCode = true;
         requireCondition(rows.length < 2, 'CUSTOMER_QR_REQUIRED', 409);
         const r = rows[0];
         requireCondition(r, 'TOKEN_INVALID_OR_EXPIRED', 410);
@@ -309,7 +316,11 @@ export function enrollmentModule(app: FastifyInstance, pools: Pools, c: Config) 
         };
       },
       actor,
-    );
+    ).catch(async (error: unknown) => {
+      // The lookup's own transaction rolled back, so the wrong code is written in a new one.
+      await recordWrongCode();
+      throw error;
+    });
   });
   app.get('/api/v1/me/merchants/:m/preferences', async (req) => {
     const actor = authenticated(req),

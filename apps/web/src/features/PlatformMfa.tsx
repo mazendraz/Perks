@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { Language } from '../../../../packages/contracts/src/index.js';
 import { api, errorText } from '../api.js';
+import { PasswordField } from '../controls/PasswordField.js';
 
 export function PlatformMfa({
   lang,
@@ -103,17 +104,14 @@ export function PlatformMfa({
               ? 'إدارة المنصة محتاجة تحقق إضافي في الإنتاج. افتح تطبيق تحقق على موبايلك؛ هنعرض QR توصله بحسابك.'
               : 'Platform administration requires extra verification in production. Use an authenticator app on your phone to scan your account QR.'}
           </p>
-          <label>
-            {ar ? 'الباسورد الحالي' : 'Current password'}
-            <input
-              type="password"
-              autoComplete="current-password"
-              required
-              maxLength={128}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </label>
+          <PasswordField
+            label={ar ? 'الباسورد الحالي' : 'Current password'}
+            lang={lang}
+            autoComplete="current-password"
+            required
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
           <button className="primary" disabled={busy}>
             {ar ? 'عرض QR التحقق' : 'Show authenticator QR'}
           </button>

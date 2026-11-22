@@ -3,6 +3,7 @@ import type { Language, CardData } from '../../../../packages/contracts/src/inde
 import { LoyaltyCard } from '../../../../packages/ui/src/LoyaltyCard.js';
 import { Icon } from '../../../../packages/ui/src/Icon.js';
 import { api, errorText, setCsrf } from '../api.js';
+import { PasswordField } from '../controls/PasswordField.js';
 import { portalInfo, type Portal } from '../portals.js';
 
 const sample: CardData = {
@@ -388,28 +389,23 @@ export function ResetPassword({ token, lang }: { token: string; lang: Language }
               }
             }}
           >
-            <label>
-              {ar ? 'كلمة المرور الجديدة' : 'New password'}
-              <input
-                required
-                type="password"
-                autoComplete="new-password"
-                minLength={10}
-                maxLength={128}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-            </label>
-            <label>
-              {ar ? 'تأكيد كلمة المرور' : 'Confirm password'}
-              <input
-                required
-                type="password"
-                autoComplete="new-password"
-                value={confirm}
-                onChange={(e) => setConfirm(e.target.value)}
-              />
-            </label>
+            <PasswordField
+              label={ar ? 'كلمة المرور الجديدة' : 'New password'}
+              lang={lang}
+              required
+              autoComplete="new-password"
+              minLength={10}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+            <PasswordField
+              label={ar ? 'تأكيد كلمة المرور' : 'Confirm password'}
+              lang={lang}
+              required
+              autoComplete="new-password"
+              value={confirm}
+              onChange={(e) => setConfirm(e.target.value)}
+            />
             {error && (
               <p role="alert" className="error-text">
                 {error}
@@ -477,28 +473,23 @@ export function PasswordSettings({
           }
         }}
       >
-        <label>
-          {ar ? 'كلمة المرور الحالية' : 'Current password'}
-          <input
-            required
-            type="password"
-            autoComplete="current-password"
-            value={current}
-            onChange={(e) => setCurrent(e.target.value)}
-          />
-        </label>
-        <label>
-          {ar ? 'كلمة المرور الجديدة' : 'New password'}
-          <input
-            required
-            type="password"
-            autoComplete="new-password"
-            minLength={10}
-            maxLength={128}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-        </label>
+        <PasswordField
+          label={ar ? 'كلمة المرور الحالية' : 'Current password'}
+          lang={lang}
+          required
+          autoComplete="current-password"
+          value={current}
+          onChange={(e) => setCurrent(e.target.value)}
+        />
+        <PasswordField
+          label={ar ? 'كلمة المرور الجديدة' : 'New password'}
+          lang={lang}
+          required
+          autoComplete="new-password"
+          minLength={10}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
         {error && (
           <p role="alert" className="error-text">
             {error}

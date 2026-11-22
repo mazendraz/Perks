@@ -7,7 +7,8 @@ export function operationalLog(
     | 'service.start_failed'
     | 'service.stopped'
     | 'worker.iteration_failed'
-    | 'wallet.design_resend',
+    | 'wallet.design_resend'
+    | 'analytics.refresh_failed',
 ) {
   const line = JSON.stringify({ time: Date.now(), service, level, event });
   if (level === 'error') console.error(line);

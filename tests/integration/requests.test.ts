@@ -235,4 +235,14 @@ test('the customer can read out a 6-digit code instead of the QR; wrong digits a
     );
   assert.equal(statuses[0], 410);
   assert.equal(statuses.at(-1), 429);
+  // Signing in again does not hand out fresh guesses: the count belongs to the person.
+  const fresh = await login(app, 'cashier@bunn.test');
+  const retried = await app.inject({
+    method: 'POST',
+    url: '/api/v1/cashier/scans/resolve',
+    headers: fresh,
+    payload: { merchantId: ids.merchantA, branchId: ids.branchA, token: wrong },
+  });
+  assert.equal(retried.statusCode, 429);
+  ca = fresh;
 });

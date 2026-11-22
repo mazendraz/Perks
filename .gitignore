@@ -11,3 +11,6 @@ playwright-report/
 
 # Private review reports; never committed.
 /audits/
+
+# Local screenshots and scratch files from AI-assisted reviews.
+/Claude outputs/

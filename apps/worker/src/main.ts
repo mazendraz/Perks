@@ -10,6 +10,7 @@ import { runGoogleWalletUpdates } from './google-wallet-updates.js';
 import { runCustomerReminders } from './customer-reminders.js';
 import { runWalletMessages } from './wallet-messages.js';
 import { syncWalletDesign } from './wallet-design-sync.js';
+import { analyticsLoop } from './analytics-refresh.js';
 import { createFileStore } from '../../api/src/storage/file-store.js';
 import { operationalLog } from '../../../packages/domain/src/operational-log.js';
 async function main() {
@@ -28,19 +29,26 @@ async function main() {
   operationalLog('worker', 'info', 'service.started');
   let lastSweep = 0;
   let lastHeartbeat = 0;
+  // Analytics can take seconds per shop: it runs beside the delivery loop, never inside it.
+  const analytics = analyticsLoop(pool, () => closing);
   while (!closing) {
     try {
       if (Date.now() - lastSweep > 60000) {
-        await pool.query('SELECT sweep_expired_rewards()');
-        await pool.query('SELECT sweep_expired_requests()');
-        await pool.query('SELECT sweep_expired_sessions()');
-        await pool.query('SELECT advance_subscription_states()');
-        await cleanupExports(pool, createFileStore(c));
-        await pool.query('SELECT schedule_customer_reminders($1,$2)', [
-          c.APPLE_WALLET_ENABLED === 'true',
-          c.GOOGLE_WALLET_ENABLED === 'true',
-        ]);
+        // A failing sweep is retried next minute; it must not hold back pushes and Wallet updates.
         lastSweep = Date.now();
+        try {
+          await pool.query('SELECT sweep_expired_rewards()');
+          await pool.query('SELECT sweep_expired_requests()');
+          await pool.query('SELECT sweep_expired_sessions()');
+          await pool.query('SELECT advance_subscription_states()');
+          await cleanupExports(pool, createFileStore(c));
+          await pool.query('SELECT schedule_customer_reminders($1,$2)', [
+            c.APPLE_WALLET_ENABLED === 'true',
+            c.GOOGLE_WALLET_ENABLED === 'true',
+          ]);
+        } catch {
+          operationalLog('worker', 'error', 'worker.iteration_failed');
+        }
       }
       // A new Wallet design reaches cards that are already saved, before their next update.
       await syncWalletDesign(pool, c);
@@ -59,6 +67,7 @@ async function main() {
       await new Promise((r) => setTimeout(r, 1500));
     }
   }
+  await analytics;
   await pool.end();
   operationalLog('worker', 'info', 'service.stopped');
 }

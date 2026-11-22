@@ -33,7 +33,6 @@
   --muted: #6b6e80;
   --paper: #f5f5f1;
   --border: #dcdde4;
-  --gold: #cbff64;
   color: var(--ink);
   background: var(--paper);
   font-family: 'Perks Digits', 'GE SS Arabic', sans-serif;
@@ -110,7 +109,7 @@ select:focus,
 textarea:focus {
   outline: none;
   border-color: #484e85;
-  box-shadow: 0 0 0 3px #5b785d16;
+  box-shadow: 0 0 0 3px #484e8547;
 }
 input[type='checkbox'],
 input[type='radio'] {
@@ -158,10 +157,75 @@ label {
   background: #eff0f5;
   border-color: #b4b6c7;
 }
+.danger {
+  border: 1px solid transparent;
+  border-radius: 11px;
+  background: #b42318;
+  color: #fff;
+  padding: 11px 19px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+}
+.danger:hover:not(:disabled) {
+  background: #9a1d13;
+}
+.danger-outline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  border-radius: 11px;
+}
+.primary.small,
+.secondary.small,
+.danger.small,
+.danger-outline.small {
+  min-height: 38px;
+  padding: 7px 14px;
+  font-size: 13px;
+  gap: 7px;
+}
+/* Quiet actions still look like buttons: a soft filled pill people recognise as tappable.
+   Text that sits inside a sentence or a table row (a name, a suggested email) uses .link-button. */
 .text-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 8px 16px;
+  border: 1px solid #e1e3ec;
+  border-radius: 10px;
+  background: #f1f2f7;
+  color: #252a57;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.25;
+  text-align: center;
+  text-decoration: none;
+}
+.text-button:hover:not(:disabled) {
+  background: #e6e8f1;
+  border-color: #cfd2e0;
+}
+.link-button {
+  display: inline;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #2f3568;
+  font: inherit;
+  font-weight: 600;
+  text-align: start;
+  text-decoration: underline;
+  text-decoration-color: #2f356855;
   text-underline-offset: 4px;
-  color: #3e4474;
-  font-weight: 500;
+}
+.link-button:hover:not(:disabled) {
+  text-decoration-color: currentColor;
 }
 .topbar {
   height: 78px;
@@ -198,9 +262,8 @@ label {
 .top-actions > .text-button {
   font-family: 'Manrope', 'GE SS Arabic', sans-serif;
   font-size: 12px;
-  text-decoration: none;
-  border: 1px solid #dfe0e6;
-  padding: 6px 12px;
+  min-height: 36px;
+  padding: 6px 14px;
   border-radius: 20px;
 }
 .signed-in {
@@ -274,13 +337,13 @@ label {
 }
 .sidebar-identity small {
   font-family: 'Manrope', sans-serif;
-  font-size: 8px;
+  font-size: 11px;
   letter-spacing: 1px;
   margin-top: 4px;
   color: #4d538e;
 }
 .sidebar-title {
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: 1px;
   color: #4b518a;
   padding-inline: 11px;
@@ -381,7 +444,7 @@ label {
 }
 .kpi small {
   color: #4a5089;
-  font-size: 11px;
+  font-size: 12px;
 }
 .kpi strong {
   color: #222540;
@@ -420,7 +483,7 @@ label {
   color: #414779;
   border: 1px solid #d6d8e5;
   border-radius: 6px;
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 500;
   padding: 3px 9px;
 }
@@ -482,7 +545,7 @@ td strong {
   font-weight: 500;
 }
 td small {
-  font-size: 10px;
+  font-size: 12px;
   color: #87899a;
   margin-top: 4px;
 }
@@ -494,7 +557,7 @@ td small {
   margin-bottom: 19px;
 }
 .filter-row label {
-  font-size: 10px;
+  font-size: 12px;
   color: #757891;
 }
 .filter-row select {
@@ -1054,7 +1117,7 @@ td small {
   gap: 5px;
 }
 .wizard-steps span {
-  font-size: 10px;
+  font-size: 11px;
   padding: 7px 10px;
   color: #464c83;
 }
@@ -1116,7 +1179,7 @@ td small {
   position: relative;
 }
 .auth-story-top .eyebrow {
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: 1px;
 }
 .auth-edition {
@@ -1270,7 +1333,7 @@ td small {
   font-size: 11px;
 }
 .auth-switch > .text-button {
-  font-size: 11px;
+  font-size: 13px;
 }
 .auth-switch p {
   color: #8d8fa2;
@@ -1285,7 +1348,7 @@ td small {
   border-top: 1px solid #dcdde9;
   margin-top: 30px;
   padding-top: 20px;
-  font-size: 10px;
+  font-size: 11px;
   color: #4d538e;
   display: flex;
   align-items: center;
@@ -1306,7 +1369,7 @@ td small {
   cursor: pointer;
 }
 .local-inbox .text-button {
-  font-size: 11px;
+  font-size: 12px;
 }
 .mailbox {
   background: #edeef4;
@@ -1492,13 +1555,13 @@ td small {
   }
   .top-actions > .text-button {
     padding: 4px 9px;
-    font-size: 10px;
+    font-size: 11px;
   }
   .signed-in {
     display: none;
   }
   .footer {
-    font-size: 10px;
+    font-size: 11px;
     padding: 17px;
   }
   .auth-layout {
@@ -1525,7 +1588,7 @@ td small {
     max-width: 350px;
   }
   .auth-story-top .eyebrow {
-    font-size: 9px;
+    font-size: 11px;
     margin: 0;
   }
   .auth-story-foot {
@@ -1560,7 +1623,7 @@ td small {
   }
   .auth-trust {
     margin-top: 25px;
-    font-size: 9px;
+    font-size: 11px;
   }
   .local-inbox {
     margin-top: 20px;
@@ -1635,7 +1698,7 @@ td small {
     padding: 17px 14px;
   }
   .platform-metrics .kpi small {
-    font-size: 9px;
+    font-size: 11px;
   }
   .kpi strong {
     font-size: 28px;
@@ -1700,7 +1763,7 @@ td small {
     gap: 2px;
   }
   .wizard-steps span {
-    font-size: 9px;
+    font-size: 11px;
     padding: 5px 7px;
   }
   .wizard-layout {
@@ -1793,16 +1856,24 @@ td small {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 44px;
   align-items: center;
-  border: 1px solid #d4d6e4;
+  border: 1px solid #d8d9e1;
   border-radius: 11px;
-  background: #f5f6f9;
+  background: #fff;
   overflow: hidden;
+}
+.auth-form-wrap .password-control {
+  border-color: #d4d6e4;
+  background: #f5f6f9;
 }
 .password-control:focus-within {
   border-color: #484e85;
-  box-shadow: 0 0 0 3px #5b785d16;
+  box-shadow: 0 0 0 3px #484e8547;
 }
-.auth-form-wrap .password-control input {
+.password-control:has(input:disabled) {
+  opacity: 0.6;
+}
+.password-control input,
+.password-control input:focus {
   min-width: 0;
   width: 100%;
   border: 0;
@@ -1957,7 +2028,7 @@ td small {
   margin-bottom: 4px;
 }
 .qr-sheet .url-box {
-  font-size: 10px;
+  font-size: 11px;
   overflow-wrap: anywhere;
 }
 .support-playbook {
@@ -2247,7 +2318,7 @@ td small {
   font-size: 20px;
 }
 .stamp-customizer .eyebrow {
-  font-size: 9px;
+  font-size: 11px;
 }
 .stamp-customizer > .muted {
   font-size: 11px;
@@ -2310,7 +2381,7 @@ td small {
   height: 25px;
 }
 .stamp-symbol-options button span {
-  font-size: 10px;
+  font-size: 11px;
   white-space: normal;
   line-height: 1.4;
 }
@@ -2341,7 +2412,7 @@ td small {
 }
 .template-category {
   display: block;
-  font-size: 9px;
+  font-size: 11px;
   opacity: 0.6;
   margin-top: 3px;
 }
@@ -2952,7 +3023,7 @@ td small {
     grid-template-columns: repeat(4, minmax(0, 1fr));
   }
   .stamp-symbol-options button span {
-    font-size: 9px;
+    font-size: 11px;
   }
 }
 .stamp-count-control {
@@ -3111,7 +3182,7 @@ td small {
   border-color: #eadebf;
 }
 .readiness-list small {
-  font-size: 10px;
+  font-size: 11px;
   white-space: nowrap;
 }
 .preview-sections {
@@ -3161,8 +3232,9 @@ td small {
   min-width: 180px;
 }
 .account-actions .text-button {
-  font-size: 11px;
-  text-align: start;
+  font-size: 12px;
+  min-height: 36px;
+  padding: 6px 12px;
 }
 .account-actions > small {
   white-space: normal;
@@ -3173,7 +3245,7 @@ td small {
 }
 .account-security td small {
   display: block;
-  font-size: 10px;
+  font-size: 12px;
   margin-top: 5px;
 }
 .account-security .table-wrap {
@@ -3355,7 +3427,7 @@ td small {
 }
 .logo-controls > small {
   display: block;
-  font-size: 10px;
+  font-size: 11px;
   line-height: 1.7;
 }
 @media (max-width: 420px) {
@@ -3441,7 +3513,7 @@ td small {
 }
 .nq-select-trigger[aria-expanded='true'] {
   border-color: #484e85;
-  box-shadow: 0 0 0 3px #5b785d16;
+  box-shadow: 0 0 0 3px #484e8547;
 }
 .nq-select-trigger[aria-expanded='true'] > svg {
   transform: rotate(180deg);
@@ -3622,8 +3694,8 @@ td small {
 }
 .nq-color-heading .text-button {
   font-size: 12px;
-  min-height: 30px;
-  padding: 0 6px;
+  min-height: 32px;
+  padding: 0 12px;
 }
 .nq-color-gradient {
   height: 62px;
@@ -4113,7 +4185,7 @@ input[type='number']::-webkit-outer-spin-button {
   .portal-badge {
     margin-inline-start: 8px;
     padding-inline-start: 9px;
-    font-size: 10px;
+    font-size: 11px;
   }
   .compact-workspace .workspace-content {
     padding: 18px 16px 36px;
@@ -4128,7 +4200,7 @@ input[type='number']::-webkit-outer-spin-button {
   .owner-sections button {
     flex-direction: column;
     gap: 5px;
-    font-size: 10px;
+    font-size: 11px;
     min-width: 0;
     min-height: 64px;
     padding: 10px 2px;
@@ -4236,7 +4308,7 @@ input[type='number']::-webkit-outer-spin-button {
   color: #787a90;
 }
 .logo-size-ends small {
-  font-size: 10px;
+  font-size: 11px;
 }
 .brand-savebar {
   position: sticky;
@@ -4296,7 +4368,7 @@ input[type='number']::-webkit-outer-spin-button {
     border: 0;
     margin: 0;
     padding: 0;
-    font-size: 9px;
+    font-size: 11px;
     overflow: hidden;
     text-overflow: ellipsis;
   }
@@ -4337,7 +4409,7 @@ input.nq-phone-input {
 .phone-format-hint bdi {
   display: inline-block;
   font-family: Manrope, sans-serif;
-  font-size: 10px;
+  font-size: 11px;
   white-space: nowrap;
 }
 .admin-password-fields {
@@ -4573,6 +4645,12 @@ div.error-text::before {
   flex: none;
   color: #7c2419;
   font-weight: 700;
+  background: #fff;
+  border-color: #efc6c0;
+}
+.notice.error > .text-button:hover:not(:disabled) {
+  background: #fff3f1;
+  border-color: #e3a79f;
 }
 .field-errors {
   list-style: none;
@@ -4585,4 +4663,66 @@ div.error-text::before {
 }
 .field-errors li + li {
   margin-top: 4px;
+}
+
+/* A field that needs fixing: red box, one short shake, and the reason written under it.
+   Native checks mark the box with .field-invalid; server and step checks set aria-invalid. */
+@keyframes nuqta-field-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-6px);
+  }
+  40% {
+    transform: translateX(6px);
+  }
+  60% {
+    transform: translateX(-4px);
+  }
+  80% {
+    transform: translateX(3px);
+  }
+}
+.field-invalid,
+[aria-invalid='true'],
+.password-control:has(input[aria-invalid='true']) {
+  border-color: #c4372c !important;
+  background-color: #fff6f5;
+  box-shadow: 0 0 0 3px #c4372c1f;
+}
+.field-shake,
+[aria-invalid='true'],
+.password-control:has(input[aria-invalid='true']) {
+  animation: nuqta-field-shake 380ms ease-in-out;
+}
+/* The password box carries the red; the input inside it stays plain. */
+.password-control input[aria-invalid='true'] {
+  border-color: transparent !important;
+  background-color: transparent;
+  box-shadow: none;
+  animation: none;
+}
+input[type='checkbox'].field-invalid,
+input[type='radio'].field-invalid {
+  outline: 2px solid #c4372c;
+  outline-offset: 2px;
+}
+label[data-error]::after {
+  content: attr(data-error);
+  /* Shown, but kept out of the field's accessible name (its label stays "Email", not
+     "Email This field is required"). */
+  content: attr(data-error) / '';
+  color: #b02d28;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+@media (prefers-reduced-motion: reduce) {
+  .field-shake,
+  [aria-invalid='true'],
+  .password-control:has(input[aria-invalid='true']) {
+    animation: none;
+  }
 }

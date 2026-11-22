@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { Language } from '../../../../packages/contracts/src/index.js';
-import { Icon } from '../../../../packages/ui/src/Icon.js';
 import { api, ApiError, errorText } from '../api.js';
+import { PasswordField } from '../controls/PasswordField.js';
 import { intlLocale } from '../locale.js';
 interface AdminAccount {
   id: string;
@@ -25,45 +25,6 @@ interface TeamEvent {
   detail: { reason?: string };
 }
 type Action = 'create' | 'password' | 'sessions' | 'unlock' | 'disable' | 'enable';
-function NewPassword({
-  label,
-  value,
-  onChange,
-  ar,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  ar: boolean;
-}) {
-  const [visible, setVisible] = useState(false);
-  return (
-    <label>
-      {label}
-      <span className="password-control">
-        <input
-          aria-label={label}
-          type={visible ? 'text' : 'password'}
-          dir="ltr"
-          required
-          minLength={10}
-          maxLength={128}
-          autoComplete="new-password"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-        />
-        <button
-          type="button"
-          className="password-reveal"
-          aria-label={(ar ? (visible ? 'إخفاء ' : 'إظهار ') : visible ? 'Hide ' : 'Show ') + label}
-          onClick={() => setVisible(!visible)}
-        >
-          <Icon name={visible ? 'eyeOff' : 'eye'} />
-        </button>
-      </span>
-    </label>
-  );
-}
 export function PlatformTeam({ lang }: { lang: Language }) {
   const ar = lang === 'ar';
   const [accounts, setAccounts] = useState<AdminAccount[]>([]),
@@ -389,17 +350,23 @@ export function PlatformTeam({ lang }: { lang: Language }) {
             )}
             {(editor.action === 'create' || editor.action === 'password') && (
               <fieldset disabled={busy || !!attempt} className="admin-password-fields">
-                <NewPassword
+                <PasswordField
                   label={ar ? 'الباسورد الجديد' : 'New password'}
+                  lang={lang}
+                  required
+                  minLength={10}
+                  autoComplete="new-password"
                   value={password}
-                  onChange={setPassword}
-                  ar={ar}
+                  onChange={(e) => setPassword(e.target.value)}
                 />
-                <NewPassword
+                <PasswordField
                   label={ar ? 'تأكيد الباسورد' : 'Confirm password'}
+                  lang={lang}
+                  required
+                  minLength={10}
+                  autoComplete="new-password"
                   value={confirm}
-                  onChange={setConfirm}
-                  ar={ar}
+                  onChange={(e) => setConfirm(e.target.value)}
                 />
                 <small className="muted">
                   {ar

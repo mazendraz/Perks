@@ -3,6 +3,7 @@ import { merchantStatusLabel, subscriptionPlanLabel } from '../business-labels.j
 import { portalAssetUrl } from '../portals.js';
 import { FileUpload } from '../controls/FileUpload.js';
 import { Select } from '../controls/Select.js';
+import { PasswordField } from '../controls/PasswordField.js';
 import { BusinessPreview } from './BusinessPreview.js';
 import { navigate } from '../useRoute.js';
 import { suggestedStamps } from '../../../../packages/contracts/src/branding.js';
@@ -19,7 +20,10 @@ import { Icon } from '../../../../packages/ui/src/Icon.js';
 import { FieldErrors, fieldProps } from '../FieldErrors.js';
 import { useEffect, useState, type FormEvent } from 'react';
 import type { Language, CardData } from '../../../../packages/contracts/src/index.js';
-import type { ProvisioningInput } from '../../../../packages/contracts/src/provisioning.js';
+import {
+  provisioningInput,
+  type ProvisioningInput,
+} from '../../../../packages/contracts/src/provisioning.js';
 import { LoyaltyCard } from '../../../../packages/ui/src/LoyaltyCard.js';
 import { api, errorText, ApiError } from '../api.js';
 import { EmailTypoHint } from './EmailTypoHint.js';
@@ -84,6 +88,26 @@ const initial = (): ProvisioningInput => ({
   staff: [{ email: '', role: 'owner', branchIndexes: [0], maxQty: 3, accessMode: 'password' }],
   plan: 'growth',
 });
+/** Which wizard step shows the field at this validation path. */
+const stepForPath = (path: string) =>
+  path.startsWith('program.')
+    ? 2
+    : /^(staff|branches)/.test(path)
+      ? 3
+      : /Color$|template|^stamp|^logo/.test(path)
+        ? 1
+        : path === 'plan'
+          ? 5
+          : 0;
+/** The same rules activation uses, checked in the browser so a step cannot be left with a
+    problem that would only surface at the very end. */
+function stepProblems(data: ProvisioningInput, step?: number) {
+  const result = provisioningInput.safeParse(data);
+  if (result.success) return [];
+  return result.error.issues
+    .map((i) => ({ path: i.path.join('.'), code: i.code }))
+    .filter((f) => step === undefined || stepForPath(f.path) === step);
+}
 type DraftRecovery = {
   editing: boolean;
   draft: Draft | null;
@@ -199,18 +223,18 @@ export function PlatformPage({ lang, userId }: { lang: Language; userId: string 
             ? 'تعديلاتك وخطوتك محفوظين. بعد التحقق كمّل من نفس المكان.'
             : 'Your inputs and current step are saved. Continue here after verification.'}
         </p>
-        <label>
-          {ar ? 'رمز تطبيق التحقق' : 'Authenticator code'}
-          <input
-            autoFocus
-            type="password"
-            inputMode="numeric"
-            pattern="[0-9]{6}"
-            required
-            value={mfaCode}
-            onChange={(e) => setMfaCode(e.target.value)}
-          />
-        </label>
+        <PasswordField
+          label={ar ? 'رمز تطبيق التحقق' : 'Authenticator code'}
+          lang={lang}
+          autoFocus
+          autoComplete="one-time-code"
+          inputMode="numeric"
+          pattern="[0-9]{6}"
+          maxLength={6}
+          required
+          value={mfaCode}
+          onChange={(e) => setMfaCode(e.target.value)}
+        />
         {error && (
           <p className="error-text" role="alert">
             {error}
@@ -258,6 +282,27 @@ export function PlatformPage({ lang, userId }: { lang: Language; userId: string 
     void load();
   }, []);
   const patch = (v: Partial<ProvisioningInput>) => setData((d) => ({ ...d, ...v }));
+  // A marked field turns back to normal as soon as it is fixed; the others stay marked.
+  useEffect(() => {
+    if (validation?.code !== 'VALIDATION_FAILED' || validation.status !== 0) return;
+    const left = stepProblems(data).filter((f) => validation.fields.some((c) => c.path === f.path));
+    if (left.length === validation.fields.length) return;
+    setValidation(left.length ? new ApiError('VALIDATION_FAILED', 0, undefined, left) : null);
+    if (!left.length) setError('');
+  }, [data, validation]);
+  /** Marks the step's problems, moves to the step that has them and focuses the first one. */
+  const blockOn = (fields: { path: string; code: string }[]) => {
+    // status 0 marks problems found in the browser, so editing can clear them live.
+    showError(new ApiError('VALIDATION_FAILED', 0, undefined, fields));
+    setStep(stepForPath(fields[0]!.path));
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        const first = document.querySelector<HTMLElement>('form [aria-invalid="true"]');
+        first?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        first?.focus({ preventScroll: true });
+      }),
+    );
+  };
   const save = async () => {
     let current = draft;
     if (!current) {
@@ -357,6 +402,12 @@ export function PlatformPage({ lang, userId }: { lang: Language; userId: string 
   };
   const submit = async (e: FormEvent) => {
     e.preventDefault();
+    // Stop on the step that has the problem instead of finding it at activation.
+    const problems = stepProblems(data, step < 6 ? step : undefined);
+    if (problems.length) {
+      blockOn(problems);
+      return;
+    }
     setError('');
     setBusy(true);
     try {
@@ -571,19 +622,7 @@ export function PlatformPage({ lang, userId }: { lang: Language; userId: string 
             <FieldErrors
               error={validation}
               lang={lang}
-              onNavigate={(path) =>
-                setStep(
-                  path.startsWith('program.')
-                    ? 2
-                    : /^(staff|branches)/.test(path)
-                      ? 3
-                      : /Color$|template|^stamp/.test(path)
-                        ? 1
-                        : path === 'plan'
-                          ? 5
-                          : 0,
-                )
-              }
+              onNavigate={(path) => setStep(stepForPath(path))}
             />
             {step === 0 && (
               <>
@@ -888,32 +927,29 @@ export function PlatformPage({ lang, userId }: { lang: Language; userId: string 
                         : 'Existing account? Send an invitation instead'}
                     </label>
                     {s.accessMode !== 'invitation' && (
-                      <label>
-                        {ar ? 'باسورد الحساب' : 'Account password'}
-                        <input
-                          type="password"
-                          aria-label={ar ? 'باسورد الحساب' : 'Account password'}
-                          dir="ltr"
-                          autoComplete="new-password"
-                          minLength={10}
-                          maxLength={128}
-                          required={!savedEmails.includes(s.email.toLowerCase())}
-                          value={passwords[i] || ''}
-                          placeholder={
-                            savedEmails.includes(s.email.toLowerCase())
-                              ? ar
-                                ? 'محفوظ — اكتب لتغييره قبل التفعيل'
-                                : 'Saved — enter to replace before activation'
-                              : ''
-                          }
-                          onChange={(e) => setPasswords((p) => ({ ...p, [i]: e.target.value }))}
-                        />
-                        <small className="muted">
-                          {ar
-                            ? '10 حروف أو أكتر. الحساب يقدر يدخل فور التفعيل.'
-                            : 'At least 10 characters. The account can sign in immediately after activation.'}
-                        </small>
-                      </label>
+                      <PasswordField
+                        label={ar ? 'باسورد الحساب' : 'Account password'}
+                        lang={lang}
+                        autoComplete="new-password"
+                        minLength={10}
+                        required={!savedEmails.includes(s.email.toLowerCase())}
+                        value={passwords[i] || ''}
+                        placeholder={
+                          savedEmails.includes(s.email.toLowerCase())
+                            ? ar
+                              ? 'محفوظ — اكتب لتغييره قبل التفعيل'
+                              : 'Saved — enter to replace before activation'
+                            : ''
+                        }
+                        onChange={(e) => setPasswords((p) => ({ ...p, [i]: e.target.value }))}
+                        hint={
+                          <small className="muted">
+                            {ar
+                              ? '10 حروف أو أكتر. الحساب يقدر يدخل فور التفعيل.'
+                              : 'At least 10 characters. The account can sign in immediately after activation.'}
+                          </small>
+                        }
+                      />
                     )}
                     <div className="form-grid">
                       <label>
@@ -1281,7 +1317,7 @@ export function PlatformPage({ lang, userId }: { lang: Language; userId: string 
                 .map((m) => (
                   <tr key={m.id}>
                     <td data-label={ar ? 'المحل' : 'Business'}>
-                      <button className="text-button" onClick={() => setWorkspace(m.id)}>
+                      <button className="link-button" onClick={() => setWorkspace(m.id)}>
                         <strong>{m.name}</strong>
                       </button>
                       <small>
@@ -1486,7 +1522,7 @@ function NeedsAttention({
       <ul>
         {quiet.slice(0, 8).map((m) => (
           <li key={m.id}>
-            <button className="text-button" onClick={() => open(m.id)}>
+            <button className="link-button" onClick={() => open(m.id)}>
               <strong>{m.name}</strong>
             </button>
             <small className="muted">

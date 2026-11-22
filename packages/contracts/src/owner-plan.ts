@@ -28,7 +28,20 @@ export const keepInput = z
   })
   .strict();
 
-export const walletAudiences = ['all', 'reward_ready', 'near_reward', 'inactive'] as const;
+export const walletAudiences = [
+  'all',
+  'reward_ready',
+  'near_reward',
+  'inactive',
+  // Analytics segments (044).
+  'new',
+  'one_time',
+  'regular',
+  'at_risk',
+  'lost',
+  'reactivated',
+  'vip',
+] as const;
 export type WalletAudience = (typeof walletAudiences)[number];
 
 /** Short enough for the lock-screen notification; {name} and {business} are filled per card. */

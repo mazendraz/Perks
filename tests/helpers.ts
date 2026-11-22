@@ -127,3 +127,28 @@ export async function replaceAssignedPassword(
     'x-csrf-token': changed.json().csrfToken as string,
   };
 }
+
+/**
+ * Tests about "today" and "this business day" run against the database clock, which a test cannot
+ * freeze. Started a few minutes before the shop's midnight (Cairo), their stamps land on two days
+ * and the counts are off by one. This waits until the day has safely turned instead.
+ */
+export async function clearOfShopMidnight(timeZone = 'Africa/Cairo', beforeMin = 6, afterMin = 2) {
+  const minutesIntoDay = () => {
+    const [h, m] = new Intl.DateTimeFormat('en-GB', {
+      timeZone,
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    })
+      .format(new Date())
+      .split(':')
+      .map(Number);
+    return (h! % 24) * 60 + m!;
+  };
+  const now = minutesIntoDay(),
+    wait = now >= 1440 - beforeMin ? 1440 - now + afterMin : now < afterMin ? afterMin - now : 0;
+  if (!wait) return;
+  console.log(`Waiting ${wait} min for ${timeZone} midnight to pass (date-sensitive tests).`);
+  await new Promise((r) => setTimeout(r, wait * 60_000 + 5_000));
+}

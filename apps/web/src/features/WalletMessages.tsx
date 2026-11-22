@@ -27,6 +27,7 @@ interface State {
     delivered: number;
     waiting: number;
     missed: number;
+    returned: number;
   }[];
 }
 const audiences: Record<WalletAudience, [string, string]> = {
@@ -34,6 +35,13 @@ const audiences: Record<WalletAudience, [string, string]> = {
   reward_ready: ['اللي هديتهم جاهزة ومستلموهاش', 'Rewards waiting to be collected'],
   near_reward: ['اللي فاضلهم ختم أو اتنين', 'One or two stamps away'],
   inactive: ['اللي بقالهم فترة مجوش', 'Not seen for a while'],
+  new: ['الزباين الجداد', 'New customers'],
+  one_time: ['اللي جم مرة واحدة بس', 'Came only once'],
+  regular: ['الزباين المنتظمين', 'Regular customers'],
+  at_risk: ['اللي اتأخروا عن عادتهم', 'Later than usual'],
+  lost: ['اللي بعدوا', 'Gone quiet'],
+  reactivated: ['اللي رجعوا بعد غياب', 'Came back after a long gap'],
+  vip: ['زباين الـVIP', 'VIP customers'],
 };
 const MAX = 150;
 
@@ -329,6 +337,17 @@ export function WalletMessages({ merchantId, lang }: { merchantId: string; lang:
                     : ar
                       ? `وصلت لـ ${h.delivered} من ${h.recipients}`
                       : `Reached ${h.delivered} of ${h.recipients}`}
+                  {h.delivered > 0 && (
+                    <span className="message-returned">
+                      {Date.now() - Date.parse(h.send_after || h.created_at) < 14 * 86_400_000
+                        ? ar
+                          ? ` · رجع منهم ${h.returned} لحد دلوقتي`
+                          : ` · ${h.returned} came back so far`
+                        : ar
+                          ? ` · رجع منهم ${h.returned} خلال أسبوعين`
+                          : ` · ${h.returned} came back within two weeks`}
+                    </span>
+                  )}
                 </small>
               </li>
             ))}

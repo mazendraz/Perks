@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api.js';
 import { portalAssetUrl } from '../portals.js';
+import './wallet-reach.css';
 import type { Language } from '../../../../packages/contracts/src/index.js';
 
 // iPadOS reports itself as a Mac; touch points tell them apart.
@@ -33,12 +34,86 @@ export function WalletButton({
     </a>
   );
 }
+/**
+ * Right where the card goes into Wallet, ask once whether the shop may send notifications to it.
+ * Sign-up leaves this unticked and most people skip it, so cards ended up in Wallet that no shop
+ * message could reach. Still the customer's choice: unticked until they tick it.
+ */
+function WalletNotifyOptIn({
+  merchantId,
+  merchantName,
+  lang,
+}: {
+  merchantId: string;
+  merchantName: string;
+  lang: Language;
+}) {
+  const ar = lang === 'ar';
+  const path = '/me/merchants/' + merchantId + '/preferences';
+  const [granted, setGranted] = useState<boolean | null>(null);
+  const [justTurnedOn, setJustTurnedOn] = useState(false);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    let live = true;
+    api<{ preferences: { channel: string; granted: boolean }[] }>(path)
+      .then((r) => live && setGranted(!!r.preferences.find((p) => p.channel === 'push')?.granted))
+      .catch(() => live && setGranted(null));
+    return () => {
+      live = false;
+    };
+  }, [path]);
+  // Already on (and not just now): nothing to ask.
+  if (granted === null || (granted && !justTurnedOn)) return null;
+  const change = async (on: boolean) => {
+    setBusy(true);
+    try {
+      await api(path, { method: 'PATCH', body: { channel: 'push', granted: on } });
+      setGranted(on);
+      setJustTurnedOn(on);
+    } catch {
+      /* Unchanged: they can still switch it in the card preferences. */
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <label className="checkbox-label wallet-notify-optin">
+      <input
+        type="checkbox"
+        checked={granted}
+        disabled={busy}
+        onChange={(e) => void change(e.target.checked)}
+      />
+      <span>
+        <strong>
+          {ar
+            ? `ابعتلي إشعارات من ${merchantName} على الكارت`
+            : `Let ${merchantName} send notifications to this card`}
+        </strong>
+        <small>
+          {granted
+            ? ar
+              ? 'تمام! هيوصلك لما مكافأتك تجهز، وعروض المحل. تقدر تقفلها من التفضيلات.'
+              : 'Done! You will hear when your reward is ready, plus shop offers. Turn it off in preferences.'
+            : ar
+              ? 'لما مكافأتك تجهز، ولو المحل عنده عرض. مش أكتر من رسالة في اليوم.'
+              : 'When your reward is ready, or the shop has an offer. Never more than one a day.'}
+        </small>
+      </span>
+    </label>
+  );
+}
+
 export function WalletPanel({
   membershipId,
+  merchantId,
+  merchantName,
   lang,
   onPreferences,
 }: {
   membershipId: string;
+  merchantId?: string;
+  merchantName?: string;
   lang: Language;
   onPreferences?: () => void;
 }) {
@@ -83,6 +158,9 @@ export function WalletPanel({
             {apple && <WalletButton provider="apple" membershipId={membershipId} lang={lang} />}
             {google && <WalletButton provider="google" membershipId={membershipId} lang={lang} />}
           </div>
+          {merchantId && merchantName && (
+            <WalletNotifyOptIn merchantId={merchantId} merchantName={merchantName} lang={lang} />
+          )}
           <p className="muted small">
             {ar
               ? 'بيتحدّث لوحده بعد كل ختم. الإضافة بتشارك اسمك وبيانات الكارت مع مزود المحفظة.'

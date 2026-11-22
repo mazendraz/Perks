@@ -8,7 +8,22 @@ import {
 import { api, ApiError, errorText } from '../api.js';
 import { Select } from '../controls/Select.js';
 import { day } from './billing-labels.js';
-import { useWalletMessagePreview, WalletReachDetails } from './WalletReach.js';
+import { useWalletMessagePreview, WalletBlockedHelp, WalletReachDetails } from './WalletReach.js';
+import { WhatsAppSheet } from './analytics/WhatsAppSheet.js';
+import type { SegmentKey, SegmentPage } from '../../../../packages/contracts/src/analytics.js';
+
+// The Wallet groups that are also analytics segments can fall back to WhatsApp.
+const segmentFor: Partial<Record<WalletAudience, SegmentKey>> = {
+  reward_ready: 'reward_holder',
+  near_reward: 'near_reward',
+  new: 'new',
+  one_time: 'one_time',
+  regular: 'regular',
+  at_risk: 'at_risk',
+  lost: 'lost',
+  reactivated: 'reactivated',
+  vip: 'vip',
+};
 
 interface State {
   used: number;
@@ -66,6 +81,24 @@ export function WalletMessages({ merchantId, lang }: { merchantId: string; lang:
     [formError, setFormError] = useState('');
   const base = '/merchants/' + merchantId + '/wallet-messages';
   const { preview, error: previewError, refresh } = useWalletMessagePreview(base, audience, days);
+  const [whatsappReady, setWhatsappReady] = useState<{ segment: SegmentKey; count: number } | null>(
+    null,
+  );
+  const [whatsappOpen, setWhatsappOpen] = useState(false);
+  const segment = segmentFor[audience];
+  useEffect(() => {
+    setWhatsappReady(null);
+    if (!segment) return;
+    let live = true;
+    api<SegmentPage>('/merchants/' + merchantId + '/analytics/segments/' + segment + '?whatsapp=1')
+      .then((page) => live && setWhatsappReady({ segment, count: page.whatsappReady }))
+      .catch(() => {
+        /* No customer list on this plan: no WhatsApp offer. */
+      });
+    return () => {
+      live = false;
+    };
+  }, [merchantId, segment]);
   const load = async () => {
     try {
       setState(await api<State>(base));
@@ -230,7 +263,7 @@ export function WalletMessages({ merchantId, lang }: { merchantId: string; lang:
                   : `Reaches ${preview.customers} of ${preview.groupSize} customers`}
             </p>
           )}
-          {preview && !noProvider && (
+          {preview && !noProvider && preview.customers > 0 && left !== 0 && (
             <WalletReachDetails preview={preview} lang={lang} refresh={refresh} />
           )}
           <label>
@@ -282,6 +315,37 @@ export function WalletMessages({ merchantId, lang }: { merchantId: string; lang:
               {formError}
             </p>
           )}
+          {preview && !noProvider && (preview.customers === 0 || left === 0) && (
+            <WalletBlockedHelp
+              preview={preview}
+              lang={lang}
+              noneLeft={left === 0}
+              hint={
+                segment
+                  ? undefined
+                  : ar
+                    ? 'عايز تبعت على واتساب بدل الـWallet؟ اختار مجموعة محددة من «مين يوصله؟»، زي «اللي هديتهم جاهزة».'
+                    : 'Want to use WhatsApp instead? Pick a specific group in “Who gets it?”, like “Rewards waiting”.'
+              }
+              whatsapp={
+                whatsappReady && whatsappReady.segment === segment
+                  ? { count: whatsappReady.count, open: () => setWhatsappOpen(true) }
+                  : null
+              }
+            />
+          )}
+          {whatsappOpen && segment && (
+            <WhatsAppSheet
+              merchantId={merchantId}
+              segment={segment}
+              audience={audience}
+              label={audiences[audience][ar ? 0 : 1]}
+              branchId=""
+              lang={lang}
+              initialBody={bodyAr}
+              onClose={() => setWhatsappOpen(false)}
+            />
+          )}
           <button
             className="primary"
             disabled={busy || noProvider || !bodyAr.trim() || !preview?.customers || left === 0}
@@ -291,9 +355,13 @@ export function WalletMessages({ merchantId, lang }: { merchantId: string; lang:
               ? ar
                 ? 'خلصت رسايل الشهر'
                 : 'No messages left this month'
-              : ar
-                ? 'راجع وابعت'
-                : 'Review and send'}
+              : preview && preview.customers === 0
+                ? ar
+                  ? 'مش هتوصل لحد دلوقتي'
+                  : 'Won’t reach anyone right now'
+                : ar
+                  ? 'راجع وابعت'
+                  : 'Review and send'}
           </button>
         </div>
         <aside className="lockscreen" aria-label={ar ? 'شكل الإشعار' : 'Notification preview'}>

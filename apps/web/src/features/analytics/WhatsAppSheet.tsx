@@ -14,6 +14,7 @@ import { api, errorText } from '../../api.js';
 import { Icon } from '../../../../../packages/ui/src/Icon.js';
 import { pick, say } from './copy.js';
 import { num } from './parts.js';
+import './analytics.css';
 
 const t = {
   title: { ar: 'ابعتلهم على واتساب', en: 'Message them on WhatsApp' },
@@ -61,7 +62,10 @@ export function WhatsAppSheet({
   branchId,
   lang,
   onClose,
+  initialBody,
 }: {
+  /** The owner's own words (e.g. typed for a Wallet message); else the ready text. */
+  initialBody?: string;
   merchantId: string;
   segment: SegmentKey;
   audience: WalletAudience;
@@ -71,7 +75,7 @@ export function WhatsAppSheet({
   onClose: () => void;
 }) {
   const template = segmentMessages[audience];
-  const [body, setBody] = useState(template?.[lang] ?? '');
+  const [body, setBody] = useState(initialBody?.trim() || template?.[lang] || '');
   const [business, setBusiness] = useState('');
   const [page, setPage] = useState<SegmentPage | null>(null);
   const [rows, setRows] = useState<SegmentCustomer[]>([]);

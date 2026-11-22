@@ -10,7 +10,7 @@ import { api, ApiError, errorText } from '../../api.js';
 import { Icon } from '../../../../../packages/ui/src/Icon.js';
 import { pick, say } from './copy.js';
 import { num } from './parts.js';
-import { useWalletMessagePreview, WalletReachDetails } from '../WalletReach.js';
+import { useWalletMessagePreview, WalletBlockedHelp, WalletReachDetails } from '../WalletReach.js';
 
 const MAX = 150;
 const t = {
@@ -169,13 +169,18 @@ export function SendSheet({
             )}
           </p>
         )}
-        {preview && !noProvider && (
-          <WalletReachDetails
-            preview={preview}
-            lang={lang}
-            refresh={refresh}
-            className="an-callout warn"
-          />
+        {preview && !noProvider && (preview.customers === 0 || left === 0) ? (
+          <WalletBlockedHelp preview={preview} lang={lang} noneLeft={left === 0} />
+        ) : (
+          preview &&
+          !noProvider && (
+            <WalletReachDetails
+              preview={preview}
+              lang={lang}
+              refresh={refresh}
+              className="an-callout warn"
+            />
+          )
         )}
         {noProvider && <p className="an-callout warn">{pick(t.noWallet, lang)}</p>}
         <label className="an-message">

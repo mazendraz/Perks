@@ -860,6 +860,8 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
                   />
                   <WalletPanel
                     membershipId={card.id}
+                    merchantId={card.merchant_id}
+                    merchantName={card.merchant_name}
                     lang={lang}
                     onPreferences={() => void preferenceTab()}
                   />

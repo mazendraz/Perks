@@ -1,5 +1,7 @@
 /* Analytics page. Perks colours (navy + lime) on the shop's paper; numbers in Perks Digits. */
-.an-page {
+.an-page,
+.an-sheet {
+  /* Sheets also open outside the analytics page (Wallet messages). */
   --an-ink: var(--ink, #181b38);
   --an-ink-2: #23274a;
   --an-lime: var(--lime, #cbff64);
@@ -12,6 +14,8 @@
   --an-warn-bg: #fff1e8;
   --an-danger: #9b1c1c;
   --an-danger-bg: #fdecec;
+}
+.an-page {
   display: flex;
   flex-direction: column;
   gap: 16px;

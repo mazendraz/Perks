@@ -1,0 +1,74 @@
+/* "This message won't reach anyone": each reason with what fixes it, right above Send. */
+.wallet-blocked {
+  display: grid;
+  gap: 10px;
+  margin-block: 4px 12px;
+  padding: 14px 16px;
+  border: 1px solid #f1c9a5;
+  border-radius: 14px;
+  background: #fff6ee;
+  color: #5a2306;
+}
+.wallet-blocked > strong {
+  font-size: 15px;
+}
+.wallet-blocked ul {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding-inline-start: 18px;
+}
+.wallet-blocked li {
+  display: grid;
+  gap: 2px;
+  line-height: 1.6;
+}
+.wallet-blocked li > span {
+  font-weight: 600;
+}
+.wallet-blocked li > small {
+  font-size: 13px;
+  color: #7a4220;
+}
+.wallet-blocked-alt {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed #f1c9a5;
+  font-size: 14px;
+  font-weight: 600;
+}
+.wallet-blocked-alt .an-wa-button {
+  min-height: 42px;
+  padding-inline: 16px;
+  border: 0;
+  border-radius: 10px;
+  background: #25d366;
+  color: #08331a;
+  font-weight: 700;
+}
+
+/* Customer: the notification opt-in under the Add to Wallet buttons. */
+.wallet-notify-optin {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 12px;
+  background: #f4f5ef;
+}
+.wallet-notify-optin small {
+  display: block;
+  margin-top: 2px;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--muted, #6b6e80);
+}
+
+.wallet-blocked-hint {
+  padding-top: 10px;
+  border-top: 1px dashed #f1c9a5;
+  font-size: 13px;
+  line-height: 1.6;
+}

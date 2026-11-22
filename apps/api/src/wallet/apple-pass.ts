@@ -189,13 +189,22 @@ export function texts(card: WalletCard) {
       member_value: 'عميل Perks',
       left_label: ready ? 'مكافأتك' : 'فاضل',
       left_value: !card.active ? 'مقفول' : ready ? 'جاهزة 🎁' : arStamps(left),
+      // The status announces itself (changeMessage), so it changes only when the card's state
+      // does: reward ready or card closed. The countdown is a separate, silent field, or every
+      // stamp would ping "1 stamp to go" while the customer is still at the till.
       status_label: 'حالة الكارت',
       status_value: !card.active
         ? 'الكارت ده اتقفل'
         : ready
           ? 'مكافأتك جاهزة! اطلبها من الكاشير'
-          : `باقي ${arStamps(left)} على المكافأة`,
+          : 'كارتك شغال: كل زيارة بختم',
       status_change: '%@',
+      progress_label: 'فاضلك',
+      progress_value: !card.active
+        ? 'الكارت ده اتقفل'
+        : ready
+          ? 'مكافأتك جاهزة'
+          : `باقي ${arStamps(left)} على المكافأة`,
       reminder_label: 'رسالة من المحل',
       ...(reminderKey(card) ? { [reminderKey(card)]: reminderTexts(card)!.ar } : {}),
       open_label: 'افتح الكارت',
@@ -232,8 +241,14 @@ export function texts(card: WalletCard) {
         ? 'This card is closed'
         : ready
           ? 'Your reward is ready! Ask the cashier'
-          : `${left} ${left === 1 ? 'stamp' : 'stamps'} to your reward`,
+          : 'Your card is active: every visit earns a stamp',
       status_change: '%@',
+      progress_label: 'To go',
+      progress_value: !card.active
+        ? 'This card is closed'
+        : ready
+          ? 'Your reward is ready'
+          : `${left} ${left === 1 ? 'stamp' : 'stamps'} to your reward`,
       reminder_label: 'A message from the business',
       ...(reminderKey(card) ? { [reminderKey(card)]: reminderTexts(card)!.en } : {}),
       open_label: 'Open your card',
@@ -339,6 +354,8 @@ export function passJson(
       changeMessage: '%@',
     },
     { key: 'reward_full', label: 'reward_label', value: card.reward_title },
+    // No changeMessage: a new stamp must not announce the countdown (see status_value).
+    { key: 'progress', label: 'progress_label', value: 'progress_value' },
     {
       key: 'member',
       label: 'member_label',

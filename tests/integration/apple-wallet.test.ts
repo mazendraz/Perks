@@ -217,7 +217,7 @@ test('a customer downloads a signed pass for their own card only', async () => {
   assert.ok(!JSON.stringify(pass.storeCard).includes(pass.authenticationToken));
   assert.match(
     files.get('ar.lproj/pass.strings')!.toString('utf16le'),
-    /"status_value" = "باقي 3 أختام على المكافأة";/,
+    /"progress_value" = "باقي 3 أختام على المكافأة";/,
   );
   const again = unzip(
     (

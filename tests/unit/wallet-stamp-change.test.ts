@@ -107,3 +107,29 @@ test('repeated words still change the message field; first-time words keep their
   assert.notEqual(step2, step1);
   assert.notEqual(step3, step2);
 });
+
+test('a stamp does not announce "1 stamp to go": the status speaks only when the state changes', () => {
+  const states = [2, 3, 4].map((display_balance) => texts({ ...card, display_balance }));
+  for (const lang of ['ar', 'en'] as const) {
+    // The announced field reads the same at 2/5, 3/5 and 4/5…
+    assert.equal(new Set(states.map((s) => s[lang].status_value)).size, 1, lang);
+    // …while the silent countdown still tells the customer how many are left.
+    assert.equal(new Set(states.map((s) => s[lang].progress_value)).size, 3, lang);
+    // A ready reward and a closed card still announce themselves.
+    assert.notEqual(
+      texts({ ...card, pending_rewards: 1 })[lang].status_value,
+      states[0]![lang].status_value,
+    );
+    assert.notEqual(
+      texts({ ...card, active: false })[lang].status_value,
+      states[0]![lang].status_value,
+    );
+  }
+  assert.equal(states[2]!.ar.progress_value, 'باقي ختم واحد على المكافأة');
+  const pass = backOf(card);
+  for (const style of ['posterGeneric', 'storeCard'] as const) {
+    const progress = pass[style].backFields.find((f) => f.key === 'progress');
+    assert.ok(progress, style + ' has the countdown');
+    assert.equal(progress.changeMessage, undefined, style + ' countdown stays silent');
+  }
+});

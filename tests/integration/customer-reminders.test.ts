@@ -266,7 +266,8 @@ test('settings, customer consent, scheduling, leases, delivery and return tracki
   // A lost POST response is reconciled by GET. Duplicate message IDs alone do not deduplicate Google sends.
   const keys = generateKeyPairSync('rsa', { modulusLength: 2048 });
   let posts = 0,
-    seen = false;
+    seen = false,
+    posted: { displayInterval: Record<string, { date: string }> } | null = null;
   const provider: GoogleWallet = {
     issuerId: '12345',
     clientEmail: 'reminders@example.test',
@@ -277,6 +278,7 @@ test('settings, customer consent, scheduling, leases, delivery and return tracki
       if (init?.method === 'POST') {
         posts++;
         seen = true;
+        posted = JSON.parse(String(init.body)).message;
         throw new Error('lost response');
       }
       return Response.json({ messages: seen ? [{ id: google.id }] : [] });
@@ -284,6 +286,12 @@ test('settings, customer consent, scheduling, leases, delivery and return tracki
   };
   const uncertain = await deliverCustomerReminder(google, worker, { google: provider });
   assert.equal(uncertain.outcome, 'uncertain');
+  // Google's TimeInterval is {start,end}; any other field name is refused with a 400.
+  assert.ok(posted);
+  const interval = (posted as { displayInterval: Record<string, { date: string }> })
+    .displayInterval;
+  assert.deepEqual(Object.keys(interval), ['end']);
+  assert.ok(Date.parse(interval.end!.date) > Date.now());
   const reconciled = await deliverCustomerReminder({ ...google, reconcileOnly: true }, worker, {
     google: provider,
   });

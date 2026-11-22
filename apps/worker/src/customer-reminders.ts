@@ -125,7 +125,8 @@ export async function deliverWalletNotice(
             defaultValue: { language: 'ar', value: message('ar') },
             translatedValues: [{ language: 'en', value: message('en') }],
           },
-          displayInterval: { endTime: { date: new Date(Date.now() + 7 * 86400000).toISOString() } },
+          // Google's TimeInterval has `start` and `end` (an unknown `endTime` is refused).
+          displayInterval: { end: { date: new Date(Date.now() + 7 * 86400000).toISOString() } },
         },
       }),
     });

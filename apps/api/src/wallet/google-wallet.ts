@@ -252,6 +252,46 @@ export async function putGoogle(
   });
   return r.status;
 }
+type GoogleMessage = {
+  id?: string;
+  messageType?: string;
+  displayInterval?: { end?: { date?: string }; endTime?: { date?: string } };
+  [key: string]: unknown;
+};
+/**
+ * PUT that keeps the shop's messages and reminders. addMessage stores them on the saved card, and a
+ * plain PUT would delete them on the next stamp. Messages still in their display window are sent
+ * back as plain TEXT, so Google shows them without notifying the customer a second time.
+ * Returns the GET status when the card could not be read (404: never saved; 429/5xx: retry).
+ */
+export async function putGoogleKeepingMessages(
+  g: GoogleWallet,
+  id: string,
+  body: Record<string, unknown>,
+) {
+  const url = api + '/loyaltyObject/' + encodeURIComponent(id);
+  const existing = await g.fetch(url, {
+    headers: { authorization: 'Bearer ' + (await accessToken(g)) },
+    signal: AbortSignal.timeout(10000),
+  });
+  if (!existing.ok)
+    return { status: existing.status, messages: [] as GoogleMessage[], read: false };
+  const saved = (await existing.json().catch(() => ({}))) as { messages?: GoogleMessage[] };
+  const now = Date.now();
+  const messages = (saved.messages ?? [])
+    .filter((m) => {
+      const end = m.displayInterval?.end?.date ?? m.displayInterval?.endTime?.date;
+      return !end || Date.parse(end) > now;
+    })
+    .map((m) => ({ ...m, messageType: 'TEXT' }));
+  const status = await putGoogle(
+    g,
+    'loyaltyObject',
+    id,
+    messages.length ? { ...body, messages } : body,
+  );
+  return { status, messages, read: true };
+}
 // PATCH; 404 means the customer never saved the card, which is normal and not an error.
 export async function patchGoogle(
   g: GoogleWallet,
@@ -308,9 +348,8 @@ export async function refreshSavedGoogleCard(
   timeoutMs = 4000,
 ) {
   const work = (async () => {
-    const status = await putGoogle(
+    const { status } = await putGoogleKeepingMessages(
       g,
-      'loyaltyObject',
       objectId(g, key),
       googleObject(g, card, key, origin, version),
     );

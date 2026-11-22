@@ -10,6 +10,7 @@ import {
   objectId,
   patchGoogle,
   putGoogle,
+  putGoogleKeepingMessages,
   stripVersion,
   type GoogleWallet,
 } from '../../api/src/wallet/google-wallet.js';
@@ -43,14 +44,23 @@ export async function runGoogleWalletUpdates(
     );
     let status: number;
     try {
-      status = await putGoogle(g, 'loyaltyObject', objectId(g, object_key), {
+      // The shop's messages on the saved card survive the update (a plain PUT deleted them).
+      const first = await putGoogleKeepingMessages(g, objectId(g, object_key), {
         ...object,
-        // Transient: Google notifies (max 3 per day) when loyaltyPoints.balance changes.
+        // Transient: Google notifies (max 3 per day, shared with shop messages) when
+        // loyaltyPoints.balance changes.
         notifyPreference: 'notifyOnUpdate',
       });
-      // Over the notification quota: deliver the update silently.
-      if (status === 429)
-        status = await putGoogle(g, 'loyaltyObject', objectId(g, object_key), object);
+      status = first.status;
+      // Over the notification quota: deliver the update silently. (A 429 on reading the card
+      // is retried later instead: a PUT without its messages would delete them.)
+      if (status === 429 && first.read)
+        status = await putGoogle(
+          g,
+          'loyaltyObject',
+          objectId(g, object_key),
+          first.messages.length ? { ...object, messages: first.messages } : object,
+        );
     } catch {
       status = 0;
     }

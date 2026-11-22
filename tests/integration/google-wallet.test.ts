@@ -124,19 +124,26 @@ type Patch = {
   heroImage: { sourceUri: { uri: string } };
 };
 type Call = { url: string; method: string; body: Record<string, unknown> | string };
-function fakeGoogle(status: (call: Call) => number) {
+function fakeGoogle(status: (call: Call) => number, saved: Record<string, unknown> = {}) {
   const calls: Call[] = [];
-  const fetchImpl = (async (url: string, init: RequestInit) => {
+  const fetchImpl = (async (url: string, init: RequestInit = {}) => {
     const call = {
       url,
-      method: String(init.method),
+      method: String(init.method ?? 'GET'),
       body: url.includes('oauth2')
         ? String(init.body)
-        : (JSON.parse(String(init.body)) as Record<string, unknown>),
+        : init.body === undefined
+          ? {}
+          : (JSON.parse(String(init.body)) as Record<string, unknown>),
     };
     calls.push(call);
     if (url.includes('oauth2'))
       return new Response(JSON.stringify({ access_token: 'test-token', expires_in: 3600 }));
+    // Reading the saved card returns it (with any messages the shop added).
+    if (call.method === 'GET') {
+      const code = status(call);
+      return new Response(code === 200 ? JSON.stringify(saved) : '{}', { status: code });
+    }
     return new Response('{}', { status: status(call) });
   }) as typeof fetch;
   return { calls, g: loadGoogleWallet(c, fetchImpl)! };
@@ -210,8 +217,8 @@ test('a stamp sends the new balance to Google with a notification, once', async 
   assert.equal(ok.calls.filter((x) => x.url.includes(object.id)).length, 0, 'nothing changed');
   await award(m, 2);
   await runGoogleWalletUpdates(worker, c, ok.g);
-  const patch = ok.calls.find((x) =>
-    x.url.endsWith('/loyaltyObject/' + encodeURIComponent(object.id)),
+  const patch = ok.calls.find(
+    (x) => x.method === 'PUT' && x.url.endsWith('/loyaltyObject/' + encodeURIComponent(object.id)),
   );
   assert.ok(patch);
   // The whole card is replaced, so fields no longer sent (an old QR code) are removed.
@@ -224,8 +231,8 @@ test('a stamp sends the new balance to Google with a notification, once', async 
   assert.ok(ok.calls.some((x) => x.url.includes('/loyaltyClass/')));
   const before = ok.calls.length;
   await runGoogleWalletUpdates(worker, c, ok.g);
-  assert.equal(ok.calls.filter((x) => x.url.includes(object.id)).length, 1);
-  assert.ok(ok.calls.length - before <= 1);
+  assert.equal(ok.calls.filter((x) => x.method === 'PUT' && x.url.includes(object.id)).length, 1);
+  assert.ok(ok.calls.length - before <= 2);
 
   // Google down: retried next round. Never saved (404): dropped quietly.
   await award(m, 1);
@@ -235,7 +242,7 @@ test('a stamp sends the new balance to Google with a notification, once', async 
   await runGoogleWalletUpdates(worker, c, back.g);
   assert.equal(
     (
-      back.calls.find((x) => x.url.includes(encodeURIComponent(object.id)))!
+      back.calls.find((x) => x.method === 'PUT' && x.url.includes(encodeURIComponent(object.id)))!
         .body as unknown as Patch
     ).loyaltyPoints.balance.string,
     '4/5',
@@ -245,9 +252,36 @@ test('a stamp sends the new balance to Google with a notification, once', async 
   );
   await db.query("UPDATE google_wallet_objects SET fingerprint='' WHERE membership_id=$1", [m.id]);
   await runGoogleWalletUpdates(worker, c, quota.g);
-  const silent = quota.calls.filter((x) => x.url.includes(encodeURIComponent(object.id)));
+  const silent = quota.calls.filter(
+    (x) => x.method === 'PUT' && x.url.includes(encodeURIComponent(object.id)),
+  );
   assert.equal(silent.length, 2);
   assert.equal((silent[1]!.body as unknown as Patch).notifyPreference, undefined);
+
+  // The shop's message on the saved card survives the stamp, without a second notification;
+  // a message past its display window is dropped.
+  const later = new Date(Date.now() + 86400000).toISOString(),
+    gone = new Date(Date.now() - 86400000).toISOString();
+  const keeps = fakeGoogle(() => 200, {
+    messages: [
+      { id: 'live', messageType: 'TEXT_AND_NOTIFY', displayInterval: { end: { date: later } } },
+      { id: 'old', messageType: 'TEXT_AND_NOTIFY', displayInterval: { end: { date: gone } } },
+    ],
+  });
+  await award(m, 1);
+  await runGoogleWalletUpdates(worker, c, keeps.g);
+  const kept = keeps.calls.find((x) => x.method === 'PUT' && x.url.includes(object.id))!.body as {
+    messages?: { id: string; messageType: string }[];
+  };
+  assert.deepEqual(
+    kept.messages?.map((x) => [x.id, x.messageType]),
+    [['live', 'TEXT']],
+  );
+  // Throttled while reading the card: nothing is written (a PUT would lose the messages).
+  await award(m, 1);
+  const throttled = fakeGoogle((call) => (call.method === 'GET' ? 429 : 200));
+  await runGoogleWalletUpdates(worker, c, throttled.g);
+  assert.equal(throttled.calls.filter((x) => x.method === 'PUT').length, 0);
 });
 
 test('the runtime role cannot read Google Wallet rows or run the worker function', async () => {

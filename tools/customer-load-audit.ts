@@ -1,3 +1,4 @@
+import assert from 'node:assert/strict';
 import type { Page } from 'playwright';
 
 export async function auditCustomerLoading(page: Page, project: string, directory: string) {
@@ -11,7 +12,7 @@ export async function auditCustomerLoading(page: Page, project: string, director
     .getByRole('progressbar', { name: /Stamp progress|/ })
     .first()
     .waitFor();
-  await page.locator('.card-actions button:not(:disabled)').first().waitFor();
+  await page.locator('.membership-aside .tabbar button').first().waitFor();
   let release!: () => void;
   const gate = new Promise<void>((resolve) => {
     release = resolve;
@@ -24,11 +25,11 @@ export async function auditCustomerLoading(page: Page, project: string, director
   try {
     await page.goto(new URL('/customer', returnUrl).href, { waitUntil: 'domcontentloaded' });
     await page.getByRole('heading', { name: /My cards|كروتي/, exact: true }).waitFor();
-    await page.locator('.card-open').first().waitFor({ timeout: 2500 });
+    await page.locator('.customer-slide[aria-hidden=false]').first().waitFor({ timeout: 2500 });
     await page.screenshot({ path: directory + '/customer-independent-list-' + project + '.png' });
-    await page.locator('.card-open').first().click();
-    // The open card itself (the wallet panel only shows when a wallet provider is set up).
-    await page.locator('.loyalty-card').first().waitFor({ timeout: 2500 });
+    await page.locator('.customer-slide[aria-hidden=false]').first().click();
+    assert.equal(new URL(page.url()).pathname, '/customer');
+    await page.locator('.membership-aside .tabbar').waitFor({ timeout: 2500 });
     await page.screenshot({ path: directory + '/customer-independent-wallet-' + project + '.png' });
   } catch (error) {
     await page.screenshot({ path: directory + '/customer-missing-card-' + project + '.png' });
@@ -36,7 +37,5 @@ export async function auditCustomerLoading(page: Page, project: string, director
   } finally {
     release();
     await page.unroute(pattern);
-    // The card opened above is already the return destination. Reloading its
-    // old placement query would start another automatic QR during later tests.
   }
 }

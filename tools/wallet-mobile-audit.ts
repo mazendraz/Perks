@@ -5,7 +5,9 @@ import type { Page } from 'playwright';
 
 export async function auditWalletPresentation(page: Page, project: string, directory: string) {
   const current = new URL(page.url()),
-    memberPath = current.pathname,
+    memberId = await page
+      .locator('.customer-slide[aria-hidden=false] article')
+      .getAttribute('data-card-id'),
     viewport = page.viewportSize()!;
   const endpoint = '**/api/v1/wallet/availability';
   await page.route(endpoint, (route) => route.fulfill({ json: { apple: true, google: true } }));
@@ -71,15 +73,18 @@ export async function auditWalletPresentation(page: Page, project: string, direc
     await page
       .getByRole('checkbox', { name: 'Wallet notifications from this shop', exact: true })
       .waitFor();
-    await page.goto(current.origin + memberPath + '?wallet=1', { waitUntil: 'domcontentloaded' });
+    await page.goto(current.origin + '/customer/' + memberId + '?wallet=1', {
+      waitUntil: 'domcontentloaded',
+    });
     // The Wallet link opens the card; the personal QR opens only from a reward's Redeem button.
     await page.locator('.loyalty-card').first().waitFor();
     assert.equal(await page.getByRole('dialog', { name: 'Personal QR', exact: true }).count(), 0);
     // Let the card's own requests finish before leaving it (WebKit reports an aborted fetch).
     await page.getByRole('heading', { name: 'Your rewards', exact: true }).waitFor();
     await page.waitForTimeout(1500);
-    await page.getByRole('button', { name: 'Back to my cards', exact: true }).click();
-    await page.locator('.card-open').first().click();
+    await page.getByRole('button', { name: 'My cards', exact: true }).click();
+    await link.waitFor();
+    assert.ok((await link.getAttribute('href'))?.includes('/memberships/' + memberId + '/wallet/'));
   } finally {
     await page.unroute(endpoint);
     await page.setViewportSize(viewport);

@@ -1,147 +1,104 @@
-/* My cards: a fanned deck. The front card sits on top, the rest fan out behind it. */
-.card-deck {
-  max-inline-size: 36rem;
-  margin-inline: auto;
-  overflow-x: clip;
+.customer-carousel,
+.customer-wallet .membership-aside {
+  min-inline-size: 0;
 }
-
-.cards-grid.card-deck-stage {
-  grid-template-columns: none;
-  gap: 0;
-}
-
-.card-deck-stage {
-  display: grid;
-  place-items: center;
-  padding-block: 2.25rem 2.75rem;
-  touch-action: pan-y pinch-zoom;
-  user-select: none;
-  -webkit-user-select: none;
-  outline: none;
-}
-
-.card-deck-slide {
-  grid-area: 1 / 1;
-  inline-size: min(74%, 21rem);
-  transform-origin: 50% 85%;
-  transition:
-    transform 480ms cubic-bezier(0.22, 1, 0.36, 1),
-    opacity 300ms ease-out;
-  will-change: transform;
-}
-
-.card-deck-stage[data-dragging] .card-deck-slide {
-  transition: none;
-}
-
-.card-deck-slide .card-open {
-  inline-size: 100%;
-  -webkit-tap-highlight-color: transparent;
-}
-
-.card-deck-slide .loyalty-card {
-  box-shadow: 0 18px 30px -18px rgb(15 30 40 / 0.45);
-  -webkit-user-drag: none;
-}
-
-.card-deck-slide[data-current='false'] .card-open {
-  cursor: pointer;
-}
-
-.card-deck-slide img {
-  -webkit-user-drag: none;
-  pointer-events: none;
-}
-
-.card-deck-caption {
-  display: grid;
-  justify-items: center;
-  gap: 0.125rem;
-  text-align: center;
-  padding-inline: 1rem;
-}
-
-.card-deck-caption strong {
-  font-size: 1rem;
-  letter-spacing: 0.02em;
-}
-
-.card-deck-caption span {
-  font-size: 0.75rem;
-  color: var(--brand, currentColor);
-  opacity: 0.75;
-}
-
-.card-deck-footer {
+.customer-card-track {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-block: 1rem 0.75rem;
-  padding-inline: 0.5rem;
+  align-items: flex-start;
+  gap: 16px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  border-radius: 16px;
 }
-
-.card-deck-count {
-  font-size: 0.8125rem;
-  letter-spacing: 0.12em;
-  font-variant-numeric: tabular-nums;
-  opacity: 0.6;
-}
-
-.card-deck-arrows {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.card-deck-arrows .wallet-card-arrow {
-  display: grid;
-  place-items: center;
-  min-inline-size: 44px;
-  min-block-size: 44px;
-  padding: 0;
-  border-radius: 50%;
-}
-
-/* The arrow icon points forward; flip it for "previous", and mirror both in Arabic. */
-.wallet-card-arrow[data-step='previous'] svg,
-[dir='rtl'] .wallet-card-arrow[data-step='next'] svg {
-  transform: rotate(180deg);
-}
-
-[dir='rtl'] .wallet-card-arrow[data-step='previous'] svg {
-  transform: none;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .card-deck-slide {
-    transition: opacity 160ms ease-out;
-  }
-}
-
-/* On a card's own page the front card is the full card, which may carry the reward banner
-   above it: line the deck up by the bottom so the cards behind sit level with it. */
-.card-deck[data-detail] {
-  overflow-x: clip;
-}
-
-.card-deck[data-detail] .card-deck-stage {
-  place-items: end center;
-  padding-block: 1rem 2.25rem;
-}
-
-.card-deck[data-detail] .card-deck-slide {
-  inline-size: min(84%, 26rem);
-}
-
-/* Only the front card shows its "reward is ready" banner; behind it, it would poke out on top. */
-.card-deck-slide[data-current='false'] .nq-reward-banner {
+.customer-card-track::-webkit-scrollbar {
   display: none;
 }
-
-.card-deck-slide[data-current='false'] .loyalty-card-shell.live-card {
-  padding-top: 0;
+.customer-card-track[data-locked='true'] {
+  overflow-x: hidden;
+}
+.customer-slide {
+  flex: 0 0 100%;
+  min-inline-size: 0;
+  scroll-snap-align: center;
+  scroll-snap-stop: always;
+}
+.customer-card-controls,
+.customer-card-controls > div,
+.customer-card-number {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.customer-card-controls {
+  justify-content: space-between;
+  padding-block: 8px;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+.customer-card-controls button.secondary {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  padding: 0;
+}
+.customer-card-controls [data-back='true'] svg {
+  transform: rotate(180deg);
+}
+.customer-card-track:focus-visible {
+  outline: 3px solid currentColor;
+  outline-offset: 3px;
+}
+.customer-wallet .customer-card-number {
+  margin: 0;
+  padding-block: 12px;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--line, #dedee7);
+  font-size: 0.875rem;
+}
+.customer-wallet .membership-content {
+  display: grid;
+  gap: 16px;
+}
+.customer-wallet .membership-content > .panel {
+  margin: 0;
+}
+.customer-wallet .tabbar button {
+  min-height: 44px;
+}
+.customer-wallet .page-heading {
+  margin-block-end: 16px;
 }
 
-.card-deck[data-detail] .card-deck-footer {
-  margin-block: 0.25rem 0.75rem;
+.customer-slide
+  :is(
+    .card-member-label,
+    .card-cycle,
+    .card-heading small,
+    .card-progress-line > span,
+    .card-reward-line small
+  ) {
+  font-size: 0.75rem;
+  opacity: 0.92;
+  letter-spacing: normal;
+}
+.customer-slide .card-progress {
+  font-size: 0.875rem;
+}
+.customer-slide .card-reward {
+  font-size: 1rem;
+}
+.customer-wallet .membership-aside .tabbar {
+  margin-block: 12px 0;
+}
+.customer-wallet .install-app-card {
+  margin-block-start: 20px;
+}
+.customer-card-controls svg {
+  pointer-events: none;
 }

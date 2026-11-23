@@ -472,7 +472,7 @@ try {
         ': first NFC scan needs only name/phone/terms/submit, preserves context, reveals the card in 720ms and requests one first stamp without granting it',
     );
     const memberId = new URL(page.url()).pathname.split('/').at(-1)!;
-    await page.getByRole('button', { name: 'Back to my cards', exact: true }).click();
+    await page.getByRole('button', { name: 'My cards', exact: true }).click();
     if (project.type === webkit) {
       await page.getByRole('button', { name: 'Add My Cards to home screen', exact: true }).click();
       const guide = page.getByRole('dialog', { name: 'Add My Cards', exact: true });
@@ -747,7 +747,7 @@ try {
     });
     const installedPage = await standalone.newPage();
     await installedPage.goto(origin + '/customer');
-    await installedPage.locator('.card-open').first().waitFor();
+    await installedPage.locator('.customer-slide[aria-hidden=false]').first().waitFor();
     assert.equal(await installedPage.locator('.install-card-link,.install-card-guide').count(), 0);
     await standalone.close();
     pass(

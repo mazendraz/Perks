@@ -11,10 +11,11 @@ import { ActionLabel } from '../../../../packages/ui/src/Icon.js';
 import { RedeemRewards } from './RedeemRewards.js';
 import { InstallAppButton } from './InstallCard.js';
 import { WalletPanel } from './WalletPanel.js';
-import { CardDetailSwitcher, CardWallet } from './CardSwitcher.js';
+import { CardSwitcher } from './CardSwitcher.js';
 import { useCardExperience } from '../useCardExperience.js';
 import { StampCelebration, gainedStamp, type StampMoment } from './StampCelebration.js';
 import {
+  useCallback,
   useEffect,
   useLayoutEffect,
   useState,
@@ -28,7 +29,6 @@ import type {
   SavedCard,
   Reward,
 } from '../../../../packages/contracts/src/index.js';
-import { LoyaltyCard } from '../../../../packages/ui/src/LoyaltyCard.js';
 import { api, errorText, ApiError, setCsrf } from '../api.js';
 import { DeviceNotices, JoinWithCode } from './CustomerRecovery.js';
 import { navigate } from '../useRoute.js';
@@ -580,7 +580,13 @@ export function InvitePage({
     </section>
   );
 }
-export function CustomerPage({ lang, membershipId }: { lang: Language; membershipId?: string }) {
+export function CustomerPage({
+  lang,
+  membershipId: routeId,
+}: {
+  lang: Language;
+  membershipId?: string;
+}) {
   const ar = lang === 'ar',
     [cards, setCards] = useState<SavedCard[]>([]),
     [error, setError] = useState(''),
@@ -599,6 +605,19 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
     [busy, setBusy] = useState(false),
     [tab, setTab] = useState<'card' | 'history' | 'preferences'>('card'),
     [preferences, setPreferences] = useState<{ channel: string; granted: boolean }[]>([]);
+  const [selectedId, setSelectedId] = useState<string>();
+  const membershipId = routeId ?? (cards.find((item) => item.id === selectedId) ?? cards[0])?.id;
+  const selectCard = useCallback(
+    (id: string) => {
+      setSelectedId(id);
+      if (routeId) {
+        // A placement query belongs to its original membership only.
+        history.replaceState(history.state, '', '/customer/' + encodeURIComponent(id));
+        window.dispatchEvent(new PopStateEvent('popstate'));
+      }
+    },
+    [routeId],
+  );
   const [waiting, setWaiting] = useState(false);
   const [visitNotice, setVisitNotice] = useState<VisitNotice | null>(null);
   const preferenceGeneration = useRef(0);
@@ -637,6 +656,9 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
         const list = await api<{ cards: SavedCard[] }>('/me/memberships', { timeoutMs: 10000 });
         if (generation !== loadGeneration.current) return;
         setCards(list.cards);
+        setSelectedId((current) =>
+          list.cards.some((item) => item.id === current) ? current : list.cards[0]?.id,
+        );
         setLoadError('');
         setLoaded(true);
       } catch (e) {
@@ -759,245 +781,235 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
           <p>{ar ? 'بنفتح كروتك المحفوظة…' : 'Opening your saved cards…'}</p>
         </div>
       )}
-      {!membershipId ? (
-        <>
-          <div className="page-heading">
-            <div>
-              <h1>{ar ? 'كروتي' : 'My cards'}</h1>
-            </div>
+      <div className="customer-wallet">
+        <div className="page-heading">
+          <h1>{ar ? 'كروتي' : 'My cards'}</h1>
+        </div>
+        {!routeId && loaded && !loadError && !cards.length && (
+          <div className="empty-state">
+            <h2>{ar ? 'لسه مفيش كروت' : 'No cards yet'}</h2>
+            <p>
+              {ar
+                ? 'امسح كود تسجيل أي نشاط مشترك عشان تبدأ.'
+                : 'Scan a participating business enrollment QR to get started.'}
+            </p>
+            <button className="secondary" onClick={() => navigate('/customer/account')}>
+              {ar ? 'رجوع لحسابي' : 'Back to my account'}
+            </button>
           </div>
-          <InstallAppButton lang={lang} portal="customer" />
-          <CardWallet lang={lang} cards={cards} />
-          {loaded && !loadError && !cards.length && (
-            <div className="empty-state">
-              <h2>{ar ? 'لسه مفيش كروت' : 'No cards yet'}</h2>
-              <p>
-                {ar
-                  ? 'امسح كود تسجيل أي نشاط مشترك عشان تبدأ.'
-                  : 'Scan a participating business enrollment QR to get started.'}
-              </p>
-              <button className="secondary" onClick={() => navigate('/customer/account')}>
-                {ar ? 'رجوع لحسابي' : 'Back to my account'}
-              </button>
-            </div>
-          )}
-        </>
-      ) : card ? (
-        <div className="card-detail" style={{ '--brand': card.primary_color } as CSSProperties}>
-          <button className="text-button" onClick={() => navigate('/customer')}>
-            {ar ? 'رجوع لكروتي' : 'Back to my cards'}
-          </button>
-          <div className="membership-layout">
-            <aside className="membership-aside">
-              <CardDetailSwitcher
-                cards={cards}
-                cardId={card.id}
-                lang={lang}
-                disabled={busy || !!moment}
-              >
-                <LoyaltyCard
-                  card={card}
+        )}
+        {card ? (
+          <div className="card-detail" style={{ '--brand': card.primary_color } as CSSProperties}>
+            <div className="membership-layout">
+              <aside className="membership-aside">
+                <CardSwitcher
+                  cards={cards}
+                  cardId={card.id}
                   lang={lang}
-                  motion={moment ? 'quiet' : 'normal'}
+                  onSelect={selectCard}
+                  disabled={busy || !!moment}
                   waiting={waiting}
+                  celebrating={!!moment}
                   reveal={new URLSearchParams(location.search).get('new') === '1'}
                 />
-              </CardDetailSwitcher>
-              {card.card_number && (
-                <p className="muted">
-                  {ar ? 'رقم الكارت' : 'Card number'}{' '}
-                  <strong>
-                    <bdi dir="ltr">{card.card_number}</bdi>
-                  </strong>
-                  {new URLSearchParams(location.search).get('new') === '1' && (
-                    <>
-                      <br />
-                      {ar
-                        ? 'احتفظ بيه عشان تفتح الكارت على جهاز جديد.'
-                        : 'Keep it to open this card on a new device.'}
-                    </>
-                  )}
-                </p>
-              )}
-              {visitNotice && (
-                <div
-                  className={
-                    'notice collection-notice' + (visitNotice.tone === 'error' ? ' error' : '')
-                  }
-                  role="status"
-                >
-                  <p>{visitNotice.text}</p>
-                  {visitNotice.retry && (
-                    <button className="secondary small" onClick={visitNotice.retry}>
-                      {ar ? 'جرّب تاني' : 'Try again'}
-                    </button>
-                  )}
-                </div>
-              )}
-              <div className="tabbar">
-                <button className={tab === 'card' ? 'active' : ''} onClick={() => setTab('card')}>
-                  {ar ? 'الكارت' : 'Card'}
-                </button>
-                <button
-                  className={tab === 'history' ? 'active' : ''}
-                  onClick={() => setTab('history')}
-                >
-                  {ar ? 'السجل' : 'History'}
-                </button>
-                <button
-                  className={tab === 'preferences' ? 'active' : ''}
-                  onClick={() => void preferenceTab()}
-                >
-                  {ar ? 'التفضيلات' : 'Preferences'}
-                </button>
-              </div>
-            </aside>
-            <div className="membership-content">
-              {tab === 'card' && (
-                <>
-                  {!card.earning_active && (
-                    <div className="notice">
-                      {ar
-                        ? 'جمع الأختام متوقف حاليًا. المكافآت المكتسبة بتفضل حسب صلاحيتها.'
-                        : 'Earning is currently paused. Earned rewards keep their original validity.'}
-                    </div>
-                  )}
-                  <div className="card-actions">
-                    <button className="secondary" onClick={() => setTab('history')}>
-                      <ActionLabel icon="clock">{ar ? 'آخر نشاط' : 'Recent activity'}</ActionLabel>
-                    </button>
-                  </div>
-                  <RedeemRewards
-                    key={card.id}
-                    card={card}
-                    rewards={rewards}
-                    lang={lang}
-                    onChanged={load}
-                  />
-                  <WalletPanel
-                    membershipId={card.id}
-                    merchantId={card.merchant_id}
-                    merchantName={card.merchant_name}
-                    lang={lang}
-                    onPreferences={() => void preferenceTab()}
-                  />
-                  <CustomerRequests
-                    card={card}
-                    lang={lang}
-                    onPending={setWaiting}
-                    onAwarded={load}
-                    onNotice={setVisitNotice}
-                  />
-                </>
-              )}
-              {tab === 'history' && (
-                <section className="panel">
-                  <h2>{ar ? 'سجل النشاط' : 'Activity'}</h2>
-                  {activity.length ? (
-                    activity.map((a) => (
-                      <div className="activity-row" key={a.id}>
-                        <div>
-                          <strong>
-                            {a.type === 'award' && a.source === 'welcome'
-                              ? ar
-                                ? 'ختم ترحيب 🎁'
-                                : 'Welcome stamp 🎁'
-                              : a.type === 'award'
-                                ? ar
-                                  ? a.quantity === 1
-                                    ? 'ختم جديد'
-                                    : 'أختام جديدة'
-                                  : a.quantity === 1
-                                    ? 'New stamp'
-                                    : 'New stamps'
-                                : a.type === 'redeem'
-                                  ? ar
-                                    ? 'استبدال مكافأة'
-                                    : 'Reward redeemed'
-                                  : ar
-                                    ? 'تصحيح'
-                                    : 'Correction'}
-                          </strong>
-                          <small>
-                            {new Date(a.at).toLocaleString(intlLocale(lang), {
-                              dateStyle: 'medium',
-                              timeStyle: 'short',
-                            })}
-                          </small>
-                        </div>
-                        <strong>
-                          {a.type === 'redeem' ? '★' : (a.quantity > 0 ? '+' : '') + a.quantity}
-                        </strong>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="muted">{ar ? 'لسه مفيش عمليات.' : 'No activity yet.'}</p>
-                  )}
-                </section>
-              )}
-              {tab === 'preferences' && (
-                <section className="panel">
-                  <h2>{ar ? 'تفضيلات الرسائل' : 'Message preferences'}</h2>
-                  <p className="muted">
-                    {ar
-                      ? 'اختار المحل يكلمك إزاي. كل اختيار ممكن تقفله في أي وقت.'
-                      : 'Choose how this shop may reach you. Turn any choice off at any time.'}
+                {card.card_number && (
+                  <p className="muted customer-card-number">
+                    {ar ? 'رقم الكارت' : 'Card number'}{' '}
+                    <strong>
+                      <bdi dir="ltr">{card.card_number}</bdi>
+                    </strong>
+                    {new URLSearchParams(location.search).get('new') === '1' && (
+                      <span>
+                        {ar
+                          ? 'احتفظ بيه عشان تفتح الكارت على جهاز جديد.'
+                          : 'Keep it to open this card on a new device.'}
+                      </span>
+                    )}
                   </p>
-                  <CustomerContact
-                    key={card.merchant_id}
-                    merchantId={card.merchant_id}
-                    lang={lang}
-                    onSaved={async (reset) => {
-                      if (reset)
-                        setPreferences((current) =>
-                          current.map((preference) =>
-                            preference.channel === 'whatsapp'
-                              ? { ...preference, granted: false }
-                              : preference,
-                          ),
-                        );
-                      await refreshPreferences();
-                    }}
-                  />
-                  {/* SMS is not used, and there is nowhere to enter an email here: only offer what works. */}
-                  {preferences
-                    .filter((p) => p.channel === 'push' || p.channel === 'whatsapp' || p.granted)
-                    .map((p) => (
-                      <label className="checkbox-label" key={p.channel}>
-                        <input
-                          type="checkbox"
-                          checked={p.granted}
-                          disabled={busy || loadingPreferences}
-                          aria-busy={busy}
-                          onChange={(e) => void updatePreference(p.channel, e.target.checked)}
-                        />
-                        {(
-                          {
-                            email: ar ? 'البريد الإلكتروني' : 'Email',
-                            sms: 'SMS',
-                            whatsapp: ar
-                              ? 'رسايل واتساب من المحل'
-                              : 'WhatsApp messages from the shop',
-                            push: ar
-                              ? 'إشعارات الـWallet من المحل'
-                              : 'Wallet notifications from this shop',
-                          } as Record<string, string>
-                        )[p.channel] || p.channel}
-                      </label>
-                    ))}
-                </section>
-              )}
+                )}
+                {visitNotice && (
+                  <div
+                    className={
+                      'notice collection-notice' + (visitNotice.tone === 'error' ? ' error' : '')
+                    }
+                    role="status"
+                  >
+                    <p>{visitNotice.text}</p>
+                    {visitNotice.retry && (
+                      <button className="secondary small" onClick={visitNotice.retry}>
+                        {ar ? 'جرّب تاني' : 'Try again'}
+                      </button>
+                    )}
+                  </div>
+                )}
+                <div className="tabbar">
+                  <button
+                    aria-pressed={tab === 'card'}
+                    className={tab === 'card' ? 'active' : ''}
+                    onClick={() => setTab('card')}
+                  >
+                    {ar ? 'الكارت' : 'Card'}
+                  </button>
+                  <button
+                    aria-pressed={tab === 'history'}
+                    className={tab === 'history' ? 'active' : ''}
+                    onClick={() => setTab('history')}
+                  >
+                    {ar ? 'السجل' : 'History'}
+                  </button>
+                  <button
+                    aria-pressed={tab === 'preferences'}
+                    className={tab === 'preferences' ? 'active' : ''}
+                    onClick={() => void preferenceTab()}
+                  >
+                    {ar ? 'التفضيلات' : 'Preferences'}
+                  </button>
+                </div>
+              </aside>
+              <div className="membership-content" key={card.id}>
+                {tab === 'card' && (
+                  <>
+                    {!card.earning_active && (
+                      <div className="notice">
+                        {ar
+                          ? 'جمع الأختام متوقف حاليًا. المكافآت المكتسبة بتفضل حسب صلاحيتها.'
+                          : 'Earning is currently paused. Earned rewards keep their original validity.'}
+                      </div>
+                    )}
+                    <WalletPanel
+                      membershipId={card.id}
+                      merchantId={card.merchant_id}
+                      merchantName={card.merchant_name}
+                      lang={lang}
+                      onPreferences={() => void preferenceTab()}
+                    />
+                    <RedeemRewards
+                      key={card.id}
+                      card={card}
+                      rewards={rewards}
+                      lang={lang}
+                      onChanged={load}
+                    />
+                    <CustomerRequests
+                      card={card}
+                      lang={lang}
+                      onPending={setWaiting}
+                      onAwarded={load}
+                      onNotice={setVisitNotice}
+                    />
+                  </>
+                )}
+                {tab === 'history' && (
+                  <section className="panel">
+                    <h2>{ar ? 'سجل النشاط' : 'Activity'}</h2>
+                    {activity.length ? (
+                      activity.map((a) => (
+                        <div className="activity-row" key={a.id}>
+                          <div>
+                            <strong>
+                              {a.type === 'award' && a.source === 'welcome'
+                                ? ar
+                                  ? 'ختم ترحيب 🎁'
+                                  : 'Welcome stamp 🎁'
+                                : a.type === 'award'
+                                  ? ar
+                                    ? a.quantity === 1
+                                      ? 'ختم جديد'
+                                      : 'أختام جديدة'
+                                    : a.quantity === 1
+                                      ? 'New stamp'
+                                      : 'New stamps'
+                                  : a.type === 'redeem'
+                                    ? ar
+                                      ? 'استبدال مكافأة'
+                                      : 'Reward redeemed'
+                                    : ar
+                                      ? 'تصحيح'
+                                      : 'Correction'}
+                            </strong>
+                            <small>
+                              {new Date(a.at).toLocaleString(intlLocale(lang), {
+                                dateStyle: 'medium',
+                                timeStyle: 'short',
+                              })}
+                            </small>
+                          </div>
+                          <strong>
+                            {a.type === 'redeem' ? '★' : (a.quantity > 0 ? '+' : '') + a.quantity}
+                          </strong>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="muted">{ar ? 'لسه مفيش عمليات.' : 'No activity yet.'}</p>
+                    )}
+                  </section>
+                )}
+                {tab === 'preferences' && (
+                  <section className="panel">
+                    <h2>{ar ? 'تفضيلات الرسائل' : 'Message preferences'}</h2>
+                    <p className="muted">
+                      {ar
+                        ? 'اختار المحل يكلمك إزاي. كل اختيار ممكن تقفله في أي وقت.'
+                        : 'Choose how this shop may reach you. Turn any choice off at any time.'}
+                    </p>
+                    <CustomerContact
+                      key={card.merchant_id}
+                      merchantId={card.merchant_id}
+                      lang={lang}
+                      onSaved={async (reset) => {
+                        if (reset)
+                          setPreferences((current) =>
+                            current.map((preference) =>
+                              preference.channel === 'whatsapp'
+                                ? { ...preference, granted: false }
+                                : preference,
+                            ),
+                          );
+                        await refreshPreferences();
+                      }}
+                    />
+                    {/* SMS is not used, and there is nowhere to enter an email here: only offer what works. */}
+                    {preferences
+                      .filter((p) => p.channel === 'push' || p.channel === 'whatsapp' || p.granted)
+                      .map((p) => (
+                        <label className="checkbox-label" key={p.channel}>
+                          <input
+                            type="checkbox"
+                            checked={p.granted}
+                            disabled={busy || loadingPreferences}
+                            aria-busy={busy}
+                            onChange={(e) => void updatePreference(p.channel, e.target.checked)}
+                          />
+                          {(
+                            {
+                              email: ar ? 'البريد الإلكتروني' : 'Email',
+                              sms: 'SMS',
+                              whatsapp: ar
+                                ? 'رسايل واتساب من المحل'
+                                : 'WhatsApp messages from the shop',
+                              push: ar
+                                ? 'إشعارات الـWallet من المحل'
+                                : 'Wallet notifications from this shop',
+                            } as Record<string, string>
+                          )[p.channel] || p.channel}
+                        </label>
+                      ))}
+                  </section>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      ) : (
-        loaded &&
-        !loadError && (
-          <div className="empty-state">
-            {ar ? 'الكارت مش متاح للحساب ده.' : 'This card is not available to your account.'}
-          </div>
-        )
-      )}
+        ) : (
+          routeId &&
+          loaded &&
+          !loadError && (
+            <div className="empty-state">
+              {ar ? 'الكارت مش متاح للحساب ده.' : 'This card is not available to your account.'}
+            </div>
+          )
+        )}
+        {loaded && (card || !routeId) && <InstallAppButton lang={lang} portal="customer" />}
+      </div>
     </>
   );
 }

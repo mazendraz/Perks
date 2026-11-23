@@ -47,6 +47,10 @@ export function CardSwitcher({
     y: number;
     width: number;
     dragging: boolean;
+    preview: number;
+    lastX: number;
+    lastTime: number;
+    velocity: number;
   } | null>(null);
   const [offset, setOffset] = useState(0);
   const faces = useMemo(
@@ -82,16 +86,22 @@ export function CardSwitcher({
         className="customer-card-track"
         data-multiple={multiple}
         data-dragging={offset !== 0}
+        onDragStart={(event) => event.preventDefault()}
         onPointerDown={(event) => {
           if (!multiple || disabled || !event.isPrimary || event.button !== 0) return;
           const width =
             event.currentTarget.querySelector<HTMLElement>('[aria-hidden="false"]')!.offsetWidth;
+          const slide = (event.target as Element).closest<HTMLElement>('[data-slide]');
           gesture.current = {
             pointer: event.pointerId,
             x: event.clientX,
             y: event.clientY,
             width,
             dragging: false,
+            preview: slide ? Number(slide.dataset.slide) : index,
+            lastX: event.clientX,
+            lastTime: event.timeStamp,
+            velocity: 0,
           };
           event.currentTarget.setPointerCapture(event.pointerId);
         }}
@@ -101,23 +111,39 @@ export function CardSwitcher({
           const dx = event.clientX - g.x;
           const dy = event.clientY - g.y;
           if (!g.dragging) {
-            if (Math.abs(dy) > 8 && Math.abs(dy) > Math.abs(dx)) return reset();
-            if (Math.abs(dx) < 8) return;
+            if (Math.abs(dy) > 5 && Math.abs(dy) > Math.abs(dx)) return reset();
+            if (Math.abs(dx) < 4) return;
             g.dragging = true;
           }
-          setOffset(
-            Math.max(
-              -Math.min(1, index),
-              Math.min(1, cards.length - 1 - index, (-direction * dx) / (g.width * 0.55)),
-            ),
+          const elapsed = event.timeStamp - g.lastTime;
+          if (elapsed > 0) {
+            g.velocity = (event.clientX - g.lastX) / elapsed;
+            g.lastX = event.clientX;
+            g.lastTime = event.timeStamp;
+          }
+          // In the fan, adjacent cards are separated by 24% of a card width.
+          // Mapping that distance to one step keeps the card under the finger.
+          const progress = (-direction * dx) / (g.width * 0.24);
+          const bounded = Math.max(
+            -Math.min(1, index),
+            Math.min(1, cards.length - 1 - index, progress),
           );
+          setOffset(bounded + Math.tanh(progress - bounded) * 0.12);
         }}
         onPointerUp={(event) => {
           const g = gesture.current;
           if (!g || g.pointer !== event.pointerId) return;
           const dx = event.clientX - g.x;
-          if (g.dragging && Math.abs(dx) > Math.min(42, g.width * 0.13))
-            stepTo(index - direction * Math.sign(dx));
+          const dy = event.clientY - g.y;
+          if (g.dragging) {
+            const velocity = event.timeStamp - g.lastTime < 90 ? g.velocity : 0;
+            const projected = dx + Math.max(-24, Math.min(24, velocity * 70));
+            if (Math.abs(dx) >= 8 && Math.abs(projected) >= Math.min(24, g.width * 0.09)) {
+              stepTo(index - direction * Math.sign(projected));
+            }
+          } else if (Math.hypot(dx, dy) < 5) {
+            stepTo(g.preview);
+          }
           reset();
         }}
         onLostPointerCapture={reset}
@@ -135,6 +161,7 @@ export function CardSwitcher({
             <div
               key={card.id}
               className="customer-slide"
+              data-slide={i}
               aria-hidden={i !== index}
               style={pose && { ...pose, visibility: pose.opacity === 0 ? 'hidden' : undefined }}
             >

@@ -168,15 +168,14 @@ test('the save link is a signed JWT with the member name and no QR', async () =>
   assert.equal(object.loyaltyPoints.balance.string, '2/5');
   assert.equal(object.state, 'ACTIVE');
   assert.equal(object.barcode, undefined, 'the card carries no QR');
-  const number = object.textModulesData.find((field: { id: string }) => field.id === 'card_number');
-  assert.match(number.body, /^[0-9]{6}$/);
-  assert.equal(number.localizedHeader.defaultValue.value, 'رقم الكارت');
-  assert.equal(number.localizedHeader.translatedValues[0].value, 'Card number');
-  assert.equal(
-    klass.classTemplateInfo.cardBarcodeSectionDetails.secondTopDetail.fieldSelector.fields[0]
-      .fieldPath,
-    "object.textModulesData['card_number']",
+  assert.equal(object.accountId, undefined);
+  assert.deepEqual(
+    object.textModulesData.map((field: { id: string }) => field.id),
+    ['status', 'reward', 'howto'],
   );
+  assert.equal(klass.classTemplateInfo.cardBarcodeSectionDetails.secondTopDetail, undefined);
+  assert.equal(klass.accountIdLabel, undefined);
+  assert.equal(klass.localizedAccountIdLabel, undefined);
   assert.deepEqual(object.secondaryLoyaltyPoints.balance, { int: 3 });
   // The link carries the Wallet restore key (behind a description, never shown as text).
   const link = object.linksModuleData.uris[0].uri as string;
@@ -218,30 +217,38 @@ test('the save link is a signed JWT with the member name and no QR', async () =>
   );
 });
 
-test('a saved Google pass gets its card number when its pre-number fingerprint is refreshed', async () => {
+test('the refresh replaces old Google objects and clears the class number fields', async () => {
   const m = await member();
   const object = (await save(m)).payload.loyaltyObjects[0];
+  const { card_number: number } = (
+    await db.query('SELECT card_number FROM membership_card_numbers WHERE membership_id=$1', [m.id])
+  ).rows[0];
   await db.query(
     `UPDATE google_wallet_objects SET fingerprint=wallet_fingerprint(
-      wallet_card_json(membership_id)-'reminder_templates'-'manual_message'-'card_number'
+      (wallet_card_json(membership_id)-'reminder_templates'-'manual_message')||jsonb_build_object('card_number',$2::text)
     ) WHERE membership_id=$1`,
-    [m.id],
+    [m.id, number],
   );
-  const google = fakeGoogle(() => 200);
+  const google = fakeGoogle(() => 200, {
+    ...object,
+    accountId: number,
+    textModulesData: [...object.textModulesData, { id: 'card_number', body: number }],
+  });
   await runGoogleWalletUpdates(worker, c, google.g);
   const updated = google.calls.find(
     (call) => call.method === 'PUT' && call.url.endsWith(object.id),
   );
-  const fields = (updated?.body as { textModulesData: { id: string; body: string }[] })
-    .textModulesData;
-  assert.equal(
-    fields.find((field) => field.id === 'card_number')?.body,
-    object.textModulesData.find((field: { id: string }) => field.id === 'card_number').body,
-  );
+  assert.deepEqual(updated?.body, { ...object, notifyPreference: 'notifyOnUpdate' });
   const klass = google.calls.find(
     (call) => call.method === 'PATCH' && call.url.endsWith(object.classId),
-  );
-  assert.ok((klass?.body as Record<string, unknown>)?.classTemplateInfo);
+  )?.body as {
+    accountIdLabel: null;
+    localizedAccountIdLabel: null;
+    classTemplateInfo: { cardBarcodeSectionDetails: { secondTopDetail: null } };
+  };
+  assert.equal(klass.accountIdLabel, null);
+  assert.equal(klass.localizedAccountIdLabel, null);
+  assert.equal(klass.classTemplateInfo.cardBarcodeSectionDetails.secondTopDetail, null);
   google.calls.length = 0;
   await runGoogleWalletUpdates(worker, c, google.g);
   assert.equal(google.calls.filter((call) => call.url.endsWith(object.id)).length, 0);

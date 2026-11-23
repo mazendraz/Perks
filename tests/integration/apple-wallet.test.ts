@@ -171,17 +171,22 @@ test('a customer downloads a signed pass for their own card only', async () => {
   assert.equal(pass.teamIdentifier, 'ABCDE12345');
   assert.equal(pass.webServiceURL, origin + '/api/v1/wallet/apple');
   assert.equal(pass.storeCard.headerFields[0].value, '2/5');
-  const number = pass.storeCard.auxiliaryFields.at(-1);
-  assert.equal(number.key, 'card_number');
-  assert.equal(number.textAlignment, 'PKTextAlignmentRight');
-  assert.match(number.value, /^[0-9]{6}$/);
-  assert.deepEqual(pass.posterGeneric.footerFields.at(-1), number);
-  assert.ok(
-    !pass.storeCard.backFields.some((field: { key: string }) => field.key === 'card_number'),
+  assert.deepEqual(
+    pass.storeCard.auxiliaryFields.map((field: { key: string }) => field.key),
+    ['left'],
   );
-  assert.ok(
-    !pass.posterGeneric.backFields.some((field: { key: string }) => field.key === 'card_number'),
+  assert.deepEqual(
+    pass.posterGeneric.footerFields.map((field: { key: string }) => field.key),
+    ['edition'],
   );
+  assert.ok(!JSON.stringify(pass).includes('"card_number"'));
+  for (const lang of ['ar', 'en'])
+    assert.ok(
+      !files
+        .get(lang + '.lproj/pass.strings')!
+        .toString('utf16le')
+        .includes('card_number'),
+    );
   assert.equal(pass.barcodes, undefined, 'the pass is a card face with no QR');
   assert.equal(pass.barcode, undefined);
   // The link carries the Wallet restore key, so it lives in the strings files, not in pass.json.
@@ -682,7 +687,7 @@ test('Wallet device logs keep the reason and drop identifiers', () => {
     assert.ok(!scrubbed.includes(secret), secret);
 });
 
-test('a design-only update returns the same native number field to a saved pass and a new download', async () => {
+test('a design-only update removes the number from a saved Apple pass without changing its serial', async () => {
   const signature = walletDesignSignature();
   await worker.query('SELECT wallet_design_sync($1)', ['before-number-face']);
   const m = await member();
@@ -707,9 +712,11 @@ test('a design-only update returns the same native number field to a saved pass 
   });
   assert.equal(register.statusCode, 201);
 
-  // Keep this fixture's previous Last-Modified in an older HTTP date bucket.
+  // Model the previous release's number-bearing payload and Last-Modified date.
   await db.query(
-    "UPDATE wallet_passes SET changed_at=clock_timestamp()-interval '2 minutes' WHERE serial=$1",
+    `UPDATE wallet_passes w SET changed_at=clock_timestamp()-interval '2 minutes',
+      fingerprint=wallet_fingerprint(wallet_card_json(w.membership_id)||jsonb_build_object('card_number',n.card_number))
+      FROM membership_card_numbers n WHERE w.serial=$1 AND n.membership_id=w.membership_id`,
     [serial],
   );
   await db.query('UPDATE wallet_passes SET design_sent=$1 WHERE serial<>$2', [signature, serial]);
@@ -747,7 +754,8 @@ test('a design-only update returns the same native number field to a saved pass 
     assert.deepEqual(updateFiles.get(asset), freshFiles.get(asset));
   const pass = JSON.parse(updateFiles.get('pass.json')!.toString());
   assert.equal(pass.serialNumber, serial);
-  assert.match(pass.posterGeneric.footerFields.at(-1).value, /^[0-9]{6}$/);
-  assert.deepEqual(pass.storeCard.auxiliaryFields.at(-1), pass.posterGeneric.footerFields.at(-1));
+  assert.ok(!JSON.stringify(pass).includes('"card_number"'));
+  assert.equal(pass.barcode, undefined);
+  assert.equal(pass.barcodes, undefined);
   assert.ok(updateFiles.has('signature'));
 });

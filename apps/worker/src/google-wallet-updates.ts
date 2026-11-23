@@ -3,12 +3,10 @@ import type pg from 'pg';
 import type { ServiceConfig } from '../../api/src/config.js';
 import type { WalletCard } from '../../api/src/wallet/apple-pass.js';
 import {
-  classId,
-  googleClass,
   googleObject,
   loadGoogleWallet,
   objectId,
-  patchGoogle,
+  patchGoogleLoyaltyClass,
   putGoogle,
   putGoogleKeepingMessages,
   stripVersion,
@@ -69,15 +67,9 @@ export async function runGoogleWalletUpdates(
       continue;
     }
     if (status === 200) {
-      const klass = googleClass(g, card, c.PUBLIC_APP_ORIGIN);
-      const classStatus = await patchGoogle(g, 'loyaltyClass', classId(g, card), {
-        issuerName: klass.issuerName,
-        programName: klass.programName,
-        localizedProgramName: klass.localizedProgramName,
-        programLogo: klass.programLogo,
-        hexBackgroundColor: klass.hexBackgroundColor,
-        classTemplateInfo: klass.classTemplateInfo,
-      }).catch(() => 0);
+      const classStatus = await patchGoogleLoyaltyClass(g, card, c.PUBLIC_APP_ORIGIN).catch(
+        () => 0,
+      );
       if (classStatus === 0 || classStatus === 429 || classStatus >= 500)
         await pool.query('SELECT google_wallet_retry($1)', [object_key]);
       else updated++;

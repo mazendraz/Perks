@@ -17,7 +17,6 @@ export function walletDesignSignature() {
     merchant_id: '00000000-0000-4000-8000-00000000d352',
     merchant_name: 'Perks',
     customer_name: 'Perks',
-    card_number: '012345',
     program_name: 'Perks',
     threshold: 8,
     display_balance: 3,

@@ -125,9 +125,6 @@ export function googleClass(
         firstTopDetail: {
           fieldSelector: passField('object.accountName', 'class.issuerName').firstValue,
         },
-        secondTopDetail: {
-          fieldSelector: passField("object.textModulesData['card_number']").firstValue,
-        },
       },
     },
     reviewStatus: 'UNDER_REVIEW',
@@ -176,15 +173,6 @@ export function googleObject(
       contentDescription: localized(t.ar.stamps_label, t.en.stamps_label),
     },
     textModulesData: [
-      ...(card.active && card.card_number
-        ? [
-            {
-              id: 'card_number',
-              localizedHeader: localized(t.ar.card_number_label, t.en.card_number_label),
-              body: card.card_number,
-            },
-          ]
-        : []),
       {
         id: 'status',
         localizedHeader: localized(t.ar.status_label, t.en.status_label),
@@ -350,6 +338,31 @@ export async function patchGoogle(
   return r.status;
 }
 
+export function patchGoogleLoyaltyClass(
+  g: GoogleWallet,
+  card: WalletCard & { logo_asset_id?: string | null },
+  origin: string,
+) {
+  const klass = googleClass(g, card, origin);
+  return patchGoogle(g, 'loyaltyClass', klass.id, {
+    issuerName: klass.issuerName,
+    programName: klass.programName,
+    localizedProgramName: klass.localizedProgramName,
+    programLogo: klass.programLogo,
+    hexBackgroundColor: klass.hexBackgroundColor,
+    // Google PATCH leaves omitted fields in place. Clear both old number layouts.
+    accountIdLabel: null,
+    localizedAccountIdLabel: null,
+    classTemplateInfo: {
+      ...klass.classTemplateInfo,
+      cardBarcodeSectionDetails: {
+        ...klass.classTemplateInfo.cardBarcodeSectionDetails,
+        secondTopDetail: null,
+      },
+    },
+  });
+}
+
 /**
  * Google crops the program logo to a circle and needs a filled square. The logo, as uploaded, is
  * centred at 70% on the card's own colour, so nothing new appears behind it.
@@ -393,17 +406,7 @@ export async function refreshSavedGoogleCard(
       objectId(g, key),
       googleObject(g, card, key, origin, version),
     );
-    if (status === 200) {
-      const klass = googleClass(g, card, origin);
-      await patchGoogle(g, 'loyaltyClass', classId(g, card), {
-        issuerName: klass.issuerName,
-        programName: klass.programName,
-        localizedProgramName: klass.localizedProgramName,
-        programLogo: klass.programLogo,
-        hexBackgroundColor: klass.hexBackgroundColor,
-        classTemplateInfo: klass.classTemplateInfo,
-      });
-    }
+    if (status === 200) await patchGoogleLoyaltyClass(g, card, origin);
     return status;
   })().catch(() => 0);
   return Promise.race([

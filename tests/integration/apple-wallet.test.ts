@@ -14,6 +14,7 @@ import { seed, ids } from '../../db/seed.js';
 import { login, key } from '../helpers.js';
 import { businessDate } from '../../packages/domain/src/loyalty.js';
 import { testWalletCertificates } from '../wallet-certs.js';
+import { walletDesignSignature } from '../../apps/api/src/wallet/design-signature.js';
 import {
   appleWalletPush,
   resetAppleWalletPush,
@@ -170,14 +171,16 @@ test('a customer downloads a signed pass for their own card only', async () => {
   assert.equal(pass.teamIdentifier, 'ABCDE12345');
   assert.equal(pass.webServiceURL, origin + '/api/v1/wallet/apple');
   assert.equal(pass.storeCard.headerFields[0].value, '2/5');
-  const number = pass.storeCard.backFields.find(
-    (field: { key: string }) => field.key === 'card_number',
-  );
+  const number = pass.storeCard.auxiliaryFields.at(-1);
+  assert.equal(number.key, 'card_number');
+  assert.equal(number.textAlignment, 'PKTextAlignmentRight');
   assert.match(number.value, /^[0-9]{6}$/);
-  assert.equal(
-    pass.posterGeneric.backFields.find((field: { key: string }) => field.key === 'card_number')
-      .value,
-    number.value,
+  assert.deepEqual(pass.posterGeneric.footerFields.at(-1), number);
+  assert.ok(
+    !pass.storeCard.backFields.some((field: { key: string }) => field.key === 'card_number'),
+  );
+  assert.ok(
+    !pass.posterGeneric.backFields.some((field: { key: string }) => field.key === 'card_number'),
   );
   assert.equal(pass.barcodes, undefined, 'the pass is a card face with no QR');
   assert.equal(pass.barcode, undefined);
@@ -677,4 +680,74 @@ test('Wallet device logs keep the reason and drop identifiers', () => {
   assert.match(scrubbed, /encountered error: Authentication token/);
   for (const secret of ['3f6c1d2e', 'perks.example', 'Zk3mQp9r', 'ab12cd34', '1763800000'])
     assert.ok(!scrubbed.includes(secret), secret);
+});
+
+test('a design-only update returns the same native number field to a saved pass and a new download', async () => {
+  const signature = walletDesignSignature();
+  await worker.query('SELECT wallet_design_sync($1)', ['before-number-face']);
+  const m = await member();
+  const download = () =>
+    app.inject({
+      url: '/api/v1/me/memberships/' + m.id + '/wallet/apple',
+      headers: { cookie: m.headers.cookie },
+    });
+  const original = await download();
+  assert.equal(original.statusCode, 200);
+  const installed = JSON.parse(unzip(original.rawPayload).get('pass.json')!.toString());
+  const serial = installed.serialNumber as string;
+  const deviceId = 'design' + randomUUID().replaceAll('-', '');
+  const pushToken = 'ef'.repeat(32);
+  const listUrl = service + '/devices/' + deviceId + '/registrations/' + passTypeId;
+  const appleHeaders = { authorization: 'ApplePass ' + installed.authenticationToken };
+  const register = await app.inject({
+    method: 'POST',
+    url: listUrl + '/' + serial,
+    headers: appleHeaders,
+    payload: { pushToken },
+  });
+  assert.equal(register.statusCode, 201);
+
+  // Keep this fixture's previous Last-Modified in an older HTTP date bucket.
+  await db.query(
+    "UPDATE wallet_passes SET changed_at=clock_timestamp()-interval '2 minutes' WHERE serial=$1",
+    [serial],
+  );
+  await db.query('UPDATE wallet_passes SET design_sent=$1 WHERE serial<>$2', [signature, serial]);
+  const previousTag = (await app.inject(listUrl)).json().lastUpdated as string;
+  const passUrl = service + '/passes/' + passTypeId + '/' + serial;
+  const previous = await app.inject({ url: passUrl, headers: appleHeaders });
+  assert.equal(previous.statusCode, 200);
+  const oldDate = String(previous.headers['last-modified']);
+  const conditionalHeaders = { ...appleHeaders, 'if-modified-since': oldDate };
+  assert.equal((await app.inject({ url: passUrl, headers: conditionalHeaders })).statusCode, 304);
+
+  // No stamp or membership change. The worker queues the new design and notifies this serial.
+  await worker.query('SELECT wallet_design_sync($1)', [signature]);
+  const queue = await worker.query('SELECT wallet_design_resend(120,0) AS queued');
+  assert.equal(queue.rows[0].queued, 1);
+  const notified = new Set<string>();
+  await runAppleWalletPushes(worker, c, async (token) => {
+    notified.add(token);
+    return 200;
+  });
+  assert.ok(notified.has(pushToken));
+  const listed = await app.inject(listUrl + '?passesUpdatedSince=' + previousTag);
+  assert.equal(listed.statusCode, 200);
+  assert.deepEqual(listed.json().serialNumbers, [serial]);
+
+  const updated = await app.inject({ url: passUrl, headers: conditionalHeaders });
+  const fresh = await download();
+  assert.equal(updated.statusCode, 200);
+  assert.equal(fresh.statusCode, 200);
+  assert.ok(Date.parse(String(updated.headers['last-modified'])) > Date.parse(oldDate));
+  const updateFiles = unzip(updated.rawPayload);
+  const freshFiles = unzip(fresh.rawPayload);
+  assert.deepEqual(updateFiles.get('pass.json'), freshFiles.get('pass.json'));
+  for (const asset of ['artwork@3x.png', 'ar.lproj/artwork@3x.png', 'strip@3x.png'])
+    assert.deepEqual(updateFiles.get(asset), freshFiles.get(asset));
+  const pass = JSON.parse(updateFiles.get('pass.json')!.toString());
+  assert.equal(pass.serialNumber, serial);
+  assert.match(pass.posterGeneric.footerFields.at(-1).value, /^[0-9]{6}$/);
+  assert.deepEqual(pass.storeCard.auxiliaryFields.at(-1), pass.posterGeneric.footerFields.at(-1));
+  assert.ok(updateFiles.has('signature'));
 });

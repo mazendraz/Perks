@@ -268,19 +268,13 @@ test('"Your logo": the owner picks the side or corner and how much of the logo r
   assert.ok(Math.abs(x - box.x) < 0.01);
 });
 
-test('the private Apple artwork keeps the six-digit number small and on the right in both languages', async () => {
+test('Wallet artwork is independent of the private membership number', async () => {
   const { appleStripSvg, googleHeroSvg, posterArtworkSvg } =
     await import('../../apps/api/src/wallet/pass-artwork.js');
   const numbered = { ...card, card_number: '012345' };
-  const poster = (rtl: boolean) =>
-    posterArtworkSvg(numbered, 1, rtl, { includeAppleCardNumber: true });
   for (const rtl of [false, true]) {
-    assert.match(poster(rtl), /x="340" y="369" text-anchor="end"[^>]+font-size="10"[^>]*>012345</);
-    assert.match(
-      appleStripSvg(numbered, 1, rtl),
-      /x="357" y="126" text-anchor="end"[^>]+font-size="10"[^>]*>012345</,
-    );
+    assert.equal(posterArtworkSvg(numbered, 1, rtl), posterArtworkSvg(card, 1, rtl));
+    assert.equal(appleStripSvg(numbered, 1, rtl), appleStripSvg(card, 1, rtl));
+    assert.equal(googleHeroSvg(numbered, 1, rtl), googleHeroSvg(card, 1, rtl));
   }
-  assert.ok(!appleStripSvg({ ...numbered, active: false }, 1).includes('data-card-number'));
-  assert.ok(!googleHeroSvg(numbered, 1).includes('data-card-number'));
 });

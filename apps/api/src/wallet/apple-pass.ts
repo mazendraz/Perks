@@ -352,6 +352,7 @@ export function passJson(
             key: 'card_number',
             label: 'card_number_label',
             value: card.card_number,
+            textAlignment: 'PKTextAlignmentRight' as const,
           },
         ]
       : [];
@@ -366,7 +367,6 @@ export function passJson(
       value: reminderKey(card),
       changeMessage: '%@',
     },
-    ...numberField,
     { key: 'reward_full', label: 'reward_label', value: card.reward_title },
     // No changeMessage: a new stamp must not announce the countdown (see status_value).
     { key: 'progress', label: 'progress_label', value: 'progress_value' },
@@ -460,8 +460,10 @@ export function passJson(
           key: 'edition',
           label: '',
           value: 'edition_value',
-          textAlignment: 'PKTextAlignmentCenter',
+          textAlignment: numberField.length ? 'PKTextAlignmentLeft' : 'PKTextAlignmentCenter',
         },
+        // Wallet overlays this native footer on the poster's cropped artwork.
+        ...numberField,
       ],
       backFields,
     },
@@ -484,8 +486,9 @@ export function passJson(
           key: 'left',
           label: 'left_label',
           value: 'left_value',
-          textAlignment: 'PKTextAlignmentRight',
+          textAlignment: numberField.length ? 'PKTextAlignmentLeft' : 'PKTextAlignmentRight',
         },
+        ...numberField,
       ],
       backFields,
     },
@@ -688,11 +691,7 @@ export async function buildPkpass(
   // "Your logo" edition (then not repeated at the top).
   const inArt = logo?.artwork ?? null,
     logoEdition = walletTheme(card).art.kind === 'logo',
-    art = {
-      logo: logoEdition ? null : inArt,
-      watermark: logoEdition ? inArt : null,
-      includeAppleCardNumber: true,
-    };
+    art = { logo: logoEdition ? null : inArt, watermark: logoEdition ? inArt : null };
   // The card speaks the program's language on every phone (labels, values and stamp direction).
   const lang = programLanguage(card),
     rtl = lang === 'ar';

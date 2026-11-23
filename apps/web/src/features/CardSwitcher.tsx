@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useLayoutEffect, useRef } from 'react';
 import type { Language, SavedCard } from '../../../../packages/contracts/src/index.js';
 import { Icon } from '../../../../packages/ui/src/Icon.js';
 import { LoyaltyCard } from '../../../../packages/ui/src/LoyaltyCard.js';
@@ -12,7 +12,6 @@ function deckPose(p: number, dir: 1 | -1) {
   const opacity = a <= 2.6 ? 1 : Math.max(0, 1 - (a - 2.6));
   return {
     transform: `translate3d(${side * x}%, ${a * 2.2}%, 0) rotate(${side * a * 5.5}deg) scale(${1 - a * 0.075})`,
-    zIndex: 100 - Math.round(Math.abs(p) * 10),
     opacity,
   };
 }
@@ -41,6 +40,8 @@ export function CardSwitcher({
   const ar = lang === 'ar';
   const direction = ar ? -1 : 1;
   const arrowTouch = useRef<{ x: number; y: number } | null>(null);
+  const track = useRef<HTMLDivElement>(null);
+  const frame = useRef(0);
   const gesture = useRef<{
     pointer: number;
     x: number;
@@ -51,29 +52,47 @@ export function CardSwitcher({
     lastX: number;
     lastTime: number;
     velocity: number;
+    offset: number;
   } | null>(null);
-  const [offset, setOffset] = useState(0);
-  const faces = useMemo(
-    () =>
-      cards.map((card) => (
-        <LoyaltyCard
-          key={card.id}
-          card={card}
-          lang={lang}
-          waiting={card.id === cardId && waiting}
-          reveal={card.id === cardId && reveal}
-          motion={card.id === cardId && !celebrating ? 'normal' : 'quiet'}
-        />
-      )),
-    [cards, cardId, lang, waiting, reveal, celebrating],
-  );
+  // Keep the drag on the transform layer. React updates the selected card and its actions on release.
+  function paint(offset: number) {
+    const stage = track.current;
+    if (!stage || !multiple) return;
+    const current = index + offset;
+    const front = Math.round(current);
+    for (const child of stage.children) {
+      const slide = child as HTMLElement;
+      const position = Number(slide.dataset.slide);
+      if (Math.abs(position - current) > 3.6 && slide.style.visibility === 'hidden') continue;
+      const pose = deckPose(position - current, direction);
+      slide.style.transform = pose.transform;
+      const opacity = String(pose.opacity);
+      if (slide.style.opacity !== opacity) slide.style.opacity = opacity;
+      const visibility = pose.opacity === 0 ? 'hidden' : '';
+      if (slide.style.visibility !== visibility) slide.style.visibility = visibility;
+      // Change the stacking order only when a different card comes to the front.
+      const order = String(100 - Math.abs(position - front));
+      if (slide.style.zIndex !== order) slide.style.zIndex = order;
+    }
+  }
+  useLayoutEffect(() => {
+    if (multiple) paint(gesture.current?.offset ?? 0);
+    else track.current?.firstElementChild?.removeAttribute('style');
+  });
+  useLayoutEffect(() => () => cancelAnimationFrame(frame.current), []);
+
   function stepTo(position: number) {
     const next = cards[position];
     if (next && !disabled && position !== index) onSelect(next.id);
   }
-  function reset() {
+  function reset(position = index) {
     gesture.current = null;
-    setOffset(0);
+    cancelAnimationFrame(frame.current);
+    frame.current = 0;
+    if (track.current?.dataset.dragging) {
+      delete track.current.dataset.dragging;
+      paint(position - index);
+    }
   }
   return (
     <section
@@ -85,7 +104,7 @@ export function CardSwitcher({
       <div
         className="customer-card-track"
         data-multiple={multiple}
-        data-dragging={offset !== 0}
+        ref={track}
         onDragStart={(event) => event.preventDefault()}
         onPointerDown={(event) => {
           if (!multiple || disabled || !event.isPrimary || event.button !== 0) return;
@@ -102,6 +121,7 @@ export function CardSwitcher({
             lastX: event.clientX,
             lastTime: event.timeStamp,
             velocity: 0,
+            offset: 0,
           };
           event.currentTarget.setPointerCapture(event.pointerId);
         }}
@@ -114,6 +134,7 @@ export function CardSwitcher({
             if (Math.abs(dy) > 5 && Math.abs(dy) > Math.abs(dx)) return reset();
             if (Math.abs(dx) < 4) return;
             g.dragging = true;
+            event.currentTarget.dataset.dragging = 'true';
           }
           const elapsed = event.timeStamp - g.lastTime;
           if (elapsed > 0) {
@@ -128,26 +149,37 @@ export function CardSwitcher({
             -Math.min(1, index),
             Math.min(1, cards.length - 1 - index, progress),
           );
-          setOffset(bounded + Math.tanh(progress - bounded) * 0.12);
+          g.offset = bounded + Math.tanh(progress - bounded) * 0.12;
+          if (!frame.current) {
+            frame.current = requestAnimationFrame(() => {
+              frame.current = 0;
+              if (gesture.current) paint(gesture.current.offset);
+            });
+          }
         }}
         onPointerUp={(event) => {
           const g = gesture.current;
           if (!g || g.pointer !== event.pointerId) return;
           const dx = event.clientX - g.x;
           const dy = event.clientY - g.y;
-          if (g.dragging) {
+          let target = index;
+          if (g.dragging && !disabled) {
             const velocity = event.timeStamp - g.lastTime < 90 ? g.velocity : 0;
             const projected = dx + Math.max(-24, Math.min(24, velocity * 70));
             if (Math.abs(dx) >= 8 && Math.abs(projected) >= Math.min(24, g.width * 0.09)) {
-              stepTo(index - direction * Math.sign(projected));
+              target = Math.max(
+                0,
+                Math.min(cards.length - 1, index - direction * Math.sign(projected)),
+              );
             }
-          } else if (Math.hypot(dx, dy) < 5) {
-            stepTo(g.preview);
+          } else if (!disabled && Math.hypot(dx, dy) < 5) {
+            target = g.preview;
           }
-          reset();
+          reset(target);
+          stepTo(target);
         }}
-        onLostPointerCapture={reset}
-        onPointerCancel={reset}
+        onLostPointerCapture={() => reset()}
+        onPointerCancel={() => reset()}
         tabIndex={multiple ? 0 : undefined}
         onKeyDown={(event) => {
           if (disabled || !multiple || !['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
@@ -155,20 +187,17 @@ export function CardSwitcher({
           stepTo(index + ((event.key === 'ArrowRight') !== ar ? 1 : -1));
         }}
       >
-        {cards.map((card, i) => {
-          const pose = multiple ? deckPose(i - index - offset, direction) : undefined;
-          return (
-            <div
-              key={card.id}
-              className="customer-slide"
-              data-slide={i}
-              aria-hidden={i !== index}
-              style={pose && { ...pose, visibility: pose.opacity === 0 ? 'hidden' : undefined }}
-            >
-              {faces[i]}
-            </div>
-          );
-        })}
+        {cards.map((card, i) => (
+          <div key={card.id} className="customer-slide" data-slide={i} aria-hidden={i !== index}>
+            <LoyaltyCard
+              card={card}
+              lang={lang}
+              waiting={i === index && waiting}
+              reveal={i === index && reveal}
+              motion={i === index && !celebrating ? 'normal' : 'quiet'}
+            />
+          </div>
+        ))}
       </div>
       {multiple && (
         <div className="customer-card-controls">

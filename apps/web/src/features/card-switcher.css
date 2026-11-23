@@ -24,7 +24,7 @@
   inline-size: min(74%, 21rem);
   transform-origin: 50% 85%;
   transition:
-    transform 185ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 150ms cubic-bezier(0.2, 0.8, 0.3, 1),
     opacity 150ms ease-out;
 }
 .customer-slide[aria-hidden='true'] {

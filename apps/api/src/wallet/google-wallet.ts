@@ -1,7 +1,7 @@
 import { createHash, createSign } from 'node:crypto';
 import sharp from 'sharp';
 import { readFileSync } from 'node:fs';
-import { texts, type WalletCard } from './apple-pass.js';
+import { programLanguage, texts, type WalletCard } from './apple-pass.js';
 import { artworkSignature } from './pass-artwork.js';
 import { walletTheme } from '../../../../packages/domain/src/wallet-theme.js';
 
@@ -73,6 +73,10 @@ export const classId = (g: GoogleWallet, card: { merchant_id: string }) =>
   g.issuerId + '.perks-merchant-' + card.merchant_id;
 export const objectId = (g: GoogleWallet, key: string) => g.issuerId + '.perks-card-' + key;
 
+const passField = (...paths: string[]) => ({
+  firstValue: { fields: paths.map((fieldPath) => ({ fieldPath })) },
+});
+
 export function googleClass(
   g: GoogleWallet,
   card: WalletCard & { logo_asset_id?: string | null },
@@ -103,8 +107,27 @@ export function googleClass(
     },
     hexBackgroundColor: walletTheme(card).background,
     countryCode: 'EG',
-    accountIdLabel: 'Card number',
-    localizedAccountIdLabel: localized('رقم الكارت', 'Card number'),
+    classTemplateInfo: {
+      cardTemplateOverride: {
+        cardRowTemplateInfos: [
+          {
+            twoItems: {
+              startItem: passField('object.loyaltyPoints.label', 'object.loyaltyPoints.balance'),
+              endItem: passField(
+                'object.secondaryLoyaltyPoints.label',
+                'object.secondaryLoyaltyPoints.balance',
+              ),
+            },
+          },
+          {
+            twoItems: {
+              startItem: passField('object.accountName'),
+              endItem: passField("object.textModulesData['card_number']"),
+            },
+          },
+        ],
+      },
+    },
     reviewStatus: 'UNDER_REVIEW',
     multipleDevicesAndHoldersAllowedStatus: 'ONE_USER_ALL_DEVICES',
   };
@@ -117,14 +140,14 @@ export function googleObject(
   version: string,
 ) {
   const t = texts(card);
+  const lang = programLanguage(card);
   return {
     id: objectId(g, key),
     classId: classId(g, card),
     state: card.active ? 'ACTIVE' : 'INACTIVE',
     accountName: card.active ? card.customer_name || '' : '',
-    // Google uses accountId in the footer of a loyalty pass without a barcode.
-    ...(card.active && card.card_number ? { accountId: card.card_number } : {}),
     loyaltyPoints: {
+      label: t[lang].stamps_label,
       localizedLabel: localized(t.ar.stamps_label, t.en.stamps_label),
       balance: { string: `${Math.min(card.display_balance, card.threshold)}/${card.threshold}` },
     },
@@ -135,10 +158,12 @@ export function googleObject(
           secondaryLoyaltyPoints:
             card.pending_rewards > 0
               ? {
+                  label: lang === 'ar' ? 'مكافأتك جاهزة' : 'Reward ready',
                   localizedLabel: localized('مكافأتك جاهزة', 'Reward ready'),
                   balance: { string: '🎁' },
                 }
               : {
+                  label: lang === 'ar' ? 'أختام فاضلة' : 'Stamps to go',
                   localizedLabel: localized('أختام فاضلة', 'Stamps to go'),
                   balance: { int: Math.max(0, card.threshold - card.display_balance) },
                 },
@@ -149,6 +174,15 @@ export function googleObject(
       contentDescription: localized(t.ar.stamps_label, t.en.stamps_label),
     },
     textModulesData: [
+      ...(card.active && card.card_number
+        ? [
+            {
+              id: 'card_number',
+              localizedHeader: localized(t.ar.card_number_label, t.en.card_number_label),
+              body: card.card_number,
+            },
+          ]
+        : []),
       {
         id: 'status',
         localizedHeader: localized(t.ar.status_label, t.en.status_label),
@@ -365,8 +399,7 @@ export async function refreshSavedGoogleCard(
         localizedProgramName: klass.localizedProgramName,
         programLogo: klass.programLogo,
         hexBackgroundColor: klass.hexBackgroundColor,
-        accountIdLabel: klass.accountIdLabel,
-        localizedAccountIdLabel: klass.localizedAccountIdLabel,
+        classTemplateInfo: klass.classTemplateInfo,
       });
     }
     return status;

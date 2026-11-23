@@ -187,6 +187,7 @@ export function texts(card: WalletCard) {
       edition_value: editionPair[0],
       reward_label: 'المكافأة',
       member_label: 'باسم',
+      card_number_label: 'رقم الكارت',
       member_value: 'عميل Perks',
       left_label: ready ? 'مكافأتك' : 'فاضل',
       left_value: !card.active ? 'مقفول' : ready ? 'جاهزة 🎁' : arStamps(left),
@@ -230,6 +231,7 @@ export function texts(card: WalletCard) {
       edition_value: editionPair[1],
       reward_label: 'Reward',
       member_label: 'Member',
+      card_number_label: 'Card number',
       member_value: 'Perks member',
       left_label: ready ? 'Your reward' : 'To go',
       left_value: !card.active
@@ -343,6 +345,17 @@ export function passJson(
     // Beside the logo, a long name would run into the stamps count: the logo alone says it.
     showName =
       !options.wordmark && !(options.logo && Array.from(card.merchant_name).length > LOGO_TEXT_MAX);
+  const numberField =
+    card.active && card.card_number
+      ? [
+          {
+            key: 'card_number',
+            label: 'card_number_label',
+            value: card.card_number,
+            textAlignment: 'PKTextAlignmentRight',
+          },
+        ]
+      : [];
   // Shared by both layouts. iOS 27 shows the poster and only announces changes to fields the
   // poster itself has: without these, shop messages and reminders made no banner there.
   const backFields = [
@@ -447,8 +460,9 @@ export function passJson(
           key: 'edition',
           label: '',
           value: 'edition_value',
-          textAlignment: 'PKTextAlignmentCenter',
+          textAlignment: numberField.length ? 'PKTextAlignmentLeft' : 'PKTextAlignmentCenter',
         },
+        ...numberField,
       ],
       backFields,
     },
@@ -471,8 +485,9 @@ export function passJson(
           key: 'left',
           label: 'left_label',
           value: 'left_value',
-          textAlignment: 'PKTextAlignmentRight',
+          textAlignment: numberField.length ? 'PKTextAlignmentLeft' : 'PKTextAlignmentRight',
         },
+        ...numberField,
       ],
       backFields,
     },

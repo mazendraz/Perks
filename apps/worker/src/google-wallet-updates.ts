@@ -76,8 +76,7 @@ export async function runGoogleWalletUpdates(
         localizedProgramName: klass.localizedProgramName,
         programLogo: klass.programLogo,
         hexBackgroundColor: klass.hexBackgroundColor,
-        accountIdLabel: klass.accountIdLabel,
-        localizedAccountIdLabel: klass.localizedAccountIdLabel,
+        classTemplateInfo: klass.classTemplateInfo,
       }).catch(() => 0);
       if (classStatus === 0 || classStatus === 429 || classStatus >= 500)
         await pool.query('SELECT google_wallet_retry($1)', [object_key]);

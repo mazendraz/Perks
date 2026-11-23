@@ -170,6 +170,11 @@ test('a customer downloads a signed pass for their own card only', async () => {
   assert.equal(pass.teamIdentifier, 'ABCDE12345');
   assert.equal(pass.webServiceURL, origin + '/api/v1/wallet/apple');
   assert.equal(pass.storeCard.headerFields[0].value, '2/5');
+  const number = pass.storeCard.auxiliaryFields.at(-1);
+  assert.equal(number.key, 'card_number');
+  assert.equal(number.textAlignment, 'PKTextAlignmentRight');
+  assert.match(number.value, /^[0-9]{6}$/);
+  assert.deepEqual(pass.posterGeneric.footerFields.at(-1), number);
   assert.equal(pass.barcodes, undefined, 'the pass is a card face with no QR');
   assert.equal(pass.barcode, undefined);
   // The link carries the Wallet restore key, so it lives in the strings files, not in pass.json.
@@ -505,6 +510,7 @@ test('a closed card pushes a voided pass and then forgets its devices', async ()
   });
   const files = unzip(voided.rawPayload);
   assert.equal(JSON.parse(files.get('pass.json')!.toString()).voided, true);
+  assert.ok(!files.get('pass.json')!.toString().includes('"card_number"'));
   assert.ok(
     !files.get('pass.json')!.toString().includes('عميل والت'),
     'revocation clears the displayed member name',

@@ -35,7 +35,7 @@ export function CustomerRequests({
   onNotice?: (notice: VisitNotice | null) => void;
 }) {
   const ar = lang === 'ar',
-    [branches, setBranches] = useState<{ id: string; name: string }[]>([]),
+    [branches, setBranches] = useState<{ id: string; name: string }[] | null>(null),
     [branch, setBranch] = useState(''),
     [requests, setRequests] = useState<CustomerRequest[]>([]),
     [busy, setBusy] = useState(false),
@@ -55,7 +55,7 @@ export function CustomerRequests({
   const visit = useAutoStampRequest(
     card,
     branch,
-    branches.some((b) => b.id === branch),
+    !!branches?.some((b) => b.id === branch),
     lang,
     load,
     async () => {
@@ -74,14 +74,17 @@ export function CustomerRequests({
   useEffect(() => {
     let alive = true;
     setRequests([]);
-    void api<{ branches: typeof branches }>('/public/merchants/' + card.merchant_slug)
+    void api<{ branches: NonNullable<typeof branches> }>('/public/merchants/' + card.merchant_slug)
       .then((r) => {
         if (!alive) return;
         setBranches(r.branches);
         setBranch(new URLSearchParams(location.search).get('b') || r.branches[0]?.id || '');
       })
       .catch((e) => {
-        if (alive) setError(errorText(e, lang));
+        if (alive) {
+          setBranches([]);
+          setError(errorText(e, lang));
+        }
       });
     void load();
     return () => {
@@ -122,7 +125,7 @@ export function CustomerRequests({
     }
   };
   return (
-    <section className="panel">
+    <section className="panel customer-stamp-request">
       <h2>{ar ? 'اطلب ختم من الفرع' : 'Request a branch stamp'}</h2>
       {error && (
         <p className="error-text" role="alert">
@@ -160,7 +163,18 @@ export function CustomerRequests({
           <label>
             {ar ? 'الفرع اللي بتشتري منه' : 'Purchase branch'}
             <Select value={branch} onChange={(e) => setBranch(e.target.value)}>
-              {branches.map((b) => (
+              {!branches?.length && (
+                <option value="" disabled>
+                  {branches === null
+                    ? ar
+                      ? 'بنحمّل الفروع…'
+                      : 'Loading branches…'
+                    : ar
+                      ? 'مفيش فروع متاحة'
+                      : 'No branches available'}
+                </option>
+              )}
+              {branches?.map((b) => (
                 <option value={b.id} key={b.id}>
                   {b.name}
                 </option>

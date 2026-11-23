@@ -51,6 +51,7 @@ function WalletNotifyOptIn({
   const ar = lang === 'ar';
   const path = '/me/merchants/' + merchantId + '/preferences';
   const [granted, setGranted] = useState<boolean | null>(null);
+  const [failed, setFailed] = useState(false);
   const [justTurnedOn, setJustTurnedOn] = useState(false);
   const [busy, setBusy] = useState(false);
   useEffect(() => {
@@ -66,12 +67,13 @@ function WalletNotifyOptIn({
   if (granted === null || (granted && !justTurnedOn)) return null;
   const change = async (on: boolean) => {
     setBusy(true);
+    setFailed(false);
     try {
       await api(path, { method: 'PATCH', body: { channel: 'push', granted: on } });
       setGranted(on);
       setJustTurnedOn(on);
     } catch {
-      /* Unchanged: they can still switch it in the card preferences. */
+      setFailed(true);
     } finally {
       setBusy(false);
     }
@@ -86,19 +88,19 @@ function WalletNotifyOptIn({
       />
       <span>
         <strong>
-          {ar
-            ? `ابعتلي إشعارات من ${merchantName} على الكارت`
-            : `Let ${merchantName} send notifications to this card`}
+          {ar ? 'إشعارات من ' : 'Notifications from '}
+          <bdi>{merchantName}</bdi>
         </strong>
         <small>
-          {granted
-            ? ar
-              ? 'تمام! هيوصلك لما مكافأتك تجهز، وعروض المحل. تقدر تقفلها من التفضيلات.'
-              : 'Done! You will hear when your reward is ready, plus shop offers. Turn it off in preferences.'
-            : ar
-              ? 'لما مكافأتك تجهز، ولو المحل عنده عرض. مش أكتر من رسالة في اليوم.'
-              : 'When your reward is ready, or the shop has an offer. Never more than one a day.'}
+          {ar
+            ? 'تنبيه لما مكافأتك تجهز وعروض المحل، بحد أقصى رسالة في اليوم.'
+            : 'Reward alerts and shop offers, up to once a day.'}
         </small>
+        {failed && (
+          <small role="alert">
+            {ar ? 'تعذّر حفظ اختيارك. جرّب تاني.' : 'Couldn’t save your choice. Try again.'}
+          </small>
+        )}
       </span>
     </label>
   );
@@ -138,7 +140,7 @@ export function WalletPanel({
   if (wallets.recoveryRequired)
     return (
       <section className="panel wallet-panel">
-        <h2>{ar ? 'كارتك في Wallet' : 'Your card in Wallet'}</h2>
+        <h2>{ar ? 'المحفظة' : 'Wallet'}</h2>
         <p className="muted">
           {ar
             ? 'رجّع كل كروتك على الجهاز ده علشان تقدر تضيف كارت للـWallet.'
@@ -151,21 +153,21 @@ export function WalletPanel({
     );
   return (
     <section className={'panel wallet-panel' + (apple || google ? ' wallet-panel-ready' : '')}>
-      <h2>{ar ? 'كارتك في Wallet' : 'Your card in Wallet'}</h2>
+      <h2 className={apple || google ? 'sr-only' : undefined}>{ar ? 'المحفظة' : 'Wallet'}</h2>
       {apple || google ? (
         <>
           <div className="wallet-badges">
             {apple && <WalletButton provider="apple" membershipId={membershipId} lang={lang} />}
             {google && <WalletButton provider="google" membershipId={membershipId} lang={lang} />}
           </div>
-          {merchantId && merchantName && (
-            <WalletNotifyOptIn merchantId={merchantId} merchantName={merchantName} lang={lang} />
-          )}
           <p className="muted small">
             {ar
               ? 'بيتحدّث لوحده بعد كل ختم. الإضافة بتشارك اسمك وبيانات الكارت مع مزود المحفظة.'
               : 'It updates after every stamp. Adding shares your name and card details with your wallet provider.'}
           </p>
+          {merchantId && merchantName && (
+            <WalletNotifyOptIn merchantId={merchantId} merchantName={merchantName} lang={lang} />
+          )}
         </>
       ) : (
         <p className="muted">
@@ -176,7 +178,7 @@ export function WalletPanel({
       )}
       {(wallets.apple || wallets.google) && onPreferences && (
         <button className="text-button" onClick={onPreferences}>
-          {ar ? 'إعدادات إشعارات الـWallet' : 'Wallet notification settings'}
+          {ar ? 'إعدادات الإشعارات' : 'Wallet notification settings'}
         </button>
       )}
     </section>

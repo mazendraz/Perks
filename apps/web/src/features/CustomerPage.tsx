@@ -988,7 +988,7 @@ export function CustomerPage({
                                 ? 'رسايل واتساب من المحل'
                                 : 'WhatsApp messages from the shop',
                               push: ar
-                                ? 'إشعارات الـWallet من المحل'
+                                ? 'إشعارات المحفظة من المحل'
                                 : 'Wallet notifications from this shop',
                             } as Record<string, string>
                           )[p.channel] || p.channel}

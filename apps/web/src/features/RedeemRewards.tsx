@@ -281,8 +281,8 @@ export function RedeemRewards({
       ) : (
         <p className="muted">
           {ar
-            ? 'أول مكافأة هتظهر لما توصل للعتبة.'
-            : 'Your first reward appears when you reach the threshold.'}
+            ? 'أول مكافأة هتظهر هنا لما تكمّل أختام الكارت.'
+            : 'Your first reward appears here when you fill your card.'}
         </p>
       )}
     </section>

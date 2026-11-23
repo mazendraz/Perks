@@ -3,27 +3,50 @@
   min-inline-size: 0;
 }
 .customer-card-track {
-  display: flex;
-  align-items: flex-start;
-  gap: 16px;
-  overflow-x: auto;
-  overflow-y: hidden;
-  overscroll-behavior-x: contain;
-  scroll-snap-type: x mandatory;
-  scrollbar-width: none;
-  border-radius: 16px;
+  display: grid;
+  position: relative;
+  isolation: isolate;
+  place-items: center;
 }
-.customer-card-track::-webkit-scrollbar {
-  display: none;
-}
-.customer-card-track[data-locked='true'] {
-  overflow-x: hidden;
+.customer-card-track[data-multiple='true'] {
+  overflow: hidden;
+  padding-block: 16px 24px;
+  touch-action: pan-y pinch-zoom;
+  user-select: none;
+  -webkit-user-select: none;
 }
 .customer-slide {
-  flex: 0 0 100%;
+  grid-area: 1 / 1;
   min-inline-size: 0;
-  scroll-snap-align: center;
-  scroll-snap-stop: always;
+  inline-size: 100%;
+}
+.customer-card-track[data-multiple='true'] .customer-slide {
+  inline-size: min(74%, 21rem);
+  transform-origin: 50% 85%;
+  transition:
+    transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 150ms ease-out;
+}
+.customer-slide[aria-hidden='true'] {
+  position: absolute;
+  pointer-events: none;
+}
+.customer-slide[aria-hidden='true'] .nq-reward-banner {
+  display: none;
+}
+.customer-slide[aria-hidden='true'] .loyalty-card-shell.live-card {
+  padding-block-start: 0;
+}
+.customer-card-track[data-multiple='true'] .loyalty-card {
+  box-shadow: 0 18px 30px -18px rgb(15 30 40 / 45%);
+}
+.customer-card-track[data-dragging='true'] .customer-slide {
+  transition: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .customer-card-track[data-multiple='true'] .customer-slide {
+    transition: none;
+  }
 }
 .customer-card-controls,
 .customer-card-controls > div,
@@ -75,24 +98,6 @@
   margin-block-end: 16px;
 }
 
-.customer-slide
-  :is(
-    .card-member-label,
-    .card-cycle,
-    .card-heading small,
-    .card-progress-line > span,
-    .card-reward-line small
-  ) {
-  font-size: 0.75rem;
-  opacity: 0.92;
-  letter-spacing: normal;
-}
-.customer-slide .card-progress {
-  font-size: 0.875rem;
-}
-.customer-slide .card-reward {
-  font-size: 1rem;
-}
 .customer-wallet .membership-aside .tabbar {
   margin-block: 12px 0;
 }
@@ -101,4 +106,126 @@
 }
 .customer-card-controls svg {
   pointer-events: none;
+}
+
+/* Keep Latin shop and branch names legible alongside GE SS Arabic on iOS. */
+[data-portal='customer']:lang(ar) {
+  font-family: 'Manrope', 'GE SS Arabic', sans-serif;
+}
+.customer-wallet .wallet-panel-ready {
+  justify-items: stretch;
+  text-align: start;
+  gap: 12px;
+}
+.customer-wallet .wallet-badges {
+  justify-content: start;
+}
+.customer-wallet .wallet-badge-button {
+  margin: 0;
+}
+.customer-wallet .wallet-panel-ready > .text-button {
+  justify-self: start;
+}
+.customer-wallet .wallet-notify-optin {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  text-align: start;
+  gap: 10px;
+  padding: 12px;
+  margin: 0;
+}
+.customer-wallet .wallet-notify-optin input {
+  margin: 2px 0 0;
+}
+.customer-wallet .wallet-notify-optin span {
+  overflow-wrap: anywhere;
+}
+.customer-wallet .customer-stamp-request label + button {
+  margin-block-start: 10px;
+}
+@media (max-width: 760px) {
+  .topbar[data-portal='customer'] {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: auto;
+    min-height: 56px;
+    padding-block: calc(4px + env(safe-area-inset-top, 0px)) 4px;
+  }
+  .workspace-customer.compact-workspace .workspace-content {
+    padding-block: 12px 20px;
+  }
+  .workspace-customer .compact-nav {
+    margin-block-end: 12px;
+  }
+  .customer-wallet .page-heading {
+    margin-block: 0 4px;
+  }
+  .customer-wallet .membership-layout {
+    gap: 12px;
+  }
+  .customer-wallet .membership-content {
+    gap: 10px;
+  }
+  .customer-wallet .membership-content > .panel {
+    padding: 16px;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .customer-wallet .membership-content h2 {
+    margin-block: 0 8px;
+  }
+  .customer-wallet .membership-content > .panel > :last-child {
+    margin-block-end: 0;
+  }
+  .customer-wallet .membership-aside .tabbar {
+    margin-block: 8px 0;
+  }
+  .customer-wallet .tabbar button {
+    flex: 1;
+  }
+  .customer-wallet .reward-row {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .footer[data-portal='customer'] {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 0 16px;
+    padding: 8px 16px calc(8px + env(safe-area-inset-bottom, 0px));
+  }
+  .footer[data-portal='customer'] .legal-links {
+    margin: 0;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 430px) {
+  .customer-wallet .install-app-card:not([data-done]) {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas: 'icon message dismiss' 'icon action dismiss';
+    gap: 6px 10px;
+    margin-block: 12px 0;
+  }
+  .customer-wallet .install-app-card > img {
+    grid-area: icon;
+  }
+  .customer-wallet .install-app-card:not([data-done]) p {
+    grid-area: message;
+  }
+  .customer-wallet .install-app-card .primary {
+    grid-area: action;
+    justify-self: start;
+  }
+  .customer-wallet .install-app-dismiss {
+    grid-area: dismiss;
+    align-self: start;
+  }
+}
+.footer[data-portal='customer'],
+.footer[data-portal='customer'] .legal-links a {
+  color: var(--muted);
 }

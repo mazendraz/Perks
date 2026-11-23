@@ -258,7 +258,7 @@ export function App() {
       <a className="skip-link" href="#main">
         {ar ? 'روح للمحتوى' : 'Skip to content'}
       </a>
-      <header className="topbar">
+      <header className="topbar" data-portal={portal}>
         <button
           className="wordmark"
           onClick={() => navigate(portal ? '/' + portal : '/')}
@@ -266,7 +266,9 @@ export function App() {
         >
           <img className="perks-wordmark" src="/brand/perks-logo-wordmark.svg" alt="Perks" />
         </button>
-        {portal && <span className="portal-badge">{portalInfo[portal][ar ? 'ar' : 'en']}</span>}
+        {portal && portal !== 'customer' && (
+          <span className="portal-badge">{portalInfo[portal][ar ? 'ar' : 'en']}</span>
+        )}
         <div className="top-actions">
           <button
             className="text-button"
@@ -372,7 +374,7 @@ export function App() {
           onLogout={logout}
         />
       )}
-      <footer className="footer">
+      <footer className="footer" data-portal={portal}>
         {ar ? 'Perks · كارت الولاء بتاعك على موبايلك' : 'Perks · Loyalty cards in your wallet'}
         <nav className="legal-links" aria-label={ar ? 'الخصوصية والشروط' : 'Privacy and terms'}>
           <a href={'/privacy?lang=' + lang}>{ar ? 'الخصوصية' : 'Privacy'}</a>
@@ -639,7 +641,12 @@ function Workspace({
             {nav.map((n) => (
               <button
                 key={n.path}
-                aria-current={route === n.path ? 'page' : undefined}
+                aria-current={
+                  route === n.path ||
+                  (portal === 'customer' && n.path === home && route !== account)
+                    ? 'page'
+                    : undefined
+                }
                 onClick={() => navigate(n.path)}
               >
                 <Icon name={n.icon} size={18} />

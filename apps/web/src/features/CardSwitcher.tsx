@@ -1,8 +1,21 @@
-import { useEffectEvent, useLayoutEffect, useRef } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import type { Language, SavedCard } from '../../../../packages/contracts/src/index.js';
 import { Icon } from '../../../../packages/ui/src/Icon.js';
 import { LoyaltyCard } from '../../../../packages/ui/src/LoyaltyCard.js';
 import './card-switcher.css';
+
+/** Where a card sits in the fanned deck, `p` cards away from the front (negative = before it). */
+function deckPose(p: number, dir: 1 | -1) {
+  const a = Math.min(Math.abs(p), 3.6);
+  const side = Math.sign(p) * dir;
+  const x = a <= 1 ? a * 24 : 24 + (a - 1) * 9;
+  const opacity = a <= 2.6 ? 1 : Math.max(0, 1 - (a - 2.6));
+  return {
+    transform: `translate3d(${side * x}%, ${a * 2.2}%, 0) rotate(${side * a * 5.5}deg) scale(${1 - a * 0.075})`,
+    zIndex: 100 - Math.round(Math.abs(p) * 10),
+    opacity,
+  };
+}
 
 export function CardSwitcher({
   cards,
@@ -23,100 +36,41 @@ export function CardSwitcher({
   reveal: boolean;
   celebrating: boolean;
 }) {
-  const track = useRef<HTMLDivElement>(null);
-  const controlTarget = useRef<string | null>(null);
-  const arrowTouch = useRef<{ x: number; y: number } | null>(null);
-  const ar = lang === 'ar';
   const index = cards.findIndex((card) => card.id === cardId);
   const multiple = cards.length > 1;
-  // Measure in viewport coordinates. Safari's RTL scrollLeft can be negative or overscroll.
-  function align(position: number, smooth: boolean) {
-    const rail = track.current;
-    const slide = rail?.children[position];
-    if (!rail || !slide) return;
-    const delta = slide.getBoundingClientRect().left - rail.getBoundingClientRect().left;
-    rail.scrollBy({
-      left: delta,
-      behavior:
-        smooth && !matchMedia('(prefers-reduced-motion: reduce)').matches ? 'smooth' : 'auto',
-    });
-  }
+  const ar = lang === 'ar';
+  const direction = ar ? -1 : 1;
+  const arrowTouch = useRef<{ x: number; y: number } | null>(null);
+  const gesture = useRef<{
+    pointer: number;
+    x: number;
+    y: number;
+    width: number;
+    dragging: boolean;
+  } | null>(null);
+  const [offset, setOffset] = useState(0);
+  const faces = useMemo(
+    () =>
+      cards.map((card) => (
+        <LoyaltyCard
+          key={card.id}
+          card={card}
+          lang={lang}
+          waiting={card.id === cardId && waiting}
+          reveal={card.id === cardId && reveal}
+          motion={card.id === cardId && !celebrating ? 'normal' : 'quiet'}
+        />
+      )),
+    [cards, cardId, lang, waiting, reveal, celebrating],
+  );
   function stepTo(position: number) {
     const next = cards[position];
-    if (!next || disabled) return;
-    controlTarget.current = next.id;
-    onSelect(next.id);
+    if (next && !disabled && position !== index) onSelect(next.id);
   }
-  useLayoutEffect(() => {
-    const rail = track.current;
-    const slide = rail?.children[index];
-    if (!rail || !slide) return;
-    const fit = () => {
-      rail.style.height = Math.ceil(slide.getBoundingClientRect().height) + 'px';
-    };
-    align(index, controlTarget.current === cardId);
-    if (typeof ResizeObserver === 'undefined') return;
-    fit();
-    const observer = new ResizeObserver(fit);
-    observer.observe(slide);
-    return () => observer.disconnect();
-  }, [index, lang, cardId]);
-
-  const settle = useEffectEvent(() => {
-    const rail = track.current;
-    if (!rail) return;
-    const left = rail.getBoundingClientRect().left;
-    const distances = Array.from(rail.children, (slide) =>
-      Math.abs(slide.getBoundingClientRect().left - left),
-    );
-    const distance = Math.min(...distances);
-    const nearest = distances.indexOf(distance);
-    if (controlTarget.current === cardId) {
-      if (nearest === index && distance <= 2) controlTarget.current = null;
-      return;
-    }
-    if (distance > 2) align(nearest, true);
-    else if (nearest !== index) onSelect(cards[nearest]!.id);
-  });
-
-  // Wait for native momentum and snapping to settle before switching the card's actions.
-  useLayoutEffect(() => {
-    const rail = track.current;
-    if (!rail || !multiple || disabled) return;
-    let timer: number;
-    let touching = false;
-    const scroll = () => {
-      clearTimeout(timer);
-      timer = window.setTimeout(() => {
-        if (!touching) settle();
-      }, 90);
-    };
-    const startTouch = () => {
-      controlTarget.current = null;
-      touching = true;
-    };
-    const endTouch = () => {
-      touching = false;
-      scroll();
-    };
-    const interrupt = () => {
-      controlTarget.current = null;
-    };
-    rail.addEventListener('wheel', interrupt, { passive: true });
-    rail.addEventListener('touchstart', startTouch, { passive: true });
-    rail.addEventListener('touchend', endTouch);
-    rail.addEventListener('touchcancel', endTouch);
-    rail.addEventListener('scroll', scroll, { passive: true });
-    return () => {
-      clearTimeout(timer);
-      rail.removeEventListener('wheel', interrupt);
-      rail.removeEventListener('touchstart', startTouch);
-      rail.removeEventListener('touchend', endTouch);
-      rail.removeEventListener('touchcancel', endTouch);
-      rail.removeEventListener('scroll', scroll);
-    };
-  }, [multiple, disabled]);
-
+  function reset() {
+    gesture.current = null;
+    setOffset(0);
+  }
   return (
     <section
       className="customer-carousel"
@@ -126,8 +80,48 @@ export function CardSwitcher({
     >
       <div
         className="customer-card-track"
-        ref={track}
-        data-locked={!multiple || disabled}
+        data-multiple={multiple}
+        data-dragging={offset !== 0}
+        onPointerDown={(event) => {
+          if (!multiple || disabled || !event.isPrimary || event.button !== 0) return;
+          const width =
+            event.currentTarget.querySelector<HTMLElement>('[aria-hidden="false"]')!.offsetWidth;
+          gesture.current = {
+            pointer: event.pointerId,
+            x: event.clientX,
+            y: event.clientY,
+            width,
+            dragging: false,
+          };
+          event.currentTarget.setPointerCapture(event.pointerId);
+        }}
+        onPointerMove={(event) => {
+          const g = gesture.current;
+          if (!g || g.pointer !== event.pointerId) return;
+          const dx = event.clientX - g.x;
+          const dy = event.clientY - g.y;
+          if (!g.dragging) {
+            if (Math.abs(dy) > 8 && Math.abs(dy) > Math.abs(dx)) return reset();
+            if (Math.abs(dx) < 8) return;
+            g.dragging = true;
+          }
+          setOffset(
+            Math.max(
+              -Math.min(1, index),
+              Math.min(1, cards.length - 1 - index, (-direction * dx) / (g.width * 0.55)),
+            ),
+          );
+        }}
+        onPointerUp={(event) => {
+          const g = gesture.current;
+          if (!g || g.pointer !== event.pointerId) return;
+          const dx = event.clientX - g.x;
+          if (g.dragging && Math.abs(dx) > Math.min(42, g.width * 0.13))
+            stepTo(index - direction * Math.sign(dx));
+          reset();
+        }}
+        onLostPointerCapture={reset}
+        onPointerCancel={reset}
         tabIndex={multiple ? 0 : undefined}
         onKeyDown={(event) => {
           if (disabled || !multiple || !['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
@@ -135,17 +129,19 @@ export function CardSwitcher({
           stepTo(index + ((event.key === 'ArrowRight') !== ar ? 1 : -1));
         }}
       >
-        {cards.map((card, i) => (
-          <div key={card.id} className="customer-slide" aria-hidden={i !== index}>
-            <LoyaltyCard
-              card={card}
-              lang={lang}
-              waiting={i === index && waiting}
-              reveal={i === index && reveal}
-              motion={i === index && !celebrating ? 'normal' : 'quiet'}
-            />
-          </div>
-        ))}
+        {cards.map((card, i) => {
+          const pose = multiple ? deckPose(i - index - offset, direction) : undefined;
+          return (
+            <div
+              key={card.id}
+              className="customer-slide"
+              aria-hidden={i !== index}
+              style={pose && { ...pose, visibility: pose.opacity === 0 ? 'hidden' : undefined }}
+            >
+              {faces[i]}
+            </div>
+          );
+        })}
       </div>
       {multiple && (
         <div className="customer-card-controls">

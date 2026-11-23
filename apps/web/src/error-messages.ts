@@ -411,6 +411,8 @@ const messages: Record<string, Line> = {
     'This reward is not redeemed at this branch.',
   ],
   REWARD_EXPIRED: ['الهدية دي خلصت صلاحيتها.', 'This reward has expired.'],
+  CARD_NUMBER_INVALID: ['رقم الكارت مش صحيح.', 'That card number is invalid.'],
+  CARD_NUMBER_LIMIT: ['محاولات كتير. جرّب بعد شوية.', 'Too many attempts. Try again later.'],
   CUSTOMER_SEARCH_LIMIT: [
     'وصلت لحد البحث في الساعة. اطلب من المدير يساعد الزبون.',
     'You hit the hourly search limit. Ask a manager to help.',

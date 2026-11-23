@@ -70,6 +70,35 @@ export function customerRecoveryModule(app: FastifyInstance, pools: Pools, c: Co
     });
   });
 
+  app.post('/api/v1/merchants/:m/customer-recovery/card-number', async (req) => {
+    const actor = authenticated(req),
+      { m } = z.object({ m: z.uuid() }).parse(req.params),
+      p = customerLookupInput.extend({ membershipId: z.uuid() }).parse(req.body);
+    return transaction(
+      pools.pool,
+      async (db) => {
+        const grant = await merchantGrant(db, actor, m, undefined, p.branchId);
+        if (grant.role === 'cashier')
+          requireCondition(
+            await customerLimit(pools, c, 'card-number-reveal:' + actor.id, 20, 3600),
+            'CUSTOMER_SEARCH_LIMIT',
+            429,
+          );
+        const cardNumber = (
+          await db.query('SELECT reveal_membership_card_number($1,$2,$3,$4) AS number', [
+            m,
+            p.branchId,
+            p.phone,
+            p.membershipId,
+          ])
+        ).rows[0].number as string | null;
+        requireCondition(cardNumber, 'NOT_FOUND', 404);
+        return { cardNumber };
+      },
+      actor,
+    );
+  });
+
   // Staff: enter the code shown on the customer's phone.
   app.post('/api/v1/merchants/:m/customer-pairings', async (req) => {
     const actor = authenticated(req),

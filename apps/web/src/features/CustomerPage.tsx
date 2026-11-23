@@ -803,6 +803,22 @@ export function CustomerPage({ lang, membershipId }: { lang: Language; membershi
                   reveal={new URLSearchParams(location.search).get('new') === '1'}
                 />
               </CardDetailSwitcher>
+              {card.card_number && (
+                <p className="muted">
+                  {ar ? 'رقم الكارت' : 'Card number'}{' '}
+                  <strong>
+                    <bdi dir="ltr">{card.card_number}</bdi>
+                  </strong>
+                  {new URLSearchParams(location.search).get('new') === '1' && (
+                    <>
+                      <br />
+                      {ar
+                        ? 'احتفظ بيه عشان تفتح الكارت على جهاز جديد.'
+                        : 'Keep it to open this card on a new device.'}
+                    </>
+                  )}
+                </p>
+              )}
               {visitNotice && (
                 <div
                   className={

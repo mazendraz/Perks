@@ -332,7 +332,7 @@ export function App() {
         unknownFailures ? (
           <CustomerCardUnavailable lang={lang} retry={refresh} />
         ) : (
-          <CustomerDeviceHelp lang={lang} />
+          <CustomerDeviceHelp lang={lang} refresh={refresh} />
         )
       ) : route.startsWith('/join/') ? (
         <EnrollmentPage

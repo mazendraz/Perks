@@ -168,6 +168,8 @@ test('the save link is a signed JWT with the member name and no QR', async () =>
   assert.equal(object.loyaltyPoints.balance.string, '2/5');
   assert.equal(object.state, 'ACTIVE');
   assert.equal(object.barcode, undefined, 'the card carries no QR');
+  assert.match(object.accountId, /^[0-9]{6}$/);
+  assert.equal(klass.localizedAccountIdLabel.defaultValue.value, 'رقم الكارت');
   assert.deepEqual(object.secondaryLoyaltyPoints.balance, { int: 3 });
   // The link carries the Wallet restore key (behind a description, never shown as text).
   const link = object.linksModuleData.uris[0].uri as string;
@@ -182,6 +184,7 @@ test('the save link is a signed JWT with the member name and no QR', async () =>
     undefined,
     'public artwork projection never exposes the member name',
   );
+  assert.equal(publicCard.card_number, undefined, 'public artwork does not expose the card number');
   assert.equal((await save(m)).payload.loyaltyObjects[0].id, object.id, 'stable object id');
   const strip = await app.inject({ url: object.heroImage.sourceUri.uri.replace(origin, '') });
   assert.equal(strip.statusCode, 200);
@@ -206,6 +209,28 @@ test('the save link is a signed JWT with the member name and no QR', async () =>
     ).statusCode,
     404,
   );
+});
+
+test('a saved Google pass gets its card number when its pre-number fingerprint is refreshed', async () => {
+  const m = await member();
+  const object = (await save(m)).payload.loyaltyObjects[0];
+  await db.query(
+    `UPDATE google_wallet_objects SET fingerprint=wallet_fingerprint(
+      wallet_card_json(membership_id)-'reminder_templates'-'manual_message'
+    ) WHERE membership_id=$1`,
+    [m.id],
+  );
+  const google = fakeGoogle(() => 200);
+  await runGoogleWalletUpdates(worker, c, google.g);
+  const updated = google.calls.find((call) => call.method === 'PUT' && call.url.endsWith(object.id));
+  assert.equal((updated?.body as Record<string, unknown>)?.accountId, object.accountId);
+  const klass = google.calls.find(
+    (call) => call.method === 'PATCH' && call.url.endsWith(object.classId),
+  );
+  assert.equal((klass?.body as Record<string, unknown>)?.accountIdLabel, 'Card number');
+  google.calls.length = 0;
+  await runGoogleWalletUpdates(worker, c, google.g);
+  assert.equal(google.calls.filter((call) => call.url.endsWith(object.id)).length, 0);
 });
 
 test('a stamp sends the new balance to Google with a notification, once', async () => {

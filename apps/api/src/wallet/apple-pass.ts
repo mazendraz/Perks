@@ -19,6 +19,7 @@ import { APPLE_SERVICE_PREFIX } from './constants.js';
 import { perksIconSvg } from '../../../../packages/domain/src/brand.js';
 
 export interface WalletCard {
+  card_number?: string;
   id: string;
   merchant_id: string;
   merchant_name: string;

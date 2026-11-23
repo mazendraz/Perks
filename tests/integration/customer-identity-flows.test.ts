@@ -433,6 +433,151 @@ test('the Wallet link brings every card back on a new phone, once, and tells the
   assert.equal(await generation(cardA), 2);
 });
 
+test('signup issues distinct six-digit card numbers and a new device opens only the issuing shop', async () => {
+  const customerPhone = phone();
+  const original = await device();
+  const first = await register(original, customerPhone, A);
+  const second = await register(original, customerPhone, B);
+  assert.equal(first.statusCode, 200);
+  assert.equal(second.statusCode, 200);
+  const memberA = first.json().membershipId as string;
+  const memberB = second.json().membershipId as string;
+
+  const cardUrl = (id: string) => '/api/v1/me/memberships/' + id;
+  const readCard = async (id: string, headers: H) =>
+    (await app.inject({ url: cardUrl(id), headers })).json().card;
+  // Exercise leading-zero input and output without relying on the random allocator to hit one.
+  const numberA = (await readCard(memberA, original)).card_number as string;
+  const numberB = (await readCard(memberB, original)).card_number as string;
+  assert.match(numberA, /^[0-9]{6}$/);
+  assert.match(numberB, /^[0-9]{6}$/);
+  assert.notEqual(numberA, numberB);
+  const zeroNumber = (
+    await db.query(
+      `SELECT lpad(n::text,6,'0') AS number FROM generate_series(0,99999) n
+       WHERE NOT EXISTS(SELECT 1 FROM membership_card_numbers WHERE card_number=lpad(n::text,6,'0'))
+       LIMIT 1`,
+    )
+  ).rows[0].number as string;
+  await db.query('UPDATE membership_card_numbers SET card_number=$1 WHERE membership_id=$2', [
+    zeroNumber,
+    memberA,
+  ]);
+
+  const staff = await login(app, 'cashier@bunn.test', origin);
+  await db.query('UPDATE merchants SET cashier_recovery_enabled=true WHERE id=$1', [A.m]);
+  const base = '/api/v1/merchants/' + A.m + '/customer-recovery/';
+  const lookup = await app.inject({
+    method: 'POST',
+    url: base + 'search',
+    headers: staff,
+    payload: { branchId: A.b, phone: customerPhone },
+  });
+  assert.equal(lookup.statusCode, 200, lookup.body);
+  assert.equal(lookup.json().customer.cards[0].membershipId, memberA);
+  assert.equal(lookup.json().customer.cards[0].cardNumber, undefined);
+  const reveal = (membershipId: string, phone = customerPhone, branchId = A.b) =>
+    app.inject({
+      method: 'POST',
+      url: base + 'card-number',
+      headers: staff,
+      payload: { branchId, phone, membershipId },
+    });
+  const revealed = await reveal(memberA);
+  assert.equal(revealed.statusCode, 200, revealed.body);
+  assert.equal(revealed.json().cardNumber, zeroNumber);
+  assert.equal(revealed.headers['cache-control'], 'no-store');
+  assert.equal((await reveal(memberB)).statusCode, 404);
+  assert.equal((await reveal(memberA, phone())).statusCode, 404);
+  assert.equal((await reveal(memberA, customerPhone, B.b)).statusCode, 403);
+  const audit = await db.query(
+    "SELECT target_id,detail FROM audit_events WHERE action='customer.card_number.revealed' AND target_id=$1",
+    [memberA],
+  );
+  assert.deepEqual(audit.rows, [{ target_id: memberA, detail: { branchId: A.b } }]);
+
+  const fresh = await device();
+  const signedIn = await cardNumberLogin(fresh, zeroNumber);
+  assert.equal(signedIn.statusCode, 200, signedIn.body);
+  assert.equal(signedIn.json().membershipId, memberA);
+  fresh.cookie = merge(fresh.cookie, signedIn);
+  fresh['x-csrf-token'] = signedIn.json().csrfToken;
+  const cards = (await app.inject({ url: '/api/v1/me/memberships', headers: fresh })).json().cards;
+  assert.deepEqual(
+    cards.map((card: { id: string }) => card.id),
+    [memberA],
+  );
+  assert.equal(cards[0].card_number, zeroNumber);
+  assert.equal((await app.inject({ url: cardUrl(memberB), headers: fresh })).statusCode, 404);
+  assert.equal((await register(fresh, customerPhone, B)).statusCode, 409);
+  assert.equal((await cardNumberLogin(fresh, numberB)).json().error.code, 'CARD_NUMBER_INVALID');
+  assert.equal(
+    (await app.inject({ url: cardUrl(memberA) + '/wallet/google', headers: fresh })).json().error
+      .code,
+    'DEVICE_SCOPE_RECOVERY_REQUIRED',
+  );
+
+  // The existing device cookie can restore the same scoped session.
+  fresh.cookie = fresh.cookie.split('; ').find((value) => value.startsWith('__Host-nq_device='))!;
+  const resumed = await app.inject({ url: '/api/v1/me/memberships', headers: fresh });
+  assert.equal(resumed.statusCode, 200, resumed.body);
+  assert.deepEqual(
+    resumed.json().cards.map((card: { id: string }) => card.id),
+    [memberA],
+  );
+  const notices = (await app.inject({ url: '/api/v1/me/device-notices', headers: original })).json()
+    .notices;
+  assert.equal(notices[0].kind, 'card_number_login');
+  assert.equal(notices[0].canRemove, true);
+});
+
+const cardNumberLogin = (
+  headers: H,
+  cardNumber: string,
+  remoteAddress = '192.0.2.' + (ip++ % 250),
+) =>
+  app.inject({
+    method: 'POST',
+    url: '/api/v1/customer/card-number-login',
+    headers,
+    remoteAddress,
+    payload: { cardNumber },
+  });
+
+test('card number failures are generic and attempts are limited per device, IP, and across IPs', async () => {
+  const fresh = await device();
+  const missing = (
+    await db.query(
+      `SELECT lpad(n::text,6,'0') AS number FROM generate_series(0,99999) n
+       WHERE NOT EXISTS(SELECT 1 FROM membership_card_numbers WHERE card_number=lpad(n::text,6,'0'))
+       LIMIT 1`,
+    )
+  ).rows[0].number as string;
+  for (const number of ['bad', missing, missing]) {
+    const failure = await cardNumberLogin(fresh, number);
+    assert.equal(failure.statusCode, 401);
+    assert.equal(failure.json().error.code, 'CARD_NUMBER_INVALID');
+  }
+  assert.equal((await cardNumberLogin(fresh, missing)).statusCode, 429);
+  const fixedIp = '192.0.2.254';
+  for (let i = 0; i < 3; i++)
+    assert.equal((await cardNumberLogin(await device(), missing, fixedIp)).statusCode, 401);
+  assert.equal((await cardNumberLogin(await device(), missing, fixedIp)).statusCode, 429);
+  const budget = createHmac('sha256', c.AUTH_PEPPER)
+    .update('card-number-global-failures')
+    .digest('hex');
+  await db.query(
+    'UPDATE customer_auth_limits SET attempts=29, window_started_at=clock_timestamp() WHERE key_hash=$1',
+    [budget],
+  );
+  try {
+    assert.equal((await cardNumberLogin(await device(), missing)).statusCode, 401);
+    assert.equal((await cardNumberLogin(await device(), missing)).statusCode, 429);
+  } finally {
+    await db.query('DELETE FROM customer_auth_limits WHERE key_hash=$1', [budget]);
+  }
+});
+
 test('a pass never shows its restore key as text', async () => {
   const { passJson, texts } = await import('../../apps/api/src/wallet/apple-pass.js');
   const { withOpenUrl } = await import('../../apps/api/src/wallet/restore.js');

@@ -12,20 +12,77 @@ import { WhatsAppRestoreLink } from './CustomerWhatsApp.js';
 const SUPPORT_PHONE = '201006111380';
 const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-export function CustomerDeviceHelp({ lang }: { lang: Language }) {
-  const ar = lang === 'ar';
+export function CustomerDeviceHelp({
+  lang,
+  refresh,
+}: {
+  lang: Language;
+  refresh: () => Promise<void>;
+}) {
+  const ar = lang === 'ar',
+    [number, setNumber] = useState(''),
+    [busy, setBusy] = useState(false),
+    [error, setError] = useState('');
+  const signIn = async (event: FormEvent) => {
+    event.preventDefault();
+    if (busy || number.length !== 6) return;
+    setBusy(true);
+    setError('');
+    try {
+      const boot = await api<{ csrfToken: string }>('/customer/bootstrap');
+      setCsrf(boot.csrfToken);
+      const result = await api<{ membershipId: string; csrfToken: string }>(
+        '/customer/card-number-login',
+        { method: 'POST', body: { cardNumber: number } },
+        false,
+      );
+      setCsrf(result.csrfToken);
+      await refresh();
+      navigate('/customer/' + result.membershipId);
+    } catch (e) {
+      setError(errorText(e, lang));
+    } finally {
+      setBusy(false);
+    }
+  };
   return (
     <main id="main" className="join-page">
       <section className="panel">
         <span className="eyebrow">{ar ? 'كارتك معاك' : 'Your loyalty card'}</span>
         <h1>{ar ? 'الكارت مش على الجهاز ده' : 'Your card is not on this device'}</h1>
-        <p>
-          {ar
-            ? 'افتح كارتك من الـWallet، أو اعمل سكان لكود أي محل واكتب رقمك. مش محتاج إيميل أو باسورد.'
-            : 'Open your card from your Wallet, or scan any shop’s code and type your number. You do not need an email or password.'}
-        </p>
+        <form className="stack" onSubmit={(event) => void signIn(event)}>
+          <label>
+            {ar ? 'رقم الكارت' : 'Card number'}
+            <input
+              dir="ltr"
+              inputMode="numeric"
+              autoComplete="off"
+              pattern="[0-9]{6}"
+              maxLength={6}
+              required
+              value={number}
+              onChange={(event) => {
+                setNumber(
+                  event.target.value
+                    .replace(/[٠-٩]/g, (digit) => String(digit.charCodeAt(0) - 0x660))
+                    .replace(/[۰-۹]/g, (digit) => String(digit.charCodeAt(0) - 0x6f0))
+                    .replace(/[^0-9]/g, ''),
+                );
+                setError('');
+              }}
+            />
+          </label>
+          {error && (
+            <p className="error-text" role="alert">
+              {error}
+            </p>
+          )}
+          <button className="primary" disabled={busy || number.length !== 6}>
+            {ar ? 'افتح كارتي' : 'Open my card'}
+          </button>
+        </form>
         <div className="form-actions">
-          <button type="button" className="primary" onClick={() => navigate('/customer/restore')}>
+          <button type="button" className="secondary" onClick={() => navigate('/customer/restore')}>
             {ar ? 'رجّع كروتك' : 'Restore my cards'}
           </button>
         </div>
@@ -516,6 +573,7 @@ export function TeamCustomerRecovery({
     [phone, setPhone] = useState(''),
     [branch, setBranch] = useState(branchId || grant.branches[0]?.id || ''),
     [found, setFound] = useState<FoundCustomer | null>(null),
+    [revealed, setRevealed] = useState<{ membershipId: string; cardNumber: string } | null>(null),
     [searched, setSearched] = useState(false),
     [requested, setRequested] = useState(false),
     [error, setError] = useState(''),
@@ -546,6 +604,7 @@ export function TeamCustomerRecovery({
   };
   const reset = () => {
     setFound(null);
+    setRevealed(null);
     setSearched(false);
     setRequested(false);
     setCode('');
@@ -570,6 +629,23 @@ export function TeamCustomerRecovery({
       );
       setFound(response.customer);
       setSearched(true);
+    } catch (e) {
+      setError(errorText(e, lang));
+    } finally {
+      setBusy(false);
+    }
+  };
+  const revealNumber = async (membershipId: string) => {
+    if (busy) return;
+    setBusy(true);
+    setError('');
+    setRevealed(null);
+    try {
+      const { cardNumber } = await api<{ cardNumber: string }>(
+        base + '/customer-recovery/card-number',
+        { method: 'POST', body: { phone, branchId: branch, membershipId } },
+      );
+      setRevealed({ membershipId, cardNumber });
     } catch (e) {
       setError(errorText(e, lang));
     } finally {
@@ -721,9 +797,33 @@ export function TeamCustomerRecovery({
           <strong>{found.name}</strong>
           <bdi dir="ltr">{found.phone}</bdi>
           {found.cards.map((card) => (
-            <p key={card.membershipId}>
-              {card.programName} · {card.balance}/{card.threshold} {ar ? 'أختام' : 'stamps'}
-            </p>
+            <div key={card.membershipId} className="stack">
+              <p>
+                {card.programName} · {card.balance}/{card.threshold} {ar ? 'أختام' : 'stamps'}
+              </p>
+              {revealed?.membershipId === card.membershipId ? (
+                <p role="status">
+                  {ar ? 'رقم الكارت' : 'Card number'}{' '}
+                  <strong>
+                    <bdi dir="ltr">{revealed.cardNumber}</bdi>
+                  </strong>{' '}
+                  <button type="button" className="text-button" onClick={() => setRevealed(null)}>
+                    {ar ? 'إخفاء' : 'Hide'}
+                  </button>
+                </p>
+              ) : (
+                <div className="form-actions">
+                  <button
+                    type="button"
+                    className="secondary small"
+                    disabled={busy}
+                    onClick={() => void revealNumber(card.membershipId)}
+                  >
+                    {ar ? 'اعرض رقم الكارت' : 'Show card number'}
+                  </button>
+                </div>
+              )}
+            </div>
           ))}
           <label className="checkbox-label">
             <input
@@ -903,7 +1003,7 @@ export function PairingApprovals({ merchantId, lang }: { merchantId: string; lan
 
 interface DeviceNotice {
   id: string;
-  kind: 'device_paired' | 'wallet_restored' | 'phone_verified';
+  kind: 'device_paired' | 'wallet_restored' | 'phone_verified' | 'card_number_login';
   merchantName: string | null;
   createdAt: string;
   deviceFamily: string;
@@ -945,13 +1045,17 @@ export function DeviceNotices({ lang }: { lang: Language }) {
               ? ar
                 ? `كروتك اتفتحت على جهاز جديد (${notice.deviceFamily}) من كارت ${notice.merchantName} في الـWallet، في ${new Date(notice.createdAt).toLocaleString('ar-EG-u-nu-latn')}. لو مش إنت، شيله.`
                 : `Your cards were opened on a new device (${notice.deviceFamily}) from the ${notice.merchantName} card in Wallet, on ${new Date(notice.createdAt).toLocaleString('en-GB')}. If this wasn’t you, remove it.`
-              : notice.kind === 'phone_verified'
+              : notice.kind === 'card_number_login'
                 ? ar
-                  ? `كروتك اتفتحت على جهاز جديد (${notice.deviceFamily}) بعد تأكيد رقمك على واتساب، في ${new Date(notice.createdAt).toLocaleString('ar-EG-u-nu-latn')}. لو مش إنت، شيله.`
-                  : `Your cards were opened on a new device (${notice.deviceFamily}) after your number was confirmed on WhatsApp, on ${new Date(notice.createdAt).toLocaleString('en-GB')}. If this wasn’t you, remove it.`
-                : ar
-                  ? `${notice.merchantName} ربط جهاز (${notice.deviceFamily}) بكارتك في ${new Date(notice.createdAt).toLocaleString('ar-EG-u-nu-latn')}. لو مش إنت، شيله.`
-                  : `${notice.merchantName} linked a device (${notice.deviceFamily}) to your card on ${new Date(notice.createdAt).toLocaleString('en-GB')}. If this wasn’t you, remove it.`}
+                  ? `رقم كارت ${notice.merchantName} اتستخدم لفتح الكارت على جهاز جديد (${notice.deviceFamily}). لو مش إنت، شيله.`
+                  : `Your ${notice.merchantName} card number was used to sign in on a new device (${notice.deviceFamily}). If this wasn’t you, remove it.`
+                : notice.kind === 'phone_verified'
+                  ? ar
+                    ? `كروتك اتفتحت على جهاز جديد (${notice.deviceFamily}) بعد تأكيد رقمك على واتساب، في ${new Date(notice.createdAt).toLocaleString('ar-EG-u-nu-latn')}. لو مش إنت، شيله.`
+                    : `Your cards were opened on a new device (${notice.deviceFamily}) after your number was confirmed on WhatsApp, on ${new Date(notice.createdAt).toLocaleString('en-GB')}. If this wasn’t you, remove it.`
+                  : ar
+                    ? `${notice.merchantName} ربط جهاز (${notice.deviceFamily}) بكارتك في ${new Date(notice.createdAt).toLocaleString('ar-EG-u-nu-latn')}. لو مش إنت، شيله.`
+                    : `${notice.merchantName} linked a device (${notice.deviceFamily}) to your card on ${new Date(notice.createdAt).toLocaleString('en-GB')}. If this wasn’t you, remove it.`}
           </p>
           {error && (
             <p className="error-text" role="alert">

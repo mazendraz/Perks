@@ -78,6 +78,7 @@ export interface ApiFailure {
   };
 }
 export interface SavedCard extends CardData {
+  card_number?: string | null;
   merchant_slug: string;
   program_id: string;
   program_version_id: string;

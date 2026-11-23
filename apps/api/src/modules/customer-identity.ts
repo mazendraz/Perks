@@ -39,6 +39,32 @@ export function customerIdentityModule(app: FastifyInstance, pools: Pools, c: Co
   app.get('/api/v1/customer/bootstrap', async (req, reply) => ({
     csrfToken: prepareDevice(req, reply, c).csrfToken,
   }));
+  app.post('/api/v1/customer/card-number-login', async (req, reply) => {
+    const device = deviceCsrf(req, c);
+    const ipAllowed = await customerLimit(pools, c, 'card-number-ip:' + req.ip, 3, 900);
+    const deviceAllowed = await customerLimit(pools, c, 'card-number-device:' + device, 3, 900);
+    requireCondition(ipAllowed && deviceAllowed, 'CARD_NUMBER_LIMIT', 429);
+
+    const input = z
+      .object({ cardNumber: z.string().regex(/^[0-9]{6}$/) })
+      .strict()
+      .safeParse(req.body);
+    requireCondition(input.success, 'CARD_NUMBER_INVALID', 401);
+    const result = (
+      await pools.authPool.query('SELECT claim_membership_card_number($1,$2,$3,$4) AS value', [
+        input.data.cardNumber,
+        device,
+        deviceAgentFamily(String(req.headers['user-agent'] || '')),
+        keyedHash('card-number-global-failures', c.AUTH_PEPPER),
+      ])
+    ).rows[0].value as { membershipId?: string; limited?: boolean } | null;
+    requireCondition(!result?.limited, 'CARD_NUMBER_LIMIT', 429);
+    requireCondition(result?.membershipId, 'CARD_NUMBER_INVALID', 401);
+    const session = await issueDeviceSession(pools, c, req, reply);
+    requireCondition(session, 'CARD_NUMBER_INVALID', 401);
+    return { membershipId: result.membershipId, csrfToken: session.csrfToken };
+  });
+
   app.post('/api/v1/customer/register', async (req, reply) => {
     const hash = deviceCsrf(req, c),
       p = customerRegistrationInput.parse(req.body),

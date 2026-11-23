@@ -618,6 +618,31 @@ test('the actual identity migration preserves legacy seed accounts/cards, conver
       (await legacy.query('SELECT count(*)::int AS n FROM customer_devices')).rows[0].n,
       0,
     );
+
+    const migration = '056_membership_card_numbers.sql';
+    for (const file of (await readdir('db/migrations'))
+      .filter(
+        (file) => file.endsWith('.sql') && file > '010b_customer_devices.sql' && file < migration,
+      )
+      .sort())
+      await legacy.query(await readFile('db/migrations/' + file, 'utf8'));
+
+    const beforeNumbering = await legacy.query('SELECT id FROM memberships ORDER BY id');
+    assert.ok(beforeNumbering.rows.length > 0);
+    await legacy.query('BEGIN');
+    await legacy.query(await readFile('db/migrations/' + migration, 'utf8'));
+    await legacy.query('COMMIT');
+
+    const numbered = await legacy.query<{ id: string; card_number: string }>(
+      'SELECT membership_id AS id,card_number FROM membership_card_numbers ORDER BY membership_id',
+    );
+    assert.deepEqual(
+      numbered.rows.map(({ id }) => ({ id })),
+      beforeNumbering.rows,
+    );
+    const numbers = numbered.rows.map(({ card_number }) => card_number);
+    assert.equal(new Set(numbers).size, numbers.length);
+    for (const number of numbers) assert.match(number, /^[0-9]{6}$/);
   } finally {
     await legacy.end();
     await db.query('DROP DATABASE ' + pg.escapeIdentifier(database) + ' WITH (FORCE)');

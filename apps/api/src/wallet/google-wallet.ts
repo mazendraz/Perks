@@ -103,6 +103,8 @@ export function googleClass(
     },
     hexBackgroundColor: walletTheme(card).background,
     countryCode: 'EG',
+    accountIdLabel: 'Card number',
+    localizedAccountIdLabel: localized('رقم الكارت', 'Card number'),
     reviewStatus: 'UNDER_REVIEW',
     multipleDevicesAndHoldersAllowedStatus: 'ONE_USER_ALL_DEVICES',
   };
@@ -120,6 +122,8 @@ export function googleObject(
     classId: classId(g, card),
     state: card.active ? 'ACTIVE' : 'INACTIVE',
     accountName: card.active ? card.customer_name || '' : '',
+    // Google uses accountId in the footer of a loyalty pass without a barcode.
+    ...(card.active && card.card_number ? { accountId: card.card_number } : {}),
     loyaltyPoints: {
       localizedLabel: localized(t.ar.stamps_label, t.en.stamps_label),
       balance: { string: `${Math.min(card.display_balance, card.threshold)}/${card.threshold}` },
@@ -361,6 +365,8 @@ export async function refreshSavedGoogleCard(
         localizedProgramName: klass.localizedProgramName,
         programLogo: klass.programLogo,
         hexBackgroundColor: klass.hexBackgroundColor,
+        accountIdLabel: klass.accountIdLabel,
+        localizedAccountIdLabel: klass.localizedAccountIdLabel,
       });
     }
     return status;

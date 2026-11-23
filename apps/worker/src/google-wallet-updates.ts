@@ -69,15 +69,19 @@ export async function runGoogleWalletUpdates(
       continue;
     }
     if (status === 200) {
-      updated++;
       const klass = googleClass(g, card, c.PUBLIC_APP_ORIGIN);
-      await patchGoogle(g, 'loyaltyClass', classId(g, card), {
+      const classStatus = await patchGoogle(g, 'loyaltyClass', classId(g, card), {
         issuerName: klass.issuerName,
         programName: klass.programName,
         localizedProgramName: klass.localizedProgramName,
         programLogo: klass.programLogo,
         hexBackgroundColor: klass.hexBackgroundColor,
-      });
+        accountIdLabel: klass.accountIdLabel,
+        localizedAccountIdLabel: klass.localizedAccountIdLabel,
+      }).catch(() => 0);
+      if (classStatus === 0 || classStatus === 429 || classStatus >= 500)
+        await pool.query('SELECT google_wallet_retry($1)', [object_key]);
+      else updated++;
     }
   }
   return updated;

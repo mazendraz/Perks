@@ -170,11 +170,15 @@ test('a customer downloads a signed pass for their own card only', async () => {
   assert.equal(pass.teamIdentifier, 'ABCDE12345');
   assert.equal(pass.webServiceURL, origin + '/api/v1/wallet/apple');
   assert.equal(pass.storeCard.headerFields[0].value, '2/5');
-  const number = pass.storeCard.auxiliaryFields.at(-1);
-  assert.equal(number.key, 'card_number');
-  assert.equal(number.textAlignment, 'PKTextAlignmentRight');
+  const number = pass.storeCard.backFields.find(
+    (field: { key: string }) => field.key === 'card_number',
+  );
   assert.match(number.value, /^[0-9]{6}$/);
-  assert.deepEqual(pass.posterGeneric.footerFields.at(-1), number);
+  assert.equal(
+    pass.posterGeneric.backFields.find((field: { key: string }) => field.key === 'card_number')
+      .value,
+    number.value,
+  );
   assert.equal(pass.barcodes, undefined, 'the pass is a card face with no QR');
   assert.equal(pass.barcode, undefined);
   // The link carries the Wallet restore key, so it lives in the strings files, not in pass.json.

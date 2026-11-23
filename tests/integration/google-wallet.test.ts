@@ -173,8 +173,8 @@ test('the save link is a signed JWT with the member name and no QR', async () =>
   assert.equal(number.localizedHeader.defaultValue.value, 'رقم الكارت');
   assert.equal(number.localizedHeader.translatedValues[0].value, 'Card number');
   assert.equal(
-    klass.classTemplateInfo.cardTemplateOverride.cardRowTemplateInfos[1].twoItems.endItem.firstValue
-      .fields[0].fieldPath,
+    klass.classTemplateInfo.cardBarcodeSectionDetails.secondTopDetail.fieldSelector.fields[0]
+      .fieldPath,
     "object.textModulesData['card_number']",
   );
   assert.deepEqual(object.secondaryLoyaltyPoints.balance, { int: 3 });

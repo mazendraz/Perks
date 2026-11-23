@@ -119,13 +119,15 @@ export function googleClass(
               ),
             },
           },
-          {
-            twoItems: {
-              startItem: passField('object.accountName'),
-              endItem: passField("object.textModulesData['card_number']"),
-            },
-          },
         ],
+      },
+      cardBarcodeSectionDetails: {
+        firstTopDetail: {
+          fieldSelector: passField('object.accountName', 'class.issuerName').firstValue,
+        },
+        secondTopDetail: {
+          fieldSelector: passField("object.textModulesData['card_number']").firstValue,
+        },
       },
     },
     reviewStatus: 'UNDER_REVIEW',

@@ -835,11 +835,24 @@ function stampSlots(
     );
   });
 }
+function appleCardNumber(card: WalletCard, theme: WalletTheme, x: number, y: number) {
+  if (!card.active || !card.card_number || !/^[0-9]{6}$/.test(card.card_number)) return '';
+  return (
+    `<g data-card-number="true"><rect x="${x - 44}" y="${y - 11}" width="49" height="15" rx="4" fill="${theme.background}"/>` +
+    `<text x="${x}" y="${y}" text-anchor="end" font-family="sans-serif" font-size="10" fill="${theme.ink}">${card.card_number}</text></g>`
+  );
+}
+
 export function posterArtworkSvg(
   card: WalletCard,
   scale: number,
   rtl = false,
-  options: { face?: CardFace; logo?: ArtworkLogo | null; watermark?: ArtworkLogo | null } = {},
+  options: {
+    face?: CardFace;
+    logo?: ArtworkLogo | null;
+    watermark?: ArtworkLogo | null;
+    includeAppleCardNumber?: boolean;
+  } = {},
 ) {
   const face = options.face ?? POSTER,
     logo = options.logo ?? null,
@@ -888,6 +901,7 @@ export function posterArtworkSvg(
     logoMarkup +
     slots.join('') +
     track +
+    (options.includeAppleCardNumber ? appleCardNumber(card, theme, W - 18, 369) : '') +
     '</svg>'
   );
 }
@@ -1026,6 +1040,7 @@ export function appleStripSvg(
     glow +
     logoMarkup +
     (card.active ? body : `<g data-closed="true" opacity=".4">${body}</g>`) +
+    appleCardNumber(card, theme, W - 18, 126) +
     '</svg>'
   );
 }

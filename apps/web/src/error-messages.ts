@@ -59,6 +59,10 @@ const messages: Record<string, Line> = {
     'الدفع بـ InstaPay مش متاح دلوقتي. جرّب تاني بعد شوية.',
     'InstaPay payments are currently unavailable. Try again later.',
   ],
+  ONBOARDING_RECEIPT_REQUIRED: [
+    'ارفع إيصال التحويل علشان تقدر تنشر المحل.',
+    'Upload your transfer receipt to publish your shop.',
+  ],
   ONBOARDING_TRANSFER_MISMATCH: [
     'المبلغ أو حساب الاستلام مختلف عن طلب الدفع. راجع التحويل.',
     'The amount or receiving account differs from the order. Check the transfer.',

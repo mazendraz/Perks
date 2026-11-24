@@ -1,5 +1,5 @@
 import sharp from 'sharp';
-import { chromium, type Page, type BrowserContext, type Locator } from 'playwright';
+import { chromium, type Page, type BrowserContext, type Locator, type Request } from 'playwright';
 import pg from 'pg';
 import { randomBytes, randomUUID } from 'node:crypto';
 import { mkdir, writeFile } from 'node:fs/promises';
@@ -58,10 +58,15 @@ const ok = (name: string) => {
   checks.push(name);
   console.log('PASS ' + name);
 };
+const inFlight = new Map<Request, number>();
 async function context() {
   const x = await browser.newContext({ baseURL: origin, viewport: { width: 1365, height: 900 } });
   x.setDefaultTimeout(15000);
   await x.addInitScript(() => localStorage.setItem('nuqta-language', 'en'));
+  // Diagnostics only: requests still open when a step times out (path only, never query or body).
+  x.on('request', (request) => inFlight.set(request, Date.now()));
+  x.on('requestfinished', (request) => inFlight.delete(request));
+  x.on('requestfailed', (request) => inFlight.delete(request));
   return x;
 }
 async function choose(control: Locator, value: string) {
@@ -2033,6 +2038,19 @@ try {
         .catch(() => []);
       if (alerts.length) console.error('UI errors:', alerts.join(' | '));
     }
+  const open = [...inFlight].map(
+    ([request, started]) =>
+      request.method() +
+      ' ' +
+      new URL(request.url()).pathname.replace(
+        /\/(invite|reset-password|r|customer\/recoveries)\/[^/]+/g,
+        '/$1/[redacted]',
+      ) +
+      ' ' +
+      (Date.now() - started) +
+      'ms',
+  );
+  if (open.length) console.error('Requests still open:', open.slice(0, 20).join(' | '));
   // Session state only (flags and times, never tokens) to explain an unexpected sign-out.
   await db
     .query(

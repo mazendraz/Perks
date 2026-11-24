@@ -22,10 +22,28 @@ export const MASCOT_VOICE: ReadonlySet<MascotLine> = new Set<MascotLine>([
   'done',
 ]);
 
+/**
+ * One shared player. iOS Safari only lets audio play straight from a tap, and the guide opens
+ * one render later, so the tap that opens it calls primeLine() and the guide reuses this player.
+ * Once it has played from a tap, iOS lets it play the next lines on its own.
+ */
+let player: HTMLAudioElement | null = null;
+const voiceUrl = (line: MascotLine) => '/mascot/voice/' + line + '.mp3';
+const playerOn = (line: MascotLine) =>
+  !!player && !player.paused && !player.ended && player.src.endsWith(voiceUrl(line));
+
+/** Call synchronously inside the tap that opens a guide, so its first line can be heard on iOS. */
+export function primeLine(line: MascotLine, lang: Language) {
+  if (lang !== 'ar' || !MASCOT_VOICE.has(line)) return;
+  player ??= new Audio();
+  player.src = voiceUrl(line);
+  player.play().catch(() => {});
+}
+
 /** Plays a line once, outside a guide (e.g. the thumbs-up after installing). */
 export function sayLine(line: MascotLine, lang: Language, onTalking?: (talking: boolean) => void) {
   if (lang !== 'ar' || !MASCOT_VOICE.has(line)) return;
-  const sound = new Audio('/mascot/voice/' + line + '.mp3');
+  const sound = new Audio(voiceUrl(line));
   sound.onplay = () => onTalking?.(true);
   sound.onended = sound.onerror = () => onTalking?.(false);
   sound.play().catch(() => onTalking?.(false));
@@ -47,17 +65,21 @@ export function Mascot({
 }) {
   const ar = lang === 'ar';
   const [talking, setTalking] = useState(false);
-  const audio = useRef<HTMLAudioElement | null>(null);
   const bubble = useRef<HTMLParagraphElement>(null);
   const voiced = ar && MASCOT_VOICE.has(line);
 
   const speak = () => {
-    audio.current?.pause();
     if (voiced) {
-      const sound = new Audio('/mascot/voice/' + line + '.mp3');
-      audio.current = sound;
+      player ??= new Audio();
+      const sound = player;
       sound.onplay = () => setTalking(true);
       sound.onended = sound.onerror = sound.onpause = () => setTalking(false);
+      // Already started by the tap that opened the guide: just follow it.
+      if (playerOn(line)) {
+        setTalking(true);
+        return;
+      }
+      sound.src = voiceUrl(line);
       sound.play().catch(() => setTalking(false));
       return;
     }
@@ -73,8 +95,10 @@ export function Mascot({
     const stop = speak();
     return () => {
       stop?.();
-      audio.current?.pause();
-      audio.current = null;
+      if (voiced && player) {
+        player.onplay = player.onended = player.onerror = player.onpause = null;
+        player.pause();
+      }
     };
   }, [line, mood]);
 

@@ -220,3 +220,8 @@
     animation: none;
   }
 }
+
+/* The install guide sits above everything on the page, card deck included. */
+.install-guide-backdrop {
+  z-index: 10040;
+}

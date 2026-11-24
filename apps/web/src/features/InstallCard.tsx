@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import type { Language } from '../../../../packages/contracts/src/index.js';
 import { Icon } from '../../../../packages/ui/src/Icon.js';
 import type { Portal } from '../portals.js';
@@ -11,7 +12,7 @@ import {
   subscribeInstall,
   waitForInstallPrompt,
 } from '../install-prompt.js';
-import { Mascot, sayLine } from './Mascot.js';
+import { Mascot, primeLine, sayLine } from './Mascot.js';
 import './install-app.css';
 
 const appName: Record<Portal, { ar: string; en: string }> = {
@@ -88,9 +89,16 @@ export function InstallAppButton({ lang, portal }: { lang: Language; portal: Por
   if (hidden && !done && !guide) return null;
 
   const add = async () => {
-    const { ios, inApp } = device();
-    if (inApp) return setGuide('inapp');
-    if (ios) return setGuide('ios');
+    const { ios, inApp, iosSafari } = device();
+    // Start the mascot's line inside this tap: iOS blocks audio that starts later.
+    if (inApp) {
+      primeLine(ios ? 'inapp-ios' : 'inapp-android', lang);
+      return setGuide('inapp');
+    }
+    if (ios) {
+      primeLine(iosSafari ? 'ios-share' : 'ios-share-other', lang);
+      return setGuide('ios');
+    }
     setBusy(true);
     try {
       // The browser's install event can land a moment after the page opens.
@@ -195,8 +203,9 @@ function InstallGuide({
   const browser = d.ios ? 'Safari' : 'Chrome';
   const last = kind !== 'ios' || step === 1;
 
-  return (
-    <div className="modal-backdrop sheet-backdrop" onClick={onClose}>
+  // On <body>, so nothing on the page (like the fanned card deck) can paint over the sheet.
+  return createPortal(
+    <div className="modal-backdrop sheet-backdrop install-guide-backdrop" onClick={onClose}>
       <section
         className="dialog limit-sheet install-card-guide"
         role="dialog"
@@ -286,7 +295,8 @@ function InstallGuide({
           <span className="install-guide-pointer" aria-hidden="true" />
         )}
       </section>
-    </div>
+    </div>,
+    document.body,
   );
 }
 

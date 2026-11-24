@@ -244,6 +244,19 @@ export function App() {
     },
     (e) => setNotice(errorText(e, lang)),
   );
+  const [stampDock, setStampDock] = useState<HTMLDivElement | null>(null);
+  const cardPage =
+    !!session &&
+    portal === 'customer' &&
+    (route === '/customer' ||
+      (/^\/customer\/[^/]+$/.test(route) &&
+        ![
+          '/customer/account',
+          '/customer/deleted',
+          '/customer/open',
+          '/customer/restore',
+          '/customer/login',
+        ].includes(route)));
   const logout = () => signOut.request();
   if (loading || sessionPortal !== portal)
     return (
@@ -253,134 +266,143 @@ export function App() {
     );
   return (
     <ControlLocale.Provider value={lang}>
-      <PwaStatus lang={lang} />
+      {!cardPage && <PwaStatus lang={lang} />}
       {signOut.dialog}
       <a className="skip-link" href="#main">
         {ar ? 'روح للمحتوى' : 'Skip to content'}
       </a>
-      <header className="topbar" data-portal={portal}>
-        <button
-          className="wordmark"
-          onClick={() => navigate(portal ? '/' + portal : '/')}
-          aria-label={ar ? 'الرئيسية - Perks' : 'Perks home'}
-        >
-          <img className="perks-wordmark" src="/brand/perks-logo-wordmark.svg" alt="Perks" />
-        </button>
-        {portal && portal !== 'customer' && (
-          <span className="portal-badge">{portalInfo[portal][ar ? 'ar' : 'en']}</span>
-        )}
-        <div className="top-actions">
+      <div className={cardPage ? 'customer-page-shell' : 'page-group'}>
+        <header className="topbar" data-portal={portal}>
           <button
-            className="text-button"
-            onClick={() => {
-              const next = ar ? 'en' : 'ar';
-              setLang(next);
-              try {
-                localStorage.setItem('nuqta-language', next);
-              } catch {
-                /* Keep this session choice when storage is unavailable. */
-              }
-            }}
+            className="wordmark"
+            onClick={() => navigate(portal ? '/' + portal : '/')}
+            aria-label={ar ? 'الرئيسية - Perks' : 'Perks home'}
           >
-            {ar ? 'English' : 'العربية'}
+            <img className="perks-wordmark" src="/brand/perks-logo-wordmark.svg" alt="Perks" />
           </button>
-          {/* Customers have no password: signing out from the header could look like losing the
+          {portal && portal !== 'customer' && (
+            <span className="portal-badge">{portalInfo[portal][ar ? 'ar' : 'en']}</span>
+          )}
+          <div className="top-actions">
+            <button
+              className="text-button"
+              onClick={() => {
+                const next = ar ? 'en' : 'ar';
+                setLang(next);
+                try {
+                  localStorage.setItem('nuqta-language', next);
+                } catch {
+                  /* Keep this session choice when storage is unavailable. */
+                }
+              }}
+            >
+              {ar ? 'English' : 'العربية'}
+            </button>
+            {/* Customers have no password: signing out from the header could look like losing the
               card, so for them it lives in My account with a warning. */}
-          {session &&
-            portal !== 'customer' &&
-            route !== '/' &&
-            route !== '/portals' &&
-            route !== '/login' && (
-              <>
-                <bdi className="signed-in">{session.user.email || session.user.displayName}</bdi>
-                <button className="secondary small" onClick={() => void logout()}>
-                  {ar ? 'خروج' : 'Sign out'}
-                </button>
-              </>
-            )}
+            {session &&
+              portal !== 'customer' &&
+              route !== '/' &&
+              route !== '/portals' &&
+              route !== '/login' && (
+                <>
+                  <bdi className="signed-in">{session.user.email || session.user.displayName}</bdi>
+                  <button className="secondary small" onClick={() => void logout()}>
+                    {ar ? 'خروج' : 'Sign out'}
+                  </button>
+                </>
+              )}
+          </div>
+        </header>
+        <div className={cardPage ? 'customer-page-scroll' : 'page-group'}>
+          {cardPage && <PwaStatus lang={lang} />}
+          {notice && (
+            <div className="notice error" role="alert">
+              {notice}
+              <button className="text-button" onClick={() => setNotice('')}>
+                {ar ? 'إغلاق' : 'Close'}
+              </button>
+            </div>
+          )}
+          {route === '/customer/deleted' && accountDeleted ? (
+            <CustomerDeletionComplete lang={lang} />
+          ) : route === '/customer/open' ? (
+            <WalletOpenPage lang={lang} refresh={refresh} />
+          ) : route === '/customer/restore' ? (
+            <RestoreCardsPage lang={lang} />
+          ) : route === '/customer/restore/whatsapp' ? (
+            <WhatsAppRestorePage lang={lang} refresh={refresh} />
+          ) : route === '/privacy' || route === '/terms' ? (
+            <LegalPage kind={route === '/privacy' ? 'privacy' : 'terms'} lang={lang} />
+          ) : route.startsWith('/reset-password/') ? (
+            <ResetPassword token={route.split('/')[2] || ''} lang={lang} />
+          ) : route.startsWith('/p/') ? (
+            <PlacementPage code={route.split('/')[2] || ''} lang={lang} />
+          ) : route.startsWith('/r/') ? (
+            <CustomerRecoveryPage
+              token={route.split('/')[2] || ''}
+              lang={lang}
+              session={session}
+              refresh={refresh}
+            />
+          ) : portal === 'customer' && !session && route.startsWith('/customer') ? (
+            // "Not on this device" only after the server said so (401). Anything else is a retry.
+            unknownFailures ? (
+              <CustomerCardUnavailable lang={lang} retry={refresh} />
+            ) : (
+              <CustomerDeviceHelp lang={lang} refresh={refresh} />
+            )
+          ) : route.startsWith('/join/') ? (
+            <EnrollmentPage
+              slug={route.split('/')[2] || ''}
+              lang={lang}
+              session={session}
+              refresh={refresh}
+            />
+          ) : !session || route === '/login' || route === '/' || route === '/portals' ? (
+            <Login
+              key={
+                route.startsWith('/join/')
+                  ? 'join-login'
+                  : route.startsWith('/invite/')
+                    ? 'invitation-login'
+                    : 'login'
+              }
+              invited={route.startsWith('/invite/')}
+              lang={lang}
+              onSuccess={async (signedPortal) => {
+                const next = await api<Session>('/session', {
+                  workspace: signedPortal || 'shared',
+                });
+                setCsrf(next.csrfToken);
+                setSession(next);
+                sessionFor.current = portal;
+                setSessionPortal(portal);
+                setNotice('');
+                if (!route.startsWith('/join/') && !route.startsWith('/invite/'))
+                  navigate('/' + defaultPortal(next));
+              }}
+            />
+          ) : (
+            <Workspace
+              session={session}
+              lang={lang}
+              route={route}
+              refresh={refresh}
+              onLogout={logout}
+              stampDock={cardPage ? stampDock : null}
+            />
+          )}
+          <footer className="footer" data-portal={portal}>
+            {ar ? 'Perks · كارت الولاء بتاعك على موبايلك' : 'Perks · Loyalty cards in your wallet'}
+            <nav className="legal-links" aria-label={ar ? 'الخصوصية والشروط' : 'Privacy and terms'}>
+              <a href={'/privacy?lang=' + lang}>{ar ? 'الخصوصية' : 'Privacy'}</a>
+              <a href={'/terms?lang=' + lang}>{ar ? 'الشروط' : 'Terms'}</a>
+            </nav>
+          </footer>
         </div>
-      </header>
-      {notice && (
-        <div className="notice error" role="alert">
-          {notice}
-          <button className="text-button" onClick={() => setNotice('')}>
-            {ar ? 'إغلاق' : 'Close'}
-          </button>
-        </div>
-      )}
-      {route === '/customer/deleted' && accountDeleted ? (
-        <CustomerDeletionComplete lang={lang} />
-      ) : route === '/customer/open' ? (
-        <WalletOpenPage lang={lang} refresh={refresh} />
-      ) : route === '/customer/restore' ? (
-        <RestoreCardsPage lang={lang} />
-      ) : route === '/customer/restore/whatsapp' ? (
-        <WhatsAppRestorePage lang={lang} refresh={refresh} />
-      ) : route === '/privacy' || route === '/terms' ? (
-        <LegalPage kind={route === '/privacy' ? 'privacy' : 'terms'} lang={lang} />
-      ) : route.startsWith('/reset-password/') ? (
-        <ResetPassword token={route.split('/')[2] || ''} lang={lang} />
-      ) : route.startsWith('/p/') ? (
-        <PlacementPage code={route.split('/')[2] || ''} lang={lang} />
-      ) : route.startsWith('/r/') ? (
-        <CustomerRecoveryPage
-          token={route.split('/')[2] || ''}
-          lang={lang}
-          session={session}
-          refresh={refresh}
-        />
-      ) : portal === 'customer' && !session && route.startsWith('/customer') ? (
-        // "Not on this device" only after the server said so (401). Anything else is a retry.
-        unknownFailures ? (
-          <CustomerCardUnavailable lang={lang} retry={refresh} />
-        ) : (
-          <CustomerDeviceHelp lang={lang} refresh={refresh} />
-        )
-      ) : route.startsWith('/join/') ? (
-        <EnrollmentPage
-          slug={route.split('/')[2] || ''}
-          lang={lang}
-          session={session}
-          refresh={refresh}
-        />
-      ) : !session || route === '/login' || route === '/' || route === '/portals' ? (
-        <Login
-          key={
-            route.startsWith('/join/')
-              ? 'join-login'
-              : route.startsWith('/invite/')
-                ? 'invitation-login'
-                : 'login'
-          }
-          invited={route.startsWith('/invite/')}
-          lang={lang}
-          onSuccess={async (signedPortal) => {
-            const next = await api<Session>('/session', { workspace: signedPortal || 'shared' });
-            setCsrf(next.csrfToken);
-            setSession(next);
-            sessionFor.current = portal;
-            setSessionPortal(portal);
-            setNotice('');
-            if (!route.startsWith('/join/') && !route.startsWith('/invite/'))
-              navigate('/' + defaultPortal(next));
-          }}
-        />
-      ) : (
-        <Workspace
-          session={session}
-          lang={lang}
-          route={route}
-          refresh={refresh}
-          onLogout={logout}
-        />
-      )}
-      <footer className="footer" data-portal={portal}>
-        {ar ? 'Perks · كارت الولاء بتاعك على موبايلك' : 'Perks · Loyalty cards in your wallet'}
-        <nav className="legal-links" aria-label={ar ? 'الخصوصية والشروط' : 'Privacy and terms'}>
-          <a href={'/privacy?lang=' + lang}>{ar ? 'الخصوصية' : 'Privacy'}</a>
-          <a href={'/terms?lang=' + lang}>{ar ? 'الشروط' : 'Terms'}</a>
-        </nav>
-      </footer>
+        {cardPage && <div className="customer-stamp-dock" ref={setStampDock} />}
+      </div>
     </ControlLocale.Provider>
   );
 }
@@ -390,12 +412,14 @@ function Workspace({
   route,
   refresh,
   onLogout,
+  stampDock,
 }: {
   session: Session;
   lang: Language;
   route: string;
   refresh: () => Promise<void>;
   onLogout: () => Promise<void>;
+  stampDock: HTMLElement | null;
 }) {
   const ar = lang === 'ar',
     portal = portalForPath(route) || defaultPortal(session);
@@ -557,7 +581,14 @@ function Workspace({
       />
     );
   } else if (route === '/customer' || (route.startsWith('/customer/') && route !== account))
-    content = <CustomerPage key={session.user.id} lang={lang} membershipId={route.split('/')[2]} />;
+    content = (
+      <CustomerPage
+        key={session.user.id}
+        lang={lang}
+        membershipId={route.split('/')[2]}
+        stampDock={stampDock}
+      />
+    );
   else if (route.startsWith('/invite/'))
     content = <InvitePage token={route.split('/')[2] || ''} lang={lang} refresh={refresh} />;
   const previewMerchant = /^\/platform\/merchants\/([a-f0-9-]{36})\/owner-view$/.exec(route)?.[1];

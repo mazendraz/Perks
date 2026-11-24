@@ -50,7 +50,7 @@ function WalletNotifyOptIn({
 }) {
   const ar = lang === 'ar';
   const path = '/me/merchants/' + merchantId + '/preferences';
-  const [granted, setGranted] = useState<boolean | null>(null);
+  const [granted, setGranted] = useState<boolean | null>();
   const [failed, setFailed] = useState(false);
   const [justTurnedOn, setJustTurnedOn] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -82,8 +82,8 @@ function WalletNotifyOptIn({
     <label className="checkbox-label wallet-notify-optin">
       <input
         type="checkbox"
-        checked={granted}
-        disabled={busy}
+        checked={granted === true}
+        disabled={busy || granted === undefined}
         onChange={(e) => void change(e.target.checked)}
       />
       <span>
@@ -106,31 +106,38 @@ function WalletNotifyOptIn({
   );
 }
 
+type WalletAvailability = { apple: boolean; google?: boolean; recoveryRequired?: boolean };
+
+export function useWalletAvailability() {
+  const [wallets, setWallets] = useState<WalletAvailability | null>(null);
+  useEffect(() => {
+    let live = true;
+    api<WalletAvailability>('/wallet/availability', { workspace: 'customer' })
+      .then((result) => live && setWallets(result))
+      .catch(() => live && setWallets({ apple: false, google: false }));
+    return () => {
+      live = false;
+    };
+  }, []);
+  return wallets;
+}
+
 export function WalletPanel({
   membershipId,
   merchantId,
   merchantName,
   lang,
   onPreferences,
+  wallets,
 }: {
   membershipId: string;
   merchantId?: string;
   merchantName?: string;
   lang: Language;
   onPreferences?: () => void;
+  wallets: WalletAvailability | null;
 }) {
   const ar = lang === 'ar';
-  type Availability = { apple: boolean; google?: boolean; recoveryRequired?: boolean };
-  const [wallets, setWallets] = useState<Availability | null>(null);
-  useEffect(() => {
-    let live = true;
-    api<Availability>('/wallet/availability', { workspace: 'customer' })
-      .then((r) => live && setWallets(r))
-      .catch(() => live && setWallets({ apple: false, google: false }));
-    return () => {
-      live = false;
-    };
-  }, [membershipId]);
   const iphone = canAddToAppleWallet(),
     android = isAndroid();
   const apple = !!wallets?.apple && iphone,
@@ -166,7 +173,12 @@ export function WalletPanel({
               : 'It updates after every stamp. Adding shares your name and card details with your wallet provider.'}
           </p>
           {merchantId && merchantName && (
-            <WalletNotifyOptIn merchantId={merchantId} merchantName={merchantName} lang={lang} />
+            <WalletNotifyOptIn
+              key={merchantId}
+              merchantId={merchantId}
+              merchantName={merchantName}
+              lang={lang}
+            />
           )}
         </>
       ) : (

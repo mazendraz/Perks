@@ -1,0 +1,63 @@
+.page-group,
+.customer-page-shell,
+.customer-page-scroll {
+  display: contents;
+}
+.customer-page-shell > .topbar {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 10;
+}
+.customer-stamp-dock {
+  display: none;
+}
+.customer-details-area {
+  min-inline-size: 0;
+}
+.customer-details-area[data-resizing] {
+  overflow: hidden;
+  overflow: clip;
+}
+.customer-stamp-request h2 {
+  scroll-margin-block-start: 20px;
+}
+@media (max-width: 760px) {
+  .customer-page-shell {
+    display: grid;
+    block-size: 100vh;
+    block-size: 100dvh;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+  }
+  .customer-page-shell > .topbar {
+    position: static;
+  }
+  .customer-page-scroll {
+    display: block;
+    overflow: auto;
+    scroll-padding-block: 12px;
+  }
+  .customer-page-scroll .pwa-status {
+    position: static;
+    margin: 8px 16px;
+    box-shadow: none;
+  }
+  .customer-page-scroll .footer {
+    padding-block-end: 8px;
+  }
+  .customer-stamp-dock:not(:empty) {
+    display: grid;
+    padding-block: 8px calc(8px + env(safe-area-inset-bottom, 0px));
+    padding-left: calc(16px + env(safe-area-inset-left, 0px));
+    padding-right: calc(16px + env(safe-area-inset-right, 0px));
+    background: var(--paper);
+    border-block-start: 1px solid var(--border);
+  }
+}
+
+/* The app's content region owns scroll on the mobile wallet. */
+@media (max-width: 760px) {
+  html:has(.customer-page-shell),
+  body:has(.customer-page-shell) {
+    overflow: hidden;
+  }
+}

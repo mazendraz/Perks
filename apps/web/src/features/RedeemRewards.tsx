@@ -29,12 +29,14 @@ const branchHint = () => {
 
 export function RedeemRewards({
   card,
-  rewards,
+  rewards = [],
+  loading = false,
   lang,
   onChanged,
 }: {
   card: SavedCard;
-  rewards: Reward[];
+  rewards?: Reward[];
+  loading?: boolean;
   lang: Language;
   onChanged: () => Promise<void> | void;
 }) {
@@ -234,7 +236,11 @@ export function RedeemRewards({
           </p>
         )
       )}
-      {rewards.length ? (
+      {loading ? (
+        <p className="muted" role="status">
+          {ar ? 'بنحمّل المكافآت…' : 'Loading rewards…'}
+        </p>
+      ) : rewards.length ? (
         rewards.map((r) => (
           <div className="reward-row" key={r.id}>
             <div>

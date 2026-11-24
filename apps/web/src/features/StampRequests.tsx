@@ -2,7 +2,7 @@ import { Select } from '../controls/Select.js';
 import { ActionLabel } from '../../../../packages/ui/src/Icon.js';
 import { useLiveRefresh } from '../live-events.js';
 import { useAutoStampRequest } from '../useAutoStampRequest.js';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, type RefObject } from 'react';
 import type { Language, SavedCard } from '../../../../packages/contracts/src/index.js';
 import { api, errorText } from '../api.js';
 import { intlLocale } from '../locale.js';
@@ -27,8 +27,10 @@ export function CustomerRequests({
   onPending,
   onAwarded,
   onNotice,
+  headingRef,
 }: {
   card: SavedCard;
+  headingRef?: RefObject<HTMLHeadingElement | null>;
   lang: Language;
   onPending?: (pending: boolean) => void;
   onAwarded?: () => Promise<void> | void;
@@ -126,7 +128,9 @@ export function CustomerRequests({
   };
   return (
     <section className="panel customer-stamp-request">
-      <h2>{ar ? 'اطلب ختم من الفرع' : 'Request a branch stamp'}</h2>
+      <h2 ref={headingRef} tabIndex={-1}>
+        {ar ? 'اطلب ختم من الفرع' : 'Request a branch stamp'}
+      </h2>
       {error && (
         <p className="error-text" role="alert">
           {error}

@@ -1,3 +1,5 @@
+import { createPortal } from 'react-dom';
+import './customer-page.css';
 import { PhoneInput } from '../controls/PhoneInput.js';
 import type { LegalNotice } from '../../../../packages/contracts/src/legal.js';
 import { Select } from '../controls/Select.js';
@@ -10,7 +12,7 @@ import { RefreshQueue } from '../refresh-queue.js';
 import { ActionLabel } from '../../../../packages/ui/src/Icon.js';
 import { RedeemRewards } from './RedeemRewards.js';
 import { InstallAppButton } from './InstallCard.js';
-import { WalletPanel } from './WalletPanel.js';
+import { WalletPanel, useWalletAvailability } from './WalletPanel.js';
 import { CardSwitcher } from './CardSwitcher.js';
 import { useCardExperience } from '../useCardExperience.js';
 import { StampCelebration, gainedStamp, type StampMoment } from './StampCelebration.js';
@@ -21,6 +23,7 @@ import {
   useState,
   useRef,
   type FormEvent,
+  type ReactNode,
   type CSSProperties,
 } from 'react';
 import type {
@@ -580,28 +583,84 @@ export function InvitePage({
     </section>
   );
 }
+type CardActivity = {
+  id: string;
+  public_reference: string;
+  type: string;
+  quantity: number;
+  at: string;
+  source?: string;
+};
+
+type CardDetails = { rewards?: Reward[]; activity?: CardActivity[]; error?: string };
+
+function CardDetailsArea({
+  children,
+  openingStamp,
+}: {
+  children: ReactNode;
+  openingStamp: boolean;
+}) {
+  const area = useRef<HTMLDivElement>(null);
+  const body = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const outer = area.current!;
+    const inner = body.current!;
+    if (openingStamp) return;
+    if (typeof ResizeObserver === 'undefined' || typeof outer.animate !== 'function') return;
+    const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
+    let height = inner.offsetHeight;
+    let animation: Animation | undefined;
+    const clear = () => {
+      animation?.cancel();
+      animation = undefined;
+      delete outer.dataset.resizing;
+    };
+    const observer = new ResizeObserver(() => {
+      const nextHeight = inner.offsetHeight;
+      if (nextHeight === height) return;
+      const from = animation ? outer.getBoundingClientRect().height : height;
+      height = nextHeight;
+      clear();
+      if (reducedMotion.matches || Math.abs(from - height) < 2) return;
+      outer.dataset.resizing = 'true';
+      animation = outer.animate([{ height: from + 'px' }, { height: height + 'px' }], {
+        duration: 150,
+        easing: 'ease-out',
+      });
+      animation.onfinish = clear;
+    });
+    observer.observe(inner);
+    reducedMotion.addEventListener?.('change', clear);
+    return () => {
+      observer.disconnect();
+      reducedMotion.removeEventListener?.('change', clear);
+      clear();
+    };
+  }, [openingStamp]);
+  return (
+    <div className="customer-details-area" ref={area}>
+      <div className="membership-content" ref={body}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
 export function CustomerPage({
   lang,
   membershipId: routeId,
+  stampDock,
 }: {
   lang: Language;
   membershipId?: string;
+  stampDock?: HTMLElement | null;
 }) {
   const ar = lang === 'ar',
     [cards, setCards] = useState<SavedCard[]>([]),
     [error, setError] = useState(''),
     [loaded, setLoaded] = useState(false),
-    [rewards, setRewards] = useState<Reward[]>([]),
-    [activity, setActivity] = useState<
-      {
-        id: string;
-        public_reference: string;
-        type: string;
-        quantity: number;
-        at: string;
-        source?: string;
-      }[]
-    >([]),
+    [detailsByCard, setDetailsByCard] = useState<Record<string, CardDetails>>({}),
     [busy, setBusy] = useState(false),
     [tab, setTab] = useState<'card' | 'history' | 'preferences'>('card'),
     [preferences, setPreferences] = useState<{ channel: string; granted: boolean }[]>([]);
@@ -625,32 +684,46 @@ export function CustomerPage({
   const cardsQueue = useRef(new RefreshQueue());
   const detailsQueue = useRef(new RefreshQueue());
   const [loadError, setLoadError] = useState('');
-  const [detailsError, setDetailsError] = useState('');
   const [loadingPreferences, setLoadingPreferences] = useState(false);
-  const load = async () => {
-    const generation = loadGeneration.current;
-    void detailsQueue.current.run(async () => {
-      try {
-        const [r, a] = await Promise.all([
-          membershipId
-            ? api<{ rewards: Reward[] }>('/me/memberships/' + membershipId + '/rewards', {
-                timeoutMs: 10000,
-              })
-            : undefined,
-          membershipId
-            ? api<{ activity: typeof activity }>('/me/memberships/' + membershipId + '/activity', {
-                timeoutMs: 10000,
-              })
-            : undefined,
-        ]);
+  const { rewards, activity, error: detailsError } = detailsByCard[membershipId ?? ''] ?? {};
+  const walletAvailability = useWalletAvailability();
+  const requests = useRef(new Map<string, Promise<void>>());
+  const readDetails = useCallback(
+    (id: string) => {
+      const pending = requests.current.get(id);
+      if (pending) return pending;
+      const generation = loadGeneration.current;
+      const path = '/me/memberships/' + encodeURIComponent(id);
+      const update = (patch: CardDetails) => {
         if (generation !== loadGeneration.current) return;
-        if (r) setRewards(r.rewards);
-        if (a) setActivity(a.activity);
-        setDetailsError('');
-      } catch (e) {
-        if (generation === loadGeneration.current) setDetailsError(errorText(e, lang));
-      }
-    });
+        setDetailsByCard((current) => ({
+          ...current,
+          [id]: { ...current[id], ...patch },
+        }));
+      };
+      const read = Promise.allSettled([
+        api<{ rewards: Reward[] }>(path + '/rewards', { timeoutMs: 10000 }).then(({ rewards }) =>
+          update({ rewards }),
+        ),
+        api<{ activity: CardActivity[] }>(path + '/activity', { timeoutMs: 10000 }).then(
+          ({ activity }) => update({ activity }),
+        ),
+      ])
+        .then((results) => {
+          const failure = results.find((result) => result.status === 'rejected');
+          update({ error: failure ? errorText(failure.reason, lang) : undefined });
+        })
+        .finally(() => {
+          if (requests.current.get(id) === read) requests.current.delete(id);
+        });
+      requests.current.set(id, read);
+      return read;
+    },
+    [lang],
+  );
+
+  const loadCards = async () => {
+    const generation = loadGeneration.current;
     await cardsQueue.current.run(async () => {
       try {
         const list = await api<{ cards: SavedCard[] }>('/me/memberships', { timeoutMs: 10000 });
@@ -668,29 +741,41 @@ export function CustomerPage({
       }
     });
   };
+  const load = async () => {
+    if (membershipId) void detailsQueue.current.run(() => readDetails(membershipId));
+    await loadCards();
+  };
   useLiveRefresh('/me/events', load);
-  useLayoutEffect(() => {
-    loadGeneration.current++;
-    cardsQueue.current.invalidate();
-    detailsQueue.current.invalidate();
-    setError('');
-    setLoadError('');
-    setDetailsError('');
-    setRewards([]);
-    setActivity([]);
-    setVisitNotice(null);
-    setWaiting(false);
-    setTab('card');
-    preferenceGeneration.current++;
-    setPreferences([]);
-    setLoadingPreferences(false);
-    void load();
+  useEffect(() => {
+    void loadCards();
     return () => {
       loadGeneration.current++;
+      requests.current.clear();
       cardsQueue.current.invalidate();
       detailsQueue.current.invalidate();
     };
+  }, []);
+  useLayoutEffect(() => {
+    setError('');
+    setVisitNotice(null);
+    setWaiting(false);
+    preferenceGeneration.current++;
+    setPreferences([]);
+    setLoadingPreferences(false);
   }, [membershipId]);
+  useEffect(() => {
+    if (membershipId) void detailsQueue.current.run(() => readDetails(membershipId));
+    return () => detailsQueue.current.invalidate();
+  }, [membershipId, readDetails]);
+  const selectedIndex = cards.findIndex((item) => item.id === membershipId);
+  const previousId = selectedIndex < 0 ? undefined : cards[selectedIndex - 1]?.id;
+  const nextId = selectedIndex < 0 ? undefined : cards[selectedIndex + 1]?.id;
+  useEffect(() => {
+    for (const id of [previousId, nextId]) {
+      if (id && !detailsByCard[id]) void readDetails(id);
+    }
+  }, [previousId, nextId, readDetails]);
+
   const card = cards.find((x) => x.id === membershipId);
   useCardExperience(card?.id);
   // When the cashier approves (or a sticker visit is awarded), the card comes up full-screen
@@ -742,10 +827,32 @@ export function CustomerPage({
       if (generation === preferenceGeneration.current) setLoadingPreferences(false);
     }
   };
-  const preferenceTab = async () => {
-    setTab('preferences');
-    await refreshPreferences();
+  useEffect(() => {
+    if (tab === 'preferences') void refreshPreferences();
+  }, [tab, card?.id]);
+  const stampHeading = useRef<HTMLHeadingElement>(null);
+  const [openingStamp, setOpeningStamp] = useState(false);
+  const scrollToStamp = () => {
+    const heading = stampHeading.current;
+    const scroller = heading?.closest<HTMLElement>('.customer-page-scroll');
+    if (!heading || !scroller) return;
+    heading.focus({ preventScroll: true });
+    scroller.scrollTop +=
+      heading.getBoundingClientRect().top - scroller.getBoundingClientRect().top - 20;
   };
+  const showStampRequest = () => {
+    if (tab === 'card') {
+      scrollToStamp();
+    } else {
+      setOpeningStamp(true);
+      setTab('card');
+    }
+  };
+  useLayoutEffect(() => {
+    if (!openingStamp) return;
+    scrollToStamp();
+    setOpeningStamp(false);
+  }, [openingStamp]);
   const updatePreference = async (channel: string, granted: boolean) => {
     if (!card) return;
     setBusy(true);
@@ -860,13 +967,13 @@ export function CustomerPage({
                   <button
                     aria-pressed={tab === 'preferences'}
                     className={tab === 'preferences' ? 'active' : ''}
-                    onClick={() => void preferenceTab()}
+                    onClick={() => setTab('preferences')}
                   >
                     {ar ? 'التفضيلات' : 'Preferences'}
                   </button>
                 </div>
               </aside>
-              <div className="membership-content" key={card.id}>
+              <CardDetailsArea openingStamp={openingStamp}>
                 {tab === 'card' && (
                   <>
                     {!card.earning_active && (
@@ -878,19 +985,23 @@ export function CustomerPage({
                     )}
                     <WalletPanel
                       membershipId={card.id}
+                      wallets={walletAvailability}
                       merchantId={card.merchant_id}
                       merchantName={card.merchant_name}
                       lang={lang}
-                      onPreferences={() => void preferenceTab()}
+                      onPreferences={() => setTab('preferences')}
                     />
                     <RedeemRewards
-                      key={card.id}
+                      key={'rewards-' + card.id}
                       card={card}
                       rewards={rewards}
+                      loading={rewards === undefined && !detailsError}
                       lang={lang}
                       onChanged={load}
                     />
                     <CustomerRequests
+                      key={'stamp-' + card.id}
+                      headingRef={stampHeading}
                       card={card}
                       lang={lang}
                       onPending={setWaiting}
@@ -902,7 +1013,11 @@ export function CustomerPage({
                 {tab === 'history' && (
                   <section className="panel">
                     <h2>{ar ? 'سجل النشاط' : 'Activity'}</h2>
-                    {activity.length ? (
+                    {activity === undefined && !detailsError ? (
+                      <p className="muted" role="status">
+                        {ar ? 'بنحمّل السجل…' : 'Loading activity…'}
+                      </p>
+                    ) : activity?.length ? (
                       activity.map((a) => (
                         <div className="activity-row" key={a.id}>
                           <div>
@@ -996,7 +1111,7 @@ export function CustomerPage({
                       ))}
                   </section>
                 )}
-              </div>
+              </CardDetailsArea>
             </div>
           </div>
         ) : (
@@ -1008,6 +1123,14 @@ export function CustomerPage({
             </div>
           )
         )}
+        {card &&
+          stampDock &&
+          createPortal(
+            <button type="button" className="primary" onClick={showStampRequest}>
+              <ActionLabel icon="stamp">{ar ? 'اطلب ختم' : 'Request a stamp'}</ActionLabel>
+            </button>,
+            stampDock,
+          )}
         {loaded && (card || !routeId) && <InstallAppButton lang={lang} portal="customer" />}
       </div>
     </>

@@ -72,6 +72,9 @@ const PlatformTeam = lazy(() =>
   import('./features/PlatformTeam.js').then((m) => ({ default: m.PlatformTeam })),
 );
 import { CustomerPage, EnrollmentPage, InvitePage } from './features/CustomerPage.js';
+import { MerchantOnboarding } from './features/MerchantOnboarding.js';
+import { MerchantSignup } from './features/MerchantSignup.js';
+import { OnboardingPayments } from './features/OnboardingPayments.js';
 export function App() {
   useDialogAccessibility();
   useEffect(() => {
@@ -363,6 +366,10 @@ export function App() {
               session={session}
               refresh={refresh}
             />
+          ) : route === '/onboarding/signup' ? (
+            <MerchantSignup lang={lang} />
+          ) : route === '/onboarding' && session ? (
+            <MerchantOnboarding key={session.user.id} lang={lang} />
           ) : !session || route === '/login' || route === '/' || route === '/portals' ? (
             <Login
               key={
@@ -383,7 +390,11 @@ export function App() {
                 sessionFor.current = portal;
                 setSessionPortal(portal);
                 setNotice('');
-                if (!route.startsWith('/join/') && !route.startsWith('/invite/'))
+                if (
+                  route !== '/onboarding' &&
+                  !route.startsWith('/join/') &&
+                  !route.startsWith('/invite/')
+                )
                   navigate('/' + defaultPortal(next));
               }}
             />
@@ -482,6 +493,11 @@ function Workspace({
             label: ar ? 'الاشتراكات والباقات' : 'Billing and plans',
             icon: 'chart',
           },
+          {
+            path: '/platform/onboarding-payments',
+            label: ar ? 'تحويلات InstaPay' : 'InstaPay transfers',
+            icon: 'chart',
+          },
           { path: '/platform/team', label: ar ? 'فريق الإدارة' : 'Platform team', icon: 'people' },
         ]
       : []),
@@ -551,6 +567,8 @@ function Workspace({
       content = <PlatformTeam lang={lang} />;
     else if (route === '/platform/billing' && session.user.role === 'platform_admin')
       content = <Billing lang={lang} />;
+    else if (route === '/platform/onboarding-payments' && session.user.role === 'platform_admin')
+      content = <OnboardingPayments lang={lang} />;
     else if (route === '/platform/operations' || session.user.role === 'platform_support')
       content = (
         <>

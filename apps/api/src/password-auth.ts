@@ -7,6 +7,7 @@ import { keyedHash, opaqueToken, tokenHash } from './crypto.js';
 import { setTimeout } from 'node:timers/promises';
 import { hashPassword, verifyPassword } from './passwords.js';
 import { seal } from './outbox.js';
+import { z } from 'zod';
 import {
   loginInput,
   changePasswordInput,
@@ -208,6 +209,57 @@ export function passwordAuth(app: FastifyInstance, pools: Pools, c: Config, issu
     },
   );
   app.post(
+    '/api/v1/auth/merchant-signup',
+    { config: { rateLimit: { max: 5, timeWindow: '10 minutes' } } },
+    async (req, reply) => {
+      enabled();
+      requireCondition(c.ONBOARDING_INSTAPAY_ADDRESS, 'ONBOARDING_PAYMENT_UNAVAILABLE', 503);
+      const { email, name, locale } = z
+        .object({
+          email: z
+            .email()
+            .max(254)
+            .transform((value) => value.toLowerCase()),
+          name: z.string().trim().min(2).max(120),
+          locale: z.enum(['ar', 'en']),
+        })
+        .strict()
+        .parse(req.body);
+      const token = opaqueToken();
+      await transaction(pools.authPool, async (db) => {
+        const { id } = (
+          await db.query('SELECT start_merchant_signup($1,$2,$3) AS id', [email, name, locale])
+        ).rows[0];
+        if (!id) return;
+        const created = (
+          await db.query(
+            `INSERT INTO password_reset_tokens(user_id,token_hash,credential_version,expires_at)
+           SELECT id,$2,password_version,clock_timestamp()+interval '30 minutes'
+           FROM users WHERE id=$1 AND password_hash IS NULL
+           RETURNING id,credential_version,expires_at`,
+            [id, tokenHash(token)],
+          )
+        ).rows[0];
+        if (!created) return;
+        await db.query(
+          `INSERT INTO auth_mail_outbox(user_id,kind,reset_token_id,credential_version,payload,locale,dedupe_key,expires_at)
+           VALUES($1,'password_reset',$2,$3,$4,$5,$6,$7)`,
+          [
+            id,
+            created.id,
+            created.credential_version,
+            { encryptedToken: seal(token, c.AUTH_PEPPER) },
+            locale,
+            'password-reset:' + created.id,
+            created.expires_at,
+          ],
+        );
+      });
+      reply.code(202);
+      return { accepted: true };
+    },
+  );
+  app.post(
     '/api/v1/auth/password/reset-request',
     { config: { rateLimit: { max: 5, timeWindow: '10 minutes' } } },
     async (req, reply) => {
@@ -252,10 +304,10 @@ export function passwordAuth(app: FastifyInstance, pools: Pools, c: Config, issu
       enabled();
       const p = resetPasswordInput.parse(req.body),
         hash = await hashPassword(p.password, c.AUTH_PEPPER);
-      await transaction(pools.authPool, async (db) => {
+      const onboarding = await transaction(pools.authPool, async (db) => {
         const row = (
           await db.query(
-            "SELECT t.id,t.user_id,u.email FROM password_reset_tokens t JOIN users u ON u.id=t.user_id WHERE t.token_hash=$1 AND t.used_at IS NULL AND t.expires_at>clock_timestamp() AND t.credential_version=u.password_version AND u.status='active' AND password_session_portal(u.id)<>'customer' FOR UPDATE OF u,t",
+            "SELECT t.id,t.user_id,u.email,u.password_hash IS NULL AS first_password FROM password_reset_tokens t JOIN users u ON u.id=t.user_id WHERE t.token_hash=$1 AND t.used_at IS NULL AND t.expires_at>clock_timestamp() AND t.credential_version=u.password_version AND u.status='active' AND password_session_portal(u.id)<>'customer' FOR UPDATE OF u,t",
             [tokenHash(p.token)],
           )
         ).rows[0];
@@ -275,6 +327,7 @@ export function passwordAuth(app: FastifyInstance, pools: Pools, c: Config, issu
           'UPDATE password_login_guards SET failures=0,locked_until=NULL WHERE email=$1',
           [row.email],
         );
+        return row.first_password === true;
       });
       reply.clearCookie(c.COOKIE_SECURE === 'true' ? '__Host-nq_session' : 'nq_session', {
         path: '/',
@@ -286,7 +339,7 @@ export function passwordAuth(app: FastifyInstance, pools: Pools, c: Config, issu
         secure: c.COOKIE_SECURE === 'true',
         sameSite: 'strict',
       });
-      return { changed: true };
+      return { changed: true, onboarding };
     },
   );
 }

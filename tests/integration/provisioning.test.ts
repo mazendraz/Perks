@@ -9,7 +9,11 @@ import { adminLogin, key, login } from '../helpers.js';
 import { unseal } from '../../apps/api/src/outbox.js';
 const c = readConfig(),
   db = new pg.Client({ connectionString: c.DATABASE_MIGRATOR_URL });
-const { app } = await buildApp({ APP_ENV: 'test', LOG_LEVEL: 'silent' });
+const { app } = await buildApp({
+  APP_ENV: 'test',
+  LOG_LEVEL: 'silent',
+  ONBOARDING_INSTAPAY_ADDRESS: 'perks-test@instapay',
+});
 let pa: Awaited<ReturnType<typeof login>>;
 before(async () => {
   await db.connect();
@@ -20,6 +24,246 @@ before(async () => {
 after(async () => {
   await app.close();
   await db.end();
+});
+test('a new merchant verifies their email, sets a password and signs in to their draft', async () => {
+  const origin = c.PUBLIC_APP_ORIGIN;
+  const email = 'signup-' + randomUUID() + '@example.test';
+  const password = 'Test-merchant-password-12';
+  const signup = await app.inject({
+    method: 'POST',
+    url: '/api/v1/auth/merchant-signup',
+    headers: { origin },
+    payload: { email, name: 'New merchant', locale: 'en' },
+  });
+  assert.equal(signup.statusCode, 202, signup.body);
+  const mail = (
+    await db.query(
+      `SELECT o.payload FROM auth_mail_outbox o JOIN users u ON u.id=o.user_id
+     WHERE u.email=$1 AND o.kind='password_reset'`,
+      [email],
+    )
+  ).rows[0];
+  assert.ok(mail);
+  const reset = {
+    method: 'POST' as const,
+    url: '/api/v1/auth/password/reset',
+    headers: { origin },
+    payload: { token: unseal(mail.payload.encryptedToken, c.AUTH_PEPPER), password },
+  };
+  const confirmed = await app.inject(reset);
+  assert.equal(confirmed.statusCode, 200, confirmed.body);
+  assert.equal(confirmed.json().onboarding, true);
+  assert.equal((await app.inject(reset)).statusCode, 410);
+  const signedIn = await app.inject({
+    method: 'POST',
+    url: '/api/v1/auth/login',
+    headers: { origin },
+    payload: { email, password },
+  });
+  assert.equal(signedIn.statusCode, 200, signedIn.body);
+  assert.equal(signedIn.json().portal, 'merchant');
+  const draft = await app.inject({
+    url: '/api/v1/merchant-onboarding/draft',
+    headers: { cookie: signedIn.cookies.map(({ name, value }) => name + '=' + value).join('; ') },
+  });
+  assert.equal(draft.statusCode, 200, draft.body);
+  assert.ok(draft.json().draft.id);
+});
+test('a signed-in shop owner can resume and update only their own onboarding draft', async () => {
+  const url = '/api/v1/merchant-onboarding/draft';
+  const owner = await login(app, 'owner@bunn.test');
+  const anonymous = await app.inject({ url });
+  assert.equal(anonymous.statusCode, 401);
+
+  const created = await app.inject({ method: 'POST', url, headers: owner });
+  assert.equal(created.statusCode, 200, created.body);
+  const { draft } = created.json();
+  const repeated = await app.inject({ method: 'POST', url, headers: owner });
+  assert.equal(repeated.json().draft.id, draft.id);
+
+  const change = {
+    method: 'PATCH' as const,
+    url,
+    headers: owner,
+    payload: {
+      name: 'Onboarding café',
+      revision: draft.revision,
+    },
+  };
+  const saved = await app.inject(change);
+  assert.equal(saved.statusCode, 200, saved.body);
+  assert.equal(saved.json().draft.details.name, change.payload.name);
+  const resumed = await app.inject({ url, headers: owner });
+  assert.deepEqual(resumed.json().draft, { ...saved.json().draft, rejection_reason: null });
+  const setup = {
+    branchName: 'Downtown',
+    branchAddress: '12 Main Street',
+    rewardTitle: 'Free coffee',
+    threshold: 6,
+    cardColor: '#173d37',
+  };
+  const setupChange = {
+    ...change,
+    payload: { ...change.payload, revision: saved.json().draft.revision, setup },
+  };
+  const invalidSetup = await app.inject({
+    ...setupChange,
+    payload: { ...setupChange.payload, setup: { ...setup, threshold: 51 } },
+  });
+  assert.equal(invalidSetup.statusCode, 422);
+  const savedSetup = await app.inject(setupChange);
+  assert.equal(savedSetup.statusCode, 200, savedSetup.body);
+  assert.deepEqual((await app.inject({ url, headers: owner })).json().draft.details.setup, setup);
+  assert.equal((await app.inject(change)).statusCode, 409);
+  assert.equal((await app.inject({ url, headers: pa })).json().draft, null);
+});
+test('onboarding orders quote the server catalog and reuse a quote on retry', async () => {
+  const headers = await login(app, 'owner@bunn.test');
+  const catalog = await app.inject({ url: '/api/v1/merchant-onboarding/plans', headers });
+  assert.equal(catalog.statusCode, 200, catalog.body);
+  const plan = catalog.json().plans[0];
+  assert.ok(plan.amount_minor > 0);
+  const request = {
+    method: 'POST' as const,
+    url: '/api/v1/merchant-onboarding/order',
+    headers,
+    payload: { planKey: plan.plan_key },
+  };
+  const results = await Promise.all([app.inject(request), app.inject(request)]);
+  for (const result of results) assert.equal(result.statusCode, 200, result.body);
+  assert.deepEqual(results[0].json(), results[1].json());
+  assert.equal(results[0].json().order.amount_minor, plan.amount_minor);
+  assert.equal(results[0].json().order.recipient_account, 'perks-test@instapay');
+  const id = results[0].json().order.id;
+  const { default: sharp } = await import('sharp');
+  const image = await sharp({
+    create: { width: 12, height: 12, channels: 3, background: 'white' },
+  })
+    .png()
+    .toBuffer();
+  const uploaded = await app.inject({
+    method: 'POST',
+    url: request.url + '/' + id + '/receipt',
+    headers,
+    payload: { reference: 'ORDER-123', image: image.toString('base64') },
+  });
+  assert.equal(uploaded.statusCode, 200, uploaded.body);
+  assert.equal(uploaded.json().order.submitted_reference, 'ORDER-123');
+  const reviewPath = '/api/v1/platform/onboarding-payments';
+  assert.equal((await app.inject({ url: reviewPath, headers })).statusCode, 403);
+  const queue = await app.inject({ url: reviewPath, headers: pa });
+  assert.equal(queue.statusCode, 200, queue.body);
+  const queued = queue.json().orders.find((row: { id: string }) => row.id === id);
+  assert.ok(queued);
+  const receipt = await app.inject({
+    url: reviewPath + '/' + id + '/receipt?version=' + queued.receipt_key,
+    headers: pa,
+  });
+  assert.equal(receipt.statusCode, 200, receipt.body);
+  assert.equal(receipt.headers['content-type'], 'image/png');
+  const draftUrl = '/api/v1/merchant-onboarding/draft';
+  const draft = (await app.inject({ url: draftUrl, headers })).json().draft;
+  const publish = {
+    method: 'POST' as const,
+    url: draftUrl + '/' + draft.id + '/publish',
+    headers,
+    payload: { revision: draft.revision },
+  };
+  const published = await app.inject(publish);
+  assert.equal(published.statusCode, 200, published.body);
+  assert.deepEqual((await app.inject(publish)).json(), published.json());
+  const publication = published.json().publication;
+  const placement = await db.query('SELECT resolve_placement($1) AS value', [publication.code]);
+  assert.equal(placement.rows[0].value.status, 'active');
+  const confirmation = {
+    method: 'POST' as const,
+    url: reviewPath + '/' + id + '/confirm',
+    headers: pa,
+    payload: {
+      reference: 'ORDER-123',
+      receiptKey: queued.receipt_key,
+      amountMinor: plan.amount_minor,
+      recipientAccountId: queued.recipient_account,
+    },
+  };
+  const confirmed = await app.inject(confirmation);
+  assert.equal(confirmed.statusCode, 200, confirmed.body);
+  assert.equal((await app.inject(confirmation)).statusCode, 200);
+  const ledger = await db.query('SELECT amount_minor,payment_reference FROM subscription_payments WHERE merchant_id=$1', [
+    publication.merchantId,
+  ]);
+  assert.deepEqual(ledger.rows, [{ amount_minor: plan.amount_minor, payment_reference: 'ORDER-123' }]);
+
+  const newDraft = (await app.inject({ method: 'POST', url: draftUrl, headers })).json().draft;
+  const newSetup = await app.inject({
+    method: 'PATCH',
+    url: draftUrl,
+    headers,
+    payload: { name: 'Second café', setup: draft.details.setup, revision: newDraft.revision },
+  });
+  assert.equal(newSetup.statusCode, 200, newSetup.body);
+  const secondOrder = (await app.inject(request)).json().order;
+  const secondReceipt = await app.inject({
+    method: 'POST',
+    url: request.url + '/' + secondOrder.id + '/receipt',
+    headers,
+    payload: { reference: 'ORDER-456', image: image.toString('base64') },
+  });
+  assert.equal(secondReceipt.statusCode, 200, secondReceipt.body);
+  const secondPublished = await app.inject({
+    ...publish,
+    url: draftUrl + '/' + newDraft.id + '/publish',
+    payload: { revision: newSetup.json().draft.revision },
+  });
+  assert.equal(secondPublished.statusCode, 200, secondPublished.body);
+  const pending = (await app.inject({ url: reviewPath, headers: pa })).json().orders;
+  const secondReview = pending.find((row: { id: string }) => row.id === secondOrder.id);
+  const rejected = await app.inject({
+    method: 'POST',
+    url: reviewPath + '/' + secondOrder.id + '/reject',
+    headers: pa,
+    payload: { receiptKey: secondReview.receipt_key, reason: 'Transfer not received' },
+  });
+  assert.equal(rejected.statusCode, 200, rejected.body);
+  const stopped = await db.query('SELECT resolve_placement($1) AS value', [
+    secondPublished.json().publication.code,
+  ]);
+  assert.equal(stopped.rows[0].value.status, 'unavailable');
+  const suspendedDraft = (await app.inject({ url: draftUrl, headers })).json().draft;
+  assert.equal(suspendedDraft.rejection_reason, 'Transfer not received');
+  const correction = await app.inject({
+    method: 'POST',
+    url: draftUrl + '/' + newDraft.id + '/correction',
+    headers,
+  });
+  assert.equal(correction.statusCode, 200, correction.body);
+  const correctedOrder = correction.json().order;
+  const corrected = await app.inject({
+    method: 'POST',
+    url: request.url + '/' + correctedOrder.id + '/receipt',
+    headers,
+    payload: { reference: 'ORDER-789', image: image.toString('base64') },
+  });
+  assert.equal(corrected.statusCode, 200, corrected.body);
+  const corrections = (await app.inject({ url: reviewPath, headers: pa })).json().orders;
+  const correctionReview = corrections.find((row: { id: string }) => row.id === correctedOrder.id);
+  const approvedCorrection = await app.inject({
+    ...confirmation,
+    url: reviewPath + '/' + correctedOrder.id + '/confirm',
+    payload: {
+      ...confirmation.payload,
+      receiptKey: correctionReview.receipt_key,
+      reference: 'ORDER-789',
+    },
+  });
+  assert.equal(approvedCorrection.statusCode, 200, approvedCorrection.body);
+  const restored = (await app.inject({ url: draftUrl, headers })).json().draft;
+  assert.deepEqual(restored.publication, secondPublished.json().publication);
+  assert.equal(restored.rejection_reason, null);
+  const reopened = await db.query('SELECT resolve_placement($1) AS value', [
+    restored.publication.code,
+  ]);
+  assert.equal(reopened.rows[0].value.status, 'active');
 });
 test('non-admin cannot provision; admin must prove MFA', async () => {
   const owner = await login(app, 'owner@bunn.test');

@@ -29,6 +29,7 @@ import { createPools } from './db.js';
 import { authModule } from './auth.js';
 import { AppError } from './errors.js';
 import { onboardingModule } from './modules/onboarding.js';
+import { merchantOnboardingModule } from './modules/merchant-onboarding.js';
 import { provisioningModule } from './modules/provisioning.js';
 import { enrollmentModule } from './modules/enrollment.js';
 import { loyaltyModule } from './modules/loyalty.js';
@@ -176,6 +177,7 @@ export async function buildApp(
   outreachModule(app, pools);
   customerRemindersModule(app, pools, c);
   onboardingModule(app, pools, c);
+  merchantOnboardingModule(app, pools, c);
   enrollmentModule(app, pools, c);
   loyaltyModule(app, pools);
   rewardsModule(app, pools, c);

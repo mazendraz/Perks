@@ -55,6 +55,14 @@ const messages: Record<string, Line> = {
     'فيه حاجة ناقصة في الطلب. حدّث الصفحة وجرّب تاني.',
     'Something was missing from the request. Refresh and try again.',
   ],
+  ONBOARDING_PAYMENT_UNAVAILABLE: [
+    'الدفع بـ InstaPay مش متاح دلوقتي. جرّب تاني بعد شوية.',
+    'InstaPay payments are currently unavailable. Try again later.',
+  ],
+  ONBOARDING_TRANSFER_MISMATCH: [
+    'المبلغ أو حساب الاستلام مختلف عن طلب الدفع. راجع التحويل.',
+    'The amount or receiving account differs from the order. Check the transfer.',
+  ],
   VALIDATION_FAILED: [
     'فيه خانة محتاجة تتظبط. راجع الخانات المعلّمة بالأحمر.',
     'A field needs fixing. Check the fields marked in red.',

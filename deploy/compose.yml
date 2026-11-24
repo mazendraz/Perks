@@ -27,6 +27,7 @@ x-environment: &environment
   SMTP_USER: ${SMTP_USER:?Required}
   SMTP_PASS: ${SMTP_PASS:?Required}
   SMTP_FROM: ${SMTP_FROM:?Required}
+  ONBOARDING_INSTAPAY_ADDRESS: ${ONBOARDING_INSTAPAY_ADDRESS:-}
   SMTP_SECURE: ${SMTP_SECURE:-false}
   SMTP_STARTTLS: 'true'
 services:

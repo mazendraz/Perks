@@ -39,7 +39,11 @@ export async function portalAllowed(pools: Pools, actor: Actor, portal: Portal, 
     async (db) =>
       !!(
         await db.query(
-          "SELECT 1 FROM staff_memberships WHERE user_id=$1 AND status='active' AND (($2='cashier' AND (NOT $3::boolean OR role='cashier')) OR ($2='merchant' AND role IN ('owner','manager'))) LIMIT 1",
+          `SELECT 1 FROM staff_memberships
+           WHERE user_id=$1 AND status='active' AND (($2='cashier' AND (NOT $3::boolean OR role='cashier')) OR ($2='merchant' AND role IN ('owner','manager')))
+           UNION ALL
+           SELECT 1 FROM merchant_onboarding_drafts WHERE $2='merchant' AND owner_id=$1 AND merchant_id IS NULL
+           LIMIT 1`,
           [actor.id, portal, legacy],
         )
       ).rowCount,

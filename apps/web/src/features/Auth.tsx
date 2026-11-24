@@ -344,7 +344,8 @@ export function ResetPassword({ token, lang }: { token: string; lang: Language }
     [confirm, setConfirm] = useState(''),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(''),
-    [done, setDone] = useState(false);
+    [done, setDone] = useState(false),
+    [onboarding, setOnboarding] = useState(false);
   return (
     <main id="main" className="auth-reset">
       <section className="panel">
@@ -361,7 +362,7 @@ export function ResetPassword({ token, lang }: { token: string; lang: Language }
               className="primary"
               onClick={() => {
                 setCsrf('');
-                location.assign('/');
+                location.assign(onboarding ? '/onboarding' : '/login');
               }}
             >
               {ar ? 'تسجيل الدخول' : 'Sign in'}
@@ -378,7 +379,11 @@ export function ResetPassword({ token, lang }: { token: string; lang: Language }
               setBusy(true);
               setError('');
               try {
-                await api('/auth/password/reset', { method: 'POST', body: { token, password } });
+                const result = await api<{ onboarding: boolean }>('/auth/password/reset', {
+                  method: 'POST',
+                  body: { token, password },
+                });
+                setOnboarding(result.onboarding);
                 setDone(true);
                 setPassword('');
                 setConfirm('');

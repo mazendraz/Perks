@@ -51,21 +51,6 @@
   font-weight: 700;
 }
 
-/* Customer: the notification opt-in under the Add to Wallet buttons. */
-.wallet-notify-optin {
-  margin-top: 12px;
-  padding: 12px;
-  border-radius: 12px;
-  background: #f4f5ef;
-}
-.wallet-notify-optin small {
-  display: block;
-  margin-top: 2px;
-  font-size: 12.5px;
-  line-height: 1.6;
-  color: var(--muted, #6b6e80);
-}
-
 .wallet-blocked-hint {
   padding-top: 10px;
   border-top: 1px dashed #f1c9a5;

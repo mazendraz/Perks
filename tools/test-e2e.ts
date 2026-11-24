@@ -1214,6 +1214,7 @@ try {
   assert.equal(denied.status(), 404);
   ok('Merchant B cannot read merchant A reports');
 
+  await up.getByRole('button', { name: 'Request a stamp', exact: true }).click();
   await choose(up.getByLabel('Purchase branch'), branch);
   await up.getByRole('button', { name: 'Request stamp', exact: true }).click();
   const waitingForCashier = up.getByText('Your request reached the cashier', { exact: false });
@@ -1255,6 +1256,7 @@ try {
   // the saved stamp, never a second one.
   await cp.getByRole('status').filter({ hasText: 'Stamp added:' }).waitFor();
   await reloadPage(up);
+  await up.getByRole('button', { name: 'Request a stamp', exact: true }).click();
   await up.getByRole('status').filter({ hasText: 'Request approved' }).waitFor();
   const afterRequests = (await (await call(owner, '/merchants/' + mid + '/overview')).json())
     .metrics;
@@ -1317,8 +1319,12 @@ try {
   assert.equal(csv.status(), 200);
   assert.ok((await csv.text()).includes('Browser Customer'));
   ok('Saved segment and private worker-generated CSV are usable from the merchant UI');
-  await up.getByRole('button', { name: 'Preferences', exact: true }).click();
-  await up.locator('input[type=tel]').fill('+15555550101');
+  await navigateTo(up, '/customer/account');
+  await up.getByText('Messages from shops', { exact: true }).click();
+  await up.locator('details[open] input[type=tel]').waitFor();
+  if (await up.getByRole('combobox', { name: 'Shop', exact: true }).count())
+    await choose(up.getByRole('combobox', { name: 'Shop', exact: true }), mid);
+  await up.locator('details[open] input[type=tel]').fill('+15555550101');
   await up.getByRole('button', { name: 'Save number', exact: true }).click();
   await up.getByRole('status').filter({ hasText: 'Number saved.' }).waitFor();
   await Promise.all([
@@ -1334,7 +1340,7 @@ try {
         .find((label) => label.textContent?.trim() === 'WhatsApp messages from the shop')
         ?.querySelector('input')?.checked === true,
   );
-  await up.getByRole('button', { name: 'Card', exact: true }).click();
+  await navigateTo(up, '/customer/' + membership);
   await merchantTab(op, 'WhatsApp contact');
   const contactRow = op.locator('tr').filter({ hasText: 'Browser Customer' });
   await contactRow.getByRole('button', { name: 'WhatsApp message', exact: true }).click();
@@ -1360,11 +1366,14 @@ try {
     await pendingContactRead;
     await route.fulfill({ response });
   });
-  await up.getByRole('button', { name: 'Preferences', exact: true }).click();
-  await up.locator('input[type=tel]').waitFor();
-  assert.equal(await up.locator('input[type=tel]').isDisabled(), true);
+  await navigateTo(up, '/customer/account');
+  await up.getByText('Messages from shops', { exact: true }).click();
+  await up.locator('details[open] input[type=tel]').waitFor();
+  if (await up.getByRole('combobox', { name: 'Shop', exact: true }).count())
+    await choose(up.getByRole('combobox', { name: 'Shop', exact: true }), mid);
+  assert.equal(await up.locator('details[open] input[type=tel]').isDisabled(), true);
   contactReadReleased();
-  await up.locator('input[type=tel]').fill('+15555550102');
+  await up.locator('details[open] input[type=tel]').fill('+15555550102');
   await up.unroute('**/api/v1/me/merchants/*/contact');
   await up.getByRole('button', { name: 'Save number', exact: true }).click();
   await up.getByRole('status').filter({ hasText: 'Number saved.' }).waitFor();
@@ -1407,7 +1416,7 @@ try {
     )?.startsWith('https://wa.me/15555550102?'),
   );
   await waDialog.getByRole('button', { name: 'Close', exact: true }).click();
-  await up.getByRole('button', { name: 'Card', exact: true }).click();
+  await navigateTo(up, '/customer/' + membership);
   ok(
     'A customer changes their own WhatsApp number, consent is reset, and drafts remain disabled until they explicitly opt in again',
   );

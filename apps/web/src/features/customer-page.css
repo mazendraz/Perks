@@ -1,5 +1,4 @@
 .page-group,
-.customer-page-shell,
 .customer-page-scroll {
   display: contents;
 }
@@ -18,33 +17,77 @@
   overflow: hidden;
   overflow: clip;
 }
-.customer-stamp-request h2 {
-  scroll-margin-block-start: 20px;
+.customer-wallet .membership-aside {
+  position: static;
 }
+.customer-wallet .membership-content {
+  align-content: start;
+}
+.customer-wallet .wallet-panel {
+  padding: 12px 0;
+}
+.customer-wallet .wallet-panel p {
+  margin: 0;
+  max-inline-size: 42ch;
+}
+.customer-wallet .wallet-panel-ready {
+  gap: 6px;
+}
+.customer-history {
+  border-block-start: 1px solid var(--border);
+}
+.customer-history summary {
+  display: list-item;
+  min-block-size: 44px;
+  padding-block: 8px;
+  color: var(--muted);
+  cursor: pointer;
+}
+.customer-history .activity-row {
+  padding-block: 10px;
+}
+.customer-stamp-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-block-end: 12px;
+}
+.customer-stamp-heading h2 {
+  margin: 0;
+}
+.customer-stamp-request label + button {
+  margin-block-start: 12px;
+}
+.customer-stamp-request {
+  animation: none;
+  overscroll-behavior: contain;
+}
+
 @media (max-width: 760px) {
   .customer-page-shell {
-    display: grid;
-    block-size: 100vh;
-    block-size: 100dvh;
-    grid-template-rows: auto minmax(0, 1fr) auto;
+    padding-block-end: calc(76px + env(safe-area-inset-bottom, 0px));
+  }
+  html:has(.customer-stamp-dock:not(:empty)) {
+    scroll-padding-block: calc(60px + env(safe-area-inset-top, 0px))
+      calc(76px + env(safe-area-inset-bottom, 0px));
   }
   .customer-page-shell > .topbar {
-    position: static;
+    min-height: calc(56px + env(safe-area-inset-top, 0px));
   }
-  .customer-page-scroll {
-    display: block;
-    overflow: auto;
-    scroll-padding-block: 12px;
-  }
-  .customer-page-scroll .pwa-status {
+  .customer-page-shell .pwa-status {
     position: static;
     margin: 8px 16px;
     box-shadow: none;
   }
-  .customer-page-scroll .footer {
-    padding-block-end: 8px;
+  .customer-wallet .customer-stamp-inline {
+    display: none;
   }
   .customer-stamp-dock:not(:empty) {
+    position: fixed;
+    inset-inline: 0;
+    inset-block-end: 0;
+    z-index: 11;
     display: grid;
     padding-block: 8px calc(8px + env(safe-area-inset-bottom, 0px));
     padding-left: calc(16px + env(safe-area-inset-left, 0px));
@@ -52,12 +95,18 @@
     background: var(--paper);
     border-block-start: 1px solid var(--border);
   }
-}
-
-/* The app's content region owns scroll on the mobile wallet. */
-@media (max-width: 760px) {
-  html:has(.customer-page-shell),
-  body:has(.customer-page-shell) {
-    overflow: hidden;
+  .customer-stamp-backdrop {
+    align-items: end;
+    padding-block-end: calc(12px + env(safe-area-inset-bottom, 0px));
+    padding-left: max(12px, env(safe-area-inset-left, 0px));
+    padding-right: max(12px, env(safe-area-inset-right, 0px));
+  }
+  .customer-stamp-request button {
+    min-block-size: 44px;
+  }
+  .customer-stamp-request {
+    max-height: calc(
+      100dvh - 24px - env(safe-area-inset-bottom, 0px) - env(safe-area-inset-top, 0px)
+    );
   }
 }

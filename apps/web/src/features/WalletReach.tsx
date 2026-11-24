@@ -72,8 +72,8 @@ export function WalletReachDetails({
           {preview.notificationsOff > 0 && (
             <li>
               {ar
-                ? `إشعارات Perks مقفولة عند ${count.format(preview.notificationsOff)} عميل عندهم الكارت. يقدروا يشغّلوا «إشعارات الـWallet من المحل» من تفضيلات الكارت.`
-                : `Perks notifications are off for ${count.format(preview.notificationsOff)} customers with a linked Wallet card. They can turn on “Wallet notifications from this shop” in their card preferences.`}
+                ? `إشعارات Perks مقفولة عند ${count.format(preview.notificationsOff)} عميل عندهم الكارت. يقدروا يشغّلوا «إشعارات المحفظة من المحل» من «حسابي» ← «الرسايل من المحلات».`
+                : `Perks notifications are off for ${count.format(preview.notificationsOff)} customers with a linked Wallet card. They can turn on “Wallet notifications from this shop” under My account → Messages from shops.`}
             </li>
           )}
           {preview.recentlyContacted > 0 && (
@@ -136,8 +136,8 @@ export function WalletBlockedHelp({
           ? `${n(preview.notificationsOff)} ضافوا الكارت للـWallet بس قافلين إشعارات محلك.`
           : `${n(preview.notificationsOff)} added the card to Wallet but turned off your notifications.`,
         fix: ar
-          ? 'لما ييجوا، قولهم يفتحوا الكارت ← «التفضيلات» ← يشغّلوا «إشعارات الـWallet من المحل».'
-          : 'When they visit, ask them to open their card → Preferences → turn on “Wallet notifications from this shop”.',
+          ? 'لما ييجوا، قولهم يفتحوا «حسابي» ← «الرسايل من المحلات» ← يشغّلوا «إشعارات المحفظة من المحل».'
+          : 'When they visit, ask them to open My account → Messages from shops → turn on “Wallet notifications from this shop”.',
       });
     if (preview.notLinked > 0)
       reasons.push({

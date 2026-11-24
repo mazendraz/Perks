@@ -1,8 +1,9 @@
+import { createPortal } from 'react-dom';
 import { Select } from '../controls/Select.js';
 import { ActionLabel } from '../../../../packages/ui/src/Icon.js';
 import { useLiveRefresh } from '../live-events.js';
 import { useAutoStampRequest } from '../useAutoStampRequest.js';
-import { useEffect, useState, useRef, type RefObject } from 'react';
+import { useEffect, useState, useRef, useId } from 'react';
 import type { Language, SavedCard } from '../../../../packages/contracts/src/index.js';
 import { api, errorText } from '../api.js';
 import { intlLocale } from '../locale.js';
@@ -27,10 +28,10 @@ export function CustomerRequests({
   onPending,
   onAwarded,
   onNotice,
-  headingRef,
+  stampDock,
 }: {
   card: SavedCard;
-  headingRef?: RefObject<HTMLHeadingElement | null>;
+  stampDock?: HTMLElement | null;
   lang: Language;
   onPending?: (pending: boolean) => void;
   onAwarded?: () => Promise<void> | void;
@@ -42,6 +43,8 @@ export function CustomerRequests({
     [requests, setRequests] = useState<CustomerRequest[]>([]),
     [busy, setBusy] = useState(false),
     [error, setError] = useState('');
+  const [open, setOpen] = useState(false);
+  const titleId = useId();
   const load = async () => {
     const generation = ++loadGeneration.current;
     try {
@@ -126,90 +129,140 @@ export function CustomerRequests({
       setBusy(false);
     }
   };
+  const requestLabel = pending
+    ? ar
+      ? 'تابع طلب الختم'
+      : 'View stamp request'
+    : ar
+      ? 'اطلب ختم'
+      : 'Request a stamp';
+  const launcher = (className: string) => (
+    <button
+      type="button"
+      className={className}
+      aria-haspopup="dialog"
+      onClick={() => setOpen(true)}
+    >
+      <ActionLabel icon="stamp">{requestLabel}</ActionLabel>
+    </button>
+  );
   return (
-    <section className="panel customer-stamp-request">
-      <h2 ref={headingRef} tabIndex={-1}>
-        {ar ? 'اطلب ختم من الفرع' : 'Request a branch stamp'}
-      </h2>
-      {error && (
-        <p className="error-text" role="alert">
-          {error}
-        </p>
-      )}
-      {pending ? (
-        <>
-          <p role="status">
-            {ar
-              ? 'الطلب وصل للكاشير. استنى لحظة لحد ما يأكد الختم من عنده.'
-              : 'Your request reached the cashier. Wait a moment while they confirm the stamp.'}
-          </p>
-          <small>
-            {ar ? 'صالح لحد ' : 'Valid until '}
-            {new Date(pending.expires_at).toLocaleTimeString(intlLocale(lang))}
-          </small>
-          <button
-            className="text-button"
-            disabled={busy}
-            aria-busy={busy}
-            onClick={() => {
-              setBusy(true);
-              void api('/me/stamp-requests/' + pending.id + '/cancel', { method: 'POST', body: {} })
-                .then(load)
-                .catch((e) => setError(errorText(e, lang)))
-                .finally(() => setBusy(false));
+    <>
+      {launcher(stampDock ? 'primary customer-stamp-inline' : 'primary')}
+      {stampDock && createPortal(launcher('primary'), stampDock)}
+      {open &&
+        createPortal(
+          <div
+            className="modal-backdrop customer-stamp-backdrop"
+            data-portal="customer"
+            onClick={(event) => {
+              if (event.target === event.currentTarget) setOpen(false);
             }}
           >
-            <ActionLabel icon="close">{ar ? 'إلغاء الطلب' : 'Cancel request'}</ActionLabel>
-          </button>
-        </>
-      ) : (
-        <>
-          <label>
-            {ar ? 'الفرع اللي بتشتري منه' : 'Purchase branch'}
-            <Select value={branch} onChange={(e) => setBranch(e.target.value)}>
-              {!branches?.length && (
-                <option value="" disabled>
-                  {branches === null
-                    ? ar
-                      ? 'بنحمّل الفروع…'
-                      : 'Loading branches…'
-                    : ar
-                      ? 'مفيش فروع متاحة'
-                      : 'No branches available'}
-                </option>
+            <section
+              className="dialog customer-stamp-request"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby={titleId}
+            >
+              <div className="customer-stamp-heading">
+                <h2 id={titleId}>{ar ? 'اطلب ختم من الفرع' : 'Request a branch stamp'}</h2>
+                <button
+                  type="button"
+                  className="text-button"
+                  data-dialog-close
+                  onClick={() => setOpen(false)}
+                >
+                  {ar ? 'إغلاق' : 'Close'}
+                </button>
+              </div>
+              {error && (
+                <p className="error-text" role="alert">
+                  {error}
+                </p>
               )}
-              {branches?.map((b) => (
-                <option value={b.id} key={b.id}>
-                  {b.name}
-                </option>
-              ))}
-            </Select>
-          </label>
-          <button
-            className="secondary full"
-            disabled={busy || !branch || !card.earning_active}
-            onClick={() => void create()}
-          >
-            <ActionLabel icon="stamp">{ar ? 'طلب ختم' : 'Request stamp'}</ActionLabel>
-          </button>
-          {latest && (
-            <p className="notice" role="status">
-              {latest.status === 'approved'
-                ? (ar ? 'الطلب اتوافق عليه: ' : 'Request approved: ') + latest.result?.reference
-                : latest.status === 'rejected'
-                  ? (ar ? 'الطلب اترفض: ' : 'Request rejected: ') + latest.reason
-                  : latest.status === 'cancelled'
-                    ? ar
-                      ? 'الطلب اتلغى.'
-                      : 'Request cancelled.'
-                    : ar
-                      ? 'الطلب خلص، اعمل سكان تاني.'
-                      : 'The request expired. Scan the shop code again.'}
-            </p>
-          )}
-        </>
-      )}
-    </section>
+              {pending ? (
+                <>
+                  <p role="status">
+                    {ar
+                      ? 'الطلب وصل للكاشير. استنى لحظة لحد ما يأكد الختم من عنده.'
+                      : 'Your request reached the cashier. Wait a moment while they confirm the stamp.'}
+                  </p>
+                  <small>
+                    {ar ? 'صالح لحد ' : 'Valid until '}
+                    {new Date(pending.expires_at).toLocaleTimeString(intlLocale(lang))}
+                  </small>
+                  <button
+                    className="text-button"
+                    disabled={busy}
+                    aria-busy={busy}
+                    onClick={() => {
+                      setBusy(true);
+                      void api('/me/stamp-requests/' + pending.id + '/cancel', {
+                        method: 'POST',
+                        body: {},
+                      })
+                        .then(load)
+                        .catch((e) => setError(errorText(e, lang)))
+                        .finally(() => setBusy(false));
+                    }}
+                  >
+                    <ActionLabel icon="close">{ar ? 'إلغاء الطلب' : 'Cancel request'}</ActionLabel>
+                  </button>
+                </>
+              ) : (
+                <>
+                  <label>
+                    {ar ? 'الفرع اللي بتشتري منه' : 'Purchase branch'}
+                    <Select value={branch} onChange={(e) => setBranch(e.target.value)}>
+                      {!branches?.length && (
+                        <option value="" disabled>
+                          {branches === null
+                            ? ar
+                              ? 'بنحمّل الفروع…'
+                              : 'Loading branches…'
+                            : ar
+                              ? 'مفيش فروع متاحة'
+                              : 'No branches available'}
+                        </option>
+                      )}
+                      {branches?.map((b) => (
+                        <option value={b.id} key={b.id}>
+                          {b.name}
+                        </option>
+                      ))}
+                    </Select>
+                  </label>
+                  <button
+                    className="secondary full"
+                    disabled={busy || !branch || !card.earning_active}
+                    onClick={() => void create()}
+                  >
+                    <ActionLabel icon="stamp">{ar ? 'طلب ختم' : 'Request stamp'}</ActionLabel>
+                  </button>
+                  {latest && (
+                    <p className="notice" role="status">
+                      {latest.status === 'approved'
+                        ? (ar ? 'الطلب اتوافق عليه: ' : 'Request approved: ') +
+                          latest.result?.reference
+                        : latest.status === 'rejected'
+                          ? (ar ? 'الطلب اترفض: ' : 'Request rejected: ') + latest.reason
+                          : latest.status === 'cancelled'
+                            ? ar
+                              ? 'الطلب اتلغى.'
+                              : 'Request cancelled.'
+                            : ar
+                              ? 'الطلب خلص، اعمل سكان تاني.'
+                              : 'The request expired. Scan the shop code again.'}
+                    </p>
+                  )}
+                </>
+              )}
+            </section>
+          </div>,
+          document.body,
+        )}
+    </>
   );
 }
 export { CashierRequests } from './RequestQueue.js';

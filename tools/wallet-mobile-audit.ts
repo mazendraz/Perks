@@ -69,10 +69,10 @@ export async function auditWalletPresentation(page: Page, project: string, direc
       }
     }
     await page.getByRole('button', { name: 'English', exact: true }).click();
-    await page.getByRole('button', { name: 'Wallet notification settings', exact: true }).click();
-    await page
-      .getByRole('checkbox', { name: 'Wallet notifications from this shop', exact: true })
-      .waitFor();
+    assert.equal(
+      await page.getByRole('button', { name: 'Wallet notification settings', exact: true }).count(),
+      0,
+    );
     await page.goto(current.origin + '/customer/' + memberId + '?wallet=1', {
       waitUntil: 'domcontentloaded',
     });
@@ -80,7 +80,7 @@ export async function auditWalletPresentation(page: Page, project: string, direc
     await page.locator('.loyalty-card').first().waitFor();
     assert.equal(await page.getByRole('dialog', { name: 'Personal QR', exact: true }).count(), 0);
     // Let the card's own requests finish before leaving it (WebKit reports an aborted fetch).
-    await page.getByRole('heading', { name: 'Your rewards', exact: true }).waitFor();
+    await page.getByRole('button', { name: /^(Request a stamp|View stamp request)$/ }).waitFor();
     await page.waitForTimeout(1500);
     await page.getByRole('button', { name: 'My cards', exact: true }).click();
     await link.waitFor();

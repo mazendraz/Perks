@@ -1,3 +1,5 @@
+import { CustomerMessages } from './features/CustomerMessages.js';
+import { InstallAppButton } from './features/InstallCard.js';
 import { Select } from './controls/Select.js';
 import { ControlLocale } from './controls/locale.js';
 import {
@@ -394,7 +396,10 @@ export function App() {
             />
           )}
           <footer className="footer" data-portal={portal}>
-            {ar ? 'Perks · كارت الولاء بتاعك على موبايلك' : 'Perks · Loyalty cards in your wallet'}
+            {!cardPage &&
+              (ar
+                ? 'Perks · كارت الولاء بتاعك على موبايلك'
+                : 'Perks · Loyalty cards in your wallet')}
             <nav className="legal-links" aria-label={ar ? 'الخصوصية والشروط' : 'Privacy and terms'}>
               <a href={'/privacy?lang=' + lang}>{ar ? 'الخصوصية' : 'Privacy'}</a>
               <a href={'/terms?lang=' + lang}>{ar ? 'الشروط' : 'Terms'}</a>
@@ -529,6 +534,8 @@ function Workspace({
                 {ar ? 'خروج' : 'Sign out'}
               </button>
             </section>
+            <InstallAppButton lang={lang} portal="customer" />
+            <CustomerMessages lang={lang} />
             <CustomerPhoneSettings lang={lang} />
             <DeleteCustomerAccount lang={lang} />
           </>

@@ -91,19 +91,6 @@
 .customer-wallet .membership-content > .panel {
   margin: 0;
 }
-.customer-wallet .tabbar button {
-  min-height: 44px;
-}
-.customer-wallet .page-heading {
-  margin-block-end: 16px;
-}
-
-.customer-wallet .membership-aside .tabbar {
-  margin-block: 12px 0;
-}
-.customer-wallet .install-app-card {
-  margin-block-start: 20px;
-}
 .customer-card-controls svg {
   pointer-events: none;
 }
@@ -122,27 +109,6 @@
 }
 .customer-wallet .wallet-badge-button {
   margin: 0;
-}
-.customer-wallet .wallet-panel-ready > .text-button {
-  justify-self: start;
-}
-.customer-wallet .wallet-notify-optin {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: start;
-  text-align: start;
-  gap: 10px;
-  padding: 12px;
-  margin: 0;
-}
-.customer-wallet .wallet-notify-optin input {
-  margin: 2px 0 0;
-}
-.customer-wallet .wallet-notify-optin span {
-  overflow-wrap: anywhere;
-}
-.customer-wallet .customer-stamp-request label + button {
-  margin-block-start: 10px;
 }
 @media (max-width: 760px) {
   .topbar[data-portal='customer'] {
@@ -179,12 +145,6 @@
   .customer-wallet .membership-content > .panel > :last-child {
     margin-block-end: 0;
   }
-  .customer-wallet .membership-aside .tabbar {
-    margin-block: 8px 0;
-  }
-  .customer-wallet .tabbar button {
-    flex: 1;
-  }
   .customer-wallet .reward-row {
     flex-wrap: wrap;
     gap: 8px;
@@ -203,28 +163,6 @@
   }
 }
 
-@media (max-width: 430px) {
-  .customer-wallet .install-app-card:not([data-done]) {
-    grid-template-columns: auto minmax(0, 1fr) auto;
-    grid-template-areas: 'icon message dismiss' 'icon action dismiss';
-    gap: 6px 10px;
-    margin-block: 12px 0;
-  }
-  .customer-wallet .install-app-card > img {
-    grid-area: icon;
-  }
-  .customer-wallet .install-app-card:not([data-done]) p {
-    grid-area: message;
-  }
-  .customer-wallet .install-app-card .primary {
-    grid-area: action;
-    justify-self: start;
-  }
-  .customer-wallet .install-app-dismiss {
-    grid-area: dismiss;
-    align-self: start;
-  }
-}
 .footer[data-portal='customer'],
 .footer[data-portal='customer'] .legal-links a {
   color: var(--muted);

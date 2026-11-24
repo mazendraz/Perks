@@ -30,13 +30,11 @@ const branchHint = () => {
 export function RedeemRewards({
   card,
   rewards = [],
-  loading = false,
   lang,
   onChanged,
 }: {
   card: SavedCard;
   rewards?: Reward[];
-  loading?: boolean;
   lang: Language;
   onChanged: () => Promise<void> | void;
 }) {
@@ -151,6 +149,7 @@ export function RedeemRewards({
     }
   };
   const available = rewards.some((r) => r.status === 'available');
+  if (!rewards.length && !open && !outcome && !error) return null;
   return (
     <section className="panel redeem-rewards">
       <h2>{ar ? 'مكافآتك' : 'Your rewards'}</h2>
@@ -236,61 +235,51 @@ export function RedeemRewards({
           </p>
         )
       )}
-      {loading ? (
-        <p className="muted" role="status">
-          {ar ? 'بنحمّل المكافآت…' : 'Loading rewards…'}
-        </p>
-      ) : rewards.length ? (
-        rewards.map((r) => (
-          <div className="reward-row" key={r.id}>
-            <div>
-              <strong>{r.title}</strong>
-              <small>{r.terms}</small>
-              <small>
-                {ar ? 'صالحة لحد ' : 'Valid until '}
-                {new Date(r.expires_at).toLocaleDateString(intlLocale(lang))}
-              </small>
-            </div>
-            {r.status === 'available' && open?.reward_id !== r.id && (
-              <button
-                className="primary small"
-                disabled={busy || !!open}
-                aria-busy={busy}
-                onClick={() => void ask(r)}
-              >
-                <ActionLabel icon="gift">{ar ? 'استبدل' : 'Redeem'}</ActionLabel>
-              </button>
-            )}
-            <span className="badge">
-              {r.status === 'available'
-                ? open?.reward_id === r.id
-                  ? ar
-                    ? 'مستني الكاشير'
-                    : 'Waiting'
-                  : ar
-                    ? 'متاحة'
-                    : 'Available'
-                : r.status === 'redeemed'
-                  ? ar
-                    ? 'اتصرفت'
-                    : 'Redeemed'
-                  : r.status === 'expired'
+      {rewards.length
+        ? rewards.map((r) => (
+            <div className="reward-row" key={r.id}>
+              <div>
+                <strong>{r.title}</strong>
+                <small>{r.terms}</small>
+                <small>
+                  {ar ? 'صالحة لحد ' : 'Valid until '}
+                  {new Date(r.expires_at).toLocaleDateString(intlLocale(lang))}
+                </small>
+              </div>
+              {r.status === 'available' && open?.reward_id !== r.id && (
+                <button
+                  className="primary small"
+                  disabled={busy || !!open}
+                  aria-busy={busy}
+                  onClick={() => void ask(r)}
+                >
+                  <ActionLabel icon="gift">{ar ? 'استبدل' : 'Redeem'}</ActionLabel>
+                </button>
+              )}
+              <span className="badge">
+                {r.status === 'available'
+                  ? open?.reward_id === r.id
                     ? ar
-                      ? 'انتهت'
-                      : 'Expired'
+                      ? 'مستني الكاشير'
+                      : 'Waiting'
                     : ar
-                      ? 'اتلغت'
-                      : 'Voided'}
-            </span>
-          </div>
-        ))
-      ) : (
-        <p className="muted">
-          {ar
-            ? 'أول مكافأة هتظهر هنا لما تكمّل أختام الكارت.'
-            : 'Your first reward appears here when you fill your card.'}
-        </p>
-      )}
+                      ? 'متاحة'
+                      : 'Available'
+                  : r.status === 'redeemed'
+                    ? ar
+                      ? 'اتصرفت'
+                      : 'Redeemed'
+                    : r.status === 'expired'
+                      ? ar
+                        ? 'انتهت'
+                        : 'Expired'
+                      : ar
+                        ? 'اتلغت'
+                        : 'Voided'}
+              </span>
+            </div>
+          ))
+        : null}
     </section>
   );
 }

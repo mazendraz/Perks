@@ -34,78 +34,6 @@ export function WalletButton({
     </a>
   );
 }
-/**
- * Right where the card goes into Wallet, ask once whether the shop may send notifications to it.
- * Sign-up leaves this unticked and most people skip it, so cards ended up in Wallet that no shop
- * message could reach. Still the customer's choice: unticked until they tick it.
- */
-function WalletNotifyOptIn({
-  merchantId,
-  merchantName,
-  lang,
-}: {
-  merchantId: string;
-  merchantName: string;
-  lang: Language;
-}) {
-  const ar = lang === 'ar';
-  const path = '/me/merchants/' + merchantId + '/preferences';
-  const [granted, setGranted] = useState<boolean | null>();
-  const [failed, setFailed] = useState(false);
-  const [justTurnedOn, setJustTurnedOn] = useState(false);
-  const [busy, setBusy] = useState(false);
-  useEffect(() => {
-    let live = true;
-    api<{ preferences: { channel: string; granted: boolean }[] }>(path)
-      .then((r) => live && setGranted(!!r.preferences.find((p) => p.channel === 'push')?.granted))
-      .catch(() => live && setGranted(null));
-    return () => {
-      live = false;
-    };
-  }, [path]);
-  // Already on (and not just now): nothing to ask.
-  if (granted === null || (granted && !justTurnedOn)) return null;
-  const change = async (on: boolean) => {
-    setBusy(true);
-    setFailed(false);
-    try {
-      await api(path, { method: 'PATCH', body: { channel: 'push', granted: on } });
-      setGranted(on);
-      setJustTurnedOn(on);
-    } catch {
-      setFailed(true);
-    } finally {
-      setBusy(false);
-    }
-  };
-  return (
-    <label className="checkbox-label wallet-notify-optin">
-      <input
-        type="checkbox"
-        checked={granted === true}
-        disabled={busy || granted === undefined}
-        onChange={(e) => void change(e.target.checked)}
-      />
-      <span>
-        <strong>
-          {ar ? 'إشعارات من ' : 'Notifications from '}
-          <bdi>{merchantName}</bdi>
-        </strong>
-        <small>
-          {ar
-            ? 'تنبيه لما مكافأتك تجهز وعروض المحل، بحد أقصى رسالة في اليوم.'
-            : 'Reward alerts and shop offers, up to once a day.'}
-        </small>
-        {failed && (
-          <small role="alert">
-            {ar ? 'تعذّر حفظ اختيارك. جرّب تاني.' : 'Couldn’t save your choice. Try again.'}
-          </small>
-        )}
-      </span>
-    </label>
-  );
-}
-
 type WalletAvailability = { apple: boolean; google?: boolean; recoveryRequired?: boolean };
 
 export function useWalletAvailability() {
@@ -124,17 +52,11 @@ export function useWalletAvailability() {
 
 export function WalletPanel({
   membershipId,
-  merchantId,
-  merchantName,
   lang,
-  onPreferences,
   wallets,
 }: {
   membershipId: string;
-  merchantId?: string;
-  merchantName?: string;
   lang: Language;
-  onPreferences?: () => void;
   wallets: WalletAvailability | null;
 }) {
   const ar = lang === 'ar';
@@ -159,7 +81,7 @@ export function WalletPanel({
       </section>
     );
   return (
-    <section className={'panel wallet-panel' + (apple || google ? ' wallet-panel-ready' : '')}>
+    <section className={'wallet-panel' + (apple || google ? ' wallet-panel-ready' : '')}>
       <h2 className={apple || google ? 'sr-only' : undefined}>{ar ? 'المحفظة' : 'Wallet'}</h2>
       {apple || google ? (
         <>
@@ -169,17 +91,9 @@ export function WalletPanel({
           </div>
           <p className="muted small">
             {ar
-              ? 'بيتحدّث لوحده بعد كل ختم. الإضافة بتشارك اسمك وبيانات الكارت مع مزود المحفظة.'
-              : 'It updates after every stamp. Adding shares your name and card details with your wallet provider.'}
+              ? 'الإضافة بتشارك اسمك وبيانات كارتك مع مزود المحفظة.'
+              : 'Adding shares your name and card details with your wallet provider.'}
           </p>
-          {merchantId && merchantName && (
-            <WalletNotifyOptIn
-              key={merchantId}
-              merchantId={merchantId}
-              merchantName={merchantName}
-              lang={lang}
-            />
-          )}
         </>
       ) : (
         <p className="muted">
@@ -187,11 +101,6 @@ export function WalletPanel({
             ? 'افتح الكارت من موبايلك علشان تضيفه لـApple Wallet أو Google Wallet. كارت الويب محدث ومحفوظ.'
             : 'Open this card on your phone to add it to Apple Wallet or Google Wallet. Your web card stays current.'}
         </p>
-      )}
-      {(wallets.apple || wallets.google) && onPreferences && (
-        <button className="text-button" onClick={onPreferences}>
-          {ar ? 'إعدادات الإشعارات' : 'Wallet notification settings'}
-        </button>
       )}
     </section>
   );

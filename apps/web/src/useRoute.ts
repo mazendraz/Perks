@@ -4,7 +4,6 @@ export function navigate(path: string) {
   if (applyUpdateOnNavigation(path)) return;
   history.pushState({}, '', path);
   window.dispatchEvent(new PopStateEvent('popstate'));
-  document.querySelector('.customer-page-scroll')?.scrollTo(0, 0);
   window.scrollTo(0, 0);
 }
 export function useRoute() {

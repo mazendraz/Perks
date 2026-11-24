@@ -472,7 +472,7 @@ try {
         ': first NFC scan needs only name/phone/terms/submit, preserves context, reveals the card in 720ms and requests one first stamp without granting it',
     );
     const memberId = new URL(page.url()).pathname.split('/').at(-1)!;
-    await page.getByRole('button', { name: 'My cards', exact: true }).click();
+    await page.getByRole('button', { name: 'My account', exact: true }).click();
     if (project.type === webkit) {
       await page.getByRole('button', { name: 'Add My Cards to home screen', exact: true }).click();
       const guide = page.getByRole('dialog', { name: 'Add My Cards', exact: true });
@@ -574,7 +574,7 @@ try {
           throw error;
         }
       }
-      await page.getByText('Your request reached the cashier', { exact: false }).waitFor();
+      await page.getByRole('button', { name: 'View stamp request', exact: true }).waitFor();
       await page.waitForFunction(() => !new URLSearchParams(location.search).has('auto'));
       assert.equal(
         await page.evaluate(
@@ -598,6 +598,7 @@ try {
       1,
     );
     await page.reload({ waitUntil: 'domcontentloaded' });
+    await page.getByRole('button', { name: 'View stamp request', exact: true }).click();
     await page.getByText('Your request reached the cashier', { exact: false }).waitFor();
     assert.equal(
       (
@@ -611,6 +612,7 @@ try {
     assert.equal(await page.getByRole('dialog', { name: 'Personal QR', exact: true }).count(), 0);
     await page.getByRole('button', { name: 'Cancel request', exact: true }).click();
     await page.getByRole('button', { name: 'Request stamp', exact: true }).waitFor();
+    await page.getByRole('dialog').getByRole('button', { name: 'Close', exact: true }).click();
     pass(
       project.name +
         ': five placement scans open the existing card with zero customer taps, create one request, and reload creates none',
@@ -1133,7 +1135,7 @@ try {
         !/[A-Z]{3,}_|[a-f0-9]{8}-[a-f0-9]{4}-/.test(await page.getByRole('alert').innerText()),
       );
       assert.equal(
-        await page.getByText('Your request reached the cashier', { exact: false }).count(),
+        await page.getByRole('button', { name: 'View stamp request', exact: true }).count(),
         0,
       );
     } finally {

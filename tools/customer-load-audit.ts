@@ -12,7 +12,7 @@ export async function auditCustomerLoading(page: Page, project: string, director
     .getByRole('progressbar', { name: /Stamp progress|/ })
     .first()
     .waitFor();
-  await page.locator('.membership-aside .tabbar button').first().waitFor();
+  await page.locator('.customer-history summary').waitFor();
   let release!: () => void;
   const gate = new Promise<void>((resolve) => {
     release = resolve;
@@ -29,7 +29,7 @@ export async function auditCustomerLoading(page: Page, project: string, director
     await page.screenshot({ path: directory + '/customer-independent-list-' + project + '.png' });
     await page.locator('.customer-slide[aria-hidden=false]').first().click();
     assert.equal(new URL(page.url()).pathname, '/customer');
-    await page.locator('.membership-aside .tabbar').waitFor({ timeout: 2500 });
+    await page.locator('.customer-history summary').waitFor({ timeout: 2500 });
     await page.screenshot({ path: directory + '/customer-independent-wallet-' + project + '.png' });
   } catch (error) {
     await page.screenshot({ path: directory + '/customer-missing-card-' + project + '.png' });

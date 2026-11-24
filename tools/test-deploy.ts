@@ -4,6 +4,7 @@ import { mkdir, writeFile, readFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import assert from 'node:assert/strict';
 import https from 'node:https';
+import { createServer } from 'node:net';
 import type { IncomingHttpHeaders } from 'node:http';
 const stamp = Date.now(),
   project = 'nuqta_l04_smoke_' + stamp;
@@ -11,12 +12,26 @@ const configOnly = process.argv.includes('--config-only');
 assert.match(project, /^nuqta_l04_smoke_\d+$/);
 const directory = resolve('.local', 'deploy-smoke-' + stamp);
 await mkdir(directory, { recursive: true, mode: 0o700 });
+async function reservePort() {
+  const server = createServer();
+  await new Promise<void>((resolve, reject) => {
+    server.once('error', reject);
+    server.listen(0, '127.0.0.1', resolve);
+  });
+  const address = server.address();
+  assert.ok(address && typeof address !== 'string');
+  return { port: address.port, close: () => server.close() };
+}
+const httpPort = await reservePort();
+const httpsPort = await reservePort();
+httpPort.close();
+httpsPort.close();
 const values: Record<string, string> = {
   APP_ENV: 'production',
   DOMAIN: 'localhost',
-  PUBLIC_APP_ORIGIN: 'https://localhost:28443',
-  HTTP_BIND: '127.0.0.1:28180',
-  HTTPS_BIND: '127.0.0.1:28443',
+  PUBLIC_APP_ORIGIN: 'https://localhost:' + httpsPort.port,
+  HTTP_BIND: '127.0.0.1:' + httpPort.port,
+  HTTPS_BIND: '127.0.0.1:' + httpsPort.port,
   NUQTA_IMAGE: 'nuqta-smoke-app:' + stamp,
   NUQTA_WEB_IMAGE: 'nuqta-smoke-web:' + stamp,
   NUQTA_POSTGRES_IMAGE: 'nuqta-smoke-postgres:' + stamp,
@@ -136,7 +151,7 @@ async function request(path: string, headers: Record<string, string> = {}) {
       const req = https.get(
         {
           hostname: 'localhost',
-          port: 28443,
+          port: httpsPort.port,
           path,
           headers,
           rejectUnauthorized: false,

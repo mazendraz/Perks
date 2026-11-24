@@ -609,7 +609,7 @@ try {
   ok('Owner and cashier sign in directly with creator-set passwords and branch-scoped roles');
   await businessRow.getByRole('button', { name: 'View owner dashboard', exact: true }).click();
   await ap.getByRole('region', { name: 'Owner preview mode', exact: true }).waitFor();
-  await ap.getByRole('heading', { name: 'Merchant dashboard', exact: true }).waitFor();
+  await ap.getByRole('heading', { name: provision.merchant.name, exact: true }).waitFor();
   await openOperatingNumbers(ap);
   await ap.locator('.merchant-metrics').waitFor();
   await ap.locator('.experience-stats .experience-metrics').waitFor();
@@ -648,7 +648,7 @@ try {
   await ap.getByRole('button', { name: 'Publish branding', exact: true }).click();
   await ap.getByRole('alert').filter({ hasText: 'This is a preview only.' }).waitFor();
   await reloadPage(ap);
-  await ap.getByRole('heading', { name: 'Merchant dashboard', exact: true }).waitFor();
+  await ap.getByRole('heading', { name: provision.merchant.name, exact: true }).waitFor();
   await merchantTab(ap, 'Branding');
   assert.equal(
     await ap.getByLabel('Card template', { exact: true }).getAttribute('data-value'),

@@ -47,7 +47,7 @@ export function CardSwitcher({
     x: number;
     y: number;
     slide: HTMLElement;
-    stepWidth: number;
+    width: number;
     startOffset: number;
     dragging: boolean;
     preview: number;
@@ -118,7 +118,7 @@ export function CardSwitcher({
             x: event.clientX,
             y: event.clientY,
             slide: activeSlide,
-            stepWidth: activeSlide.offsetWidth * 0.24,
+            width: activeSlide.offsetWidth,
             startOffset: 0,
             dragging: false,
             preview: slide ? Number(slide.dataset.slide) : index,
@@ -134,14 +134,15 @@ export function CardSwitcher({
           if (!g || g.pointer !== event.pointerId) return;
           const dx = event.clientX - g.x;
           const dy = event.clientY - g.y;
+          const stepWidth = g.width * 0.24;
           const starting = !g.dragging;
           if (starting) {
-            if (Math.abs(dy) > 5 && Math.abs(dy) > Math.abs(dx)) return reset();
-            if (Math.abs(dx) < 4) return;
+            if (Math.abs(dy) >= 8 && Math.abs(dy) > Math.abs(dx)) return reset();
+            if (Math.abs(dx) < 4 || Math.abs(dx) <= Math.abs(dy)) return;
             // Continue from the displayed deck position if a snap is still in progress.
             const transform = getComputedStyle(g.slide).transform;
             if (transform !== 'none') {
-              g.startOffset = (-direction * new DOMMatrixReadOnly(transform).m41) / g.stepWidth;
+              g.startOffset = (-direction * new DOMMatrixReadOnly(transform).m41) / stepWidth;
             }
             g.dragging = true;
             event.currentTarget.dataset.dragging = 'true';
@@ -154,7 +155,7 @@ export function CardSwitcher({
           }
           // In the fan, adjacent cards are separated by 24% of a card width.
           // Mapping that distance to one step keeps the card under the finger.
-          const progress = g.startOffset - (direction * dx) / g.stepWidth;
+          const progress = g.startOffset - (direction * dx) / stepWidth;
           const bounded = Math.max(
             -Math.min(1, index),
             Math.min(1, cards.length - 1 - index, progress),
@@ -175,23 +176,32 @@ export function CardSwitcher({
           const dx = event.clientX - g.x;
           const dy = event.clientY - g.y;
           let target = index;
-          if (g.dragging && !disabled) {
-            const velocity = event.timeStamp - g.lastTime < 90 ? g.velocity : 0;
-            const projected = dx + Math.max(-24, Math.min(24, velocity * 70));
-            if (Math.abs(dx) >= 8 && Math.abs(projected) >= Math.min(24, g.stepWidth * 0.375)) {
-              target = Math.max(
-                0,
-                Math.min(cards.length - 1, index - direction * Math.sign(projected)),
-              );
+          const travel = Math.abs(dx);
+          if (!disabled && g.dragging) {
+            // Commit by net travel, or by a fresh flick in the same direction.
+            // Velocity alone must never switch cards after returning to the starting point.
+            const flick =
+              travel >= 8 &&
+              event.timeStamp - g.lastTime < 90 &&
+              Math.sign(g.velocity) === Math.sign(dx) &&
+              Math.abs(g.velocity) >= 0.45;
+            if (travel >= g.width * 0.18 || flick) {
+              target = index - direction * Math.sign(dx);
             }
           } else if (!disabled && Math.hypot(dx, dy) < 5) {
             target = g.preview;
           }
+          target = Math.max(0, Math.min(cards.length - 1, target));
           reset(target);
           stepTo(target);
         }}
-        onLostPointerCapture={() => reset()}
-        onPointerCancel={() => reset()}
+        onLostPointerCapture={(event) => {
+          if (event.target === event.currentTarget && gesture.current?.pointer === event.pointerId)
+            reset();
+        }}
+        onPointerCancel={(event) => {
+          if (gesture.current?.pointer === event.pointerId) reset();
+        }}
         tabIndex={multiple ? 0 : undefined}
         onKeyDown={(event) => {
           if (disabled || !multiple || !['ArrowLeft', 'ArrowRight'].includes(event.key)) return;

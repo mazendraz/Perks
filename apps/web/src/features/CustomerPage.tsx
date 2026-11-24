@@ -892,15 +892,16 @@ export function CustomerPage({
                   onAwarded={load}
                   onNotice={setVisitNotice}
                 />
-                <RedeemRewards
-                  key={'rewards-' + card.id}
-                  card={card}
-                  rewards={rewards}
-                  onChanged={load}
-                  lang={lang}
-                />
                 <details className="customer-history">
                   <summary>{ar ? 'سجل النشاط' : 'Activity history'}</summary>
+                  <RedeemRewards
+                    key={'rewards-' + card.id}
+                    card={card}
+                    rewards={rewards}
+                    loading={rewards === undefined && !detailsError}
+                    onChanged={load}
+                    lang={lang}
+                  />
                   {activity === undefined && !detailsError ? (
                     <p className="muted" role="status">
                       {ar ? 'بنحمّل السجل…' : 'Loading activity…'}

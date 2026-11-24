@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { ActionLabel } from '../../../../packages/ui/src/Icon.js';
 import type { Language, Reward, SavedCard } from '../../../../packages/contracts/src/index.js';
 import { api, errorText } from '../api.js';
@@ -30,15 +31,19 @@ const branchHint = () => {
 export function RedeemRewards({
   card,
   rewards = [],
+  loading,
   lang,
   onChanged,
 }: {
   card: SavedCard;
   rewards?: Reward[];
+  loading: boolean;
   lang: Language;
   onChanged: () => Promise<void> | void;
 }) {
   const ar = lang === 'ar';
+  const [show, setShow] = useState(false);
+  const titleId = useId();
   const [requests, setRequests] = useState<RedeemRequest[]>([]),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(''),
@@ -149,137 +154,190 @@ export function RedeemRewards({
     }
   };
   const available = rewards.some((r) => r.status === 'available');
-  if (!rewards.length && !open && !outcome && !error) return null;
   return (
-    <section className="panel redeem-rewards">
-      <h2>{ar ? 'مكافآتك' : 'Your rewards'}</h2>
-      {error && (
-        <p className="error-text" role="alert">
-          {error}
-        </p>
-      )}
-      {open ? (
-        <div
-          className="redeem-waiting"
-          role="status"
-          aria-live="polite"
-          aria-label={ar ? 'طلب استبدال' : 'Redeem request'}
-        >
-          <span className="badge">{ar ? 'طلب استبدال' : 'Redeem request'}</span>
-          <h3>{open.title}</h3>
-          <p className="redeem-waiting-text">{ar ? 'مستني الكاشير…' : 'Waiting for cashier…'}</p>
-          <small>{ar ? 'رقمك' : 'Your number'}</small>
-          <div className="match-code" data-match-number>
-            {open.match_number}
-          </div>
-          <p className="muted">
-            {ar
-              ? 'قول الرقم ده للكاشير لو سألك. الطلب مفتوح لحد '
-              : 'Tell the cashier this number if they ask. Open until '}
-            {new Date(open.expires_at).toLocaleTimeString(intlLocale(lang), {
-              hour: 'numeric',
-              minute: '2-digit',
-            })}
-            .
-          </p>
-          <button
-            className="text-button"
-            disabled={busy}
-            aria-busy={busy}
-            onClick={() => void cancel(open)}
+    <>
+      <button
+        type="button"
+        className="secondary small customer-rewards-link"
+        aria-haspopup="dialog"
+        onClick={() => setShow(true)}
+      >
+        <ActionLabel icon="gift">{ar ? 'شوف مكافآتك' : 'View rewards'}</ActionLabel>
+      </button>
+      {show &&
+        createPortal(
+          <div
+            className="modal-backdrop customer-action-backdrop"
+            data-portal="customer"
+            onClick={(event) => {
+              if (event.target === event.currentTarget) setShow(false);
+            }}
           >
-            <ActionLabel icon="close">{ar ? 'إلغاء الطلب' : 'Cancel request'}</ActionLabel>
-          </button>
-        </div>
-      ) : outcome ? (
-        <div className={'redeem-outcome ' + outcome.status} role="status" aria-live="polite">
-          <h3>
-            {outcome.status === 'completed'
-              ? ar
-                ? 'اتصرفت ✅'
-                : 'Redeemed ✅'
-              : outcome.status === 'rejected'
-                ? ar
-                  ? 'اترفض'
-                  : 'Rejected'
-                : ar
-                  ? 'الكاشير مردّش'
-                  : 'No answer from the cashier'}
-          </h3>
-          <p>
-            {outcome.status === 'completed'
-              ? ar
-                ? 'بالهنا والشفا: ' + outcome.title + '. بدأ كارت جديد.'
-                : 'Enjoy your ' + outcome.title + '. Your new card has started.'
-              : outcome.status === 'rejected'
-                ? ar
-                  ? 'الكاشير ماأكدش الطلب. مكافأتك لسه متاحة.'
-                  : 'The cashier did not confirm it. Your reward is still available.'
-                : ar
-                  ? 'الطلب خلص وقته بعد 10 دقايق. دوس استبدل تاني.'
-                  : 'The request timed out after 10 minutes. Tap Redeem to try again.'}
-          </p>
-          <button
-            className="secondary small"
-            onClick={() => setDismissed((d) => [...d, outcome.id])}
-          >
-            {ar ? 'تمام' : 'OK'}
-          </button>
-        </div>
-      ) : (
-        available && (
-          <p className="muted">
-            {ar
-              ? 'دوس استبدل وإنت عند الكاشير. الكاشير هيأكد من موبايله ويبدأ كارت جديد.'
-              : 'Tap Redeem at the counter. The cashier confirms it on their phone and a new card starts.'}
-          </p>
-        )
-      )}
-      {rewards.length
-        ? rewards.map((r) => (
-            <div className="reward-row" key={r.id}>
-              <div>
-                <strong>{r.title}</strong>
-                <small>{r.terms}</small>
-                <small>
-                  {ar ? 'صالحة لحد ' : 'Valid until '}
-                  {new Date(r.expires_at).toLocaleDateString(intlLocale(lang))}
-                </small>
-              </div>
-              {r.status === 'available' && open?.reward_id !== r.id && (
+            <section
+              className="dialog customer-action-dialog redeem-rewards"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby={titleId}
+            >
+              <div className="customer-action-heading">
+                <h2 id={titleId}>{ar ? 'مكافآتك' : 'Your rewards'}</h2>
                 <button
-                  className="primary small"
-                  disabled={busy || !!open}
-                  aria-busy={busy}
-                  onClick={() => void ask(r)}
+                  type="button"
+                  className="text-button"
+                  data-dialog-close
+                  onClick={() => setShow(false)}
                 >
-                  <ActionLabel icon="gift">{ar ? 'استبدل' : 'Redeem'}</ActionLabel>
+                  {ar ? 'إغلاق' : 'Close'}
                 </button>
+              </div>
+              {error && (
+                <p className="error-text" role="alert">
+                  {error}
+                </p>
               )}
-              <span className="badge">
-                {r.status === 'available'
-                  ? open?.reward_id === r.id
-                    ? ar
-                      ? 'مستني الكاشير'
-                      : 'Waiting'
-                    : ar
-                      ? 'متاحة'
-                      : 'Available'
-                  : r.status === 'redeemed'
-                    ? ar
-                      ? 'اتصرفت'
-                      : 'Redeemed'
-                    : r.status === 'expired'
+              {open ? (
+                <div
+                  className="redeem-waiting"
+                  role="status"
+                  aria-live="polite"
+                  aria-label={ar ? 'طلب استبدال' : 'Redeem request'}
+                >
+                  <span className="badge">{ar ? 'طلب استبدال' : 'Redeem request'}</span>
+                  <h3>{open.title}</h3>
+                  <p className="redeem-waiting-text">
+                    {ar ? 'مستني الكاشير…' : 'Waiting for cashier…'}
+                  </p>
+                  <small>{ar ? 'رقمك' : 'Your number'}</small>
+                  <div className="match-code" data-match-number>
+                    {open.match_number}
+                  </div>
+                  <p className="muted">
+                    {ar
+                      ? 'قول الرقم ده للكاشير لو سألك. الطلب مفتوح لحد '
+                      : 'Tell the cashier this number if they ask. Open until '}
+                    {new Date(open.expires_at).toLocaleTimeString(intlLocale(lang), {
+                      hour: 'numeric',
+                      minute: '2-digit',
+                    })}
+                    .
+                  </p>
+                  <button
+                    className="text-button"
+                    disabled={busy}
+                    aria-busy={busy}
+                    onClick={() => void cancel(open)}
+                  >
+                    <ActionLabel icon="close">{ar ? 'إلغاء الطلب' : 'Cancel request'}</ActionLabel>
+                  </button>
+                </div>
+              ) : outcome ? (
+                <div
+                  className={'redeem-outcome ' + outcome.status}
+                  role="status"
+                  aria-live="polite"
+                >
+                  <h3>
+                    {outcome.status === 'completed'
                       ? ar
-                        ? 'انتهت'
-                        : 'Expired'
-                      : ar
-                        ? 'اتلغت'
-                        : 'Voided'}
-              </span>
-            </div>
-          ))
-        : null}
-    </section>
+                        ? 'اتصرفت ✅'
+                        : 'Redeemed ✅'
+                      : outcome.status === 'rejected'
+                        ? ar
+                          ? 'اترفض'
+                          : 'Rejected'
+                        : ar
+                          ? 'الكاشير مردّش'
+                          : 'No answer from the cashier'}
+                  </h3>
+                  <p>
+                    {outcome.status === 'completed'
+                      ? ar
+                        ? 'بالهنا والشفا: ' + outcome.title + '. بدأ كارت جديد.'
+                        : 'Enjoy your ' + outcome.title + '. Your new card has started.'
+                      : outcome.status === 'rejected'
+                        ? ar
+                          ? 'الكاشير ماأكدش الطلب. مكافأتك لسه متاحة.'
+                          : 'The cashier did not confirm it. Your reward is still available.'
+                        : ar
+                          ? 'الطلب خلص وقته بعد 10 دقايق. دوس استبدل تاني.'
+                          : 'The request timed out after 10 minutes. Tap Redeem to try again.'}
+                  </p>
+                  <button
+                    className="secondary small"
+                    onClick={() => setDismissed((d) => [...d, outcome.id])}
+                  >
+                    {ar ? 'تمام' : 'OK'}
+                  </button>
+                </div>
+              ) : (
+                available && (
+                  <p className="muted">
+                    {ar
+                      ? 'دوس استبدل وإنت عند الكاشير. الكاشير هيأكد من موبايله ويبدأ كارت جديد.'
+                      : 'Tap Redeem at the counter. The cashier confirms it on their phone and a new card starts.'}
+                  </p>
+                )
+              )}
+              {rewards.length
+                ? rewards.map((r) => (
+                    <div className="reward-row" key={r.id}>
+                      <div>
+                        <strong>{r.title}</strong>
+                        <small>{r.terms}</small>
+                        <small>
+                          {ar ? 'صالحة لحد ' : 'Valid until '}
+                          {new Date(r.expires_at).toLocaleDateString(intlLocale(lang))}
+                        </small>
+                      </div>
+                      {r.status === 'available' && open?.reward_id !== r.id && (
+                        <button
+                          className="primary small"
+                          disabled={busy || !!open}
+                          aria-busy={busy}
+                          onClick={() => void ask(r)}
+                        >
+                          <ActionLabel icon="gift">{ar ? 'استبدل' : 'Redeem'}</ActionLabel>
+                        </button>
+                      )}
+                      <span className="badge">
+                        {r.status === 'available'
+                          ? open?.reward_id === r.id
+                            ? ar
+                              ? 'مستني الكاشير'
+                              : 'Waiting'
+                            : ar
+                              ? 'متاحة'
+                              : 'Available'
+                          : r.status === 'redeemed'
+                            ? ar
+                              ? 'اتصرفت'
+                              : 'Redeemed'
+                            : r.status === 'expired'
+                              ? ar
+                                ? 'انتهت'
+                                : 'Expired'
+                              : ar
+                                ? 'اتلغت'
+                                : 'Voided'}
+                      </span>
+                    </div>
+                  ))
+                : null}
+              {!rewards.length && !open && !outcome && !error && (
+                <p className="muted" role="status">
+                  {loading
+                    ? ar
+                      ? 'بنحمّل المكافآت…'
+                      : 'Loading rewards…'
+                    : ar
+                      ? 'مفيش مكافآت دلوقتي.'
+                      : 'No rewards yet.'}
+                </p>
+              )}
+            </section>
+          </div>,
+          document.body,
+        )}
+    </>
   );
 }

@@ -277,6 +277,7 @@ export function CardSwitcher({
           <div key={card.id} className="customer-slide" data-slide={i} aria-hidden={i !== index}>
             <LoyaltyCard
               card={card}
+              showRewardDetails={false}
               lang={lang}
               waiting={i === index && waiting}
               reveal={i === index && reveal}

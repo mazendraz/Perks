@@ -1062,6 +1062,11 @@ try {
     'Two purchases award five stamps, conserve the balance and unlock one independent reward across sessions',
   );
   // Redeem by request: the customer taps Redeem, with no QR to show and nothing for the till to scan.
+  const openCustomerRewards = async () => {
+    await up.getByText('Activity history', { exact: true }).click();
+    await up.getByRole('button', { name: 'View rewards', exact: true }).click();
+  };
+  await openCustomerRewards();
   await up.getByRole('button', { name: 'Redeem', exact: true }).first().click();
   const waiting = up.getByRole('status', { name: 'Redeem request', exact: true });
   await waiting.getByText('Waiting for cashier…', { exact: true }).waitFor();
@@ -1137,6 +1142,10 @@ try {
     'none',
   );
   await up.emulateMedia({ reducedMotion: 'no-preference' });
+  await up
+    .getByRole('dialog', { name: 'Your rewards', exact: true })
+    .getByRole('button', { name: 'Close', exact: true })
+    .click();
   ok(
     'Cashier redemption starts card two at zero, animates renewal and respects reduced-motion settings',
   );
@@ -1214,11 +1223,21 @@ try {
   assert.equal(denied.status(), 404);
   ok('Merchant B cannot read merchant A reports');
 
-  await up.getByRole('button', { name: 'Request a stamp', exact: true }).click();
-  await choose(up.getByLabel('Purchase branch'), branch);
-  await up.getByRole('button', { name: 'Request stamp', exact: true }).click();
-  const waitingForCashier = up.getByText('Your request reached the cashier', { exact: false });
-  await waitingForCashier.waitFor();
+  const stampDialog = up.getByRole('dialog', { name: 'Request a branch stamp', exact: true });
+  const waitingForCashier = stampDialog.getByText('Your request reached the cashier', {
+    exact: false,
+  });
+  const requestStamp = async () => {
+    await up.getByRole('button', { name: 'Request a stamp', exact: true }).click();
+    const picker = stampDialog.getByLabel('Purchase branch');
+    await Promise.race([picker.waitFor(), waitingForCashier.waitFor()]);
+    if (await picker.isVisible()) {
+      await picker.selectOption(branch);
+      await stampDialog.getByRole('button', { name: 'Request stamp', exact: true }).click();
+    }
+    await waitingForCashier.waitFor();
+  };
+  await requestStamp();
   // No QR and no request code on the customer's side any more.
   assert.equal(await up.locator('.qr-panel').count(), 0);
   const queueProof = await call(
@@ -1255,9 +1274,8 @@ try {
   // The answer was lost after the stamp was saved: the screen asks again with the same key and shows
   // the saved stamp, never a second one.
   await cp.getByRole('status').filter({ hasText: 'Stamp added:' }).waitFor();
-  await reloadPage(up);
-  await up.getByRole('button', { name: 'Request a stamp', exact: true }).click();
-  await up.getByRole('status').filter({ hasText: 'Request approved' }).waitFor();
+  await stampDialog.getByRole('status').filter({ hasText: 'Request approved' }).waitFor();
+  await stampDialog.getByRole('button', { name: 'Close', exact: true }).click();
   const afterRequests = (await (await call(owner, '/merchants/' + mid + '/overview')).json())
     .metrics;
   assert.equal(afterRequests.stamps, 7);
@@ -1266,8 +1284,7 @@ try {
     'Branch queue approves a request from the receipt alone in one tap, and a lost answer replays the same decision once',
   );
   // A second request: the first attempt never reaches the server, the retry gives one stamp.
-  await up.getByRole('button', { name: 'Request stamp', exact: true }).click();
-  await waitingForCashier.waitFor();
+  await requestStamp();
   await reloadPage(cp);
   await cp.getByLabel('Receipt number', { exact: true }).fill('BROWSER-' + stamp + '-3');
   // The same receipt again: a warning, never a refusal.
@@ -1704,7 +1721,12 @@ try {
   assert.equal(Number((await db.query('SELECT repair_full_cards() AS n')).rows[0].n), 1);
   await navigateTo(up, '/customer/' + membership);
   await up.getByText('Your reward is ready!', { exact: true }).first().waitFor();
+  await openCustomerRewards();
   await up.getByRole('button', { name: 'Redeem', exact: true }).first().waitFor();
+  await up
+    .getByRole('dialog', { name: 'Your rewards', exact: true })
+    .getByRole('button', { name: 'Close', exact: true })
+    .click();
   await up.getByText('1 stamps saved for your next card', { exact: true }).waitFor();
   ok('A card stuck full without a reward is repaired with no stamp lost and offers Redeem');
   if ((await op.locator('html').getAttribute('lang')) === 'ar')

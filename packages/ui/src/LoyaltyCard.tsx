@@ -78,12 +78,14 @@ export function LoyaltyCard({
   reveal = false,
   experience = card.stamp_ink !== undefined,
   motion: motionMode = 'normal',
+  showRewardDetails = true,
 }: {
   card: CardData;
   lang?: 'ar' | 'en';
   waiting?: boolean;
   reveal?: boolean;
   experience?: boolean;
+  showRewardDetails?: boolean;
   /** 'celebrate' for the full-screen stamp moment; 'quiet' shows changes without animating. */
   motion?: 'normal' | 'celebrate' | 'quiet';
 }) {
@@ -131,10 +133,12 @@ export function LoyaltyCard({
           <Icon name="gift" size={34} />
           <div>
             <strong>{ar ? 'مكافأتك جاهزة!' : 'Your reward is ready!'}</strong>
-            <small>
-              <bdi>{card.reward_title}</bdi>
-              {card.pending_rewards > 1 ? ' · ' + card.pending_rewards : ''}
-            </small>
+            {showRewardDetails && (
+              <small>
+                <bdi>{card.reward_title}</bdi>
+                {card.pending_rewards > 1 ? ' · ' + card.pending_rewards : ''}
+              </small>
+            )}
           </div>
         </div>
       )}
@@ -283,12 +287,14 @@ export function LoyaltyCard({
           />
         </div>
         <div className="card-reward-line">
-          <div>
-            <small>{ar ? 'المكافأة اللي جاية' : 'YOUR NEXT REWARD'}</small>
-            <strong className="card-reward">
-              <bdi>{card.reward_title}</bdi>
-            </strong>
-          </div>
+          {showRewardDetails && (
+            <div>
+              <small>{ar ? 'المكافأة اللي جاية' : 'YOUR NEXT REWARD'}</small>
+              <strong className="card-reward">
+                <bdi>{card.reward_title}</bdi>
+              </strong>
+            </div>
+          )}
           <span className="card-nuqta">
             PERKS <i>●</i>
           </span>

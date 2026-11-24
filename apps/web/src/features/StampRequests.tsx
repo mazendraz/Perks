@@ -1,5 +1,4 @@
 import { createPortal } from 'react-dom';
-import { Select } from '../controls/Select.js';
 import { ActionLabel } from '../../../../packages/ui/src/Icon.js';
 import { useLiveRefresh } from '../live-events.js';
 import { useAutoStampRequest } from '../useAutoStampRequest.js';
@@ -45,6 +44,9 @@ export function CustomerRequests({
     [error, setError] = useState('');
   const [open, setOpen] = useState(false);
   const titleId = useId();
+  const submitting = useRef(false);
+  const scannedBranch = new URLSearchParams(location.search).get('b');
+  const automaticBranch = scannedBranch || branch;
   const load = async () => {
     const generation = ++loadGeneration.current;
     try {
@@ -59,8 +61,8 @@ export function CustomerRequests({
   useLiveRefresh('/me/events', load);
   const visit = useAutoStampRequest(
     card,
-    branch,
-    !!branches?.some((b) => b.id === branch),
+    automaticBranch,
+    !!branches?.some((b) => b.id === automaticBranch),
     lang,
     load,
     async () => {
@@ -83,7 +85,9 @@ export function CustomerRequests({
       .then((r) => {
         if (!alive) return;
         setBranches(r.branches);
-        setBranch(new URLSearchParams(location.search).get('b') || r.branches[0]?.id || '');
+        setBranch(
+          r.branches.find((option) => option.id === scannedBranch)?.id ?? r.branches[0]?.id ?? '',
+        );
       })
       .catch((e) => {
         if (alive) {
@@ -113,19 +117,28 @@ export function CustomerRequests({
     );
     return () => window.clearTimeout(timer);
   }, [pending?.id, pending?.expires_at]);
-  const create = async () => {
+  const create = async (branchId: string) => {
+    if (
+      submitting.current ||
+      pending ||
+      !card.earning_active ||
+      !branches?.some((option) => option.id === branchId)
+    )
+      return;
+    submitting.current = true;
     setBusy(true);
     setError('');
     try {
       await api('/me/stamp-requests', {
         method: 'POST',
         key: crypto.randomUUID(),
-        body: { membershipId: card.id, branchId: branch },
+        body: { membershipId: card.id, branchId },
       });
       await load();
     } catch (e) {
       setError(errorText(e, lang));
     } finally {
+      submitting.current = false;
       setBusy(false);
     }
   };
@@ -141,7 +154,12 @@ export function CustomerRequests({
       type="button"
       className={className}
       aria-haspopup="dialog"
-      onClick={() => setOpen(true)}
+      disabled={busy || (!pending && branches === null)}
+      aria-busy={busy || branches === null}
+      onClick={() => {
+        setOpen(true);
+        if (!pending && branches?.length === 1) void create(branches[0]!.id);
+      }}
     >
       <ActionLabel icon="stamp">{requestLabel}</ActionLabel>
     </button>
@@ -153,19 +171,19 @@ export function CustomerRequests({
       {open &&
         createPortal(
           <div
-            className="modal-backdrop customer-stamp-backdrop"
+            className="modal-backdrop customer-action-backdrop"
             data-portal="customer"
             onClick={(event) => {
               if (event.target === event.currentTarget) setOpen(false);
             }}
           >
             <section
-              className="dialog customer-stamp-request"
+              className="dialog customer-action-dialog customer-stamp-request"
               role="dialog"
               aria-modal="true"
               aria-labelledby={titleId}
             >
-              <div className="customer-stamp-heading">
+              <div className="customer-action-heading">
                 <h2 id={titleId}>{ar ? 'اطلب ختم من الفرع' : 'Request a branch stamp'}</h2>
                 <button
                   type="button"
@@ -212,35 +230,36 @@ export function CustomerRequests({
                 </>
               ) : (
                 <>
-                  <label>
-                    {ar ? 'الفرع اللي بتشتري منه' : 'Purchase branch'}
-                    <Select value={branch} onChange={(e) => setBranch(e.target.value)}>
-                      {!branches?.length && (
-                        <option value="" disabled>
-                          {branches === null
-                            ? ar
-                              ? 'بنحمّل الفروع…'
-                              : 'Loading branches…'
-                            : ar
-                              ? 'مفيش فروع متاحة'
-                              : 'No branches available'}
-                        </option>
-                      )}
-                      {branches?.map((b) => (
-                        <option value={b.id} key={b.id}>
-                          {b.name}
-                        </option>
-                      ))}
-                    </Select>
-                  </label>
-                  <button
-                    className="secondary full"
-                    disabled={busy || !branch || !card.earning_active}
-                    onClick={() => void create()}
-                  >
-                    <ActionLabel icon="stamp">{ar ? 'طلب ختم' : 'Request stamp'}</ActionLabel>
-                  </button>
-                  {latest && (
+                  {busy ? (
+                    <p role="status">{ar ? 'بنبعت طلب الختم…' : 'Sending stamp request…'}</p>
+                  ) : branches && branches.length > 1 ? (
+                    <>
+                      <label>
+                        {ar ? 'الفرع اللي بتشتري منه' : 'Purchase branch'}
+                        <select value={branch} onChange={(event) => setBranch(event.target.value)}>
+                          {branches.map((option) => (
+                            <option value={option.id} key={option.id}>
+                              {option.name}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <button
+                        className="secondary full"
+                        disabled={!branch || !card.earning_active}
+                        onClick={() => void create(branch)}
+                      >
+                        <ActionLabel icon="stamp">{ar ? 'طلب ختم' : 'Request stamp'}</ActionLabel>
+                      </button>
+                    </>
+                  ) : !error && !branches?.length ? (
+                    <p className="muted">{ar ? 'مفيش فروع متاحة.' : 'No branches available.'}</p>
+                  ) : !card.earning_active ? (
+                    <p className="muted">
+                      {ar ? 'جمع الأختام متوقف حاليًا.' : 'Stamp collection is paused.'}
+                    </p>
+                  ) : null}
+                  {!busy && latest && (
                     <p className="notice" role="status">
                       {latest.status === 'approved'
                         ? (ar ? 'الطلب اتوافق عليه: ' : 'Request approved: ') +

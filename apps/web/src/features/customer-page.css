@@ -46,20 +46,20 @@
 .customer-history .activity-row {
   padding-block: 10px;
 }
-.customer-stamp-heading {
+.customer-action-heading {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
   margin-block-end: 12px;
 }
-.customer-stamp-heading h2 {
+.customer-action-heading h2 {
   margin: 0;
 }
 .customer-stamp-request label + button {
   margin-block-start: 12px;
 }
-.customer-stamp-request {
+.customer-action-dialog {
   animation: none;
   overscroll-behavior: contain;
 }
@@ -95,18 +95,25 @@
     background: var(--paper);
     border-block-start: 1px solid var(--border);
   }
-  .customer-stamp-backdrop {
+  .customer-action-backdrop {
     align-items: end;
     padding-block-end: calc(12px + env(safe-area-inset-bottom, 0px));
     padding-left: max(12px, env(safe-area-inset-left, 0px));
     padding-right: max(12px, env(safe-area-inset-right, 0px));
   }
-  .customer-stamp-request button {
+  .customer-action-dialog button {
     min-block-size: 44px;
   }
-  .customer-stamp-request {
+  .customer-action-dialog {
     max-height: calc(
       100dvh - 24px - env(safe-area-inset-bottom, 0px) - env(safe-area-inset-top, 0px)
     );
   }
+}
+
+.customer-carousel .card-nuqta:only-child {
+  margin-inline-start: auto;
+}
+.customer-rewards-link {
+  margin-block: 4px 8px;
 }

@@ -611,7 +611,7 @@ try {
     // A waiting request no longer opens the customer's QR: the cashier approves from the receipt.
     assert.equal(await page.getByRole('dialog', { name: 'Personal QR', exact: true }).count(), 0);
     await page.getByRole('button', { name: 'Cancel request', exact: true }).click();
-    await page.getByRole('button', { name: 'Request stamp', exact: true }).waitFor();
+    await page.getByRole('dialog').getByText('Request cancelled.', { exact: true }).waitFor();
     await page.getByRole('dialog').getByRole('button', { name: 'Close', exact: true }).click();
     pass(
       project.name +

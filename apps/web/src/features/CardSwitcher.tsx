@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef } from 'react';
+import { useEffectEvent, useLayoutEffect, useRef } from 'react';
 import type { Language, SavedCard } from '../../../../packages/contracts/src/index.js';
 import { Icon } from '../../../../packages/ui/src/Icon.js';
 import { LoyaltyCard } from '../../../../packages/ui/src/LoyaltyCard.js';
@@ -96,6 +96,142 @@ export function CardSwitcher({
       paint(position - index);
     }
   }
+  type GestureSample = Pick<PointerEvent, 'clientX' | 'clientY' | 'timeStamp' | 'target'>;
+
+  function begin(pointer: number, event: GestureSample) {
+    if (!multiple || disabled || gesture.current) return false;
+    const activeSlide = track.current?.children[index] as HTMLElement | undefined;
+    if (!activeSlide) return false;
+    const slide = (event.target instanceof Element ? event.target : null)?.closest<HTMLElement>(
+      '[data-slide]',
+    );
+    gesture.current = {
+      pointer,
+      x: event.clientX,
+      y: event.clientY,
+      slide: activeSlide,
+      width: activeSlide.offsetWidth,
+      startOffset: 0,
+      dragging: false,
+      preview: slide ? Number(slide.dataset.slide) : index,
+      lastX: event.clientX,
+      lastTime: event.timeStamp,
+      velocity: 0,
+      offset: 0,
+    };
+    return true;
+  }
+
+  function move(pointer: number, event: GestureSample) {
+    const g = gesture.current;
+    if (!g || g.pointer !== pointer) return false;
+    const dx = event.clientX - g.x;
+    const dy = event.clientY - g.y;
+    const stepWidth = g.width * 0.24;
+    const starting = !g.dragging;
+    if (starting) {
+      if (Math.abs(dy) >= 6 && Math.abs(dy) > Math.abs(dx)) {
+        reset();
+        return false;
+      }
+      if (Math.abs(dx) < 4 || Math.abs(dx) <= Math.abs(dy)) return false;
+      // Continue from the displayed deck position if a snap is still in progress.
+      const transform = getComputedStyle(g.slide).transform;
+      if (transform !== 'none') {
+        g.startOffset = (-direction * new DOMMatrixReadOnly(transform).m41) / stepWidth;
+      }
+      g.dragging = true;
+      track.current!.dataset.dragging = 'true';
+    }
+    const elapsed = event.timeStamp - g.lastTime;
+    if (elapsed > 0) {
+      g.velocity = (event.clientX - g.lastX) / elapsed;
+      g.lastX = event.clientX;
+      g.lastTime = event.timeStamp;
+    }
+    // In the fan, adjacent cards are separated by 24% of a card width.
+    // Mapping that distance to one step keeps the card under the finger.
+    const progress = g.startOffset - (direction * dx) / stepWidth;
+    const bounded = Math.max(-Math.min(1, index), Math.min(1, cards.length - 1 - index, progress));
+    g.offset = bounded + Math.tanh(progress - bounded) * 0.12;
+    if (starting) {
+      paint(g.offset);
+    } else if (!frame.current) {
+      frame.current = requestAnimationFrame(() => {
+        frame.current = 0;
+        if (gesture.current) paint(gesture.current.offset);
+      });
+    }
+    return true;
+  }
+
+  function finish(pointer: number, event: GestureSample) {
+    const g = gesture.current;
+    if (!g || g.pointer !== pointer) return;
+    const dx = event.clientX - g.x;
+    const dy = event.clientY - g.y;
+    let target = index;
+    const travel = Math.abs(dx);
+    if (!disabled && g.dragging) {
+      // Commit by net travel, or by a fresh flick in the same direction.
+      // Velocity alone must never switch cards after returning to the starting point.
+      const flick =
+        travel >= 8 &&
+        event.timeStamp - g.lastTime < 90 &&
+        Math.sign(g.velocity) === Math.sign(dx) &&
+        Math.abs(g.velocity) >= 0.45;
+      if (travel >= g.width * 0.18 || flick) {
+        target = index - direction * Math.sign(dx);
+      }
+    } else if (!disabled && Math.hypot(dx, dy) < 5) {
+      target = g.preview;
+    }
+    target = Math.max(0, Math.min(cards.length - 1, target));
+    reset(target);
+    stepTo(target);
+  }
+
+  const handleTouch = useEffectEvent((event: TouchEvent) => {
+    if (event.type === 'touchcancel' || event.touches.length > 1) {
+      reset();
+      return;
+    }
+    const touch = event.changedTouches[0];
+    if (!touch) return;
+    const sample = {
+      clientX: touch.clientX,
+      clientY: touch.clientY,
+      timeStamp: event.timeStamp,
+      target: event.target,
+    };
+    if (event.type === 'touchstart') {
+      begin(touch.identifier, sample);
+    } else if (event.type === 'touchend') {
+      finish(touch.identifier, sample);
+    } else if (!event.cancelable) {
+      reset();
+    } else if (move(touch.identifier, sample)) {
+      // Claim only horizontal motion. Safari keeps ordinary vertical drags native.
+      event.preventDefault();
+    }
+  });
+
+  useLayoutEffect(() => {
+    const stage = track.current;
+    if (!stage || !multiple || disabled) return;
+    const listener = (event: TouchEvent) => handleTouch(event);
+    stage.addEventListener('touchstart', listener, { passive: true });
+    stage.addEventListener('touchmove', listener, { passive: false });
+    stage.addEventListener('touchend', listener, { passive: true });
+    stage.addEventListener('touchcancel', listener, { passive: true });
+    return () => {
+      stage.removeEventListener('touchstart', listener);
+      stage.removeEventListener('touchmove', listener);
+      stage.removeEventListener('touchend', listener);
+      stage.removeEventListener('touchcancel', listener);
+    };
+  }, [multiple, disabled]);
+
   return (
     <section
       className="customer-carousel"
@@ -109,98 +245,26 @@ export function CardSwitcher({
         ref={track}
         onDragStart={(event) => event.preventDefault()}
         onPointerDown={(event) => {
-          if (!multiple || disabled || !event.isPrimary || event.button !== 0) return;
-          const activeSlide = event.currentTarget.children[index] as HTMLElement | undefined;
-          if (!activeSlide) return;
-          const slide = (event.target as Element).closest<HTMLElement>('[data-slide]');
-          gesture.current = {
-            pointer: event.pointerId,
-            x: event.clientX,
-            y: event.clientY,
-            slide: activeSlide,
-            width: activeSlide.offsetWidth,
-            startOffset: 0,
-            dragging: false,
-            preview: slide ? Number(slide.dataset.slide) : index,
-            lastX: event.clientX,
-            lastTime: event.timeStamp,
-            velocity: 0,
-            offset: 0,
-          };
-          event.currentTarget.setPointerCapture(event.pointerId);
+          if (event.pointerType === 'touch' || !event.isPrimary || event.button !== 0) return;
+          if (begin(event.pointerId, event)) event.currentTarget.setPointerCapture(event.pointerId);
         }}
         onPointerMove={(event) => {
-          const g = gesture.current;
-          if (!g || g.pointer !== event.pointerId) return;
-          const dx = event.clientX - g.x;
-          const dy = event.clientY - g.y;
-          const stepWidth = g.width * 0.24;
-          const starting = !g.dragging;
-          if (starting) {
-            if (Math.abs(dy) >= 8 && Math.abs(dy) > Math.abs(dx)) return reset();
-            if (Math.abs(dx) < 4 || Math.abs(dx) <= Math.abs(dy)) return;
-            // Continue from the displayed deck position if a snap is still in progress.
-            const transform = getComputedStyle(g.slide).transform;
-            if (transform !== 'none') {
-              g.startOffset = (-direction * new DOMMatrixReadOnly(transform).m41) / stepWidth;
-            }
-            g.dragging = true;
-            event.currentTarget.dataset.dragging = 'true';
-          }
-          const elapsed = event.timeStamp - g.lastTime;
-          if (elapsed > 0) {
-            g.velocity = (event.clientX - g.lastX) / elapsed;
-            g.lastX = event.clientX;
-            g.lastTime = event.timeStamp;
-          }
-          // In the fan, adjacent cards are separated by 24% of a card width.
-          // Mapping that distance to one step keeps the card under the finger.
-          const progress = g.startOffset - (direction * dx) / stepWidth;
-          const bounded = Math.max(
-            -Math.min(1, index),
-            Math.min(1, cards.length - 1 - index, progress),
-          );
-          g.offset = bounded + Math.tanh(progress - bounded) * 0.12;
-          if (starting) {
-            paint(g.offset);
-          } else if (!frame.current) {
-            frame.current = requestAnimationFrame(() => {
-              frame.current = 0;
-              if (gesture.current) paint(gesture.current.offset);
-            });
-          }
+          if (event.pointerType !== 'touch') move(event.pointerId, event);
         }}
         onPointerUp={(event) => {
-          const g = gesture.current;
-          if (!g || g.pointer !== event.pointerId) return;
-          const dx = event.clientX - g.x;
-          const dy = event.clientY - g.y;
-          let target = index;
-          const travel = Math.abs(dx);
-          if (!disabled && g.dragging) {
-            // Commit by net travel, or by a fresh flick in the same direction.
-            // Velocity alone must never switch cards after returning to the starting point.
-            const flick =
-              travel >= 8 &&
-              event.timeStamp - g.lastTime < 90 &&
-              Math.sign(g.velocity) === Math.sign(dx) &&
-              Math.abs(g.velocity) >= 0.45;
-            if (travel >= g.width * 0.18 || flick) {
-              target = index - direction * Math.sign(dx);
-            }
-          } else if (!disabled && Math.hypot(dx, dy) < 5) {
-            target = g.preview;
-          }
-          target = Math.max(0, Math.min(cards.length - 1, target));
-          reset(target);
-          stepTo(target);
+          if (event.pointerType !== 'touch') finish(event.pointerId, event);
         }}
         onLostPointerCapture={(event) => {
-          if (event.target === event.currentTarget && gesture.current?.pointer === event.pointerId)
+          if (
+            event.target === event.currentTarget &&
+            gesture.current?.pointer === event.pointerId &&
+            event.pointerType !== 'touch'
+          )
             reset();
         }}
         onPointerCancel={(event) => {
-          if (gesture.current?.pointer === event.pointerId) reset();
+          if (event.pointerType !== 'touch' && gesture.current?.pointer === event.pointerId)
+            reset();
         }}
         tabIndex={multiple ? 0 : undefined}
         onKeyDown={(event) => {

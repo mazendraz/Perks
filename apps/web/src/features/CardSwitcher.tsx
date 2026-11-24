@@ -46,7 +46,9 @@ export function CardSwitcher({
     pointer: number;
     x: number;
     y: number;
-    width: number;
+    slide: HTMLElement;
+    stepWidth: number;
+    startOffset: number;
     dragging: boolean;
     preview: number;
     lastX: number;
@@ -108,14 +110,16 @@ export function CardSwitcher({
         onDragStart={(event) => event.preventDefault()}
         onPointerDown={(event) => {
           if (!multiple || disabled || !event.isPrimary || event.button !== 0) return;
-          const width =
-            event.currentTarget.querySelector<HTMLElement>('[aria-hidden="false"]')!.offsetWidth;
+          const activeSlide = event.currentTarget.children[index] as HTMLElement | undefined;
+          if (!activeSlide) return;
           const slide = (event.target as Element).closest<HTMLElement>('[data-slide]');
           gesture.current = {
             pointer: event.pointerId,
             x: event.clientX,
             y: event.clientY,
-            width,
+            slide: activeSlide,
+            stepWidth: activeSlide.offsetWidth * 0.24,
+            startOffset: 0,
             dragging: false,
             preview: slide ? Number(slide.dataset.slide) : index,
             lastX: event.clientX,
@@ -130,9 +134,15 @@ export function CardSwitcher({
           if (!g || g.pointer !== event.pointerId) return;
           const dx = event.clientX - g.x;
           const dy = event.clientY - g.y;
-          if (!g.dragging) {
+          const starting = !g.dragging;
+          if (starting) {
             if (Math.abs(dy) > 5 && Math.abs(dy) > Math.abs(dx)) return reset();
             if (Math.abs(dx) < 4) return;
+            // Continue from the displayed deck position if a snap is still in progress.
+            const transform = getComputedStyle(g.slide).transform;
+            if (transform !== 'none') {
+              g.startOffset = (-direction * new DOMMatrixReadOnly(transform).m41) / g.stepWidth;
+            }
             g.dragging = true;
             event.currentTarget.dataset.dragging = 'true';
           }
@@ -144,13 +154,15 @@ export function CardSwitcher({
           }
           // In the fan, adjacent cards are separated by 24% of a card width.
           // Mapping that distance to one step keeps the card under the finger.
-          const progress = (-direction * dx) / (g.width * 0.24);
+          const progress = g.startOffset - (direction * dx) / g.stepWidth;
           const bounded = Math.max(
             -Math.min(1, index),
             Math.min(1, cards.length - 1 - index, progress),
           );
           g.offset = bounded + Math.tanh(progress - bounded) * 0.12;
-          if (!frame.current) {
+          if (starting) {
+            paint(g.offset);
+          } else if (!frame.current) {
             frame.current = requestAnimationFrame(() => {
               frame.current = 0;
               if (gesture.current) paint(gesture.current.offset);
@@ -166,7 +178,7 @@ export function CardSwitcher({
           if (g.dragging && !disabled) {
             const velocity = event.timeStamp - g.lastTime < 90 ? g.velocity : 0;
             const projected = dx + Math.max(-24, Math.min(24, velocity * 70));
-            if (Math.abs(dx) >= 8 && Math.abs(projected) >= Math.min(24, g.width * 0.09)) {
+            if (Math.abs(dx) >= 8 && Math.abs(projected) >= Math.min(24, g.stepWidth * 0.375)) {
               target = Math.max(
                 0,
                 Math.min(cards.length - 1, index - direction * Math.sign(projected)),

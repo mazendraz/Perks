@@ -80,7 +80,7 @@ export async function auditWalletPresentation(page: Page, project: string, direc
     await page.locator('.loyalty-card').first().waitFor();
     assert.equal(await page.getByRole('dialog', { name: 'Personal QR', exact: true }).count(), 0);
     // Let the card's own requests finish before leaving it (WebKit reports an aborted fetch).
-    await page.getByRole('button', { name: /^(Request a stamp|View stamp request)$/ }).waitFor();
+    await page.getByRole('button', { name: /^(Request a Stamp|View stamp request)$/ }).waitFor();
     await page.waitForTimeout(1500);
     await page.getByRole('button', { name: 'My cards', exact: true }).click();
     await link.waitFor();

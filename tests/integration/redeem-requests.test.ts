@@ -375,6 +375,34 @@ test('confirm: the cashier is rung, confirms once, and a new card starts', async
   assert.deepEqual([c3.balance, c3.cycle_number], [1, 2]);
 });
 
+test('extra stamps: rejecting changes nothing, approving starts the next round keeping them', async () => {
+  const { who, reward } = await fullCard();
+  // Two stamps land while the reward waits: they belong to the next card.
+  await stamp(who, 'auto');
+  await stamp(who, 'auto');
+  const before = await card(who);
+  assert.deepEqual([before.balance, before.pending_rewards, before.cycle_number], [2, 1, 1]);
+  const first = (await ask(who, reward.id)).json();
+  assert.equal((await decide(first.id, false)).statusCode, 200);
+  const rejected = await card(who);
+  assert.deepEqual([rejected.balance, rejected.pending_rewards, rejected.cycle_number], [2, 1, 1]);
+  assert.equal((await me(who, '/rewards')).json().rewards[0].status, 'available');
+  const second = (await ask(who, reward.id)).json();
+  assert.equal((await decide(second.id, true)).statusCode, 200);
+  const approved = await card(who);
+  assert.deepEqual([approved.balance, approved.pending_rewards, approved.cycle_number], [2, 0, 2]);
+});
+
+test('two cards: a request on one card never touches the other', async () => {
+  const a = await fullCard('Card A'),
+    b = await fullCard('Card B');
+  const request = (await ask(a.who, a.reward.id)).json();
+  assert.equal((await decide(request.id, true)).statusCode, 200);
+  assert.equal((await me(b.who, '/rewards')).json().rewards[0].status, 'available');
+  assert.equal((await card(b.who)).cycle_number, 1);
+  assert.equal((await mine(b.who)).length, 0);
+});
+
 test('double confirm: two cashiers at once hand the reward over exactly once', async () => {
   const { who, reward } = await fullCard();
   const request = (await ask(who, reward.id)).json();

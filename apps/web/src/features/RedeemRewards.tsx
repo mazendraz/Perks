@@ -17,6 +17,13 @@ export interface RedeemRequest {
   expires_at: string;
   title: string;
 }
+export interface RewardAction {
+  membershipId: string;
+  available: boolean;
+  pending: boolean;
+  busy: boolean;
+  request: () => void;
+}
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 // The branch the customer came through (the shop's sticker adds ?b=), so that branch is rung first.
 const branchHint = () => {
@@ -34,12 +41,14 @@ export function RedeemRewards({
   loading,
   lang,
   onChanged,
+  onAction,
 }: {
   card: SavedCard;
   rewards?: Reward[];
   loading: boolean;
   lang: Language;
   onChanged: () => Promise<void> | void;
+  onAction?: (action: RewardAction | null) => void;
 }) {
   const ar = lang === 'ar';
   const [show, setShow] = useState(false);
@@ -111,7 +120,11 @@ export function RedeemRewards({
           ['completed', 'rejected', 'expired'].includes(r.status),
       )
     : undefined;
+  const asking = useRef(false);
   const ask = async (reward: Reward) => {
+    // A double tap sends one request (the server also returns the open one for a reward).
+    if (asking.current) return;
+    asking.current = true;
     setBusy(true);
     setError('');
     try {
@@ -137,6 +150,7 @@ export function RedeemRewards({
     } catch (e) {
       setError(errorText(e, lang));
     } finally {
+      asking.current = false;
       setBusy(false);
     }
   };
@@ -153,6 +167,25 @@ export function RedeemRewards({
       setBusy(false);
     }
   };
+  // The page's bottom button follows this card: Request Reward while one is available, then a
+  // waiting state until the cashier decides. Approval alone redeems it (server side).
+  const next = rewards.find(
+    (r) => r.status === 'available' && Date.parse(r.expires_at) > Date.now(),
+  );
+  const askRef = useRef(ask);
+  askRef.current = ask;
+  useEffect(() => {
+    onAction?.({
+      membershipId: card.id,
+      available: !!next,
+      pending: !!open,
+      busy,
+      request: () => {
+        if (next) void askRef.current(next);
+      },
+    });
+  }, [card.id, next?.id, open?.id, busy]);
+  useEffect(() => () => onAction?.(null), [card.id]);
   const available = rewards.some((r) => r.status === 'available');
   return (
     <>

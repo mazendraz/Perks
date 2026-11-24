@@ -1066,8 +1066,16 @@ try {
     await up.getByText('Activity history', { exact: true }).click();
     await up.getByRole('button', { name: 'View rewards', exact: true }).click();
   };
+  // The bottom button follows the card's reward: Request Reward, then waiting (no duplicate taps).
+  const rewardButton = up.getByRole('button', { name: 'Request Reward', exact: true }).last();
+  await rewardButton.waitFor();
+  await rewardButton.click();
+  const rewardPending = up
+    .getByRole('button', { name: 'Reward requested · waiting for cashier', exact: true })
+    .last();
+  await rewardPending.waitFor();
+  assert.ok(await rewardPending.isDisabled());
   await openCustomerRewards();
-  await up.getByRole('button', { name: 'Redeem', exact: true }).first().click();
   const waiting = up.getByRole('status', { name: 'Redeem request', exact: true });
   await waiting.getByText('Waiting for cashier…', { exact: true }).waitFor();
   const matchNumber = (await waiting.locator('[data-match-number]').innerText()).trim();
@@ -1108,6 +1116,8 @@ try {
   await cp.getByText('Reward redeemed ✅', { exact: true }).waitFor();
   // No reload: the customer's screen turns to Redeemed and the new card starts.
   await up.getByRole('heading', { name: 'Redeemed ✅', exact: true }).waitFor();
+  // The new round has no reward: the bottom button asks for stamps again.
+  await up.getByRole('button', { name: 'Request a Stamp', exact: true }).last().waitFor();
   ok('A redeem request needs no QR: the cashier confirms it and the customer sees Redeemed live');
   // A second confirmation of the same request is refused, whatever key it carries.
   const doubled = await call(
@@ -1228,7 +1238,7 @@ try {
     exact: false,
   });
   const requestStamp = async () => {
-    await up.getByRole('button', { name: 'Request a stamp', exact: true }).click();
+    await up.getByRole('button', { name: 'Request a Stamp', exact: true }).click();
     const picker = stampDialog.getByLabel('Purchase branch');
     await Promise.race([picker.waitFor(), waitingForCashier.waitFor()]);
     if (await picker.isVisible()) {

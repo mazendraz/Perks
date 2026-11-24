@@ -6,6 +6,7 @@ import { useEffect, useState, useRef, useId } from 'react';
 import type { Language, SavedCard } from '../../../../packages/contracts/src/index.js';
 import { api, errorText } from '../api.js';
 import { intlLocale } from '../locale.js';
+import type { RewardAction } from './RedeemRewards.js';
 export interface VisitNotice {
   tone: 'info' | 'error';
   text: string;
@@ -28,9 +29,11 @@ export function CustomerRequests({
   onAwarded,
   onNotice,
   stampDock,
+  rewardAction,
 }: {
   card: SavedCard;
   stampDock?: HTMLElement | null;
+  rewardAction?: RewardAction | null;
   lang: Language;
   onPending?: (pending: boolean) => void;
   onAwarded?: () => Promise<void> | void;
@@ -148,22 +151,46 @@ export function CustomerRequests({
       : 'View stamp request'
     : ar
       ? 'اطلب ختم'
-      : 'Request a stamp';
-  const launcher = (className: string) => (
-    <button
-      type="button"
-      className={className}
-      aria-haspopup="dialog"
-      disabled={busy || (!pending && branches === null)}
-      aria-busy={busy || branches === null}
-      onClick={() => {
-        setOpen(true);
-        if (!pending && branches?.length === 1) void create(branches[0]!.id);
-      }}
-    >
-      <ActionLabel icon="stamp">{requestLabel}</ActionLabel>
-    </button>
-  );
+      : 'Request a Stamp';
+  // While this card has a reward, the same button asks the cashier for it instead (approval only).
+  const reward =
+    rewardAction?.membershipId === card.id && (rewardAction.available || rewardAction.pending)
+      ? rewardAction
+      : null;
+  const launcher = (className: string) =>
+    reward ? (
+      <button
+        type="button"
+        className={className}
+        disabled={reward.pending || reward.busy}
+        aria-busy={reward.busy}
+        onClick={() => reward.request()}
+      >
+        <ActionLabel icon="gift">
+          {reward.pending
+            ? ar
+              ? 'المكافأة مطلوبة · مستني الكاشير'
+              : 'Reward requested · waiting for cashier'
+            : ar
+              ? 'اطلب المكافأة'
+              : 'Request Reward'}
+        </ActionLabel>
+      </button>
+    ) : (
+      <button
+        type="button"
+        className={className}
+        aria-haspopup="dialog"
+        disabled={busy || (!pending && branches === null)}
+        aria-busy={busy || branches === null}
+        onClick={() => {
+          setOpen(true);
+          if (!pending && branches?.length === 1) void create(branches[0]!.id);
+        }}
+      >
+        <ActionLabel icon="stamp">{requestLabel}</ActionLabel>
+      </button>
+    );
   return (
     <>
       {launcher(stampDock ? 'primary customer-stamp-inline' : 'primary')}

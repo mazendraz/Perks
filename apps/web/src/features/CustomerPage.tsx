@@ -8,7 +8,7 @@ import { CustomerRequests } from './StampRequests.js';
 import { useLiveRefresh } from '../live-events.js';
 import { RefreshQueue } from '../refresh-queue.js';
 import { ActionLabel } from '../../../../packages/ui/src/Icon.js';
-import { RedeemRewards } from './RedeemRewards.js';
+import { RedeemRewards, type RewardAction } from './RedeemRewards.js';
 import { WalletPanel, useWalletAvailability } from './WalletPanel.js';
 import { CardSwitcher } from './CardSwitcher.js';
 import { useCardExperience } from '../useCardExperience.js';
@@ -664,6 +664,7 @@ export function CustomerPage({
     [routeId],
   );
   const [waiting, setWaiting] = useState(false);
+  const [rewardAction, setRewardAction] = useState<RewardAction | null>(null);
   const [visitNotice, setVisitNotice] = useState<VisitNotice | null>(null);
   const loadGeneration = useRef(0);
   const cardsQueue = useRef(new RefreshQueue());
@@ -742,6 +743,7 @@ export function CustomerPage({
   useLayoutEffect(() => {
     setVisitNotice(null);
     setWaiting(false);
+    setRewardAction(null);
   }, [membershipId]);
   useEffect(() => {
     if (membershipId) void detailsQueue.current.run(() => readDetails(membershipId));
@@ -888,6 +890,7 @@ export function CustomerPage({
                   card={card}
                   lang={lang}
                   stampDock={stampDock}
+                  rewardAction={rewardAction}
                   onPending={setWaiting}
                   onAwarded={load}
                   onNotice={setVisitNotice}
@@ -900,6 +903,7 @@ export function CustomerPage({
                     rewards={rewards}
                     loading={rewards === undefined && !detailsError}
                     onChanged={load}
+                    onAction={setRewardAction}
                     lang={lang}
                   />
                   {activity === undefined && !detailsError ? (

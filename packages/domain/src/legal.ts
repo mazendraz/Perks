@@ -106,7 +106,7 @@ const content = {
     },
   },
 };
-export function legalNotice(locale: 'ar' | 'en'): LegalNotice {
+export function legalNotice(locale: 'ar' | 'en', reviewed = false): LegalNotice {
   const docs = content[locale],
     version = 'pilot-legal-draft-v3:' + locale;
   const text = [docs.privacy, docs.terms]
@@ -114,7 +114,7 @@ export function legalNotice(locale: 'ar' | 'en'): LegalNotice {
     .join('\n\n');
   return {
     locale,
-    reviewRequired: true,
+    reviewRequired: !reviewed,
     updatedAt: '2026-11-10',
     ...docs,
     acceptance: { version, hash: createHash('sha256').update(text).digest('hex'), text },

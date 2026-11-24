@@ -605,6 +605,7 @@ try {
   await businessRow.getByRole('button', { name: 'View owner dashboard', exact: true }).click();
   await ap.getByRole('region', { name: 'Owner preview mode', exact: true }).waitFor();
   await ap.getByRole('heading', { name: 'Merchant dashboard', exact: true }).waitFor();
+  await openOperatingNumbers(ap);
   await ap.locator('.merchant-metrics').waitFor();
   await ap.locator('.experience-stats .experience-metrics').waitFor();
   assert.equal(await ap.locator('.experience-stats [role="alert"]').count(), 0);
@@ -618,7 +619,12 @@ try {
     })
   ).json();
   assert.deepEqual(previewData.metrics, ownerData.metrics);
-  const period = ap.getByRole('combobox').first();
+  // Resolve the trigger once by id: while its list is open, role queries no longer see it.
+  const periodId = await ap
+    .locator('details.an-details')
+    .getByRole('combobox', { name: 'Period', exact: true })
+    .getAttribute('id');
+  const period = ap.locator('[id=' + JSON.stringify(periodId) + ']');
   await period.focus();
   await period.press('ArrowDown');
   await ap.getByRole('listbox').waitFor();
@@ -721,6 +727,8 @@ try {
   await up.getByLabel('Mobile number', { exact: true }).fill(customerPhone);
   await up.getByLabel('I accept the program, reward and privacy terms', { exact: true }).check();
   await up.getByRole('button', { name: 'Open my card', exact: true }).click();
+  // The number is confirmed first; the server then rejects the blank name field by field.
+  await confirmPhone(up);
   await up.locator('input[name="displayName"][aria-invalid="true"]').waitFor();
   await up.locator('.field-errors button').first().click();
   await up.waitForFunction(() => document.activeElement?.getAttribute('name') === 'displayName');
@@ -746,6 +754,7 @@ try {
     { times: 1 },
   );
   await up.getByRole('button', { name: 'Open my card', exact: true }).click();
+  await confirmPhone(up);
   await up
     .getByText('The terms changed. Review and accept them to continue.', { exact: true })
     .waitFor();
@@ -777,6 +786,7 @@ try {
     { times: 1 },
   );
   await up.getByRole('button', { name: 'Open my card', exact: true }).click();
+  await confirmPhone(up);
   await up.waitForURL('**/customer/*');
   ok(
     'Name/phone/terms registration preserves accessible validation and recovers a lost committed response without a password or duplicate identity',
@@ -823,8 +833,11 @@ try {
       portal === 'platform' ? '/merchant/login' : '/login',
       true,
     );
-    await sharedPage.locator('[data-portal="' + portal + '"]').waitFor();
-    assert.equal(await sharedPage.locator('[data-portal]').getAttribute('data-portal'), portal);
+    await sharedPage.locator('.app-layout[data-portal="' + portal + '"]').waitFor();
+    assert.equal(
+      await sharedPage.locator('.app-layout[data-portal]').getAttribute('data-portal'),
+      portal,
+    );
     if (portal === 'cashier') assert.equal(await sharedPage.locator('.sidebar').count(), 0);
     if (portal === 'merchant')
       assert.equal(
@@ -1040,7 +1053,8 @@ try {
   await prepare('BROWSER-' + stamp + '-2', 2);
   await cp.getByRole('button', { name: 'Confirm stamps', exact: true }).click();
   await cp.getByText('Saved balance: 0', { exact: true }).waitFor();
-  await up.getByText('Available', { exact: true }).waitFor();
+  // The opening screen shows an available reward as the "Request Reward" bottom action.
+  await up.getByRole('button', { name: 'Request Reward', exact: true }).last().waitFor();
   await up.waitForFunction(
     () => document.querySelector('[role=progressbar]')?.getAttribute('aria-valuenow') === '5',
   );
@@ -1160,15 +1174,17 @@ try {
     'Cashier redemption starts card two at zero, animates renewal and respects reduced-motion settings',
   );
   await navigateTo(op, '/merchant');
+  await openOperatingNumbers(op);
   await op.getByText('Registered customers', { exact: true }).waitFor();
   const overview = await call(owner, '/merchants/' + mid + '/overview');
   assert.equal(overview.status(), 200);
   const metrics = (await overview.json()).metrics;
   assert.equal(metrics.stamps, 5);
-  assert.equal(metrics.visits, 2);
+  // Both purchases are the same customer on the same business day: one visit (migration 045).
+  assert.equal(metrics.visits, 1);
   assert.equal(metrics.rewardsRedeemed, 1);
   assert.equal(metrics.registered, 1);
-  ok('Merchant KPIs derive five stamps and two confirmed visits from database facts');
+  ok('Merchant KPIs derive five stamps and one same-day visit from database facts');
   await merchantTab(op, 'Programs');
   await op.getByRole('button', { name: 'New program', exact: true }).click();
   await op.getByRole('dialog').getByLabel('Name', { exact: true }).fill('Bakery extras');
@@ -1289,7 +1305,8 @@ try {
   const afterRequests = (await (await call(owner, '/merchants/' + mid + '/overview')).json())
     .metrics;
   assert.equal(afterRequests.stamps, 7);
-  assert.equal(afterRequests.visits, 3);
+  // Still the same customer on the same business day.
+  assert.equal(afterRequests.visits, 1);
   ok(
     'Branch queue approves a request from the receipt alone in one tap, and a lost answer replays the same decision once',
   );
@@ -1871,7 +1888,7 @@ try {
   await staffResetPage.locator('input[type=email]').waitFor();
   await login(staffResetPage, email('owner'), '/login', true, recoveredPassword);
   await staffResetPage.waitForURL('**/merchant');
-  await staffResetPage.locator('[data-portal=merchant]').waitFor();
+  await staffResetPage.locator('.app-layout[data-portal=merchant]').waitFor();
   ok(
     'Forgot password dispatches through the durable worker mailbox; the real recovery link opens the reset screen and the new password restores the owner workspace',
   );
@@ -2044,4 +2061,18 @@ try {
   await browser.close();
   await worker.end();
   await db.end();
+}
+
+// The owner's detailed numbers (period filter, KPI grid) live in a closed disclosure and are
+// only fetched once it is opened.
+async function openOperatingNumbers(page: Page) {
+  const details = page.locator('details.an-details');
+  await details.waitFor();
+  if (!(await details.evaluate((el) => (el as HTMLDetailsElement).open)))
+    await details.locator('summary').click();
+}
+
+// Enrollment asks "Is this your number?" before opening a card; tests answer it explicitly.
+async function confirmPhone(page: Page) {
+  await page.getByRole('button', { name: 'Yes, open my card', exact: true }).click();
 }

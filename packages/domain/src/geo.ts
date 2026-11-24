@@ -18,7 +18,14 @@ const valid = (latitude: number, longitude: number) =>
 // Reads a position from what people actually paste: "30.0444, 31.2357", or a Google Maps link.
 // A place link's pin (!3d…!4d…) wins over the map's centre (@…), which may be off to one side.
 export function parseMapsPosition(input: string) {
-  const text = decodeURIComponent(input.trim().replace(/\+/g, ' '));
+  const raw = input.trim().replace(/\+/g, ' ');
+  // Pasted text can hold a stray "%" ("50% complete"); that is unreadable text, not an error.
+  let text = raw;
+  try {
+    text = decodeURIComponent(raw);
+  } catch {
+    // Keep the raw text: it is still matched below and comes back null when it is no position.
+  }
   const number = '(-?\\d{1,3}(?:\\.\\d+)?)';
   const patterns = [
     new RegExp('!3d' + number + '!4d' + number),

@@ -33,6 +33,9 @@ const schema = z.object({
   SMTP_STARTTLS: z.enum(['true', 'false']).default('true'),
   SMTP_CA_FILE: z.string().optional(),
   LOG_LEVEL: z.enum(['silent', 'fatal', 'error', 'warn', 'info', 'debug']).default('info'),
+  // Set to "true" only after legal review approved the current legal text (version in
+  // packages/domain/src/legal.ts). Until then the legal pages say they are a draft.
+  LEGAL_TEXT_APPROVED: z.enum(['true', 'false']).default('false'),
   MONITORING_TOKEN: z.union([z.string().min(32), z.literal('')]).default(''),
   BACKUP_STATUS_ROOT: z.string().default(''),
   APPLE_WALLET_ENABLED: z.enum(['true', 'false']).default('false'),

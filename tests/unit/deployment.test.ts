@@ -13,6 +13,7 @@ const configuration = () => ({
   NUQTA_WORKER_DB_PASSWORD: '6'.repeat(64),
   PGBACKREST_REPO1_CIPHER_PASS: '7'.repeat(64),
   RESTIC_PASSWORD: '8'.repeat(64),
+  MONITORING_TOKEN: '9'.repeat(64),
   SMTP_HOST: 'smtp.nuqta.test',
   SMTP_PORT: '587',
   SMTP_USER: 'synthetic-user',
@@ -31,6 +32,10 @@ test('production env preflight validates independent secrets and does not inheri
     { PUBLIC_APP_ORIGIN: 'http://app.nuqta.test' },
     { SMTP_HOST: '' },
     { SMTP_PASS: '' },
+    { SMTP_USER: '' },
+    { SMTP_FROM: '' },
+    { MONITORING_TOKEN: '' },
+    { MONITORING_TOKEN: valid.AUTH_PEPPER },
   ])
     assert.throws(() => productionEnvironment({ ...valid, ...patch }));
 });

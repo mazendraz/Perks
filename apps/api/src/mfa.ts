@@ -3,7 +3,7 @@ import QRCode from 'qrcode';
 import { z } from 'zod';
 import type { FastifyInstance } from 'fastify';
 import type { Config } from './config.js';
-import { authenticated } from './auth.js';
+import { authenticated } from './actor.js';
 import { transaction, type Actor, type DB, type Pools } from './db.js';
 import { keyedHash, safeEqual, totp } from './crypto.js';
 import { verifyPassword } from './passwords.js';

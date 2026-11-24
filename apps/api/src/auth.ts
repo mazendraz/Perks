@@ -2,7 +2,8 @@ import { APPLE_SERVICE_PREFIX } from './wallet/constants.js';
 import { WHATSAPP_RECOVERY_WEBHOOK } from './modules/customer-whatsapp.js';
 import { passwordAuth } from './password-auth.js';
 import { requestPortal, portalCookies, portalAllowed } from './portal-auth.js';
-import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
+import { authenticated } from './actor.js';
+import type { FastifyInstance, FastifyReply } from 'fastify';
 import { z } from 'zod';
 import { deployed, type Config } from './config.js';
 import { mfaModule } from './mfa.js';
@@ -13,7 +14,6 @@ import { readLocalMailbox } from './mail/mailer.js';
 import { issueDeviceSession, deviceCookie } from './customer-auth/device-auth.js';
 declare module 'fastify' {
   interface FastifyRequest {
-    actor: Actor | null;
     sessionCookieName: string;
     csrfCookieName: string;
   }
@@ -437,7 +437,4 @@ export function authModule(app: FastifyInstance, pools: Pools, c: Config) {
       .send();
   });
 }
-export function authenticated(req: FastifyRequest): Actor {
-  requireCondition(req.actor, 'UNAUTHENTICATED', 401);
-  return req.actor;
-}
+export { authenticated };

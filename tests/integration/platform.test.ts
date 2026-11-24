@@ -1,6 +1,9 @@
 import { before, after, test } from 'node:test';
 import assert from 'node:assert/strict';
 import pg from 'pg';
+import { mkdtemp, readdir, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { readConfig } from '../../apps/api/src/config.js';
 import { buildApp } from '../../apps/api/src/server.js';
@@ -47,6 +50,23 @@ test('platform readiness verifies restricted runtime schema; support can read sa
     assert.equal((await unsafe.app.inject('/health/ready')).statusCode, 503);
   } finally {
     await unsafe.app.close();
+  }
+  // A database missing a migration this build ships with is not ready (OP-01).
+  const ahead = await mkdtemp(join(tmpdir(), 'nuqta-migrations-'));
+  try {
+    for (const file of await readdir('db/migrations')) await writeFile(join(ahead, file), '');
+    await writeFile(join(ahead, '999_not_applied_yet.sql'), '');
+    const stale = await buildApp(
+      { APP_ENV: 'test', LOG_LEVEL: 'silent' },
+      { migrationsDir: ahead },
+    );
+    try {
+      assert.equal((await stale.app.inject('/health/ready')).statusCode, 503);
+    } finally {
+      await stale.app.close();
+    }
+  } finally {
+    await rm(ahead, { recursive: true, force: true });
   }
   assert.equal(
     (await app.inject({ url: '/api/v1/platform/health', headers: owner })).statusCode,

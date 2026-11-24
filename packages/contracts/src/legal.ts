@@ -12,7 +12,8 @@ const document = z.object({
 });
 export const legalNoticeOutput = z.object({
   locale: z.enum(['ar', 'en']),
-  reviewRequired: z.literal(true),
+  // True until the release owner records that this exact text passed legal review.
+  reviewRequired: z.boolean(),
   updatedAt: z.iso.date(),
   privacy: document,
   terms: document,

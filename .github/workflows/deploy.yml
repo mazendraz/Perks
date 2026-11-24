@@ -3,9 +3,14 @@ name: Deploy (manual)
 # Manual only. There is intentionally NO push / pull_request / schedule trigger.
 on:
   workflow_dispatch:
+    inputs:
+      sha:
+        description: Full commit SHA to deploy (defaults to the commit this run was started on)
+        required: false
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: deploy-production
@@ -15,7 +20,25 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    env:
+      DEPLOY_SHA: ${{ inputs.sha || github.sha }}
     steps:
+      - name: Require passing checks for the exact commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: |
+          if ! [[ "$DEPLOY_SHA" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "Deploy needs a full 40-character commit SHA." >&2
+            exit 1
+          fi
+          conclusion="$(gh api "repos/$REPO/actions/workflows/checks.yml/runs?head_sha=$DEPLOY_SHA&status=completed&per_page=1" --jq '.workflow_runs[0].conclusion // "missing"')"
+          if [[ "$conclusion" != "success" ]]; then
+            echo "Nuqta checks for $DEPLOY_SHA: $conclusion. Only a commit with passing checks can be deployed." >&2
+            exit 1
+          fi
+          echo "Deploying $DEPLOY_SHA (checks: success)."
+
       - name: Configure SSH
         env:
           VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
@@ -33,4 +56,4 @@ jobs:
           VPS_USER: ${{ secrets.VPS_USER }}
         run: |
           ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
-            "$VPS_USER@$VPS_HOST" 'bash /opt/perks/scripts/deploy.sh'
+            "$VPS_USER@$VPS_HOST" "bash /opt/perks/scripts/deploy.sh $DEPLOY_SHA"

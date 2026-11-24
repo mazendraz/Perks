@@ -18,7 +18,7 @@ Target: a dedicated Ubuntu 24.04 LTS host, at least 2 vCPU, 4 GB RAM and 80 GB S
 8. Start: `docker compose --env-file deploy/.env.production -f deploy/compose.yml up -d`.
 9. Inspect: `docker compose --env-file deploy/.env.production -f deploy/compose.yml ps --all`. Migrate must exit 0; other services must be healthy. Test `curl --fail https://YOUR_DOMAIN/health/ready`, `curl -I https://YOUR_DOMAIN/login`, and an actual hashed asset URL. Keep certificate verification enabled.
 
-The PostgreSQL bootstrap runs only on a new volume. It creates four restricted roles, with no memberships between them. Migrator owns the schema; runtime/auth/worker are neither owners nor superusers and cannot bypass RLS or create roles/databases. API receives only runtime/auth DB credentials, Worker only worker credentials, and the one-shot migrator only its migration URL. Application containers do not receive the bootstrap PostgreSQL password. The API readiness check verifies both runtime and auth roles and the schema marker.
+The PostgreSQL bootstrap runs only on a new volume. It creates four restricted roles, with no memberships between them. Migrator owns the schema; runtime/auth/worker are neither owners nor superusers and cannot bypass RLS or create roles/databases. API receives only runtime/auth DB credentials, Worker only worker credentials, and the one-shot migrator only its migration URL. Application containers do not receive the bootstrap PostgreSQL password. The API readiness check verifies both runtime and auth roles and that every migration shipped with the build has been applied.
 
 There is no production seed or automatic demo account. The first platform account needs a separate private operator bootstrap after operational acceptance; do not copy development credentials or AUTH_PEPPER into production.
 
@@ -34,6 +34,23 @@ Caddy serves static files from an image built from the same checkout. It obtains
 - Apply migrations: `docker compose --env-file deploy/.env.production -f deploy/compose.yml run --rm migrate`. Do not resume after a failure. Each migration has a hash and transaction, protected by a migration lock. Never rewrite an applied migration or reinitialize a database.
 - Start the new release: `docker compose --env-file deploy/.env.production -f deploy/compose.yml up -d --force-recreate`. Check readiness and approved synthetic login/card/stamp/redemption flows.
 - For rollback, restore previous app/web image tags only when the new schema is backward compatible, then recreate and verify. An incompatible schema needs an isolated, verified restore and an explicit decision about newer data. No automatic down migration and no `down -v` on a real stack. Never restore a backup over current data without a recovery plan.
+
+## Native VPS release (systemd)
+
+The manual GitHub workflow `Deploy (manual)` is the second, non-Compose release path. It deploys one exact commit:
+
+- Start it from the Actions tab with the full 40-character SHA, or leave the input empty to deploy the commit the run was started on. The workflow refuses unless the `Nuqta checks` workflow finished with success on that same SHA.
+- On the server it runs `bash /opt/perks/scripts/deploy.sh <sha>`. The script refuses a commit that is not on `origin/master` or is not a fast-forward of the current checkout, so a branch that moved after approval never changes what is built.
+- After migrations it restarts `perks` and `perks-worker`. Success requires `/health/ready` = 200 (every migration shipped with the build applied, restricted roles) **and** the worker active on the same process with no automatic restarts for `WORKER_STABLE_SECONDS` (default 15). If the deploy user can see the worker heartbeat file (no systemd `PrivateTmp`), set `WORKER_HEARTBEAT_FILE` to require a heartbeat written after the restart.
+- Rollback stays manual: check out the previous approved SHA only when the schema is backward compatible, as in the Compose procedure above.
+
+## Optional providers on Compose
+
+Apple Wallet, Google Wallet and Web Push are disabled in `compose.yml`, which does not pass their settings through. To enable them, copy `compose.providers.example.yml` to a private `compose.providers.yml`, keep only the providers in the release, set `NUQTA_PROVIDER_SECRETS_DIR` to a private read-only credential directory and add `-f deploy/compose.providers.yml` after the base file. Verify the rendered API and worker settings with `docker compose ... config api worker`, and verify delivery with dedicated provider test accounts before launch.
+
+## Legal text
+
+The privacy and terms pages say "Local testing draft" until `LEGAL_TEXT_APPROVED=true` is set. Set it only after legal review approved the current text version (see `packages/domain/src/legal.ts`).
 
 ## Local acceptance and limits
 

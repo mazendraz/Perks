@@ -53,6 +53,9 @@ export function pushModule(
     const actor = authenticated(req);
     enabled();
     const p = subscribeInput.parse(req.body);
+    // Staff notifications need a staff sign-in. A customer device session stays a cardholder
+    // credential even when the same person also works at a shop.
+    requireCondition(actor.authMethod !== 'device', 'FORBIDDEN', 403);
     return transaction(
       pools.pool,
       async (db) => {

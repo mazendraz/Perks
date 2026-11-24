@@ -594,7 +594,8 @@ export function analyticsPageModule(app: FastifyInstance, pools: Pools) {
           (isTag ? ' AND $3=ANY(cs.tags)' : ' AND cs.lifecycle=$3') +
           " AND ($4::text IS NULL OR cp.alias ILIKE '%'||$4||'%')";
         // A number and WhatsApp consent: the owner can open a WhatsApp draft to this customer.
-        const whatsapp = `(cp.contact_phone<>'' AND EXISTS(SELECT 1 FROM consent_current wc WHERE wc.merchant_id=cp.merchant_id AND wc.user_id=cp.user_id AND wc.channel='whatsapp' AND wc.granted))`;
+        // The runtime role cannot read contact phones; a scoped function answers "reachable".
+        const whatsapp = `(cp.id IN (SELECT whatsapp_reachable_profiles($1)))`;
         const listed = where + (q.whatsapp ? ` AND ${whatsapp}` : '');
         // The search box is plain text: % and _ are not wildcards.
         const params = [m, q.branchId ?? null, key, q.q ? q.q.replace(/[\\%_]/g, '\\$&') : null];

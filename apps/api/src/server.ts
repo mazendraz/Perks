@@ -1,3 +1,4 @@
+import { readdir } from 'node:fs/promises';
 import { outreachModule } from './modules/outreach.js';
 import { customerRemindersModule } from './modules/customer-reminders.js';
 import { ownerPreviewModule } from './modules/owner-preview.js';
@@ -55,6 +56,8 @@ export async function buildApp(
     mapsFetch?: typeof fetch;
     // Lets tests answer push-service requests without the network.
     pushTransport?: typeof fetch;
+    // The migrations this build requires; defaults to db/migrations under the working directory.
+    migrationsDir?: string;
   } = {},
 ) {
   const c = readConfig(overrides),
@@ -200,6 +203,11 @@ export async function buildApp(
   administrationModule(app, pools);
   monitoringModule(app, pools, c, httpMetrics, options.monitoringProbes);
   app.get('/health/live', async () => ({ status: 'ok' }));
+  // The migrations shipped with this build (the image and the native checkout both carry
+  // db/migrations next to the server). Unreadable means unknown, and readiness fails.
+  const requiredMigrations = readdir(options.migrationsDir ?? 'db/migrations')
+    .then((files) => files.filter((f) => f.endsWith('.sql')).sort())
+    .catch(() => [] as string[]);
   app.get('/health/ready', async (_req, reply) => {
     try {
       for (const [pool, expectedRole] of [
@@ -225,12 +233,17 @@ export async function buildApp(
         )
           throw new Error('Runtime role/schema is not ready');
       }
+      // Every migration this release ships with must be applied: an API on an older schema
+      // (a skipped or failed migration) is not ready, whatever older marker it still finds.
+      const required = await requiredMigrations;
       if (
+        !required.length ||
         (
           await pools.pool.query(
-            "SELECT count(*)::int AS count FROM schema_migrations WHERE name='013a_google_wallet.sql'",
+            'SELECT count(*)::int AS count FROM schema_migrations WHERE name=ANY($1::text[])',
+            [required],
           )
-        ).rows[0].count !== 1
+        ).rows[0].count !== required.length
       )
         throw new Error('Schema is not ready');
       return { status: 'ready' };

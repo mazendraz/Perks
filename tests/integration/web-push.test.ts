@@ -272,3 +272,38 @@ test('the runtime role cannot read other people’s devices or call the worker f
     0,
   );
 });
+
+test('a customer device session of someone who also works at a shop can never hold a staff push subscription', async () => {
+  const uid = (await db.query("SELECT id FROM users WHERE email='cashier@bunn.test'")).rows[0].id;
+  await db.query('BEGIN');
+  try {
+    // The same person, signed in on a customer device (a dual-purpose legacy identity).
+    await db.query(
+      'INSERT INTO customer_identities(customer_id,legacy) VALUES($1,true) ON CONFLICT DO NOTHING',
+      [uid],
+    );
+    const deviceId = (
+      await db.query(
+        "INSERT INTO customer_devices(customer_id,token_hash,user_agent_family) VALUES($1,$2,'Chrome') RETURNING id",
+        [uid, randomUUID().replace(/-/g, '').padEnd(64, '0')],
+      )
+    ).rows[0].id;
+    const session = (
+      await db.query(
+        "INSERT INTO sessions(user_id,token_hash,csrf_hash,expires_at,auth_method,customer_device_id,credential_version) SELECT $1,$2,'x',now()+interval '1 hour','device',$3,u.password_version FROM users u WHERE u.id=$1 RETURNING id",
+        [uid, randomUUID(), deviceId],
+      )
+    ).rows[0].id;
+    await db.query('SAVEPOINT attempt');
+    await assert.rejects(
+      db.query(
+        "INSERT INTO push_subscriptions(user_id,session_id,endpoint,p256dh,auth) VALUES($1,$2,'https://fcm.googleapis.com/fcm/send/device','x','x')",
+        [uid, session],
+      ),
+      /NQ:FORBIDDEN/,
+    );
+    await db.query('ROLLBACK TO SAVEPOINT attempt');
+  } finally {
+    await db.query('ROLLBACK');
+  }
+});

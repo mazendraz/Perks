@@ -530,6 +530,8 @@ test('every SECURITY DEFINER function that trusts customer ownership also checks
     'acting_staff',
     'is_active_owner',
     'merchant_owner',
+    // Owner/manager check before listing WhatsApp-reachable profile ids for analytics (059).
+    'whatsapp_reachable_profiles',
     // A staff member's own wrong 6-digit customer codes (047).
     'short_code_attempt_allowed',
     'short_code_failed',

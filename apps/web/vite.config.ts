@@ -30,6 +30,15 @@ export default defineConfig({
     }),
     webShellPlugin(),
   ],
+  resolve: {
+    // Exactly "zod" (not its subpaths, which the shim itself imports): configure it jitless first.
+    alias: [
+      {
+        find: /^zod$/,
+        replacement: fileURLToPath(new URL('./src/zod-jitless.ts', import.meta.url)),
+      },
+    ],
+  },
   server: {
     host: '127.0.0.1',
     port: 5173,

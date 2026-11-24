@@ -373,6 +373,7 @@ try {
       .getByLabel('I accept the program, reward and privacy terms', { exact: true })
       .check();
     await page.getByRole('button', { name: 'Open my card', exact: true }).click();
+    await confirmPhone(page);
     await page.getByRole('progressbar', { name: 'Stamp progress', exact: true }).waitFor();
     await page.waitForFunction(
       () =>
@@ -432,6 +433,15 @@ try {
       .getByLabel('I accept the program, reward and privacy terms', { exact: true })
       .check();
     await firstPage.getByRole('button', { name: 'Open my card', exact: true }).click();
+    // "Change it" returns to the number field instead of opening the card.
+    await firstPage.getByRole('button', { name: 'Change it', exact: true }).click();
+    await firstPage.waitForFunction(
+      () =>
+        document.activeElement?.getAttribute('type') === 'tel' ||
+        document.activeElement?.getAttribute('inputmode') === 'tel',
+    );
+    await firstPage.getByRole('button', { name: 'Open my card', exact: true }).click();
+    await confirmPhone(firstPage);
     // The first scan lands on the card itself; the personal QR opens only from a reward's Redeem.
     await firstPage.getByRole('progressbar', { name: 'Stamp progress', exact: true }).waitFor();
     assert.equal(
@@ -642,7 +652,7 @@ try {
     assert.equal(presented.status(), 200, await presented.text());
     const token = ((await presented.json()).token as string).trim();
     await login(cp, cashierEmail);
-    await cp.locator('[data-portal="cashier"]').waitFor();
+    await cp.locator('.app-layout[data-portal="cashier"]').waitFor();
     await cp.getByRole('button', { name: 'Scan card', exact: true }).click();
     const scanViewport = cp.viewportSize()!;
     for (const language of ['en', 'ar']) {
@@ -881,7 +891,8 @@ try {
     const op = await owner.newPage();
     op.on('pageerror', (error) => errors.push(error.message));
     await login(op, ownerEmail);
-    await op.locator('[data-portal="merchant"]').waitFor();
+    await op.locator('.app-layout[data-portal="merchant"]').waitFor();
+    await openOperatingNumbers(op);
     const period = op.getByRole('combobox', { name: 'Period', exact: true });
     await period.click();
     await op.getByRole('option', { name: 'Last 7 days', exact: true }).click();
@@ -1245,4 +1256,18 @@ try {
   await app.close();
   await db.end();
   await writeFile(directory + '/mobile.json', JSON.stringify(report, null, 2) + '\n');
+}
+
+// The owner's detailed numbers (period filter, KPI grid) live in a closed disclosure and are
+// only fetched once it is opened.
+async function openOperatingNumbers(page: Page) {
+  const details = page.locator('details.an-details');
+  await details.waitFor();
+  if (!(await details.evaluate((el) => (el as HTMLDetailsElement).open)))
+    await details.locator('summary').click();
+}
+
+// Enrollment asks "Is this your number?" before opening a card; tests answer it explicitly.
+async function confirmPhone(page: Page) {
+  await page.getByRole('button', { name: 'Yes, open my card', exact: true }).click();
 }

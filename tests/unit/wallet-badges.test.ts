@@ -4,7 +4,7 @@ import { readFile } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
 import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { WalletButton } from '../../apps/web/src/features/WalletPanel.js';
+import { WalletButton } from '../../apps/web/src/features/WalletButton.js';
 
 test('Wallet actions use unchanged official artwork in each language and keep downloads scoped to the customer', async () => {
   const metadata = JSON.parse(await readFile('apps/web/public/wallet/ASSET-SOURCES.json', 'utf8'));

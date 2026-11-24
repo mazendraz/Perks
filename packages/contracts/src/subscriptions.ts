@@ -1,4 +1,14 @@
 import { z } from 'zod';
+/**
+ * The last end date allowed for a period starting on `start` (YYYY-MM-DD): the same calendar
+ * day five years later, so "up to five years" means exactly that, leap days included. A
+ * 29 February start ends on 28 February (no 29th in the fifth year after a leap year).
+ */
+export function maxSubscriptionPeriodEnd(start: string) {
+  const [y, m, d] = start.split('-').map(Number) as [number, number, number];
+  const last = new Date(Date.UTC(y + 5, m, 0)).getUTCDate();
+  return `${String(y + 5).padStart(4, '0')}-${String(m).padStart(2, '0')}-${String(Math.min(d, last)).padStart(2, '0')}`;
+}
 export const subscriptionPaymentInput = z
   .object({
     amountMinor: z.number().int().min(1).max(1000000000),
@@ -11,9 +21,7 @@ export const subscriptionPaymentInput = z
   })
   .strict()
   .refine(
-    (p) =>
-      p.periodEnd >= p.periodStart &&
-      Date.parse(p.periodEnd) - Date.parse(p.periodStart) <= 5 * 366 * 86400000,
+    (p) => p.periodEnd >= p.periodStart && p.periodEnd <= maxSubscriptionPeriodEnd(p.periodStart),
     { path: ['periodEnd'], message: 'Choose a valid subscription period up to five years' },
   );
 export const subscriptionPauseInput = z

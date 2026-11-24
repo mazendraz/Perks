@@ -34,7 +34,10 @@ export async function customerLimit(
 export function customerIdentityModule(app: FastifyInstance, pools: Pools, c: Config) {
   app.get('/api/v1/public/legal', async (req) => {
     const { lang } = z.object({ lang: z.enum(['ar', 'en']).optional() }).parse(req.query);
-    return legalNotice(lang || (req.headers['x-nuqta-language'] === 'en' ? 'en' : 'ar'));
+    return legalNotice(
+      lang || (req.headers['x-nuqta-language'] === 'en' ? 'en' : 'ar'),
+      c.LEGAL_TEXT_APPROVED === 'true',
+    );
   });
   app.get('/api/v1/customer/bootstrap', async (req, reply) => ({
     csrfToken: prepareDevice(req, reply, c).csrfToken,

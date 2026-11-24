@@ -5,7 +5,7 @@ import {
   enumFeatures,
   limitKeys,
 } from '../../../../packages/contracts/src/entitlements.js';
-import { moneyMinor } from '../../../../packages/domain/src/subscriptions.js';
+import { catalogMoneyMinor } from '../../../../packages/domain/src/subscriptions.js';
 import { api, ApiError, errorText } from '../api.js';
 import { Select } from '../controls/Select.js';
 import type { CatalogPlan } from './PlanBilling.js';
@@ -217,7 +217,8 @@ type Draft = {
   isActive: boolean;
   monthly: string;
   annual: string;
-  setupFee: string;
+  // Each billing period keeps its own setup fee; editing one never rewrites the other.
+  setupFee: { monthly: string; annual: string };
   limits: Record<string, { unlimited: boolean; value: string }>;
   features: Record<string, boolean | string>;
   addons: Record<string, { price: string; maxTotal: string; isActive: boolean }>;
@@ -236,7 +237,18 @@ function toDraft(p: CatalogPlan): Draft {
     isActive: p.is_active,
     monthly: pounds(price('monthly')?.amountMinor),
     annual: pounds(price('annual')?.amountMinor),
-    setupFee: pounds(price('monthly')?.setupFeePerBranchMinor ?? 50000),
+    setupFee: {
+      monthly: pounds(
+        price('monthly')?.setupFeePerBranchMinor ??
+          price('annual')?.setupFeePerBranchMinor ??
+          50000,
+      ),
+      annual: pounds(
+        price('annual')?.setupFeePerBranchMinor ??
+          price('monthly')?.setupFeePerBranchMinor ??
+          50000,
+      ),
+    },
     limits: Object.fromEntries(
       limitKeys.map((k) => {
         const e = ent(k);
@@ -303,7 +315,7 @@ function PlansCatalog({ lang }: { lang: Language }) {
   const set = (patch: Partial<Draft>) => setDraft((d) => (d ? { ...d, ...patch } : d));
   const body = () => {
     if (!draft || !editing) return null;
-    const minor = (v: string) => (v.trim() === '' ? null : moneyMinor(v));
+    const minor = (v: string) => (v.trim() === '' ? null : catalogMoneyMinor(v));
     const prices = [];
     for (const [period, v] of [
       ['monthly', draft.monthly],
@@ -311,7 +323,7 @@ function PlansCatalog({ lang }: { lang: Language }) {
     ] as const) {
       if (v.trim() === '') continue;
       const amount = minor(v),
-        fee = minor(draft.setupFee);
+        fee = minor(draft.setupFee[period]);
       if (amount === null || fee === null) return null;
       prices.push({
         currency: 'EGP',
@@ -460,12 +472,25 @@ function PlansCatalog({ lang }: { lang: Language }) {
             />
           </label>
           <label>
-            {ar ? 'رسوم التجهيز لكل فرع (جنيه)' : 'Setup fee per branch (EGP)'}
+            {ar
+              ? 'رسوم التجهيز لكل فرع — الاشتراك الشهري (جنيه)'
+              : 'Setup fee per branch — monthly billing (EGP)'}
             <input
               dir="ltr"
               inputMode="decimal"
-              value={draft.setupFee}
-              onChange={(e) => set({ setupFee: e.target.value })}
+              value={draft.setupFee.monthly}
+              onChange={(e) => set({ setupFee: { ...draft.setupFee, monthly: e.target.value } })}
+            />
+          </label>
+          <label>
+            {ar
+              ? 'رسوم التجهيز لكل فرع — الاشتراك السنوي (جنيه)'
+              : 'Setup fee per branch — annual billing (EGP)'}
+            <input
+              dir="ltr"
+              inputMode="decimal"
+              value={draft.setupFee.annual}
+              onChange={(e) => set({ setupFee: { ...draft.setupFee, annual: e.target.value } })}
             />
           </label>
         </div>

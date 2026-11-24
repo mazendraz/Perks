@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api.js';
-import { portalAssetUrl } from '../portals.js';
 import './wallet-reach.css';
+import { WalletButton } from './WalletButton.js';
+export { WalletButton };
 import type { Language } from '../../../../packages/contracts/src/index.js';
 
 // iPadOS reports itself as a Mac; touch points tell them apart.
@@ -10,29 +11,6 @@ export function canAddToAppleWallet(ua = navigator.userAgent, touch = navigator.
 }
 export function isAndroid(ua = navigator.userAgent) {
   return /Android/.test(ua);
-}
-export function WalletButton({
-  provider,
-  membershipId,
-  lang,
-}: {
-  provider: 'apple' | 'google';
-  membershipId: string;
-  lang: Language;
-}) {
-  const name = provider === 'apple' ? 'Apple Wallet' : 'Google Wallet';
-  return (
-    <a
-      className={'wallet-badge-button ' + provider + '-wallet-button'}
-      href={portalAssetUrl('/api/v1/me/memberships/' + membershipId + '/wallet/' + provider)}
-    >
-      <img
-        src={'/wallet/' + provider + '-add-to-wallet-' + lang + '.svg'}
-        height={55}
-        alt={(lang === 'ar' ? 'إضافة إلى ' : 'Add to ') + name}
-      />
-    </a>
-  );
 }
 type WalletAvailability = { apple: boolean; google?: boolean; recoveryRequired?: boolean };
 

@@ -1,7 +1,7 @@
 import type { FastifyInstance, FastifyReply } from 'fastify';
 import { passwordEnabled, type Config } from './config.js';
 import { transaction, type DB, type Pools } from './db.js';
-import { authenticated } from './auth.js';
+import { authenticated } from './actor.js';
 import { requireCondition } from './errors.js';
 import { keyedHash, opaqueToken, tokenHash } from './crypto.js';
 import { setTimeout } from 'node:timers/promises';

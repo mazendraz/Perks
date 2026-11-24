@@ -1,0 +1,32 @@
+# Optional providers (Apple Wallet, Google Wallet, Web Push) for the Compose stack.
+# The base deploy/compose.yml leaves them disabled and does not pass their settings through.
+# Copy this file to deploy/compose.providers.yml (keep it private), keep only the providers
+# the release includes, and add it after the base file:
+#   docker compose --env-file deploy/.env.production \
+#     -f deploy/compose.yml -f deploy/compose.providers.yml up -d
+# Then confirm the rendered API and worker settings with `... config api worker`.
+# Credential files are mounted read-only from a private host directory (0700, owned by root,
+# files readable by UID 1000). See docs/wallet before enabling either Wallet.
+x-provider-environment: &provider-environment
+  APPLE_WALLET_ENABLED: ${APPLE_WALLET_ENABLED:-false}
+  APPLE_PASS_TYPE_ID: ${APPLE_PASS_TYPE_ID:-}
+  APPLE_TEAM_ID: ${APPLE_TEAM_ID:-}
+  APPLE_PASS_CERT_FILE: /run/nuqta-providers/apple/pass.pem
+  APPLE_PASS_KEY_FILE: /run/nuqta-providers/apple/pass.key
+  APPLE_PASS_KEY_PASSPHRASE: ${APPLE_PASS_KEY_PASSPHRASE:-}
+  APPLE_WWDR_CERT_FILE: /run/nuqta-providers/apple/wwdr.pem
+  GOOGLE_WALLET_ENABLED: ${GOOGLE_WALLET_ENABLED:-false}
+  GOOGLE_WALLET_ISSUER_ID: ${GOOGLE_WALLET_ISSUER_ID:-}
+  GOOGLE_WALLET_SERVICE_ACCOUNT_FILE: /run/nuqta-providers/google/service-account.json
+  WEB_PUSH_VAPID_PUBLIC_KEY: ${WEB_PUSH_VAPID_PUBLIC_KEY:-}
+  WEB_PUSH_VAPID_PRIVATE_KEY: ${WEB_PUSH_VAPID_PRIVATE_KEY:-}
+  WEB_PUSH_SUBJECT: ${WEB_PUSH_SUBJECT:-}
+services:
+  api:
+    environment: *provider-environment
+    volumes:
+      - ${NUQTA_PROVIDER_SECRETS_DIR:?Private provider credential directory required}:/run/nuqta-providers:ro
+  worker:
+    environment: *provider-environment
+    volumes:
+      - ${NUQTA_PROVIDER_SECRETS_DIR:?Private provider credential directory required}:/run/nuqta-providers:ro

@@ -8,7 +8,7 @@
     X-Content-Type-Options nosniff
     X-Frame-Options DENY
     Referrer-Policy no-referrer
-    Permissions-Policy "camera=(self), microphone=(), geolocation=()"
+    Permissions-Policy "camera=(self), microphone=(), geolocation=(self)"
     Content-Security-Policy "default-src 'self'; script-src 'self' 'sha256-MS6/3FCg4WjP9gwgaBGwLpRCY6fZBgwmhVCdrPrNf3E=' 'sha256-tQjf8gvb2ROOMapIxFvFAYBeUJ0v1HCbOcSmDNXGtDo=' 'sha256-w36slEqa9euNKxfvkw+LLGsDIr++3rsZXpZxtmRh8Aw=' 'sha256-+5XkZFazzJo8n0iOP4ti/cLCMUudTf//Mzkb7xNPXIc='; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
     -Server
   }

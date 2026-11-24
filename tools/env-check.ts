@@ -23,6 +23,8 @@ export function productionEnvironment(values: NodeJS.ProcessEnv) {
     'NUQTA_WORKER_DB_PASSWORD',
     'PGBACKREST_REPO1_CIPHER_PASS',
     'RESTIC_PASSWORD',
+    // deploy/compose.yml refuses to render without it, so preflight must refuse too.
+    'MONITORING_TOKEN',
   ];
   const secrets = names.map((name) => values[name]);
   if (
@@ -30,6 +32,9 @@ export function productionEnvironment(values: NodeJS.ProcessEnv) {
     new Set(secrets).size !== secrets.length
   )
     throw new Error('Private generated secrets must be distinct 64-character hex values.');
+  // Every other value deploy/compose.yml marks as required (${NAME:?...}).
+  for (const name of ['SMTP_HOST', 'SMTP_USER', 'SMTP_PASS', 'SMTP_FROM'])
+    if (!values[name]) throw new Error(name);
   return readConfig(
     {},
     {

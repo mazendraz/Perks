@@ -150,8 +150,10 @@ export function App() {
         if (location.pathname === '/') {
           history.replaceState({}, '', home);
           window.dispatchEvent(new PopStateEvent('popstate'));
-          // The route change re-runs this refresh for the new page; keep the loading screen.
-          return;
+          // A route into another portal re-runs this refresh for the new page, so keep the
+          // loading screen. "/login" has the same (undefined) portal as "/", so nothing would
+          // re-run: settle here instead of leaving the visitor on the loading screen.
+          if (portalForPath(home) !== portal) return;
         }
       }
     }

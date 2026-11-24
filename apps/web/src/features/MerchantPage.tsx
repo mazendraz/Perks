@@ -522,8 +522,8 @@ export function MerchantPage({ grant, lang }: { grant: Grant; lang: Language }) 
     <div style={{ '--brand': merchant?.primary_color || grant.primary_color } as CSSProperties}>
       <div className="page-heading">
         <div>
-          <span className="eyebrow">{merchant?.name || grant.name}</span>
-          <h1>{ar ? 'لوحة التاجر' : 'Merchant dashboard'}</h1>
+          <span className="eyebrow">{ar ? 'لوحة المحل' : 'Business dashboard'}</span>
+          <h1>{merchant?.name || grant.name}</h1>
         </div>
         <a
           className="secondary small"

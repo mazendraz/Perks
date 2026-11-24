@@ -639,6 +639,12 @@ function Workspace({
             <span className="workspace-avatar">
               {portal === 'platform' ? (
                 <img className="perks-avatar-mark" src="/brand/perks-app-icon.svg" alt="" />
+              ) : grant?.logo_asset_id ? (
+                <img
+                  className="workspace-shop-logo"
+                  alt=""
+                  src={`/api/v1/merchants/${grant.merchant_id}/assets/${grant.logo_asset_id}?__portal=${portal}`}
+                />
               ) : (
                 grant?.name.slice(0, 1) || 'P'
               )}

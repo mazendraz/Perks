@@ -1,10 +1,20 @@
 import { useEffect, useState, type FormEvent } from 'react';
-import type { Language } from '../../../../packages/contracts/src/index.js';
+import type { CardData, Language } from '../../../../packages/contracts/src/index.js';
 import { LoyaltyCard } from '../../../../packages/ui/src/LoyaltyCard.js';
-import { api, errorText } from '../api.js';
+import { api, ApiError, errorText } from '../api.js';
+import { FileUpload } from '../controls/FileUpload.js';
+import {
+  ColorField,
+  LogoStyleControl,
+  PalettePaste,
+  StampControls,
+  TemplatePicker,
+} from './BrandControls.js';
+import { suggestedStamps } from '../../../../packages/contracts/src/branding.js';
 import type { MerchantOnboardingSetup } from '../../../../packages/contracts/src/merchant-onboarding.js';
 
 type Draft = {
+  logo_id?: string | null;
   publication?: Publication | null;
   rejection_reason?: string | null;
   id: string;
@@ -22,6 +32,14 @@ type Order = {
   rejection_reason?: string;
 };
 const endpoint = '/merchant-onboarding/draft';
+function readImage(file: File) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
 
 export function MerchantOnboarding({ lang }: { lang: Language }) {
   const ar = lang === 'ar';
@@ -81,6 +99,13 @@ export function MerchantOnboarding({ lang }: { lang: Language }) {
     return (
       <main id="main" className="join-page">
         <section className="panel">
+          {draft.logo_id && !draft.rejection_reason && (
+            <img
+              className="onboarding-upload-preview"
+              src={`/api/v1/public/merchants/${merchantId}/logos/${draft.logo_id}`}
+              alt=""
+            />
+          )}
           <h1>{draft.details.name}</h1>
           {draft.rejection_reason && (
             <p role="alert" className="notice error">
@@ -183,12 +208,7 @@ export function MerchantOnboarding({ lang }: { lang: Language }) {
           />
         )}
         {draft?.details.name && (
-          <ShopSetup
-            key={draft.id + ':' + draft.revision}
-            draft={draft}
-            lang={lang}
-            onSaved={setDraft}
-          />
+          <ShopSetup key={draft.id + ':' + attempt} draft={draft} lang={lang} onSaved={setDraft} />
         )}
       </section>
     </main>
@@ -262,6 +282,32 @@ function ShopSetup({
   );
   const [error, setError] = useState<unknown>(null);
   const [busy, setBusy] = useState(false);
+  const [logoBusy, setLogoBusy] = useState(false);
+  const logoUrl = draft.logo_id
+    ? `/api/v1/merchant-onboarding/draft/${draft.id}/logo?v=${draft.logo_id}`
+    : undefined;
+  const preview: CardData = {
+    id: draft.id,
+    merchant_id: draft.id,
+    merchant_name: draft.details.name ?? '',
+    logo_url: logoUrl,
+    logo_style: setup.logoStyle ?? 'framed',
+    logo_size: setup.logoSize ?? 43,
+    stamp_shape: setup.stampShape,
+    stamp_icon: setup.stampIcon,
+    stamp_style: setup.stampStyle,
+    alias: ar ? 'معاينة' : 'Preview',
+    program_name: ar ? 'كارت الولاء' : 'Loyalty card',
+    threshold: setup.threshold,
+    balance: 0,
+    primary_color: setup.cardColor,
+    accent_color: setup.accentColor ?? '#ddd3a7',
+    surface_color: setup.surfaceColor ?? '#f5f1e7',
+    template: setup.template ?? 'classic',
+    reward_title: setup.rewardTitle,
+    revision: draft.revision,
+    cycle_number: 1,
+  };
 
   async function save(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -281,29 +327,43 @@ function ShopSetup({
     }
   }
 
+  async function uploadLogo(file: File) {
+    if (logoBusy || busy) return;
+    if (file.size > 2_000_000) {
+      setError(new ApiError('ASSET_TOO_LARGE', 422));
+      return;
+    }
+    setLogoBusy(true);
+    setError(null);
+    try {
+      const image = await readImage(file);
+      const result = await api<{ draft: Draft }>(endpoint + '/' + draft.id + '/logo', {
+        method: 'POST',
+        body: { image: image.split(',')[1], revision: draft.revision },
+      });
+      onSaved(result.draft);
+    } catch (failure) {
+      setError(failure);
+    } finally {
+      setLogoBusy(false);
+    }
+  }
+
   return (
     <section aria-labelledby="onboarding-shop-setup">
       <h2 id="onboarding-shop-setup">{ar ? 'الفرع وكارت الولاء' : 'Branch and loyalty card'}</h2>
-      <LoyaltyCard
-        lang={lang}
-        motion="quiet"
-        card={{
-          id: draft.id,
-          merchant_id: draft.id,
-          merchant_name: draft.details.name ?? '',
-          alias: ar ? 'معاينة' : 'Preview',
-          program_name: ar ? 'كارت الولاء' : 'Loyalty card',
-          threshold: setup.threshold,
-          balance: 0,
-          primary_color: setup.cardColor,
-          accent_color: '#ddd3a7',
-          surface_color: '#f5f1e7',
-          template: 'classic',
-          reward_title: setup.rewardTitle,
-          revision: draft.revision,
-          cycle_number: 1,
+      <label htmlFor="onboarding-shop-logo">{ar ? 'لوجو المحل' : 'Shop logo'}</label>
+      <FileUpload
+        id="onboarding-shop-logo"
+        accept="image/png,image/jpeg,image/webp"
+        disabled={logoBusy || busy}
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          if (file) void uploadLogo(file);
         }}
       />
+      {logoBusy && <p role="status">{ar ? 'بنرفع اللوجو…' : 'Uploading logo…'}</p>}
+      <LoyaltyCard lang={lang} motion="quiet" card={preview} />
       <form onSubmit={save} aria-busy={busy}>
         <fieldset disabled={busy}>
           <label>
@@ -347,14 +407,59 @@ function ShopSetup({
               onChange={(e) => setSetup({ ...setup, threshold: Number(e.target.value) })}
             />
           </label>
-          <label>
-            {ar ? 'لون الكارت' : 'Card color'}
-            <input
-              type="color"
-              value={setup.cardColor}
-              onChange={(e) => setSetup({ ...setup, cardColor: e.target.value })}
+          <LogoStyleControl
+            lang={lang}
+            logoUrl={logoUrl}
+            businessName={preview.merchant_name}
+            surfaceColor={preview.surface_color}
+            value={setup.logoStyle ?? 'framed'}
+            size={setup.logoSize ?? 43}
+            onSizeChange={(logoSize) => setSetup((value) => ({ ...value, logoSize }))}
+            onChange={(logoStyle) => setSetup((value) => ({ ...value, logoStyle }))}
+          />
+          <div className="form-grid">
+            <ColorField
+              name="cardColor"
+              label={ar ? 'اللون الأساسي' : 'Primary color'}
+              value={preview.primary_color}
+              onChange={(cardColor) => setSetup((value) => ({ ...value, cardColor }))}
             />
-          </label>
+            <ColorField
+              name="accentColor"
+              label={ar ? 'اللون الثانوي' : 'Accent color'}
+              value={preview.accent_color}
+              onChange={(accentColor) => setSetup((value) => ({ ...value, accentColor }))}
+            />
+            <ColorField
+              name="surfaceColor"
+              label={ar ? 'الخلفية' : 'Background'}
+              value={preview.surface_color}
+              onChange={(surfaceColor) => setSetup((value) => ({ ...value, surfaceColor }))}
+            />
+          </div>
+          <PalettePaste
+            lang={lang}
+            onApply={([cardColor, accentColor, surfaceColor]) =>
+              setSetup((value) => ({
+                ...value,
+                cardColor: cardColor ?? value.cardColor,
+                accentColor: accentColor ?? value.accentColor,
+                surfaceColor: surfaceColor ?? value.surfaceColor,
+              }))
+            }
+          />
+          <TemplatePicker
+            lang={lang}
+            card={preview}
+            onChange={(template) =>
+              setSetup((value) => ({ ...value, template, ...suggestedStamps(template) }))
+            }
+          />
+          <StampControls
+            lang={lang}
+            card={preview}
+            onChange={(stamps) => setSetup((value) => ({ ...value, ...stamps }))}
+          />
         </fieldset>
         {error != null && (
           <p role="alert" className="notice error">
@@ -367,7 +472,7 @@ function ShopSetup({
           </p>
         )}
         <div className="form-actions">
-          <button className="primary" disabled={busy}>
+          <button className="primary" disabled={busy || logoBusy}>
             {busy ? (ar ? 'بنحفظ…' : 'Saving…') : ar ? 'احفظ إعدادات المحل' : 'Save shop settings'}
           </button>
         </div>
@@ -564,8 +669,19 @@ function PaymentReceipt({
   const ar = lang === 'ar';
   const [reference, setReference] = useState(order.submitted_reference ?? '');
   const [file, setFile] = useState<File | null>(null);
+  const [preview, setPreview] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setPreview(String(reader.result));
+    reader.readAsDataURL(file);
+    return () => {
+      if (reader.readyState === FileReader.LOADING) reader.abort();
+    };
+  }, [file]);
 
   async function upload(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -577,12 +693,7 @@ function PaymentReceipt({
     setBusy(true);
     setError('');
     try {
-      const image = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(String(reader.result).split(',')[1] ?? '');
-        reader.onerror = () => reject(reader.error);
-        reader.readAsDataURL(file);
-      });
+      const image = (await readImage(file)).split(',')[1];
       const result = await api<{ order: Order }>(
         '/merchant-onboarding/order/' + order.id + '/receipt',
         {
@@ -622,14 +733,20 @@ function PaymentReceipt({
         onChange={(e) => setReference(e.target.value)}
       />
       <label htmlFor="onboarding-receipt">{ar ? 'صورة الإيصال' : 'Receipt image'}</label>
-      <input
+      <FileUpload
         id="onboarding-receipt"
-        type="file"
         accept="image/jpeg,image/png,image/webp"
         required
         disabled={busy}
         onChange={(e) => setFile(e.target.files?.[0] ?? null)}
       />
+      {file && preview && (
+        <img
+          className="onboarding-upload-preview"
+          src={preview}
+          alt={ar ? 'معاينة الإيصال' : 'Receipt preview'}
+        />
+      )}
       {error && (
         <p role="alert" className="notice error">
           {error}

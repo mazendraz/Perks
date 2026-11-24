@@ -162,7 +162,19 @@ test('onboarding orders quote the server catalog and reuse a quote on retry', as
   assert.equal(receipt.statusCode, 200, receipt.body);
   assert.equal(receipt.headers['content-type'], 'image/png');
   const draftUrl = '/api/v1/merchant-onboarding/draft';
-  const draft = (await app.inject({ url: draftUrl, headers })).json().draft;
+  const beforeLogo = (await app.inject({ url: draftUrl, headers })).json().draft;
+  const logoUrl = draftUrl + '/' + beforeLogo.id + '/logo';
+  const uploadedLogo = await app.inject({
+    method: 'POST',
+    url: logoUrl,
+    headers,
+    payload: { image: image.toString('base64'), revision: beforeLogo.revision },
+  });
+  assert.equal(uploadedLogo.statusCode, 200, uploadedLogo.body);
+  const draft = uploadedLogo.json().draft;
+  assert.ok(draft.logo_id);
+  assert.equal((await app.inject({ url: logoUrl, headers })).headers['content-type'], 'image/png');
+  assert.equal((await app.inject({ url: logoUrl, headers: pa })).statusCode, 404);
   const publish = {
     method: 'POST' as const,
     url: draftUrl + '/' + draft.id + '/publish',
@@ -173,6 +185,19 @@ test('onboarding orders quote the server catalog and reuse a quote on retry', as
   assert.equal(published.statusCode, 200, published.body);
   assert.deepEqual((await app.inject(publish)).json(), published.json());
   const publication = published.json().publication;
+  const publicLogo = await app.inject({
+    url: '/api/v1/public/merchants/' + publication.merchantId + '/logos/' + draft.logo_id,
+  });
+  assert.equal(publicLogo.statusCode, 200, publicLogo.body);
+  assert.equal(publicLogo.headers['content-type'], 'image/png');
+  const refreshedSession = await app.inject({ url: '/api/v1/session', headers });
+  assert.equal(
+    refreshedSession
+      .json()
+      .grants.find((grant: { merchant_id: string }) => grant.merchant_id === publication.merchantId)
+      ?.logo_asset_id,
+    draft.logo_id,
+  );
   const placement = await db.query('SELECT resolve_placement($1) AS value', [publication.code]);
   assert.equal(placement.rows[0].value.status, 'active');
   const confirmation = {
@@ -189,10 +214,13 @@ test('onboarding orders quote the server catalog and reuse a quote on retry', as
   const confirmed = await app.inject(confirmation);
   assert.equal(confirmed.statusCode, 200, confirmed.body);
   assert.equal((await app.inject(confirmation)).statusCode, 200);
-  const ledger = await db.query('SELECT amount_minor,payment_reference FROM subscription_payments WHERE merchant_id=$1', [
-    publication.merchantId,
+  const ledger = await db.query(
+    'SELECT amount_minor,payment_reference FROM subscription_payments WHERE merchant_id=$1',
+    [publication.merchantId],
+  );
+  assert.deepEqual(ledger.rows, [
+    { amount_minor: plan.amount_minor, payment_reference: 'ORDER-123' },
   ]);
-  assert.deepEqual(ledger.rows, [{ amount_minor: plan.amount_minor, payment_reference: 'ORDER-123' }]);
 
   const newDraft = (await app.inject({ method: 'POST', url: draftUrl, headers })).json().draft;
   const newSetup = await app.inject({

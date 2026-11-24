@@ -337,7 +337,7 @@ export function authModule(app: FastifyInstance, pools: Pools, c: Config) {
       async (db) =>
         (
           await db.query(
-            "SELECT s.id,s.merchant_id,s.role,s.max_qty,m.name,m.slug,m.status,m.timezone,m.primary_color,coalesce((SELECT jsonb_agg(jsonb_build_object('id',b.id,'name',b.name)) FROM staff_branch_grants g JOIN branches b ON b.id=g.branch_id AND b.merchant_id=g.merchant_id WHERE g.staff_id=s.id AND b.status='active'),'[]') AS branches FROM staff_memberships s JOIN merchants m ON m.id=s.merchant_id WHERE s.user_id=$1 AND s.status='active' ORDER BY m.name",
+            "SELECT s.id,s.merchant_id,s.role,s.max_qty,m.name,m.slug,m.status,m.timezone,m.primary_color,m.logo_asset_id,coalesce((SELECT jsonb_agg(jsonb_build_object('id',b.id,'name',b.name)) FROM staff_branch_grants g JOIN branches b ON b.id=g.branch_id AND b.merchant_id=g.merchant_id WHERE g.staff_id=s.id AND b.status='active'),'[]') AS branches FROM staff_memberships s JOIN merchants m ON m.id=s.merchant_id WHERE s.user_id=$1 AND s.status='active' ORDER BY m.name",
             [actor.id],
           )
         ).rows,

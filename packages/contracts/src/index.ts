@@ -21,6 +21,7 @@ export interface Grant {
   status: string;
   timezone: string;
   primary_color: string;
+  logo_asset_id?: string | null;
   branches: Branch[];
 }
 export interface Session {

@@ -5,6 +5,8 @@ import { transaction, type Pools } from '../db.js';
 import { requireCondition } from '../errors.js';
 import type { Config } from '../config.js';
 import { sanitizeLogo } from '../storage/logo.js';
+import { createFileStore } from '../storage/file-store.js';
+import { tokenHash } from '../crypto.js';
 import { platform } from '../policy.js';
 import { transferMatchesOrder } from '../../../../packages/domain/src/onboarding-payment.js';
 import { merchantOnboardingSetup } from '../../../../packages/contracts/src/merchant-onboarding.js';
@@ -15,13 +17,60 @@ const draftInput = z.object({
   setup: merchantOnboardingSetup.optional(),
 });
 
-const draftFields = 'id, details, revision, publication';
+const draftFields = 'id, details, revision, publication, logo_id';
 
 export function merchantOnboardingModule(app: FastifyInstance, pools: Pools, c: Config) {
   const path = '/api/v1/merchant-onboarding/draft';
+  const files = createFileStore(c);
   const orderPath = '/api/v1/merchant-onboarding/order';
   const orderFields = 'id, plan_id, amount_minor, currency, duration_days, recipient_account';
   const reviewPath = '/api/v1/platform/onboarding-payments';
+
+  app.get(path + '/:id/logo', async (req, reply) => {
+    const actor = authenticated(req);
+    const { id } = z.object({ id: z.uuid() }).parse(req.params);
+    const logo = await transaction(
+      pools.pool,
+      async (db) =>
+        (
+          await db.query(
+            'SELECT logo_image FROM merchant_onboarding_drafts WHERE id=$1 AND owner_id=$2',
+            [id, actor.id],
+          )
+        ).rows[0]?.logo_image,
+      actor,
+    );
+    requireCondition(logo, 'NOT_FOUND', 404);
+    return reply.type('image/png').header('Cache-Control', 'no-store').send(logo);
+  });
+
+  app.post(path + '/:id/logo', { bodyLimit: 2_700_000 }, async (req) => {
+    const actor = authenticated(req);
+    requireCondition(actor.authMethod !== 'device' && !actor.preview, 'FORBIDDEN', 403);
+    const { id } = z.object({ id: z.uuid() }).parse(req.params);
+    const body = z
+      .object({ image: z.base64().max(2_666_668), revision: z.number().int().positive() })
+      .strict()
+      .parse(req.body);
+    const logo = await sanitizeLogo(body.image);
+    return transaction(
+      pools.pool,
+      async (db) => {
+        const saved = (
+          await db.query(
+            `UPDATE merchant_onboarding_drafts SET logo_id=gen_random_uuid(),logo_image=$1,
+         logo_width=$2,logo_height=$3,revision=revision+1,updated_at=now()
+         WHERE id=$4 AND owner_id=$5 AND merchant_id IS NULL AND revision=$6
+         RETURNING ${draftFields}`,
+            [logo.bytes, logo.width, logo.height, id, actor.id, body.revision],
+          )
+        ).rows[0];
+        requireCondition(saved, 'REVISION_CONFLICT', 409);
+        return { draft: saved };
+      },
+      actor,
+    );
+  });
 
   app.post(path + '/:id/correction', async (req) => {
     const actor = authenticated(req);
@@ -57,7 +106,22 @@ export function merchantOnboardingModule(app: FastifyInstance, pools: Pools, c: 
           id,
           revision,
         ]);
-        return { publication: result.rows[0].publication };
+        const publication = result.rows[0].publication;
+        const logo = (
+          await db.query(
+            'SELECT logo_id,logo_image FROM merchant_onboarding_drafts WHERE id=$1 AND owner_id=$2',
+            [id, actor.id],
+          )
+        ).rows[0];
+        if (logo?.logo_image) {
+          const key = publication.merchantId + '/' + logo.logo_id + '.png';
+          await files.put(key, logo.logo_image, { contentType: 'image/png' });
+          await db.query('SELECT attach_onboarding_logo($1,$2)', [
+            id,
+            tokenHash(logo.logo_image.toString('base64')),
+          ]);
+        }
+        return { publication };
       },
       actor,
     );

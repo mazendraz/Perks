@@ -982,20 +982,39 @@ try {
     'Owner-published stamp artwork and business template survive reload and reach the customer card',
   );
   await navigateTo(cp, '/cashier');
-  async function scan() {
-    await cp.getByRole('button', { name: 'Scan card', exact: true }).click();
-    await cp
-      .getByLabel("Or type the 6 digits on the customer's phone", { exact: true })
-      .fill(token);
-    await cp.getByRole('button', { name: 'Read code', exact: true }).click();
-    await cp.getByRole('button', { name: 'Add stamps', exact: true }).waitFor();
-  }
-  async function prepare(receipt: string, qty: number) {
-    await cp.getByRole('button', { name: 'Add stamps', exact: true }).click();
-    await cp.getByLabel('Receipt number', { exact: true }).fill(receipt);
-    for (let i = 1; i < qty; i++)
-      await cp.getByRole('button', { name: 'Increase quantity', exact: true }).click();
-    await cp.getByRole('button', { name: 'Review award', exact: true }).click();
+  // The cashier app has no scan-to-stamp screen any more (customers have no code to show); stamps
+  // are awarded through the same cashier API, with the card read from the customer's live token.
+  async function award(receipt: string, quantity: number, key = randomUUID()) {
+    const resolved = await call(cashier, '/cashier/scans/resolve', {
+      merchantId: mid,
+      branchId: branch,
+      token,
+    });
+    assert.equal(resolved.status(), 200, await resolved.text());
+    const read = await resolved.json();
+    const response = await call(
+      cashier,
+      '/merchants/' + mid + '/stamp-awards',
+      {
+        branchId: branch,
+        membershipId: read.membership.id,
+        quantity,
+        presentationContext: read.presentationContext,
+        purchaseReference: {
+          namespace: 'manual',
+          reference: receipt,
+          businessDate: new Intl.DateTimeFormat('en-CA', {
+            timeZone: 'Africa/Cairo',
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit',
+          }).format(new Date()),
+        },
+      },
+      key,
+    );
+    assert.equal(response.status(), 200, await response.text());
+    return (await response.json()) as { balanceAfter: number };
   }
   await up.evaluate(() => {
     const events: string[] = [];
@@ -1010,27 +1029,10 @@ try {
       attributeFilter: ['data-card-motion'],
     });
   });
-  await scan();
-  await prepare('BROWSER-' + stamp + '-1', 3);
-  // Commit on the server, then drop only the response to exercise ambiguous outcomes.
-  await cp.route(
-    '**/stamp-awards',
-    async (route) => {
-      const response = await route.fetch();
-      if (response.status() !== 200) {
-        errors.push('Intercepted commit returned ' + response.status());
-        await route.fulfill({ response });
-        return;
-      }
-      await route.abort('failed');
-    },
-    { times: 1 },
-  );
-  await cp.getByRole('button', { name: 'Confirm stamps', exact: true }).click();
-  await cp.getByRole('button', { name: 'Check the same operation', exact: true }).waitFor();
-  await reloadPage(cp);
-  await cp.getByRole('button', { name: 'Check the same operation', exact: true }).click();
-  await cp.getByText('Saved balance: 3', { exact: true }).waitFor();
+  // Retrying with the same key (a lost response) returns the same award, never a second one.
+  const firstKey = randomUUID();
+  assert.equal((await award('BROWSER-' + stamp + '-1', 3, firstKey)).balanceAfter, 3);
+  assert.equal((await award('BROWSER-' + stamp + '-1', 3, firstKey)).balanceAfter, 3);
   const first = await db.query(
     "SELECT count(*)::int AS n FROM loyalty_transactions WHERE merchant_id=$1 AND type='award'",
     [mid],
@@ -1045,19 +1047,9 @@ try {
       x.includes('stamp-added'),
     ),
   );
-  assert.ok(
-    (await up.evaluate(() => (window as unknown as { motionEvents: string[] }).motionEvents)).some(
-      (x) => x.includes('stamp-added'),
-    ),
-  );
   ok('Committed stamps animate on the customer card and update the accessible progress');
-  ok('Lost response after commit recovers the same operation with exactly one purchase and award');
-  await cp.getByRole('button', { name: 'Next customer', exact: true }).click();
-  await cp.getByLabel("Or type the 6 digits on the customer's phone", { exact: true }).fill(token);
-  await cp.getByRole('button', { name: 'Read code', exact: true }).click();
-  await prepare('BROWSER-' + stamp + '-2', 2);
-  await cp.getByRole('button', { name: 'Confirm stamps', exact: true }).click();
-  await cp.getByText('Saved balance: 0', { exact: true }).waitFor();
+  ok('A retried award with the same key records exactly one purchase and award');
+  assert.equal((await award('BROWSER-' + stamp + '-2', 2)).balanceAfter, 0);
   // The opening screen shows an available reward as the "Request Reward" bottom action.
   await up.getByRole('button', { name: 'Request Reward', exact: true }).last().waitFor();
   await up.waitForFunction(

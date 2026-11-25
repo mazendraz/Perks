@@ -1,5 +1,6 @@
 import { CustomerMessages } from './features/CustomerMessages.js';
 import { InstallAppButton } from './features/InstallCard.js';
+import { HeaderNotifications } from './features/PushToggle.js';
 import { Select } from './controls/Select.js';
 import { ControlLocale } from './controls/locale.js';
 import {
@@ -319,6 +320,8 @@ export function App() {
                   <button className="secondary small" onClick={() => void logout()}>
                     {ar ? 'خروج' : 'Sign out'}
                   </button>
+                  {/* Last in the row: the far corner of the header (top-left in Arabic). */}
+                  {portal === 'cashier' && <HeaderNotifications lang={lang} />}
                 </>
               )}
           </div>

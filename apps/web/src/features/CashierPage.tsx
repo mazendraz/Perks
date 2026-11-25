@@ -1,43 +1,17 @@
-import { WhyDisabled } from '../controls/WhyDisabled.js';
-import { Select } from '../controls/Select.js';
 import { ActionLabel, Icon } from '../../../../packages/ui/src/Icon.js';
-import { FieldErrors, fieldProps } from '../FieldErrors.js';
+import { Select } from '../controls/Select.js';
 import { CashierRequests } from './StampRequests.js';
-import { PushToggle } from './PushToggle.js';
 import { useSignOut } from '../sign-out.js';
 import { TeamCustomerRecovery } from './CustomerRecovery.js';
 import { AutoStampFeed } from './AutoStampFeed.js';
 import { CashierRedeemQueue } from './RedeemRequests.js';
 import { useEffect, useState, type FormEvent, type CSSProperties } from 'react';
-import { CameraScanner } from './CameraScanner.js';
 import { InstallAppButton } from './InstallCard.js';
-import type {
-  AwardResult,
-  Grant,
-  Language,
-  Reward,
-} from '../../../../packages/contracts/src/index.js';
-import type { AwardInput } from '../../../../packages/contracts/src/commands.js';
-import { api, ApiError, errorText } from '../api.js';
+import type { Grant, Language } from '../../../../packages/contracts/src/index.js';
+import { api, errorText } from '../api.js';
 import { intlLocale } from '../locale.js';
 import { ShiftSummary } from './TodayStrip.js';
 import { holdUpdates } from '../update-gate.js';
-interface Member {
-  id: string;
-  alias: string;
-  balance: number;
-  threshold: number;
-  rewardTitle: string;
-  revision: number;
-  maxPerTx: number;
-  // The shop's stamps per visit; the starting quantity, and the only one when multiple stamps are off.
-  defaultStamps: number;
-  allowMultiple: boolean;
-}
-interface PendingAward {
-  key: string;
-  body: Omit<AwardInput, 'presentationContext'>;
-}
 interface Recent {
   id: string;
   public_reference: string;
@@ -58,8 +32,7 @@ function dayLabel(at: string, lang: Language) {
   return d.toLocaleDateString(intlLocale(lang), { day: 'numeric', month: 'short' });
 }
 export function CashierPage({ grant, lang }: { grant: Grant; lang: Language }) {
-  const ar = lang === 'ar',
-    storageKey = 'nuqta-pending-' + grant.id;
+  const ar = lang === 'ar';
   // Ending the shift signs the cashier out; a customer card on this phone stays.
   const signOut = useSignOut(
     lang,
@@ -67,25 +40,15 @@ export function CashierPage({ grant, lang }: { grant: Grant; lang: Language }) {
     (e) => setError(errorText(e, lang)),
   );
   const [branch, setBranch] = useState(grant.branches[0]?.id || ''),
-    [step, setStep] = useState<
-      'home' | 'scan' | 'member' | 'stamp' | 'review' | 'pending' | 'result'
-    >('home'),
-    [member, setMember] = useState<Member | null>(null),
-    [rewards, setRewards] = useState<Reward[]>([]),
-    [context, setContext] = useState(''),
-    [manual, setManual] = useState(''),
-    [receipt, setReceipt] = useState(''),
-    [qty, setQty] = useState(1),
     [error, setError] = useState(''),
     [busy, setBusy] = useState(false),
-    [pending, setPending] = useState<PendingAward | null>(null),
-    [result, setResult] = useState<AwardResult | null>(null),
     [recent, setRecent] = useState<Recent[]>([]),
+    // Recent activity is reference, not the job: folded on a phone, open on a wider screen.
+    [recentOpen, setRecentOpen] = useState(
+      () => !window.matchMedia?.('(max-width: 760px)').matches,
+    ),
     [correction, setCorrection] = useState<{ tx: Recent; reason: string } | null>(null),
     [notice, setNotice] = useState('');
-  const [validation, setValidation] = useState<ApiError | null>(null);
-  // Any step past home is a stamp in progress; a silent update must not reset it.
-  useEffect(() => (step === 'home' ? undefined : holdUpdates()), [step]);
   const refreshRecent = async () => {
     try {
       const r = await api<{ transactions: Recent[] }>(
@@ -93,158 +56,14 @@ export function CashierPage({ grant, lang }: { grant: Grant; lang: Language }) {
       );
       setRecent(r.transactions.filter((t) => t.branch_id === branch));
     } catch (e) {
-      setValidation(e instanceof ApiError ? e : null);
       setError(errorText(e, lang));
     }
   };
   useEffect(() => {
     void refreshRecent();
-    try {
-      const p = sessionStorage.getItem(storageKey);
-      if (p) {
-        const saved = JSON.parse(p) as PendingAward;
-        setPending(saved);
-        setBranch(saved.body.branchId);
-        setStep('pending');
-      }
-    } catch {
-      setError(
-        ar
-          ? 'تعذر قراءة مرجع العملية المعلقة. تواصل مع المدير قبل تسجيل عملية جديدة.'
-          : 'Unable to recover the pending reference. Ask your manager before creating another transaction.',
-      );
-      setStep('pending');
-    }
   }, [branch]);
-  const finish = (r: AwardResult) => {
-    setResult(r);
-    setPending(null);
-    sessionStorage.removeItem(storageKey);
-    setStep('result');
-    void refreshRecent();
-  };
-  const checkPending = async () => {
-    if (!pending) return;
-    setBusy(true);
-    setError('');
-    try {
-      const r = await api<{ status: string; result: AwardResult }>(
-        '/operations/by-key?scope=' +
-          encodeURIComponent('stamp.award:' + grant.merchant_id) +
-          '&key=' +
-          encodeURIComponent(pending.key),
-      );
-      if (r.status === 'committed') finish(r.result);
-      else
-        setNotice(
-          ar
-            ? 'لسه مفيش نتيجة مؤكدة. امسح نفس الكارت عشان نعيد نفس المحاولة بأمان.'
-            : 'No confirmed result yet. Scan the same card to safely retry the same attempt.',
-        );
-    } catch (e) {
-      setValidation(e instanceof ApiError ? e : null);
-      setError(errorText(e, lang));
-    } finally {
-      setBusy(false);
-    }
-  };
-  const scan = async (value: string) => {
-    setBusy(true);
-    setError('');
-    try {
-      const r = await api<{
-        membership: Member;
-        rewards: Reward[];
-        presentationContext: string;
-      }>('/cashier/scans/resolve', {
-        method: 'POST',
-        body: { merchantId: grant.merchant_id, branchId: branch, token: value.trim() },
-      });
-      if (pending && r.membership.id !== pending.body.membershipId) {
-        setError(
-          ar
-            ? 'امسح نفس عضوية العملية المعلقة الأول.'
-            : 'Scan the pending transaction membership first.',
-        );
-        return;
-      }
-      setMember(r.membership);
-      setRewards(r.rewards);
-      setContext(r.presentationContext);
-      if (pending) {
-        setQty(pending.body.quantity);
-        setReceipt(pending.body.purchaseReference.reference);
-        setStep('review');
-      } else setStep('member');
-    } catch (e) {
-      setValidation(e instanceof ApiError ? e : null);
-      setError(errorText(e, lang));
-    } finally {
-      setBusy(false);
-    }
-  };
-  const review = (e: FormEvent) => {
-    e.preventDefault();
-    if (!member) return;
-    setPending({
-      key: crypto.randomUUID(),
-      body: {
-        branchId: branch,
-        membershipId: member.id,
-        quantity: qty,
-        purchaseReference: {
-          namespace: 'manual',
-          reference: receipt,
-          businessDate: new Intl.DateTimeFormat('en-CA', {
-            timeZone: grant.timezone,
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-          }).format(new Date()),
-        },
-      },
-    });
-    setStep('review');
-  };
-  const commit = async () => {
-    if (!pending) return;
-    sessionStorage.setItem(storageKey, JSON.stringify(pending));
-    setStep('pending');
-    setBusy(true);
-    setError('');
-    setNotice('');
-    try {
-      finish(
-        await api<AwardResult>('/merchants/' + grant.merchant_id + '/stamp-awards', {
-          method: 'POST',
-          key: pending.key,
-          body: { ...pending.body, presentationContext: context },
-        }),
-      );
-    } catch (e) {
-      if (e instanceof ApiError && e.status >= 400 && e.status < 500) {
-        sessionStorage.removeItem(storageKey);
-        setPending(null);
-        setStep('stamp');
-      }
-      setValidation(e instanceof ApiError ? e : null);
-      setError(errorText(e, lang));
-    } finally {
-      setBusy(false);
-    }
-  };
-  const next = () => {
-    setMember(null);
-    setRewards([]);
-    setContext('');
-    setManual('');
-    setReceipt('');
-    setQty(1);
-    setResult(null);
-    setNotice('');
-    setError('');
-    setStep('scan');
-  };
+  // A correction being written must not be lost to a silent update.
+  useEffect(() => (correction ? holdUpdates() : undefined), [!!correction]);
   const requestCorrection = async (e: FormEvent) => {
     e.preventDefault();
     if (!correction) return;
@@ -266,7 +85,6 @@ export function CashierPage({ grant, lang }: { grant: Grant; lang: Language }) {
           : 'Correction requested. Balance changes only after manager review.',
       );
     } catch (e) {
-      setValidation(e instanceof ApiError ? e : null);
       setError(errorText(e, lang));
     } finally {
       setBusy(false);
@@ -287,15 +105,7 @@ export function CashierPage({ grant, lang }: { grant: Grant; lang: Language }) {
       {grant.branches.length > 1 && (
         <label className="branch-picker">
           {ar ? 'الفرع' : 'Branch'}
-          <Select
-            value={branch}
-            disabled={!!pending}
-            onChange={(e) => {
-              setBranch(e.target.value);
-              setStep('home');
-              setMember(null);
-            }}
-          >
+          <Select value={branch} onChange={(e) => setBranch(e.target.value)}>
             {grant.branches.map((b) => (
               <option value={b.id} key={b.id}>
                 {b.name}
@@ -314,54 +124,53 @@ export function CashierPage({ grant, lang }: { grant: Grant; lang: Language }) {
           {notice}
         </div>
       )}
-      {step === 'home' && (
-        <div className="action-stack">
-          <CashierRedeemQueue
-            grant={grant}
-            branch={branch}
-            lang={lang}
-            onRedeemed={() => void refreshRecent()}
-          />
-          <CashierRequests
-            grant={grant}
-            branch={branch}
-            lang={lang}
-            onCommitted={() => void refreshRecent()}
-          />
-          <section className="cashier-station">
-            <div className="station-icon">
-              <Icon name="scan" size={37} />
-            </div>
-            <span className="eyebrow">{grant.branches.find((b) => b.id === branch)?.name}</span>
-            <h2>{ar ? 'جاهز للزيارة اللي جاية؟' : 'Ready for your next guest?'}</h2>
-            <p>
-              {ar
-                ? 'اقرأ كارت العميل، راجع الشراء، وخلي الزيارة تقرّبه لمكافأته.'
-                : 'Read their card, confirm the purchase, and make this visit count.'}
-            </p>
-            <button className="primary cashier-scan" onClick={() => setStep('scan')}>
-              <Icon name="scan" size={22} />
-              {ar ? 'امسح كارت' : 'Scan card'}
-              <span aria-hidden="true">{ar ? '←' : '→'}</span>
+      <div className="action-stack">
+        <CashierRedeemQueue
+          grant={grant}
+          branch={branch}
+          lang={lang}
+          onRedeemed={() => void refreshRecent()}
+        />
+        <CashierRequests
+          grant={grant}
+          branch={branch}
+          lang={lang}
+          onCommitted={() => void refreshRecent()}
+        />
+        <TeamCustomerRecovery
+          key={grant.id + ':' + branch}
+          grant={grant}
+          branchId={branch}
+          lang={lang}
+        />
+        <AutoStampFeed
+          grant={grant}
+          branch={branch}
+          lang={lang}
+          onChanged={() => void refreshRecent()}
+        />
+        <section className="panel cashier-recent" aria-labelledby="cashier-recent-heading">
+          <h2 id="cashier-recent-heading" className="cashier-recent-heading">
+            <button
+              type="button"
+              className="cashier-recent-toggle"
+              aria-expanded={recentOpen}
+              aria-controls="cashier-recent-body"
+              onClick={() => setRecentOpen((open) => !open)}
+            >
+              <span className="cashier-recent-title">
+                {ar ? 'آخر العمليات' : 'Recent activity'}
+              </span>
+              <span className="badge" aria-hidden="true">
+                {Math.min(recent.length, 8)}
+              </span>
+              <span className="cashier-recent-action">
+                {recentOpen ? (ar ? 'إخفاء' : 'Hide') : ar ? 'عرض' : 'Show'}
+                <Icon name="chevronDown" size={18} />
+              </span>
             </button>
-          </section>
-          <TeamCustomerRecovery
-            key={grant.id + ':' + branch}
-            grant={grant}
-            branchId={branch}
-            lang={lang}
-          />
-          <AutoStampFeed
-            grant={grant}
-            branch={branch}
-            lang={lang}
-            onChanged={() => void refreshRecent()}
-          />
-          <section className="panel cashier-recent" aria-labelledby="cashier-recent-heading">
-            <div className="section-heading cashier-recent-heading">
-              <h2 id="cashier-recent-heading">{ar ? 'آخر العمليات' : 'Recent activity'}</h2>
-              <PushToggle lang={lang} compact />
-            </div>
+          </h2>
+          <div id="cashier-recent-body" className="cashier-recent-body" hidden={!recentOpen}>
             <ShiftSummary merchantId={grant.merchant_id} lang={lang} />
             {recent.length ? (
               recent.slice(0, 8).map((t) => (
@@ -402,256 +211,9 @@ export function CashierPage({ grant, lang }: { grant: Grant; lang: Language }) {
                 {ar ? 'لسه مفيش عمليات في الفرع ده.' : 'No transactions at this branch yet.'}
               </p>
             )}
-          </section>
-        </div>
-      )}
-      {step === 'scan' && (
-        <section className="panel">
-          <h2>{ar ? 'امسح كود العضوية' : 'Scan the membership code'}</h2>
-          <CameraScanner lang={lang} onRead={(value) => void scan(value)} />
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              void scan(manual);
-            }}
-          >
-            <label>
-              <ActionLabel icon="keyboard">
-                {ar
-                  ? 'أو اكتب الـ 6 أرقام اللي على موبايل العميل'
-                  : "Or type the 6 digits on the customer's phone"}
-              </ActionLabel>
-              <input
-                dir="ltr"
-                inputMode="numeric"
-                value={manual}
-                onChange={(e) => setManual(e.target.value)}
-                required
-                placeholder="482 913"
-                autoComplete="off"
-              />
-            </label>
-            <button className="secondary" disabled={busy} aria-busy={busy}>
-              <ActionLabel icon="scan">{ar ? 'قراءة الكود' : 'Read code'}</ActionLabel>
-            </button>
-          </form>
-        </section>
-      )}
-      {step === 'member' && member && (
-        <>
-          {rewards.some((r) => r.status === 'available') && (
-            <section className="panel reward-ready" aria-live="polite">
-              <div className="reward-ready-heading">
-                <Icon name="gift" size={26} />
-                <h2>
-                  {member.alias} · {ar ? 'الكارت كمل' : 'Card full'}
-                </h2>
-              </div>
-              <strong className="match-code">
-                {member.threshold}/{member.threshold}
-              </strong>
-              <p className="muted">
-                {ar
-                  ? 'المكافأة جاهزة: ' +
-                    rewards.find((r) => r.status === 'available')!.title +
-                    '. العميل يدوس استبدل من موبايله، والطلب يظهر لك علشان تأكده.'
-                  : 'Reward ready: ' +
-                    rewards.find((r) => r.status === 'available')!.title +
-                    '. The customer taps Redeem on their phone; the request shows up here to confirm.'}
-              </p>
-            </section>
-          )}
-          <section className="panel">
-            <h2>{member.alias}</h2>
-            <strong className="match-code">
-              {member.balance}/{member.threshold}
-            </strong>
-            <p className="muted">
-              {rewards.some((r) => r.status === 'available')
-                ? ar
-                  ? 'أختام محفوظة للكارت الجاي'
-                  : 'Stamps saved for the next card'
-                : member.rewardTitle}
-            </p>
-            <button
-              className={
-                rewards.some((r) => r.status === 'available') ? 'secondary full' : 'primary full'
-              }
-              onClick={() => {
-                setQty(member.defaultStamps);
-                setReceipt('');
-                setStep('stamp');
-              }}
-            >
-              <ActionLabel icon="stamp">{ar ? 'إضافة ختم' : 'Add stamps'}</ActionLabel>
-            </button>
-          </section>
-          {!rewards.some((r) => r.status === 'available') && (
-            <section className="panel">
-              <h2>{ar ? 'المكافآت' : 'Rewards'}</h2>
-              <p className="muted">{ar ? 'مفيش مكافأة متاحة.' : 'No reward is available.'}</p>
-            </section>
-          )}
-          <button className="text-button" onClick={next}>
-            {ar ? 'عميل تاني' : 'Another customer'}
-          </button>
-        </>
-      )}
-      {step === 'stamp' && member && (
-        <form className="panel" onSubmit={review}>
-          <FieldErrors error={validation} lang={lang} />
-          <h2>
-            {ar ? 'إضافة أختام' : 'Award stamps'} ·{member.alias}
-          </h2>
-          <label>
-            {ar ? 'رقم الإيصال' : 'Receipt number'}
-            <input
-              required
-              maxLength={120}
-              dir="ltr"
-              {...fieldProps(validation, 'purchaseReference.reference')}
-              value={receipt}
-              onChange={(e) => setReceipt(e.target.value)}
-            />
-          </label>
-          <div className="stamp-quantity">
-            <button
-              type="button"
-              className="secondary"
-              disabled={!member.allowMultiple || qty <= 1}
-              aria-label={ar ? 'تقليل الكمية' : 'Decrease quantity'}
-              onClick={() => setQty((q) => Math.max(1, q - 1))}
-            >
-              −
-            </button>
-            <strong aria-live="polite">{qty}</strong>
-            <button
-              type="button"
-              className="secondary"
-              disabled={!member.allowMultiple || qty >= Math.min(grant.max_qty, member.maxPerTx)}
-              aria-label={ar ? 'زيادة الكمية' : 'Increase quantity'}
-              onClick={() =>
-                setQty((q) => Math.min(Math.min(grant.max_qty, member.maxPerTx), q + 1))
-              }
-            >
-              +
-            </button>
           </div>
-          <WhyDisabled>
-            {!member.allowMultiple
-              ? ar
-                ? 'البرنامج ده بختم واحد بس في كل زيارة.'
-                : 'This program gives one stamp per visit.'
-              : Math.min(grant.max_qty, member.maxPerTx) > 1 &&
-                  qty >= Math.min(grant.max_qty, member.maxPerTx)
-                ? ar
-                  ? `أقصى عدد في المرة الواحدة ${Math.min(grant.max_qty, member.maxPerTx)}.`
-                  : `At most ${Math.min(grant.max_qty, member.maxPerTx)} at a time.`
-                : false}
-          </WhyDisabled>
-          <p className="muted">
-            {ar
-              ? 'عملية الشراء دي زيارة واحدة مهما كان عدد الأختام.'
-              : 'This purchase counts as one visit regardless of stamp quantity.'}
-          </p>
-          <button className="primary">{ar ? 'راجع قبل التأكيد' : 'Review award'}</button>
-        </form>
-      )}
-      {step === 'review' && pending && (
-        <section className="panel">
-          <h2>{ar ? 'راجع العملية' : 'Review transaction'}</h2>
-          <dl className="review-list">
-            <dt>{ar ? 'العميل' : 'Customer'}</dt>
-            <dd>{member?.alias}</dd>
-            <dt>{ar ? 'الإيصال' : 'Receipt'}</dt>
-            <dd>
-              <bdi>{pending.body.purchaseReference.reference}</bdi>
-            </dd>
-            <dt>{ar ? 'الكمية' : 'Quantity'}</dt>
-            <dd>{pending.body.quantity}</dd>
-            <dt>{ar ? 'الفرع' : 'Branch'}</dt>
-            <dd>{grant.branches.find((b) => b.id === pending.body.branchId)?.name}</dd>
-          </dl>
-          <div className="form-actions">
-            <button
-              className="secondary"
-              disabled={!!sessionStorage.getItem(storageKey)}
-              onClick={() => {
-                setPending(null);
-                setStep('stamp');
-              }}
-            >
-              {ar ? 'تعديل' : 'Edit'}
-            </button>
-            <button
-              className="primary"
-              disabled={busy}
-              aria-busy={busy}
-              onClick={() => void commit()}
-            >
-              {ar ? 'تأكيد الأختام' : 'Confirm stamps'}
-            </button>
-          </div>
-          <WhyDisabled>
-            {!!sessionStorage.getItem(storageKey) &&
-              (ar
-                ? 'الأختام دي اتبعتت للتأكيد قبل كده، فمينفعش تتعدّل. دوس «تأكيد الأختام» عشان تخلّصها من غير ما تتكرر.'
-                : 'These stamps were already sent for confirmation, so they can’t be edited. Tap Confirm stamps to finish without duplicating them.')}
-          </WhyDisabled>
         </section>
-      )}
-      {step === 'pending' && (
-        <section className="panel" aria-live="polite">
-          <h2>
-            {busy
-              ? ar
-                ? 'بنسجّل العملية…'
-                : 'Recording transaction…'
-              : ar
-                ? 'بنتأكد من النتيجة'
-                : 'Confirming the outcome'}
-          </h2>
-          <p>
-            {ar
-              ? 'النجاح هيظهر بعد تأكيد الحفظ. لو الرد ضاع، بنراجع نفس المحاولة من غير عملية جديدة.'
-              : 'Success follows durable confirmation. A lost response is checked using the same attempt.'}
-          </p>
-          {!busy && (
-            <div className="action-stack">
-              <button className="primary" onClick={() => void checkPending()}>
-                {ar ? 'تحقق من نفس العملية' : 'Check the same operation'}
-              </button>
-              <button className="secondary" onClick={() => setStep('scan')}>
-                <ActionLabel icon="scan">
-                  {ar ? 'امسح نفس الكارت وأعد المحاولة' : 'Scan the same card and retry'}
-                </ActionLabel>
-              </button>
-            </div>
-          )}
-        </section>
-      )}
-      {step === 'result' && result && (
-        <section className="panel receipt-result" role="status">
-          <div className="result-icon">✓</div>
-          <h2>
-            +{result.quantity} {ar ? 'ختم' : 'stamps'}
-          </h2>
-          <p>
-            {ar ? 'الرصيد المحفوظ' : 'Saved balance'}: {result.balanceAfter}
-          </p>
-          {result.rewardGrants.length > 0 && (
-            <div className="notice success">
-              {ar ? 'اتفتحت مكافأة: ' : 'Reward unlocked: '}
-              {result.rewardGrants[0]!.title}
-            </div>
-          )}
-          <bdi>{result.reference}</bdi>
-          <p className="muted">{new Date(result.committedAt).toLocaleString(intlLocale(lang))}</p>
-          <button className="primary full" onClick={next}>
-            {ar ? 'العميل اللي بعده' : 'Next customer'}
-          </button>
-        </section>
-      )}
+      </div>
       {correction && (
         <div className="modal-backdrop">
           <form

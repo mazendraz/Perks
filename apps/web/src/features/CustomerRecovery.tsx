@@ -7,6 +7,7 @@ import { PhoneInput } from '../controls/PhoneInput.js';
 import { Select } from '../controls/Select.js';
 import { navigate } from '../useRoute.js';
 import { WhatsAppRestoreLink } from './CustomerWhatsApp.js';
+import { holdUpdates } from '../update-gate.js';
 
 // Perks support on WhatsApp (same number as the business page and the plan sheets).
 const SUPPORT_PHONE = '201006111380';
@@ -580,7 +581,10 @@ export function TeamCustomerRecovery({
     [busy, setBusy] = useState(false),
     [code, setCode] = useState(''),
     [result, setResult] = useState<'approved' | 'awaiting_approval' | null>(null),
-    [joined, setJoined] = useState(false);
+    [joined, setJoined] = useState(false),
+    [open, setOpen] = useState(false);
+  // While open the cashier is mid-restore (a number or a code typed in): a silent update waits.
+  useEffect(() => (open ? holdUpdates() : undefined), [open]);
   const base = '/merchants/' + grant.merchant_id;
   // No card here, but the customer's phone shows a code: their number is on Perks elsewhere.
   // The number and the code must both match; a new, empty card then starts at this shop.
@@ -693,7 +697,10 @@ export function TeamCustomerRecovery({
         )
       : '';
   return (
-    <details className="panel customer-recovery-tool">
+    <details
+      className="panel customer-recovery-tool"
+      onToggle={(e) => setOpen(e.currentTarget.open)}
+    >
       <summary>{ar ? 'رجّع كارت عميل' : 'Restore a customer card'}</summary>
       <p className="muted">
         {ar

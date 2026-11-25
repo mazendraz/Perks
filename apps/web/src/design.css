@@ -943,19 +943,6 @@ td small {
   font-style: normal;
   font-size: 7px;
 }
-.reward-ready {
-  font-size: 10px;
-  background: color-mix(in srgb, var(--accent) 12%, transparent);
-  padding: 9px 11px;
-  border: 1px solid color-mix(in srgb, var(--accent) 25%, transparent);
-  border-radius: 7px;
-  gap: 8px;
-  margin-top: 17px;
-}
-.reward-ready svg {
-  color: var(--accent);
-  flex: 0 0 auto;
-}
 .carry-stamps {
   font-size: 9px;
   opacity: 0.68;
@@ -1089,52 +1076,10 @@ td small {
 .mobile-cashier {
   max-width: 800px;
 }
-.cashier-station {
-  text-align: center;
-  padding: 36px 35px;
-  border-radius: 20px;
-  background: #e0e1eb;
-  border: 1px solid #cfd1e0;
-}
-.station-icon {
-  width: 74px;
-  height: 74px;
-  background: #f1f1f6;
-  color: #42487c;
-  border: 1px solid #caccdd;
-  display: grid;
-  place-items: center;
-  border-radius: 20px;
-  margin: 0 auto 21px;
-}
-.cashier-station h2 {
-  font-size: 27px;
-  margin-block: 5px 10px;
-}
-.cashier-station p {
-  max-width: 400px;
-  margin: 0 auto 24px;
-  color: #6b6e88;
-  font-size: 13px;
-}
-.cashier-station .cashier-scan {
-  min-height: 55px;
-  max-width: 340px;
-  width: 100%;
-  margin: auto;
-}
-.cashier-station .cashier-scan > span {
-  margin-inline-start: auto;
-}
 .match-code {
   font-family: 'Manrope', sans-serif;
   letter-spacing: 5px;
   color: #292c4c;
-}
-.receipt-result .result-icon {
-  color: #7f9760;
-  background: #edf3e4;
-  box-shadow: none;
 }
 .wizard-steps {
   background: #e4e5ee;
@@ -1839,15 +1784,6 @@ td small {
   }
   .membership-content > .panel {
     margin-bottom: 17px;
-  }
-  .cashier-station {
-    padding: 28px 21px;
-  }
-  .cashier-station h2 {
-    font-size: 24px;
-  }
-  .cashier-station p {
-    font-size: 12px;
   }
   .dialog {
     padding: 25px;

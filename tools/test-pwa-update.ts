@@ -206,7 +206,7 @@ const noPrompt = async (page: Page) => {
 try {
   // Release 1: first install claims the tab without treating it as an update.
   const cashier = await open('/cashier');
-  await cashier.getByText('Ready for your next guest?').waitFor();
+  await cashier.getByText('Restore a customer card').waitFor();
   await cashier.waitForFunction(() => !!navigator.serviceWorker.controller);
   await settle(cashier);
   assert.equal(loads.get(cashier), 1);
@@ -238,7 +238,7 @@ try {
   assert.equal(await release(cashier), 'v2');
   assert.equal(new URL(cashier.url()).pathname, '/cashier');
   ok('hidden cashier tab reloads into release 2 once the POST settles');
-  await cashier.getByText('Ready for your next guest?').waitFor();
+  await cashier.getByText('Restore a customer card').waitFor();
   await settle(cashier);
   await settle(cashier);
   assert.equal(loads.get(cashier), 2, 'The new release does not reload itself again.');
@@ -249,9 +249,9 @@ try {
   await other.waitForFunction(() => !!navigator.serviceWorker.controller);
   assert.equal(await release(other), 'v2');
 
-  // The cashier is mid-flow when release 3 lands.
-  await cashier.getByRole('button', { name: /Scan card/ }).click();
-  await cashier.getByText('Scan the membership code').waitFor();
+  // The cashier is mid-flow (restoring a customer's card) when release 3 lands.
+  await cashier.getByText('Restore a customer card').click();
+  await cashier.locator('details.customer-recovery-tool[open]').waitFor();
   await deploy(cashier, v3);
   await other.waitForFunction(
     async () =>
@@ -263,7 +263,7 @@ try {
   await settle(cashier);
   assert.equal(loads.get(cashier), 2, 'No reload while the cashier is mid-flow.');
   assert.equal(await release(cashier), 'v2');
-  await cashier.getByText('Scan the membership code').waitFor();
+  await cashier.locator('details.customer-recovery-tool[open]').waitFor();
   ok('no reload while the cashier is mid-flow');
   assert.equal(loads.get(other), 1, 'Pages outside cashier/customer wait for navigation.');
   ok('hidden non-cashier/customer page does not reload');

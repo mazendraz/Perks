@@ -255,40 +255,6 @@ td small {
   flex-direction: column;
   gap: 12px;
 }
-.cashier-scan {
-  min-height: 110px;
-  font-size: 22px;
-}
-.video-scanner {
-  width: 100%;
-  max-height: 350px;
-  border-radius: 12px;
-  background: #16181d;
-}
-.stamp-quantity {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 25px;
-  margin: 20px 0;
-}
-.stamp-quantity strong {
-  font-size: 44px;
-  font-variant-numeric: tabular-nums;
-}
-.stamp-quantity button {
-  width: 48px;
-  height: 48px;
-  font-size: 25px;
-}
-.receipt-result {
-  text-align: center;
-  padding: 28px;
-}
-.receipt-result .result-icon {
-  font-size: 40px;
-  color: #1e6b43;
-}
 .reward-row {
   display: flex;
   gap: 12px;
@@ -378,14 +344,6 @@ td small {
   display: flex;
   align-items: center;
   gap: 8px;
-}
-.reward-ready-heading {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.reward-ready-heading .match-code {
-  margin: 0;
 }
 .modal-backdrop {
   position: fixed;
@@ -595,25 +553,10 @@ figure {
     border-color 200ms ease;
 }
 
-.reward-ready {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-block-start: 14px;
-  font-size: 14px;
-  font-weight: 700;
-}
-.reward-ready > span {
-  font-size: 24px;
-  color: var(--accent);
-}
 .carry-stamps {
   display: block;
   margin-block-start: 6px;
   opacity: 0.8;
-}
-.reward-earned .reward-ready > span {
-  animation: nuqta-spark 900ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
 }
 
 .sr-only {
@@ -2393,58 +2336,159 @@ input[inputmode='numeric'] {
   border-color: var(--ink);
 }
 
-/* Cashier home: recent activity carries a small scan-alerts control instead of its own panel. */
-.cashier-recent-heading {
-  flex-wrap: wrap;
-  gap: 8px 12px;
-  margin-block-end: 16px;
+/* Cashier header: a small bell in the far corner opens a compact notifications panel. */
+.header-notify {
+  position: relative;
+  flex-shrink: 0;
 }
-.push-compact {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 36px;
-  padding: 6px 12px;
+.header-notify-bell {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
   border: 1px solid #dcdee8;
   border-radius: 999px;
-  background: #f5f6fa;
-  color: #3e4373;
+  background: #fff;
+  color: #2f3462;
+}
+.header-notify-bell:hover,
+.header-notify-bell[aria-expanded='true'] {
+  background: #eceef5;
+  border-color: #b9bcd3;
+}
+.header-notify-bell[data-state='on']::after {
+  content: '';
+  position: absolute;
+  inset-block-start: 9px;
+  inset-inline-end: 10px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #4f8a3a;
+  box-shadow: 0 0 0 2px #fff;
+}
+.header-notify-panel {
+  position: absolute;
+  inset-block-start: calc(100% + 8px);
+  inset-inline-end: 0;
+  z-index: 30;
+  width: min(300px, calc(100vw - 32px));
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid #dcdee8;
+  border-radius: 14px;
+  background: #fff;
+  color: #191c3c;
+  box-shadow: 0 14px 40px #191c3c24;
+  text-align: start;
+}
+.header-notify-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 15px;
+}
+.header-notify-status {
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: #f1f2f6;
+  color: #4a5089;
   font-size: 12px;
   font-weight: 600;
-  line-height: 1.2;
-  white-space: nowrap;
 }
-.push-compact:hover {
-  background: #eceef5;
-}
-.push-compact[aria-expanded='true'] {
-  border-color: #b9bcd3;
-  background: #eceef5;
-}
-.push-compact[data-state='on'] {
-  border-color: #d4e3bf;
+.header-notify-status[data-state='on'] {
   background: #eff5e6;
   color: #426035;
 }
-.push-compact-body {
-  flex-basis: 100%;
-  display: grid;
-  justify-items: start;
-  gap: 8px;
-  padding: 12px 14px;
-  border: 1px solid #e3e4ec;
-  border-radius: 12px;
-  background: #fafafc;
-}
-.push-compact-body p {
+.header-notify-panel p,
+.header-notify-panel small {
   margin: 0;
   font-size: 13px;
+  line-height: 1.5;
 }
-.push-compact-body .button-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
+.header-notify-actions {
+  display: grid;
   gap: 8px;
+}
+.header-notify-actions > button {
+  width: 100%;
+  min-height: 44px;
+}
+.header-notify-message {
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: #f5f6fa;
+  color: #2f3462;
+}
+
+/* Cashier home: recent activity folds to one row; the whole heading is the toggle. */
+.cashier-recent-heading {
+  margin: 0;
+  font-size: inherit;
+}
+.cashier-recent-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 48px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #191c3c;
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+.cashier-recent-title {
+  font-size: 20px;
+  font-weight: 700;
+}
+.cashier-recent-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-inline-start: auto;
+  color: #4a5089;
+  font-size: 13px;
+  font-weight: 600;
+}
+.cashier-recent-action svg {
+  transition: transform 160ms ease;
+}
+.cashier-recent-toggle[aria-expanded='true'] .cashier-recent-action svg {
+  transform: rotate(180deg);
+}
+@media (prefers-reduced-motion: reduce) {
+  .cashier-recent-action svg {
+    transition: none;
+  }
+}
+.cashier-recent-body {
+  margin-block-start: 12px;
+}
+.cashier-recent-body[hidden] {
+  display: none;
+}
+/* One rhythm between cashier cards: the stack's gap, not gap plus each panel's own margin. */
+.mobile-cashier .action-stack {
+  gap: 16px;
+}
+.mobile-cashier .action-stack > .panel {
+  margin-block: 0;
+}
+.mobile-cashier .action-stack > .panel > :last-child {
+  margin-block-end: 0;
+}
+.mobile-cashier .panel.cashier-recent {
+  padding-block: 6px;
+}
+.mobile-cashier .panel.cashier-recent:has(.cashier-recent-body:not([hidden])) {
+  padding-block-end: 18px;
 }
 .cashier-recent .activity-row {
   align-items: center;
@@ -2468,14 +2512,14 @@ input[inputmode='numeric'] {
   text-align: center;
 }
 .cashier-recent .correction-link {
-  min-height: 36px;
+  min-height: 44px;
   padding: 4px 10px;
   font-size: 12px;
 }
 .cashier-recent .activity-row:last-child {
   border-bottom: 0;
 }
-/* Restore a card sits right under Scan card as one quiet row that opens in place. */
+/* Restore a card is one quiet row that opens in place. */
 .mobile-cashier .customer-recovery-tool {
   padding-block: 4px;
 }

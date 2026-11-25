@@ -653,20 +653,23 @@ try {
     const token = ((await presented.json()).token as string).trim();
     await login(cp, cashierEmail);
     await cp.locator('.app-layout[data-portal="cashier"]').waitFor();
-    await cp.getByRole('button', { name: 'Scan card', exact: true }).click();
-    const scanViewport = cp.viewportSize()!;
+    const homeViewport = cp.viewportSize()!;
     for (const language of ['en', 'ar']) {
       if (language === 'ar') await cp.getByRole('button', { name: 'العربية', exact: true }).click();
       for (const width of [320, 390, 430]) {
         await cp.setViewportSize({ width, height: 844 });
-        await checkLayout(cp, `${project.name} ${language} ${width}px scan actions`);
-        const cameraButton = cp.getByRole('button', {
-          name: language === 'ar' ? 'افتح الكاميرا' : 'Open camera',
-          exact: true,
-        });
+        await checkLayout(cp, `${project.name} ${language} ${width}px cashier home`);
+        // No scan-to-stamp entry (it read as "delete card" in Arabic); customers have no code to show.
+        assert.equal(await cp.getByRole('button', { name: /^(Scan card|امسح كارت)/ }).count(), 0);
+        // Notifications live behind the header bell, in the far corner (top-left in Arabic).
+        const bell = cp.locator('header.topbar .header-notify-bell');
+        const box = (await bell.boundingBox())!;
+        assert.ok(box.width >= 44 && box.height >= 44 && box.y < 80);
+        assert.equal(box.x + box.width / 2 < width / 2, language === 'ar');
+        // Recent activity starts folded on a phone.
         assert.equal(
-          await cameraButton.locator('svg[data-icon="camera"][aria-hidden="true"]').count(),
-          1,
+          await cp.locator('.cashier-recent-toggle').getAttribute('aria-expanded'),
+          'false',
         );
         if (width === 390)
           await cp.screenshot({
@@ -676,35 +679,51 @@ try {
       }
     }
     await cp.getByRole('button', { name: 'English', exact: true }).click();
-    await cp.setViewportSize(scanViewport);
+    await cp.setViewportSize(homeViewport);
     pass(
       project.name +
-        ': labeled camera and manual scan actions remain readable with icons at 320/390/430px in both languages',
+        ': cashier home has no scan entry, a header bell and folded recent activity at 320/390/430px in both languages',
     );
-    await cp
-      .getByLabel("Or type the 6 digits on the customer's phone", { exact: true })
-      .fill(token);
-    await cp.getByRole('button', { name: 'Read code', exact: true }).click();
-    await cp.getByRole('button', { name: 'Add stamps', exact: true }).click();
-    await cp
-      .getByLabel('Receipt number', { exact: true })
-      .fill('MOBILE-' + stamp + '-' + project.name);
-    await cp.getByRole('button', { name: 'Review award', exact: true }).click();
-    // Time from the commit (the award response) to the customer's card, not the cashier's own UI.
-    const committed = cp.waitForResponse(
-      (response) =>
-        response.request().method() === 'POST' &&
-        /\/api\/v1\/merchants\/[^/]+\/stamp-awards$/.test(response.url()) &&
-        response.ok(),
+    // Stamps are awarded through the cashier API (the scan screen is gone); time from the commit
+    // (the award response) to the customer's card.
+    const cashierSession = await (await cp.request.get(origin + '/api/v1/session')).json();
+    const cashierHeaders = { origin, 'x-csrf-token': cashierSession.csrfToken },
+      merchantId = cashierSession.grants[0].merchant_id as string;
+    const resolved = await cp.request.post(origin + '/api/v1/cashier/scans/resolve', {
+      headers: cashierHeaders,
+      data: { merchantId: merchantId, branchId: branch, token },
+    });
+    assert.equal(resolved.status(), 200, await resolved.text());
+    const read = await resolved.json();
+    const committed = await cp.request.post(
+      origin + '/api/v1/merchants/' + merchantId + '/stamp-awards',
+      {
+        headers: { ...cashierHeaders, 'idempotency-key': randomUUID() },
+        data: {
+          branchId: branch,
+          membershipId: read.membership.id,
+          quantity: 1,
+          presentationContext: read.presentationContext,
+          purchaseReference: {
+            namespace: 'manual',
+            reference: 'MOBILE-' + stamp + '-' + project.name,
+            businessDate: new Intl.DateTimeFormat('en-CA', {
+              timeZone: 'Africa/Cairo',
+              year: 'numeric',
+              month: '2-digit',
+              day: '2-digit',
+            }).format(new Date()),
+          },
+        },
+      },
     );
-    await cp.getByRole('button', { name: 'Confirm stamps', exact: true }).click();
-    await committed;
+    assert.equal(committed.status(), 200, await committed.text());
+    assert.equal((await committed.json()).balanceAfter, 1);
     const stampStarted = Date.now();
     await page.waitForFunction(
       () => document.querySelector('[role="progressbar"]')?.getAttribute('aria-valuenow') === '1',
     );
     const stampVisibleMs = Date.now() - stampStarted;
-    await cp.getByText('Saved balance: 1', { exact: true }).waitFor();
     // One second on a developer machine; shared CI runners emulating WebKit get half a second more.
     const stampBudgetMs = process.env.CI ? 1500 : 1000;
     assert.ok(
@@ -773,105 +792,8 @@ try {
     });
     pass(
       project.name +
-        ': cashier manual QR input commits one stamp and updates the actual customer balance',
+        ': a cashier stamp award commits one stamp and updates the actual customer balance',
     );
-    if (project.type === chromium) {
-      await cp.evaluate('window.__name = function(value) { return value; }');
-      await cp.evaluate(() => {
-        const state = {
-          hidden: false,
-          deferred: false,
-          opened: 0,
-          stopped: 0,
-          constraints: {} as MediaStreamConstraints,
-          resolve: undefined as undefined | (() => void),
-        };
-        Object.defineProperty(document, 'hidden', { configurable: true, get: () => state.hidden });
-        navigator.mediaDevices.getUserMedia = async (constraints) => {
-          state.opened++;
-          state.constraints = constraints!;
-          const canvas = document.createElement('canvas');
-          canvas.width = canvas.height = 64;
-          const draw = () => canvas.getContext('2d')!.fillRect(0, 0, 64, 64);
-          const timer = window.setInterval(draw, 50);
-          draw();
-          const stream = canvas.captureStream(10);
-          for (const track of stream.getTracks()) {
-            const stop = track.stop.bind(track);
-            track.stop = () => {
-              state.stopped++;
-              window.clearInterval(timer);
-              stop();
-            };
-          }
-          if (state.deferred)
-            await new Promise<void>((resolve) => {
-              state.resolve = resolve;
-            });
-          return stream;
-        };
-        (window as unknown as { cameraTest: typeof state }).cameraTest = state;
-      });
-      await cp.getByRole('button', { name: 'Next customer', exact: true }).click();
-      await cp.getByRole('button', { name: 'Open camera', exact: true }).click();
-      await cp.waitForFunction(() => !!document.querySelector('video')?.srcObject);
-      assert.deepEqual(
-        await cp.evaluate(
-          () =>
-            (window as unknown as { cameraTest: { constraints: unknown } }).cameraTest.constraints,
-        ),
-        { audio: false, video: { facingMode: { ideal: 'environment' } } },
-      );
-      assert.equal(
-        await cp.locator('video').evaluate((v: HTMLVideoElement) => v.muted && v.playsInline),
-        true,
-      );
-      await cp.evaluate(() => {
-        (window as unknown as { cameraTest: { hidden: boolean } }).cameraTest.hidden = true;
-        document.dispatchEvent(new Event('visibilitychange'));
-      });
-      await cp.waitForFunction(
-        () =>
-          (window as unknown as { cameraTest: { stopped: number } }).cameraTest.stopped > 0 &&
-          !document.querySelector('video'),
-      );
-      await cp.evaluate(() => {
-        const state = (
-          window as unknown as {
-            cameraTest: { hidden: boolean; deferred: boolean; stopped: number };
-          }
-        ).cameraTest;
-        state.hidden = false;
-        state.deferred = true;
-        state.stopped = 0;
-        document.dispatchEvent(new Event('visibilitychange'));
-      });
-      await cp.getByRole('button', { name: 'Open camera', exact: true }).click();
-      await cp.waitForFunction(
-        () => (window as unknown as { cameraTest: { opened: number } }).cameraTest.opened === 2,
-      );
-      await cp.evaluate(() => {
-        const state = (
-          window as unknown as { cameraTest: { hidden: boolean; resolve: () => void } }
-        ).cameraTest;
-        state.hidden = true;
-        document.dispatchEvent(new Event('visibilitychange'));
-        state.resolve();
-      });
-      await cp.waitForFunction(
-        () =>
-          (window as unknown as { cameraTest: { stopped: number } }).cameraTest.stopped > 0 &&
-          !document.querySelector('video'),
-      );
-      await cp.evaluate(() => {
-        (window as unknown as { cameraTest: { hidden: boolean } }).cameraTest.hidden = false;
-        document.dispatchEvent(new Event('visibilitychange'));
-      });
-      assert.equal(await cp.locator('video').count(), 0);
-      pass(
-        'Camera synthetic stream: rear-camera constraint, muted/playsInline, tracks stopped on hide and after late permission; no auto-resume',
-      );
-    }
     await auditCustomerLoading(page, project.name, directory);
     await auditWalletPresentation(page, project.name, directory);
     pass(

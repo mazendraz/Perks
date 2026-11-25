@@ -64,8 +64,9 @@ async function register(subscription: PushSubscription, lang: Language) {
 // re-binds the device to the current sign-in (and repairs a row the server dropped). Runs on every
 // cashier screen; calls within a few seconds of each other share one check.
 let recent: { lang: Language; at: number; result: Promise<PushState> } | null = null;
-export function pushState(lang: Language): Promise<PushState> {
-  if (recent && recent.lang === lang && Date.now() - recent.at < 5000) return recent.result;
+export function pushState(lang: Language, fresh = false): Promise<PushState> {
+  if (!fresh && recent && recent.lang === lang && Date.now() - recent.at < 5000)
+    return recent.result;
   const result = checkPushState(lang);
   recent = { lang, at: Date.now(), result };
   return result;

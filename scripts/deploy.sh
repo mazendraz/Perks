@@ -23,6 +23,12 @@ main() {
   # It must have been touched by the restarted worker, not by the one it replaced.
   local heartbeat="${WORKER_HEARTBEAT_FILE:-}"
   local target="${1:-}"
+  # A deploy key restricted with a forced command (authorized_keys `command="..."`) drops the
+  # arguments the CI sent; sshd still passes them in SSH_ORIGINAL_COMMAND. Take the SHA from its
+  # last word. It is validated below and must be on origin/$branch like any other target.
+  if [[ -z "$target" && -n "${SSH_ORIGINAL_COMMAND:-}" ]]; then
+    target="${SSH_ORIGINAL_COMMAND##* }"
+  fi
 
   if [[ ! "$target" =~ ^[0-9a-f]{40}$ ]]; then
     echo "ERROR: pass the full 40-character commit SHA to deploy (got '${target}')." >&2

@@ -6,6 +6,18 @@ jobs:
     name: Fast checks
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      APP_ENV: test
+      AUTH_PROVIDER: local
+      AUTH_PEPPER: ci-only-auth-pepper-32-characters-minimum
+      DATABASE_MIGRATOR_URL: postgresql://nuqta_migrator:ci-only-password@127.0.0.1:5432/nuqta_ci
+      DATABASE_URL: postgresql://nuqta_runtime:ci-only-runtime@127.0.0.1:5432/nuqta_ci
+      AUTH_DATABASE_URL: postgresql://nuqta_auth:ci-only-auth@127.0.0.1:5432/nuqta_ci
+      NUQTA_RUNTIME_DB_PASSWORD: ci-only-runtime
+      NUQTA_AUTH_DB_PASSWORD: ci-only-auth
+      WORKER_DATABASE_URL: postgresql://nuqta_worker:ci-only-worker@127.0.0.1:5432/nuqta_ci
+      NUQTA_WORKER_DB_PASSWORD: ci-only-worker
+      PUBLIC_APP_ORIGIN: http://127.0.0.1:5173
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

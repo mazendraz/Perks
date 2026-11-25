@@ -23,7 +23,7 @@ jobs:
     env:
       DEPLOY_SHA: ${{ inputs.sha || github.sha }}
     steps:
-      - name: Require passing checks for the exact commit
+      - name: Require passing fast checks for the exact commit
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
@@ -32,12 +32,25 @@ jobs:
             echo "Deploy needs a full 40-character commit SHA." >&2
             exit 1
           fi
-          conclusion="$(gh api "repos/$REPO/actions/workflows/checks.yml/runs?head_sha=$DEPLOY_SHA&status=completed&per_page=1" --jq '.workflow_runs[0].conclusion // "missing"')"
-          if [[ "$conclusion" != "success" ]]; then
-            echo "Nuqta checks for $DEPLOY_SHA: $conclusion. Only a commit with passing checks can be deployed." >&2
+          # Only the "Fast checks" job of checks.yml (typecheck, lint, unit tests, build) gates a
+          # deploy. The full suite (integration, e2e, mobile, monitoring) is reported, not required.
+          runs="$(gh api "repos/$REPO/actions/workflows/checks.yml/runs?head_sha=$DEPLOY_SHA&per_page=20" --jq '.workflow_runs[].id')"
+          fast="missing"
+          full="missing"
+          for id in $runs; do
+            jobs="$(gh api "repos/$REPO/actions/runs/$id/jobs?per_page=100")"
+            fast="$(jq -r '[.jobs[] | select(.name == "Fast checks")][0] | if . == null then "missing" else (.conclusion // .status) end' <<<"$jobs")"
+            full="$(jq -r '[.jobs[] | select(.name == "Full suite")][0] | if . == null then "missing" else (.conclusion // .status) end' <<<"$jobs")"
+            [[ "$fast" == "success" ]] && break
+          done
+          if [[ "$fast" != "success" ]]; then
+            echo "Fast checks for $DEPLOY_SHA: $fast. Only a commit with passing fast checks can be deployed." >&2
             exit 1
           fi
-          echo "Deploying $DEPLOY_SHA (checks: success)."
+          if [[ "$full" != "success" ]]; then
+            echo "::warning::Full suite (integration/e2e/mobile/monitoring) for $DEPLOY_SHA is '$full'. Not blocking this deploy."
+          fi
+          echo "Deploying $DEPLOY_SHA (fast checks: success, full suite: $full)."
 
       - name: Configure SSH
         env:

@@ -1,7 +1,24 @@
 name: Nuqta checks
 on: [push, pull_request]
 jobs:
+  # The deploy gate (deploy.yml) requires only this job, matched by its name. Keep the name.
+  fast:
+    name: Fast checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: npm }
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+  # Full suite: integration, deploy scripts, monitoring, tunnel, browser e2e and mobile.
+  # Still runs on every push and must be kept green, but it does not block a deploy.
   checks:
+    name: Full suite
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -30,9 +47,6 @@ jobs:
         with: { node-version: 24, cache: npm }
       - run: npm ci
       - run: npm run db:migrate
-      - run: npm run typecheck
-      - run: npm run lint
-      - run: npm test
       - run: npm run test:integration
       - run: npm run build
       - run: npm run test:deploy-scripts

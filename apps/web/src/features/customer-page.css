@@ -69,7 +69,7 @@
     padding-block-end: calc(76px + env(safe-area-inset-bottom, 0px));
   }
   html:has(.customer-stamp-dock:not(:empty)) {
-    scroll-padding-block: calc(60px + env(safe-area-inset-top, 0px))
+    scroll-padding-block: calc(var(--app-header-h, 60px) + 12px)
       calc(76px + env(safe-area-inset-bottom, 0px));
   }
   .customer-page-shell > .topbar {

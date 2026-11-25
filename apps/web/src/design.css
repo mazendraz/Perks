@@ -233,6 +233,17 @@ label {
   border-bottom: 1px solid #dedfe7;
   background: #fafafb;
 }
+/* The Perks header stays on screen in every portal. Its measured height (--app-header-h, set in
+   App.tsx) keeps other sticky bars and focus/anchor scrolling below it. The header's own
+   padding already covers the top safe area, so it never sits under the notch or status bar. */
+.topbar {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: 10;
+}
+html {
+  scroll-padding-block-start: calc(var(--app-header-h, 0px) + 12px);
+}
 .wordmark {
   color: #191c3c;
   font-family: 'Perks Digits', 'GE SS Arabic', sans-serif;
@@ -1026,7 +1037,7 @@ td small {
 }
 .membership-aside {
   position: sticky;
-  top: 26px;
+  top: calc(var(--app-header-h, 0px) + 26px);
 }
 .membership-aside .tabbar {
   margin-top: 23px;
@@ -4328,7 +4339,7 @@ input[type='number']::-webkit-outer-spin-button {
 }
 .brand-savebar {
   position: sticky;
-  top: 10px;
+  top: calc(var(--app-header-h, 0px) + 10px);
   z-index: 3;
   display: flex;
   align-items: center;
@@ -4365,11 +4376,11 @@ input[type='number']::-webkit-outer-spin-button {
 @media (max-width: 640px) {
   .topbar {
     height: auto;
-    min-height: 78px;
+    min-height: 60px;
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
-    gap: 5px 12px;
-    padding-block: 12px;
+    gap: 2px 12px;
+    padding-block: calc(8px + env(safe-area-inset-top, 0px)) 8px;
   }
   .topbar .wordmark {
     grid-column: 1;
@@ -4394,7 +4405,7 @@ input[type='number']::-webkit-outer-spin-button {
     gap: 8px;
   }
   .brand-savebar {
-    top: 0;
+    top: var(--app-header-h, 0px);
   }
   .brand-savebar h2 {
     font-size: 14px;

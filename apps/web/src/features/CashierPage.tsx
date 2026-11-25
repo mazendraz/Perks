@@ -60,7 +60,7 @@ function dayLabel(at: string, lang: Language) {
 export function CashierPage({ grant, lang }: { grant: Grant; lang: Language }) {
   const ar = lang === 'ar',
     storageKey = 'nuqta-pending-' + grant.id;
-  // Ending the shift asks before removing a customer card this phone also holds.
+  // Ending the shift signs the cashier out; a customer card on this phone stays.
   const signOut = useSignOut(
     lang,
     () => location.assign('/cashier/login'),
@@ -274,7 +274,6 @@ export function CashierPage({ grant, lang }: { grant: Grant; lang: Language }) {
   };
   return (
     <div className="mobile-cashier" style={{ '--brand': grant.primary_color } as CSSProperties}>
-      {signOut.dialog}
       <div className="page-heading">
         <div>
           <span className="eyebrow">{grant.name}</span>
@@ -346,21 +345,31 @@ export function CashierPage({ grant, lang }: { grant: Grant; lang: Language }) {
               <span aria-hidden="true">{ar ? '←' : '→'}</span>
             </button>
           </section>
-          <PushToggle lang={lang} />
+          <TeamCustomerRecovery
+            key={grant.id + ':' + branch}
+            grant={grant}
+            branchId={branch}
+            lang={lang}
+          />
           <AutoStampFeed
             grant={grant}
             branch={branch}
             lang={lang}
             onChanged={() => void refreshRecent()}
           />
-          <section className="panel">
-            <h2>{ar ? 'آخر العمليات' : 'Recent transactions'}</h2>
+          <section className="panel cashier-recent" aria-labelledby="cashier-recent-heading">
+            <div className="section-heading cashier-recent-heading">
+              <h2 id="cashier-recent-heading">{ar ? 'آخر العمليات' : 'Recent activity'}</h2>
+              <PushToggle lang={lang} compact />
+            </div>
             <ShiftSummary merchantId={grant.merchant_id} lang={lang} />
             {recent.length ? (
               recent.slice(0, 8).map((t) => (
                 <div className="activity-row" key={t.id}>
                   <div>
-                    <strong>{t.alias}</strong>
+                    <strong>
+                      <bdi>{t.alias || (ar ? 'عميل' : 'Customer')}</bdi>
+                    </strong>
                     <small>
                       {dayLabel(t.at, lang)} ·{' '}
                       {new Date(t.at).toLocaleTimeString(intlLocale(lang), {
@@ -368,20 +377,24 @@ export function CashierPage({ grant, lang }: { grant: Grant; lang: Language }) {
                         minute: '2-digit',
                       })}
                     </small>
+                  </div>
+                  <div className="activity-end">
+                    <strong>
+                      {t.type === 'redeem' ? '★' : (t.quantity > 0 ? '+' : '') + t.quantity}
+                    </strong>
                     {t.type === 'award' && (
                       <button
-                        className="text-button"
+                        className="text-button small correction-link"
+                        aria-label={
+                          (ar ? 'طلب تصحيح: ' : 'Request correction: ') +
+                          (t.alias || (ar ? 'عميل' : 'Customer'))
+                        }
                         onClick={() => setCorrection({ tx: t, reason: '' })}
                       >
-                        <ActionLabel icon="refresh">
-                          {ar ? 'طلب تصحيح' : 'Request correction'}
-                        </ActionLabel>
+                        <ActionLabel icon="refresh">{ar ? 'تصحيح' : 'Correct'}</ActionLabel>
                       </button>
                     )}
                   </div>
-                  <strong>
-                    {t.type === 'redeem' ? '★' : (t.quantity > 0 ? '+' : '') + t.quantity}
-                  </strong>
                 </div>
               ))
             ) : (
@@ -390,15 +403,6 @@ export function CashierPage({ grant, lang }: { grant: Grant; lang: Language }) {
               </p>
             )}
           </section>
-          <details className="panel cashier-tools">
-            <summary>{ar ? 'أدوات تانية' : 'More tools'}</summary>
-            <TeamCustomerRecovery
-              key={grant.id + ':' + branch}
-              grant={grant}
-              branchId={branch}
-              lang={lang}
-            />
-          </details>
         </div>
       )}
       {step === 'scan' && (

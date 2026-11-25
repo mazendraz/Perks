@@ -36,6 +36,7 @@ import { navigate, useRoute } from './useRoute.js';
 import { SuspendedNotice } from './features/SuspendedNotice.js';
 import { ErrorBoundary } from './ErrorBoundary.js';
 import { useSignOut } from './sign-out.js';
+import { useStickyHeaderHeight } from './sticky-header.js';
 
 // Where "/" leads someone without a staff session: their card when this device holds one
 // (the customer session is restored from the device cookie), otherwise the sign-in page.
@@ -241,7 +242,7 @@ export function App() {
     document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
   }, [lang]);
   const ar = lang === 'ar';
-  // Staff holding a customer card on the same browser are asked whether to keep it.
+  // Staff sign-out keeps any customer card on this browser; see sign-out.tsx.
   const signOut = useSignOut(
     lang,
     () => {
@@ -252,6 +253,8 @@ export function App() {
     (e) => setNotice(errorText(e, lang)),
   );
   const [stampDock, setStampDock] = useState<HTMLDivElement | null>(null);
+  const [header, setHeader] = useState<HTMLElement | null>(null);
+  useStickyHeaderHeight(header);
   const cardPage =
     !!session &&
     portal === 'customer' &&
@@ -274,12 +277,11 @@ export function App() {
   return (
     <ControlLocale.Provider value={lang}>
       {!cardPage && <PwaStatus lang={lang} />}
-      {signOut.dialog}
       <a className="skip-link" href="#main">
         {ar ? 'روح للمحتوى' : 'Skip to content'}
       </a>
       <div className={cardPage ? 'customer-page-shell' : 'page-group'}>
-        <header className="topbar" data-portal={portal}>
+        <header className="topbar" data-portal={portal} ref={setHeader}>
           <button
             className="wordmark"
             onClick={() => navigate(portal ? '/' + portal : '/')}

@@ -26,7 +26,7 @@
 }
 .wizard-layout aside {
   position: sticky;
-  top: 24px;
+  top: calc(var(--app-header-h, 0px) + 24px);
 }
 .wizard-layout form {
   gap: 22px;
@@ -1930,7 +1930,7 @@ button[aria-busy='true']::after {
 }
 .lockscreen {
   position: sticky;
-  top: 16px;
+  top: calc(var(--app-header-h, 0px) + 16px);
   display: grid;
   align-content: start;
   gap: 18px;
@@ -2100,10 +2100,6 @@ button[aria-busy='true']::after {
 }
 .join-notify small {
   color: var(--muted, #667085);
-}
-.cashier-tools > summary {
-  cursor: pointer;
-  font-weight: 600;
 }
 .request-timer {
   font-weight: 600;
@@ -2395,4 +2391,114 @@ input[inputmode='numeric'] {
 }
 .restore-list li:first-child {
   border-color: var(--ink);
+}
+
+/* Cashier home: recent activity carries a small scan-alerts control instead of its own panel. */
+.cashier-recent-heading {
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  margin-block-end: 16px;
+}
+.push-compact {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 6px 12px;
+  border: 1px solid #dcdee8;
+  border-radius: 999px;
+  background: #f5f6fa;
+  color: #3e4373;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+.push-compact:hover {
+  background: #eceef5;
+}
+.push-compact[aria-expanded='true'] {
+  border-color: #b9bcd3;
+  background: #eceef5;
+}
+.push-compact[data-state='on'] {
+  border-color: #d4e3bf;
+  background: #eff5e6;
+  color: #426035;
+}
+.push-compact-body {
+  flex-basis: 100%;
+  display: grid;
+  justify-items: start;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1px solid #e3e4ec;
+  border-radius: 12px;
+  background: #fafafc;
+}
+.push-compact-body p {
+  margin: 0;
+  font-size: 13px;
+}
+.push-compact-body .button-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.cashier-recent .activity-row {
+  align-items: center;
+  padding-block: 12px;
+}
+.cashier-recent .activity-row > div:first-child {
+  display: grid;
+  justify-items: start;
+  gap: 2px;
+  min-width: 0;
+}
+.cashier-recent .activity-row > .activity-end {
+  display: flex;
+  flex-direction: row-reverse;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.cashier-recent .activity-end > strong {
+  min-width: 2ch;
+  text-align: center;
+}
+.cashier-recent .correction-link {
+  min-height: 36px;
+  padding: 4px 10px;
+  font-size: 12px;
+}
+.cashier-recent .activity-row:last-child {
+  border-bottom: 0;
+}
+/* Restore a card sits right under Scan card as one quiet row that opens in place. */
+.mobile-cashier .customer-recovery-tool {
+  padding-block: 4px;
+}
+.mobile-cashier .customer-recovery-tool > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  cursor: pointer;
+  font-weight: 600;
+  color: #2f3462;
+}
+.mobile-cashier .customer-recovery-tool[open] {
+  padding-block-end: 20px;
+}
+@media (max-width: 640px) {
+  .mobile-cashier .panel {
+    padding: 18px;
+  }
+  .mobile-cashier .customer-recovery-tool {
+    padding-block: 2px;
+  }
+  .mobile-cashier .customer-recovery-tool[open] {
+    padding-block-end: 18px;
+  }
 }

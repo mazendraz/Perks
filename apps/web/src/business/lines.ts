@@ -1,6 +1,23 @@
 import type { PublicPlanKey } from '../../../../packages/contracts/src/plan-catalog.js';
 
 export const SUPPORT_PHONE = '201006111380';
+
+/** Sales lines by the device's language; any other language (Arabic included) uses SUPPORT_PHONE. */
+const PHONE_BY_LANGUAGE: Record<string, string> = {
+  en: '201069012881',
+  fr: '201069012881',
+  es: '201069012881',
+  de: '201069012881',
+  it: '201008605904',
+  ru: '201008605904',
+  tr: '201008605904',
+};
+
+/** The WhatsApp number for the device's first preferred language, e.g. "fr-CA" → the French line. */
+export function supportPhoneFor(language: string | undefined): string {
+  const base = (language ?? '').toLowerCase().split(/[-_]/)[0] ?? '';
+  return PHONE_BY_LANGUAGE[base] ?? SUPPORT_PHONE;
+}
 export const VOICE = '/business/voice/';
 
 /** Every sentence the guide can say, with the recording that matches it word for word. */

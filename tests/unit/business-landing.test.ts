@@ -6,6 +6,7 @@ import {
   CLIP_SECONDS,
   PLAN_LINE,
   SUPPORT_PHONE,
+  supportPhoneFor,
 } from '../../apps/web/src/business/lines.js';
 import { publicPlanCatalog } from '../../packages/contracts/src/plan-catalog.js';
 
@@ -67,4 +68,13 @@ test('every image on the landing page exists and declares its size', async () =>
     assert.match(img, /\salt="/);
     await stat('apps/web/public' + src);
   }
+});
+
+test('the WhatsApp number follows the device language', () => {
+  for (const lang of ['en-US', 'fr', 'es-419', 'de-DE', 'EN_gb'])
+    assert.equal(supportPhoneFor(lang), '201069012881', lang);
+  for (const lang of ['it-IT', 'ru', 'tr-TR'])
+    assert.equal(supportPhoneFor(lang), '201008605904', lang);
+  for (const lang of ['ar-EG', 'ar', 'ja', '', undefined])
+    assert.equal(supportPhoneFor(lang), SUPPORT_PHONE, String(lang));
 });

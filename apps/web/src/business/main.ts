@@ -61,7 +61,7 @@ function storageSet(key: string, value: string) {
 
 /* --------------------------------------------------------------- the lines */
 
-import { LINES, CLIP_SECONDS, PLAN_LINE, SUPPORT_PHONE, VOICE, type LineKey } from './lines.js';
+import { LINES, CLIP_SECONDS, PLAN_LINE, VOICE, supportPhoneFor, type LineKey } from './lines.js';
 
 /* ------------------------------------------------------------------- state */
 
@@ -486,8 +486,9 @@ function renderTheme() {
 
 /* ----------------------------------------------------------------- plans */
 
+const devicePhone = supportPhoneFor(navigator.languages?.[0] ?? navigator.language);
 function whatsapp(text: string) {
-  return 'https://wa.me/' + SUPPORT_PHONE + '?text=' + encodeURIComponent(text);
+  return 'https://wa.me/' + devicePhone + '?text=' + encodeURIComponent(text);
 }
 function branchesLabel(n: number) {
   return n > enterpriseBranchThreshold ? 'أكتر من ' + enterpriseBranchThreshold : String(n);

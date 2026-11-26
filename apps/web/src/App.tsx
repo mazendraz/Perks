@@ -483,29 +483,29 @@ function Workspace({
           {
             path: '/platform/operations',
             label: ar ? 'التشغيل والدعم' : 'Operations and support',
-            icon: 'chart',
+            icon: 'support',
           },
         ]
       : []),
     ...(portal === 'cashier' && grant
       ? [{ path: '/cashier/spam', label: ar ? 'سبام' : 'Spam', icon: 'shield' }]
       : []),
-    { path: account, label: ar ? 'حسابي' : 'My account', icon: 'people' },
     ...(portal === 'platform' && session.user.role === 'platform_admin'
       ? [
           {
             path: '/platform/billing',
             label: ar ? 'الاشتراكات والباقات' : 'Billing and plans',
-            icon: 'chart',
+            icon: 'receipt',
           },
           {
             path: '/platform/onboarding-payments',
             label: ar ? 'تحويلات InstaPay' : 'InstaPay transfers',
-            icon: 'chart',
+            icon: 'cards',
           },
-          { path: '/platform/team', label: ar ? 'فريق الإدارة' : 'Platform team', icon: 'people' },
+          { path: '/platform/team', label: ar ? 'فريق الإدارة' : 'Platform team', icon: 'shield' },
         ]
       : []),
+    { path: account, label: ar ? 'حسابي' : 'My account', icon: 'people' },
   ];
   let content: ReactNode = (
     <div className="empty-state">

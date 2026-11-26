@@ -3236,11 +3236,14 @@ td small {
     overflow: hidden;
     clip-path: inset(50%);
   }
+  /* Each record is a compact card: the title cell and the last (usually actions) cell span the
+     card, the facts in between sit two per row instead of one tall column. */
   .mobile-records tbody tr {
     display: grid;
-    gap: 16px;
-    padding: 18px;
-    margin-bottom: 16px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px 16px;
+    padding: 16px;
+    margin-bottom: 12px;
     border: 1px solid var(--border);
     border-radius: 16px;
     background: var(--surface, #fff);
@@ -3253,12 +3256,26 @@ td small {
     white-space: normal;
     overflow-wrap: anywhere;
   }
+  .mobile-records td:first-child,
+  .mobile-records td:last-child {
+    grid-column: 1 / -1;
+  }
   .mobile-records td::before {
     content: attr(data-label);
     display: block;
     color: var(--muted);
     font-size: 12px;
-    margin-bottom: 6px;
+    line-height: 16px;
+    margin-bottom: 2px;
+  }
+  .mobile-records td:first-child::before {
+    display: none;
+  }
+  .merchant-row-actions {
+    flex-wrap: wrap;
+  }
+  .merchant-register td:last-child::before {
+    display: none;
   }
   .account-security .account-actions {
     min-width: 0;
@@ -4687,5 +4704,65 @@ label[data-error]::after {
   [aria-invalid='true'],
   .password-control:has(input[aria-invalid='true']) {
     animation: none;
+  }
+}
+
+/* ---------------------------------------------------------------------------------------------
+   Interaction and type polish, shared by every portal.
+   One motion curve; colour changes at 200ms; a pressed state on every button people tap;
+   numbers in columns line up; headings and paragraphs wrap without orphans.
+   --------------------------------------------------------------------------------------------- */
+:root {
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+}
+button,
+input,
+select,
+textarea {
+  transition:
+    border-color 200ms var(--ease-out),
+    background-color 200ms var(--ease-out),
+    box-shadow 200ms var(--ease-out),
+    transform 200ms var(--ease-out);
+}
+.primary:active:not(:disabled),
+.secondary:active:not(:disabled),
+.danger:active:not(:disabled),
+.danger-outline:active:not(:disabled),
+.text-button:active:not(:disabled),
+.tabbar button:active,
+.owner-sections button:active {
+  transform: scale(0.98);
+}
+h1,
+h2,
+h3 {
+  text-wrap: balance;
+}
+p,
+small {
+  text-wrap: pretty;
+}
+.kpi strong,
+td,
+.badge,
+.today-grid strong {
+  font-variant-numeric: tabular-nums;
+}
+/* A filter bar inside a card is part of that card, not a second box inside it. */
+.panel .filter-row {
+  background: transparent;
+  border: 0;
+  padding: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  .primary:active:not(:disabled),
+  .secondary:active:not(:disabled),
+  .danger:active:not(:disabled),
+  .danger-outline:active:not(:disabled),
+  .text-button:active:not(:disabled),
+  .tabbar button:active,
+  .owner-sections button:active {
+    transform: none;
   }
 }

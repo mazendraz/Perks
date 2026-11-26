@@ -16,7 +16,7 @@ export const say = (t: T, lang: Language, v: Record<string, string | number> = {
 
 export const copy = {
   eyebrow: { ar: 'التحليلات', en: 'Analytics' },
-  title: { ar: 'زباينك النهارده', en: 'Your customers today' },
+  title: { ar: 'أداء زباينك', en: 'How your customers are doing' },
   updated: { ar: 'اتحدّثت {time}', en: 'Updated {time}' },
   period: { ar: 'الفترة', en: 'Period' },
   periods: {
@@ -288,6 +288,12 @@ export const copy = {
     en: 'This needs at least {need} to be useful — you have {have} so far.',
   },
   locked: { ar: 'الجزء ده مش في باقتك.', en: 'This part is not in your plan.' },
+  lockedShort: { ar: 'مش في باقتك', en: 'Not in your plan' },
+  waitingTitle: { ar: 'تحليلات هتفتح قريب', en: 'Insights on the way' },
+  waitingCaption: {
+    ar: 'كل تحليل بيظهر لوحده أول ما يبقى عندك بيانات كفاية تخلي رقمه مفيد.',
+    en: 'Each one appears on its own once there is enough data for a useful number.',
+  },
 
   emptyTitle: {
     ar: 'أول ما زباينك ياخدوا أختام، هتبان هنا',

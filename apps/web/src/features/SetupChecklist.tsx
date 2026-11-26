@@ -52,7 +52,7 @@ export function SetupChecklist({
       </div>
       <progress max={steps.length} value={count} aria-hidden="true" />
       <ol>
-        {steps.map((s) => (
+        {[...steps.filter((s) => !done[s.id]), ...steps.filter((s) => done[s.id])].map((s) => (
           <li key={s.id} className={done[s.id] ? 'done' : ''}>
             <Icon name={done[s.id] ? 'check' : 'spark'} size={18} />
             <span>{s.label}</span>

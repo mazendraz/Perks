@@ -534,7 +534,6 @@ export function MerchantPage({ grant, lang }: { grant: Grant; lang: Language }) 
           <ActionLabel icon="qr">{ar ? 'افتح التسجيل' : 'Open enrollment'}</ActionLabel>
         </a>
       </div>
-      <InstallAppButton lang={lang} portal="merchant" />
       {planState && (
         <PlanBanners
           state={planState}
@@ -597,6 +596,47 @@ export function MerchantPage({ grant, lang }: { grant: Grant; lang: Language }) 
               go={setTab}
             />
           )}
+          {corrections.filter((c) => ['pending', 'needs_review'].includes(c.status)).length > 0 && (
+            <section className="panel">
+              <h2>{ar ? 'طلبات تصحيح محتاجة مراجعة' : 'Corrections awaiting review'}</h2>
+              {corrections
+                .filter((c) => ['pending', 'needs_review'].includes(c.status))
+                .map((c) => (
+                  <div className="list-row" key={c.id}>
+                    <div>
+                      <strong>
+                        {c.alias} ·{c.requested_delta}
+                      </strong>
+                      <small className="muted">
+                        {c.reason} · {statusLabel(c.status, lang)}
+                      </small>
+                      <small>
+                        <bdi>{c.public_reference}</bdi>
+                      </small>
+                    </div>
+                    <div className="form-actions">
+                      <button
+                        className="secondary small"
+                        onClick={() => setDecision({ correction: c, approve: false, reason: '' })}
+                      >
+                        {ar ? 'رفض' : 'Reject'}
+                      </button>
+                      <button
+                        className="primary small"
+                        onClick={() => setDecision({ correction: c, approve: true, reason: '' })}
+                      >
+                        {ar ? 'مراجعة واعتماد' : 'Review and approve'}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+            </section>
+          )}
+          <OwnerToday
+            merchantId={grant.merchant_id}
+            lang={lang}
+            onOpenOperations={() => setTab('operations')}
+          />
           {(grant.role === 'owner' || grant.role === 'manager') && (
             <ErrorBoundary inline>
               <Suspense fallback={<div className="an-loading" role="status" aria-busy="true" />}>
@@ -609,11 +649,6 @@ export function MerchantPage({ grant, lang }: { grant: Grant; lang: Language }) 
               </Suspense>
             </ErrorBoundary>
           )}
-          <OwnerToday
-            merchantId={grant.merchant_id}
-            lang={lang}
-            onOpenOperations={() => setTab('operations')}
-          />
           <details className="an-details" onToggle={(e) => setDetailsOpen(e.currentTarget.open)}>
             <summary>{ar ? 'أرقام التشغيل التفصيلية' : 'Detailed operating numbers'}</summary>
             <div className="filter-row">
@@ -734,49 +769,18 @@ export function MerchantPage({ grant, lang }: { grant: Grant; lang: Language }) 
                 )}
               </>
             )}
+            {detailsOpen && (
+              <ExperienceStats
+                merchantId={grant.merchant_id}
+                branch={branch}
+                days={days}
+                lang={lang}
+              />
+            )}
           </details>
-          {corrections.filter((c) => ['pending', 'needs_review'].includes(c.status)).length > 0 && (
-            <section className="panel">
-              <h2>{ar ? 'طلبات تصحيح محتاجة مراجعة' : 'Corrections awaiting review'}</h2>
-              {corrections
-                .filter((c) => ['pending', 'needs_review'].includes(c.status))
-                .map((c) => (
-                  <div className="list-row" key={c.id}>
-                    <div>
-                      <strong>
-                        {c.alias} ·{c.requested_delta}
-                      </strong>
-                      <small className="muted">
-                        {c.reason} · {statusLabel(c.status, lang)}
-                      </small>
-                      <small>
-                        <bdi>{c.public_reference}</bdi>
-                      </small>
-                    </div>
-                    <div className="form-actions">
-                      <button
-                        className="secondary small"
-                        onClick={() => setDecision({ correction: c, approve: false, reason: '' })}
-                      >
-                        {ar ? 'رفض' : 'Reject'}
-                      </button>
-                      <button
-                        className="primary small"
-                        onClick={() => setDecision({ correction: c, approve: true, reason: '' })}
-                      >
-                        {ar ? 'مراجعة واعتماد' : 'Review and approve'}
-                      </button>
-                    </div>
-                  </div>
-                ))}
-            </section>
-          )}
         </>
       )}
       {tab === 'support' && <Support lang={lang} merchantId={grant.merchant_id} />}
-      {tab === 'overview' && (
-        <ExperienceStats merchantId={grant.merchant_id} branch={branch} days={days} lang={lang} />
-      )}
       {tab === 'materials' && <Materials grant={grant} lang={lang} />}
       {tab === 'customers' && (
         <>
@@ -1614,6 +1618,7 @@ export function MerchantPage({ grant, lang }: { grant: Grant; lang: Language }) 
           </form>
         </div>
       )}
+      <InstallAppButton lang={lang} portal="merchant" />
     </div>
   );
 }

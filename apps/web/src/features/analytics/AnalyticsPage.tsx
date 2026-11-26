@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type {
   ActionCard,
   AnalyticsResponse,
@@ -255,40 +255,70 @@ export function AnalyticsPage({
             </ul>
           </Section>
 
-          <div className="an-row">
-            <Section
-              id="an-funnel"
-              className="an-grow"
-              title={pick(copy.funnelTitle, lang)}
-              caption={pick(copy.funnelCaption, lang)}
-            >
-              <Gated gate={view.funnel} lang={lang}>
-                {(f) => <Funnel steps={f.steps} lang={lang} />}
-              </Gated>
-            </Section>
-            <Section
-              id="an-dist"
-              className="an-grow"
-              title={pick(copy.distTitle, lang)}
-              caption={pick(copy.distCaption, lang)}
-            >
-              <Gated gate={view.distribution} lang={lang}>
-                {(d) => <Distribution buckets={d.buckets} lang={lang} />}
-              </Gated>
-            </Section>
-          </div>
+          <ReadySections
+            lang={lang}
+            sections={[
+              {
+                id: 'an-funnel',
+                title: pick(copy.funnelTitle, lang),
+                caption: pick(copy.funnelCaption, lang),
+                gate: view.funnel,
+                body: () => (
+                  <Gated gate={view.funnel} lang={lang}>
+                    {(f) => <Funnel steps={f.steps} lang={lang} />}
+                  </Gated>
+                ),
+              },
+              {
+                id: 'an-dist',
+                title: pick(copy.distTitle, lang),
+                caption: pick(copy.distCaption, lang),
+                gate: view.distribution,
+                body: () => (
+                  <Gated gate={view.distribution} lang={lang}>
+                    {(d) => <Distribution buckets={d.buckets} lang={lang} />}
+                  </Gated>
+                ),
+              },
+              {
+                id: 'an-heat',
+                title: pick(copy.heatTitle, lang),
+                caption: pick(copy.heatCaption, lang),
+                gate: view.heat,
+                body: () => (
+                  <Gated gate={view.heat} lang={lang}>
+                    {(h) => <PeakHeat cells={h.cells} quietest={h.quietest} lang={lang} />}
+                  </Gated>
+                ),
+              },
+              {
+                id: 'an-health',
+                title: pick(copy.healthTitle, lang),
+                caption: pick(copy.healthCaption, lang),
+                gate: view.health,
+                body: () => (
+                  <Gated gate={view.health} lang={lang}>
+                    {(h) => (
+                      <HealthBody score={h.score} weakest={h.weakest} parts={h.parts} lang={lang} />
+                    )}
+                  </Gated>
+                ),
+              },
+              {
+                id: 'an-cohorts',
+                title: pick(copy.cohortsTitle, lang),
+                caption: pick(copy.cohortsCaption, lang),
+                gate: view.cohorts,
+                body: () => (
+                  <Gated gate={view.cohorts} lang={lang}>
+                    {(c) => <Cohorts rows={c.rows} lang={lang} />}
+                  </Gated>
+                ),
+              },
+            ]}
+          />
 
           <div className="an-row">
-            <Section
-              id="an-heat"
-              className="an-grow"
-              title={pick(copy.heatTitle, lang)}
-              caption={pick(copy.heatCaption, lang)}
-            >
-              <Gated gate={view.heat} lang={lang}>
-                {(h) => <PeakHeat cells={h.cells} quietest={h.quietest} lang={lang} />}
-              </Gated>
-            </Section>
             <Section
               id="an-risk"
               className="an-grow"
@@ -336,31 +366,6 @@ export function AnalyticsPage({
               ) : (
                 <p className="an-empty">{pick(copy.atRiskEmpty, lang)}</p>
               )}
-            </Section>
-          </div>
-
-          <div className="an-row">
-            <Section
-              id="an-health"
-              className="an-grow"
-              title={pick(copy.healthTitle, lang)}
-              caption={pick(copy.healthCaption, lang)}
-            >
-              <Gated gate={view.health} lang={lang}>
-                {(h) => (
-                  <HealthBody score={h.score} weakest={h.weakest} parts={h.parts} lang={lang} />
-                )}
-              </Gated>
-            </Section>
-            <Section
-              id="an-cohorts"
-              className="an-grow"
-              title={pick(copy.cohortsTitle, lang)}
-              caption={pick(copy.cohortsCaption, lang)}
-            >
-              <Gated gate={view.cohorts} lang={lang}>
-                {(c) => <Cohorts rows={c.rows} lang={lang} />}
-              </Gated>
             </Section>
           </div>
 
@@ -702,5 +707,74 @@ function AnalyticsSkeleton({ lang }: { lang: Language }) {
       </div>
       <span className="an-sk an-sk-chart" />
     </div>
+  );
+}
+
+type ReadyItem = {
+  id: string;
+  title: string;
+  caption: string;
+  gate:
+    | { status: 'ready' }
+    | { status: 'not_enough_data'; have: number; need: number }
+    | { status: 'locked' };
+  body: () => ReactNode;
+};
+
+/** Sections with enough data render as cards two per row. The rest wait together in one short
+ *  list with how close each one is, instead of a page of cards that all say "not yet". */
+function ReadySections({ sections, lang }: { sections: ReadyItem[]; lang: Language }) {
+  const ready = sections.filter((s) => s.gate.status === 'ready');
+  const waiting = sections.filter((s) => s.gate.status !== 'ready');
+  const rows: ReadyItem[][] = [];
+  for (let i = 0; i < ready.length; i += 2) rows.push(ready.slice(i, i + 2));
+  return (
+    <>
+      {rows.map((row) => (
+        <div className="an-row" key={row.map((s) => s.id).join()}>
+          {row.map((s) => (
+            <Section key={s.id} id={s.id} className="an-grow" title={s.title} caption={s.caption}>
+              {s.body()}
+            </Section>
+          ))}
+        </div>
+      ))}
+      {waiting.length > 0 && (
+        <Section
+          id="an-waiting"
+          title={pick(copy.waitingTitle, lang)}
+          caption={pick(copy.waitingCaption, lang)}
+        >
+          <ul className="an-waiting">
+            {waiting.map((s) => {
+              const g = s.gate;
+              const share = g.status === 'not_enough_data' ? Math.min(1, g.have / g.need) : 0;
+              return (
+                <li key={s.id}>
+                  <div>
+                    <strong>{s.title}</strong>
+                    <small>{s.caption}</small>
+                  </div>
+                  {g.status === 'not_enough_data' ? (
+                    <span className="an-waiting-meter">
+                      <span className="an-num">
+                        <bdi dir="ltr">
+                          {num(g.have, lang)}/{num(g.need, lang)}
+                        </bdi>
+                      </span>
+                      <span className="an-waiting-track" aria-hidden="true">
+                        <span style={{ inlineSize: Math.round(share * 100) + '%' }} />
+                      </span>
+                    </span>
+                  ) : (
+                    <span className="an-pill">{pick(copy.lockedShort, lang)}</span>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </Section>
+      )}
+    </>
   );
 }

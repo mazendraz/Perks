@@ -115,6 +115,60 @@
 .an-grow {
   flex: 2 1 420px;
 }
+/* Insights still collecting data: one compact list instead of a card each. */
+.an-waiting {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  gap: 8px 24px;
+}
+.an-waiting li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-block: 12px;
+  border-block-end: 1px solid var(--an-line);
+  min-width: 0;
+}
+.an-waiting li > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.an-waiting strong {
+  font-size: 14px;
+  font-weight: 600;
+}
+.an-waiting small {
+  color: var(--an-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.an-waiting-meter {
+  display: grid;
+  justify-items: end;
+  gap: 4px;
+  flex: 0 0 72px;
+  font-size: 12px;
+  color: var(--an-muted);
+}
+.an-waiting-track {
+  display: block;
+  inline-size: 100%;
+  block-size: 4px;
+  border-radius: 99px;
+  background: #ededf4;
+  overflow: hidden;
+}
+.an-waiting-track > span {
+  display: block;
+  block-size: 100%;
+  border-radius: inherit;
+  background: var(--an-ink);
+}
 .an-empty {
   color: var(--an-muted);
   margin: 0;
@@ -617,7 +671,8 @@
 .an-table td {
   padding: 10px 8px;
   text-align: start;
-  border-top: 1px solid #f0f0ea;
+  border: 0;
+  border-top: 1px solid var(--an-line);
 }
 .an-table tbody th {
   background: none;

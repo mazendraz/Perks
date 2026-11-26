@@ -2164,7 +2164,7 @@ input[inputmode='numeric'] {
   padding: 0;
   margin: 12px 0 0;
   display: grid;
-  gap: 8px;
+  gap: 4px;
 }
 .setup-checklist li {
   display: flex;
@@ -2174,6 +2174,9 @@ input[inputmode='numeric'] {
 }
 .setup-checklist li > span {
   flex: 1;
+}
+.setup-checklist li.done {
+  min-height: 32px;
 }
 .setup-checklist li.done > span {
   text-decoration: line-through;
@@ -2219,14 +2222,31 @@ input[inputmode='numeric'] {
   padding: 0;
   margin: 8px 0 0;
   display: grid;
-  gap: 6px;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+  gap: 0 24px;
 }
 .needs-attention li {
+  display: grid;
+  justify-items: start;
+  gap: 2px;
+  padding-block: 12px;
+  border-block-end: 1px solid var(--border);
+  min-width: 0;
+}
+.needs-attention li small {
+  font-size: 12px;
+  line-height: 16px;
+}
+.list-more {
   display: flex;
   flex-wrap: wrap;
-  align-items: baseline;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-block-start: 16px;
+}
+.merchant-row-actions {
   gap: 8px;
-  min-height: 40px;
 }
 
 /* Holds the analytics page's place while its code loads, so the page below does not jump. */

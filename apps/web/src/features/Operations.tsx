@@ -131,7 +131,7 @@ export function Operations({ lang, admin }: { lang: Language; admin: boolean }) 
   };
   return (
     <section>
-      <h2>{ar ? 'تشغيل المنصة' : 'Platform operations'}</h2>
+      <h2 className="sr-only">{ar ? 'تشغيل المنصة' : 'Platform operations'}</h2>
       <div className="tabbar">
         {[
           ['health', ar ? 'الصحة' : 'Health'],
@@ -191,21 +191,7 @@ export function Operations({ lang, admin }: { lang: Language; admin: boolean }) 
             {ar ? 'عمر أقدم مهمة معلقة: ' : 'Oldest pending job: '}
             {Math.round(health.oldestPendingSeconds || 0)}s
           </p>
-          <section className="panel">
-            {health.merchantsHealth.map((m) => (
-              <div className="list-row" key={m.id}>
-                <div>
-                  <strong>{m.name}</strong>
-                  <small>
-                    {statusLabel(m.status, lang)} · {m.memberships} {ar ? 'عضوية' : 'memberships'}
-                  </small>
-                </div>
-                <span>
-                  {m.attention_jobs} {ar ? 'مهمة للمراجعة' : 'jobs need attention'}
-                </span>
-              </div>
-            ))}
-          </section>
+          <HealthList merchants={health.merchantsHealth} lang={lang} />
         </>
       )}
       {tab === 'jobs' && (
@@ -443,6 +429,59 @@ export function Operations({ lang, admin }: { lang: Language; admin: boolean }) 
               </button>
             </div>
           </form>
+        </div>
+      )}
+    </section>
+  );
+}
+
+/** Businesses with jobs to review come first; the quiet ones stay folded so the list is short. */
+function HealthList({ merchants, lang }: { merchants: Health['merchantsHealth']; lang: Language }) {
+  const ar = lang === 'ar';
+  const [all, setAll] = useState(false);
+  const sorted = [...merchants].sort((a, b) => b.attention_jobs - a.attention_jobs);
+  const flagged = sorted.filter((m) => m.attention_jobs > 0);
+  const shown = all ? sorted : flagged;
+  return (
+    <section className="panel health-list">
+      <div className="section-heading">
+        <h2>{ar ? 'محلات عندها مهام للمراجعة' : 'Businesses with jobs to review'}</h2>
+        <span className="badge">{flagged.length}</span>
+      </div>
+      {!flagged.length && !all && (
+        <p className="muted">
+          {ar
+            ? 'كل المحلات تمام، مفيش مهام محتاجة مراجعة.'
+            : 'All businesses are fine. No jobs need review.'}
+        </p>
+      )}
+      {shown.map((m) => (
+        <div className="list-row" key={m.id}>
+          <div>
+            <strong>{m.name}</strong>
+            <small>
+              {statusLabel(m.status, lang)} · {m.memberships} {ar ? 'عضوية' : 'memberships'}
+            </small>
+          </div>
+          <span className={m.attention_jobs > 0 ? 'badge warning' : 'muted'}>
+            {m.attention_jobs} {ar ? 'مهمة للمراجعة' : 'jobs need attention'}
+          </span>
+        </div>
+      ))}
+      {sorted.length > flagged.length && (
+        <div className="list-more">
+          <small className="muted">
+            {ar ? `${sorted.length} محل في المنصة` : `${sorted.length} businesses on the platform`}
+          </small>
+          <button className="secondary small" onClick={() => setAll(!all)}>
+            {all
+              ? ar
+                ? 'اعرض اللي محتاج مراجعة بس'
+                : 'Show only those needing review'
+              : ar
+                ? 'اعرض كل المحلات'
+                : 'Show all businesses'}
+          </button>
         </div>
       )}
     </section>

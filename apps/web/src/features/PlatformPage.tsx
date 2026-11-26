@@ -143,6 +143,7 @@ export function PlatformPage({ lang, userId }: { lang: Language; userId: string 
     [success, setSuccess] = useState<{ name: string; slug: string; id: string } | null>(null);
   const [discard, setDiscard] = useState<Draft | null>(null);
   const [merchantQuery, setMerchantQuery] = useState('');
+  const [merchantLimit, setMerchantLimit] = useState(20);
   const [statusChange, setStatusChange] = useState<Merchant | null>(null),
     [statusReason, setStatusReason] = useState('');
   const [passwords, setPasswords] = useState<Record<number, string>>({});
@@ -1175,6 +1176,15 @@ export function PlatformPage({ lang, userId }: { lang: Language; userId: string 
         </div>
       </>
     );
+  const merchantQ = merchantQuery.trim().toLowerCase();
+  const matchingMerchants = merchants.filter(
+    (m) =>
+      !merchantQ ||
+      m.name.toLowerCase().includes(merchantQ) ||
+      (m.slug || '').toLowerCase().includes(merchantQ) ||
+      (m.category || '').toLowerCase().includes(merchantQ),
+  );
+  const shownMerchants = matchingMerchants.slice(0, merchantLimit);
   return (
     <>
       {reauth}
@@ -1187,7 +1197,6 @@ export function PlatformPage({ lang, userId }: { lang: Language; userId: string 
           {ar ? 'تاجر جديد' : 'New merchant'}
         </button>
       </div>
-      <InstallAppButton lang={lang} portal="platform" />
       {error && (
         <div className="notice error" role="alert">
           {error}
@@ -1311,36 +1320,27 @@ export function PlatformPage({ lang, userId }: { lang: Language; userId: string 
               </tr>
             </thead>
             <tbody>
-              {merchants
-                .filter((m) => {
-                  const q = merchantQuery.trim().toLowerCase();
-                  return (
-                    !q ||
-                    m.name.toLowerCase().includes(q) ||
-                    (m.slug || '').toLowerCase().includes(q) ||
-                    (m.category || '').toLowerCase().includes(q)
-                  );
-                })
-                .map((m) => (
-                  <tr key={m.id}>
-                    <td data-label={ar ? 'المحل' : 'Business'}>
-                      <button className="link-button" onClick={() => setWorkspace(m.id)}>
-                        <strong>{m.name}</strong>
-                      </button>
-                      <small>
-                        <bdi>{m.slug}</bdi>
-                      </small>
-                    </td>
-                    <td data-label={ar ? 'الحالة' : 'Status'}>
-                      <span className="badge">{merchantStatusLabel(m.status, lang)}</span>
-                    </td>
-                    <td data-label={ar ? 'الفروع' : 'Branches'}>{m.branch_count}</td>
-                    <td data-label={ar ? 'الفريق' : 'Staff'}>{m.staff_count}</td>
-                    <td data-label={ar ? 'الباقة' : 'Plan'}>
-                      {subscriptionPlanLabel(m.plan, lang, m)}
-                    </td>
-                    <td data-label={ar ? 'إجراء' : 'Action'}>
-                      <button className="primary small" onClick={() => setPreviewBusiness(m.id)}>
+              {shownMerchants.map((m) => (
+                <tr key={m.id}>
+                  <td data-label={ar ? 'المحل' : 'Business'}>
+                    <button className="link-button" onClick={() => setWorkspace(m.id)}>
+                      <strong>{m.name}</strong>
+                    </button>
+                    <small>
+                      <bdi>{m.slug}</bdi>
+                    </small>
+                  </td>
+                  <td data-label={ar ? 'الحالة' : 'Status'}>
+                    <span className="badge">{merchantStatusLabel(m.status, lang)}</span>
+                  </td>
+                  <td data-label={ar ? 'الفروع' : 'Branches'}>{m.branch_count}</td>
+                  <td data-label={ar ? 'الفريق' : 'Staff'}>{m.staff_count}</td>
+                  <td data-label={ar ? 'الباقة' : 'Plan'}>
+                    {subscriptionPlanLabel(m.plan, lang, m)}
+                  </td>
+                  <td data-label={ar ? 'إجراء' : 'Action'}>
+                    <span className="row-actions merchant-row-actions">
+                      <button className="secondary small" onClick={() => setPreviewBusiness(m.id)}>
                         {ar ? 'معاينة' : 'Preview'}
                       </button>
                       <button
@@ -1383,13 +1383,30 @@ export function PlatformPage({ lang, userId }: { lang: Language; userId: string 
                               : 'Active'}
                         </span>
                       </button>
-                    </td>
-                  </tr>
-                ))}
+                    </span>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
+        {!matchingMerchants.length && (
+          <p className="muted">{ar ? 'مفيش محل بالاسم ده.' : 'No business matches that search.'}</p>
+        )}
+        {matchingMerchants.length > shownMerchants.length && (
+          <div className="list-more">
+            <small className="muted">
+              {ar
+                ? `ظاهر ${shownMerchants.length} من ${matchingMerchants.length}`
+                : `Showing ${shownMerchants.length} of ${matchingMerchants.length}`}
+            </small>
+            <button className="secondary small" onClick={() => setMerchantLimit((n) => n + 20)}>
+              {ar ? 'اعرض كمان' : 'Show more'}
+            </button>
+          </div>
+        )}
       </section>
+      <InstallAppButton lang={lang} portal="platform" />
       {previewBusiness && (
         <BusinessPreview
           merchantId={previewBusiness}

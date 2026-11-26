@@ -29,6 +29,8 @@ function el<K extends keyof HTMLElementTagNameMap>(
   return node;
 }
 const money = (n: number) => Math.round(n).toLocaleString('en-US');
+const deviceLanguage = navigator.languages?.[0] ?? navigator.language;
+const currency = priceCurrencyFor(deviceLanguage);
 const prefersReducedMotion = () => {
   try {
     return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -61,7 +63,15 @@ function storageSet(key: string, value: string) {
 
 /* --------------------------------------------------------------- the lines */
 
-import { LINES, CLIP_SECONDS, PLAN_LINE, VOICE, supportPhoneFor, type LineKey } from './lines.js';
+import {
+  LINES,
+  CLIP_SECONDS,
+  PLAN_LINE,
+  VOICE,
+  priceCurrencyFor,
+  supportPhoneFor,
+  type LineKey,
+} from './lines.js';
 
 /* ------------------------------------------------------------------- state */
 
@@ -486,7 +496,7 @@ function renderTheme() {
 
 /* ----------------------------------------------------------------- plans */
 
-const devicePhone = supportPhoneFor(navigator.languages?.[0] ?? navigator.language);
+const devicePhone = supportPhoneFor(deviceLanguage);
 function whatsapp(text: string) {
   return 'https://wa.me/' + devicePhone + '?text=' + encodeURIComponent(text);
 }
@@ -572,9 +582,13 @@ for (const [label, value] of COMPARE) {
 }
 one<HTMLElement>('[data-compare-box]').hidden = false;
 one<HTMLElement>('[data-fine]').textContent =
-  'الأسعار بالجنيه المصري ومن غير ضريبة القيمة المضافة. رسوم تجهيز ' +
+  'الأسعار ب' +
+  currency.name +
+  ' ومن غير ضريبة القيمة المضافة. رسوم تجهيز ' +
   money(setupFeePerBranch) +
-  ' جنيه للفرع في الاشتراك الشهري، ومجانًا في السنوي. Starter مفيهاش فرع زيادة: لو محتاج فرع تاني طلّع على Growth.';
+  ' ' +
+  currency.unit +
+  ' للفرع في الاشتراك الشهري، ومجانًا في السنوي. Starter مفيهاش فرع زيادة: لو محتاج فرع تاني طلّع على Growth.';
 
 function renderPlans() {
   one('[data-br]').textContent = branchesLabel(state.branches);
@@ -591,9 +605,13 @@ function renderPlans() {
     c.amount.textContent = money(
       state.annual ? annualPrice(p.monthlyPrice, annualPaidMonths) : p.monthlyPrice,
     );
-    c.per.textContent = state.annual ? 'جنيه / سنة' : 'جنيه / شهر';
+    c.per.textContent = currency.unit + (state.annual ? ' / سنة' : ' / شهر');
     c.sub.textContent = state.annual
-      ? 'يعني ' + money((p.monthlyPrice * annualPaidMonths) / 12) + ' جنيه في الشهر'
+      ? 'يعني ' +
+        money((p.monthlyPrice * annualPaidMonths) / 12) +
+        ' ' +
+        currency.unit +
+        ' في الشهر'
       : '';
     c.cta.className = 'btn wide ' + (isRec ? 'lime' : 'navy');
     c.cta.href = whatsapp(
@@ -622,7 +640,9 @@ function renderPlans() {
           bits.join(' و') +
           ' = ' +
           money(total) +
-          (state.annual ? ' جنيه في السنة' : ' جنيه في الشهر')
+          ' ' +
+          currency.unit +
+          (state.annual ? ' في السنة' : ' في الشهر')
         : 'مظبوطة على ' +
           (state.branches === 1 ? 'فرع واحد' : state.branches + ' فروع') +
           ' و' +

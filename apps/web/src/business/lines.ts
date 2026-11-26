@@ -13,10 +13,39 @@ const PHONE_BY_LANGUAGE: Record<string, string> = {
   tr: '201008605904',
 };
 
+const baseLanguage = (language: string | undefined) =>
+  (language ?? '').toLowerCase().split(/[-_]/)[0] ?? '';
+
 /** The WhatsApp number for the device's first preferred language, e.g. "fr-CA" → the French line. */
 export function supportPhoneFor(language: string | undefined): string {
-  const base = (language ?? '').toLowerCase().split(/[-_]/)[0] ?? '';
-  return PHONE_BY_LANGUAGE[base] ?? SUPPORT_PHONE;
+  return PHONE_BY_LANGUAGE[baseLanguage(language)] ?? SUPPORT_PHONE;
+}
+
+/** How a price is labelled: `unit` sits after the amount, `name` follows "الأسعار بـ". */
+export interface PriceCurrency {
+  unit: string;
+  name: string;
+}
+const EGP: PriceCurrency = { unit: 'جنيه', name: 'الجنيه المصري' };
+const EUR: PriceCurrency = { unit: 'يورو', name: 'اليورو' };
+const CURRENCY_BY_LANGUAGE: Record<string, PriceCurrency> = {
+  en: { unit: 'دولار', name: 'الدولار الأمريكي' },
+  fr: EUR,
+  es: EUR,
+  de: EUR,
+  it: EUR,
+  ru: { unit: 'روبل', name: 'الروبل الروسي' },
+  tr: { unit: 'ليرة', name: 'الليرة التركية' },
+};
+const GBP: PriceCurrency = { unit: 'جنيه إسترليني', name: 'الجنيه الإسترليني' };
+
+/**
+ * The currency label for the device's language. Only the label changes: the amount is shown as is,
+ * so 25 stays 25 whether it reads جنيه, يورو or دولار. British English ("en-GB") reads pounds.
+ */
+export function priceCurrencyFor(language: string | undefined): PriceCurrency {
+  if (/^en[-_]gb$/i.test(language ?? '')) return GBP;
+  return CURRENCY_BY_LANGUAGE[baseLanguage(language)] ?? EGP;
 }
 export const VOICE = '/business/voice/';
 

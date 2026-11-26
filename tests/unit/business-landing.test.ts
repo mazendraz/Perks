@@ -7,6 +7,7 @@ import {
   PLAN_LINE,
   SUPPORT_PHONE,
   supportPhoneFor,
+  priceCurrencyFor,
 } from '../../apps/web/src/business/lines.js';
 import { publicPlanCatalog } from '../../packages/contracts/src/plan-catalog.js';
 
@@ -77,4 +78,15 @@ test('the WhatsApp number follows the device language', () => {
     assert.equal(supportPhoneFor(lang), '201008605904', lang);
   for (const lang of ['ar-EG', 'ar', 'ja', '', undefined])
     assert.equal(supportPhoneFor(lang), SUPPORT_PHONE, String(lang));
+});
+
+test('the price currency label follows the device language', () => {
+  const unit = (lang: string | undefined) => priceCurrencyFor(lang).unit;
+  for (const lang of ['fr-FR', 'es', 'de-AT', 'it-IT']) assert.equal(unit(lang), 'يورو', lang);
+  assert.equal(unit('en-US'), 'دولار');
+  assert.equal(unit('en'), 'دولار');
+  assert.equal(unit('en-GB'), 'جنيه إسترليني');
+  assert.equal(unit('ru-RU'), 'روبل');
+  assert.equal(unit('tr'), 'ليرة');
+  for (const lang of ['ar-EG', 'ja', undefined]) assert.equal(unit(lang), 'جنيه', String(lang));
 });

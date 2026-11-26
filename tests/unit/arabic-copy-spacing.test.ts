@@ -24,13 +24,14 @@ const checks: [string, RegExp][] = [
     'أو glued to the next word',
     new RegExp(`(^|[\\s'"«(])أو(?!ل|لى|ضح|قات|قف|توماتيك|راق|امر|ردر|نلاين|عى|ضة|كي|ي)[${arabic}]`),
   ],
-  // «اللينك» (the link) is an ordinary Egyptian loanword, not اللي glued to a word.
-  ['اللي glued to the next word', new RegExp(`اللي(?!ل|مون|نك)[${arabic}]`)],
+  // «اللينك» (the link) is an ordinary Egyptian loanword and «الليرة» (the lira) a currency,
+  // not اللي glued to a word.
+  ['اللي glued to the next word', new RegExp(`اللي(?!ل|مون|نك|رة)[${arabic}]`)],
   ['في glued to a definite noun', new RegExp(`(^|[\\s'"«(])فيال`)],
 ];
 test('the glued-word checks flag real mistakes and leave ordinary words alone', () => {
   const flagged = (text: string) => checks.some(([, pattern]) => pattern.test(text));
-  for (const ok of ['ابعت اللينك للعميل', 'اللي ليهم كروت', 'أولاً', 'في المحل'])
+  for (const ok of ['ابعت اللينك للعميل', 'اللي ليهم كروت', 'الليرة التركية', 'أولاً', 'في المحل'])
     assert.equal(flagged(ok), false, ok);
   for (const bad of ['اللياشتركوا', 'فيالمحل', 'أوكارت', 'محل،فرع'])
     assert.equal(flagged(bad), true, bad);

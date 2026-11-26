@@ -588,7 +588,7 @@ one<HTMLElement>('[data-fine]').textContent =
   money(setupFeePerBranch) +
   ' ' +
   currency.unit +
-  ' للفرع في الاشتراك الشهري، ومجانًا في السنوي. Starter مفيهاش فرع زيادة: لو محتاج فرع تاني طلّع على Growth.';
+  ' للفرع في الاشتراك الشهري، ومجانًا في السنوي. لو سجّلت محلك بنفسك من الموقع، أول دفعة هي الاشتراك الشهري بس من غير رسوم تجهيز. Starter مفيهاش فرع زيادة: لو محتاج فرع تاني طلّع على Growth.';
 
 function renderPlans() {
   one('[data-br]').textContent = branchesLabel(state.branches);

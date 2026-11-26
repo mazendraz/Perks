@@ -121,7 +121,25 @@ test('onboarding orders quote the server catalog and reuse a quote on retry', as
   const headers = await login(app, 'owner@bunn.test');
   const catalog = await app.inject({ url: '/api/v1/merchant-onboarding/plans', headers });
   assert.equal(catalog.statusCode, 200, catalog.body);
-  const plan = catalog.json().plans[0];
+  // Self-service plans are the landing page monthly prices, and only the plans publishing accepts.
+  const { publicPlanCatalog } = await import('../../packages/contracts/src/plan-catalog.js');
+  const plans = catalog.json().plans as { plan_key: string; amount_minor: number }[];
+  assert.deepEqual(
+    plans.map((plan) => plan.plan_key),
+    ['starter', 'growth', 'pro'],
+  );
+  for (const plan of plans) {
+    const listed = publicPlanCatalog.find((entry) => entry.key === plan.plan_key);
+    assert.equal(plan.amount_minor, (listed?.monthlyPrice ?? 0) * 100, plan.plan_key);
+  }
+  const scale = await app.inject({
+    method: 'POST',
+    url: '/api/v1/merchant-onboarding/order',
+    headers,
+    payload: { planKey: 'scale' },
+  });
+  assert.equal(scale.statusCode, 404, scale.body);
+  const plan = plans[0]!;
   assert.ok(plan.amount_minor > 0);
   const request = {
     method: 'POST' as const,

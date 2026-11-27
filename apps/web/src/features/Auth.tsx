@@ -455,7 +455,9 @@ export function ResetPassword({ token, lang }: { token: string; lang: Language }
                   <>
                     {' '}
                     {ar ? 'لو لسه ماختارتش باسورد، ' : 'Not chosen a password yet? '}
-                    <a href="/onboarding/signup">{ar ? 'ابعت لينك جديد' : 'Send a new link'}</a>
+                    <a href="/onboarding/signup">
+                      {ar ? 'سجّل تاني بكود جديد' : 'Sign up again with a new code'}
+                    </a>
                     {ar ? '. ولو اخترته قبل كده، ' : '. Already chose one? '}
                     <a href="/login">{ar ? 'سجّل دخول' : 'Sign in'}</a>.
                   </>

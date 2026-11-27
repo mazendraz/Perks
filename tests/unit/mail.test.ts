@@ -82,6 +82,7 @@ test('self-service onboarding mail welcomes, reports the review outcome and esca
     live: true,
   });
   assert.ok(confirmed.text.includes('subscription transfer for Ghazal Cafe'));
+  assert.ok(confirmed.text.includes('no change to its dates'));
   assert.ok(confirmed.text.includes('Open shop dashboard:'));
   // Confirmed before publishing: the owner is told to publish, not sent to a dashboard.
   const unpublished = mailTemplate('onboarding_payment_confirmed', 'ar', {
@@ -98,7 +99,8 @@ test('self-service onboarding mail welcomes, reports the review outcome and esca
     reason: '<b>Amount</b> missing',
     suspended: true,
   });
-  assert.ok(paused.text.includes('the shop is paused'));
+  assert.ok(paused.text.includes('the subscription is paused'));
+  assert.ok(paused.text.includes('All shop, customer, card and stamp data is kept'));
   assert.ok(paused.text.includes('Reason: <b>Amount</b> missing'));
   assert.ok(paused.html.includes('Reason: &lt;b&gt;Amount&lt;/b&gt; missing'));
   assert.ok(!paused.html.includes('<b>Amount'));
@@ -115,4 +117,27 @@ test('self-service onboarding mail welcomes, reports the review outcome and esca
     business: 'كافيه غزال',
   });
   assert.ok(review.text.includes('كافيه غزال رفع إيصال تحويل الاشتراك'));
+  assert.ok(review.text.includes('والمحل بيشتغل ومستني المراجعة'));
+});
+test('the verification code email shows the code, no link, and the shared brand layout', () => {
+  const mail = mailTemplate('email_verification', 'ar', {
+    code: '042917',
+    origin: 'https://perks.example.test',
+  });
+  assert.equal(mail.subject, 'كود تأكيد الإيميل · Perks');
+  assert.ok(!mail.subject.includes('042917'));
+  assert.ok(mail.text.includes('الكود: 042917'));
+  assert.ok(mail.html.includes('>042917</div>'));
+  assert.ok(mail.html.includes('https://perks.example.test/brand/perks-email-logo.png'));
+  assert.ok(!mail.html.includes('<a href'));
+  assert.ok(mail.text.includes('10 دقايق'));
+  // Anything but six digits is never rendered as a code.
+  assert.ok(!mailTemplate('email_verification', 'en', { code: '<b>1</b>' }).html.includes('<b>1'));
+  assert.throws(() => mailTemplate('email_verification', 'en', { origin: 'javascript:x' }));
+  // Welcome after the verified code: no password link, straight to the setup.
+  const welcome = mailTemplate('merchant_welcome', 'en', {
+    link: 'https://perks.example.test/onboarding',
+  });
+  assert.equal(welcome.subject, 'Welcome to Perks! · Perks');
+  assert.ok(welcome.text.includes('Continue setup: https://perks.example.test/onboarding'));
 });

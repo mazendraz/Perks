@@ -63,6 +63,26 @@ const messages: Record<string, Line> = {
     'ارفع إيصال التحويل علشان تقدر تنشر المحل.',
     'Upload your transfer receipt to publish your shop.',
   ],
+  VERIFICATION_CODE_INVALID: [
+    'الكود غلط أو انتهى. راجع آخر إيميل وصلك، أو اطلب كود جديد.',
+    'That code is wrong or has expired. Check the latest email, or ask for a new code.',
+  ],
+  ONBOARDING_TRANSFER_REUSED: [
+    'رقم العملية ده أو صورة الإيصال دي اتستخدموا قبل كده. ارفع بيانات تحويل الاشتراك ده بالظبط.',
+    'This transaction number or receipt was already used. Send the details of this exact transfer.',
+  ],
+  ONBOARDING_REVIEW_REQUIRED: [
+    'تحويلك تحت المراجعة. هنبعتلك إيميل أول ما يتأكد، وساعتها تقدر تنشر محلك.',
+    'Your transfer is being reviewed. We will email you once it is verified, then you can publish.',
+  ],
+  ONBOARDING_RENEWAL_BLOCKED: [
+    'التجديد مش متاح دلوقتي: لازم التحويلات اللي قبله تكون اتأكدت والمحل شغال. كلّمنا لو محتاج مساعدة.',
+    'Renewal is not available yet: earlier transfers must be verified and the shop active. Contact us if you need help.',
+  ],
+  ONBOARDING_RENEWAL_TOO_EARLY: [
+    'التجديد بيفتح قبل نهاية الاشتراك بأسبوع.',
+    'Renewal opens one week before your subscription ends.',
+  ],
   ONBOARDING_TRANSFER_MISMATCH: [
     'المبلغ أو حساب الاستلام مختلف عن طلب الدفع. راجع التحويل.',
     'The amount or receiving account differs from the order. Check the transfer.',

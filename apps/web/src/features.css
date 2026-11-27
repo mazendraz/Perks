@@ -2855,3 +2855,74 @@ input[inputmode='numeric'] {
     grid-template-columns: 1fr;
   }
 }
+
+/* Admin transfer review: status filters. */
+.payment-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0;
+}
+.payment-filters button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid #d7d8e5;
+  border-radius: 10px;
+  background: #fff;
+  color: var(--ink);
+  font-weight: 600;
+}
+.payment-filters button[aria-pressed='true'] {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: #fff;
+}
+.payment-filters .badge {
+  min-width: 22px;
+  justify-content: center;
+}
+
+/* Self sign-up: details → code → password. */
+.signup-progress {
+  display: flex;
+  gap: 6px;
+  margin: 0 0 18px;
+  padding: 0;
+  list-style: none;
+  counter-reset: signup;
+}
+.signup-progress li {
+  flex: 1;
+  counter-increment: signup;
+  padding-top: 8px;
+  border-top: 4px solid #e3e4ec;
+  font-size: 0.82rem;
+  color: #6b6e80;
+}
+.signup-progress li::before {
+  content: counter(signup) '. ';
+}
+.signup-progress li.done {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+.signup-progress li.current {
+  border-color: var(--lime);
+  color: var(--ink);
+  font-weight: 700;
+}
+.otp-input {
+  font-family: ui-monospace, 'Courier New', monospace;
+  font-size: 1.8rem;
+  letter-spacing: 0.5em;
+  text-align: center;
+  padding-inline-start: 0.5em;
+}
+.signup-email {
+  display: block;
+  margin: 4px 0;
+  overflow-wrap: anywhere;
+}

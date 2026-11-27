@@ -19,7 +19,24 @@ type Payment = {
   live: boolean;
   /** A corrected transfer after an earlier rejection. */
   correction: boolean;
+  /** First month (activation) or a renewal of a running shop. */
+  purpose: 'activation' | 'renewal';
+  payment_status: 'pending_review' | 'verified' | 'rejected' | 'awaiting_transfer';
+  period_start: string | null;
+  period_end: string | null;
+  confirmed_at: string | null;
+  confirmed_reference: string | null;
+  rejected_at: string | null;
+  rejection_reason: string | null;
+  /** Rejected transfers this shop had before. */
+  earlier_rejections: number;
 };
+type Filter = 'pending' | 'live' | 'verified' | 'rejected';
+type Counts = { pending: number; live: number };
+const day = (ar: boolean, value: string) =>
+  new Intl.DateTimeFormat(ar ? 'ar-EG-u-nu-latn' : 'en-GB', { dateStyle: 'medium' }).format(
+    new Date(value),
+  );
 
 export function OnboardingPayments({ lang }: { lang: Language }) {
   const ar = lang === 'ar';
@@ -27,11 +44,15 @@ export function OnboardingPayments({ lang }: { lang: Language }) {
   const [error, setError] = useState<unknown>(null);
   const [attempt, setAttempt] = useState(0);
   const [notice, setNotice] = useState(false);
+  const [filter, setFilter] = useState<Filter>('pending');
+  const [counts, setCounts] = useState<Counts | null>(null);
   useEffect(() => {
     let active = true;
-    void api<{ orders: Payment[] }>(endpoint)
+    void api<{ orders: Payment[]; counts: Counts }>(endpoint + '?status=' + filter)
       .then((result) => {
-        if (active) setOrders(result.orders);
+        if (!active) return;
+        setOrders(result.orders);
+        setCounts(result.counts);
       })
       .catch((failure: unknown) => {
         if (active) setError(failure);
@@ -39,12 +60,46 @@ export function OnboardingPayments({ lang }: { lang: Language }) {
     return () => {
       active = false;
     };
-  }, [attempt]);
+  }, [attempt, filter]);
+  const filters: { id: Filter; label: string; count?: number }[] = [
+    { id: 'pending', label: ar ? 'تحت المراجعة' : 'Awaiting review', count: counts?.pending },
+    {
+      id: 'live',
+      label: ar ? 'محلات شغالة وتحويلها تحت المراجعة' : 'Live shops, transfer pending',
+      count: counts?.live,
+    },
+    { id: 'verified', label: ar ? 'اتأكدت' : 'Verified' },
+    { id: 'rejected', label: ar ? 'اترفضت' : 'Rejected' },
+  ];
+  const reviewing = filter === 'pending' || filter === 'live';
   return (
     <section aria-labelledby="onboarding-reviews">
       <h1 id="onboarding-reviews">
         {ar ? 'مراجعة تحويلات InstaPay' : 'Review InstaPay transfers'}
       </h1>
+      <p className="muted">
+        {ar
+          ? 'المحل بيشتغل أول ما التاجر يبعت الإيصال، ومدة الاشتراك بتبدأ من وقتها. التأكيد مش بيغيّر المدة، والرفض بيوقف الاشتراك لحد ما التاجر يصحّح التحويل وتأكده.'
+          : 'A shop goes live as soon as its owner sends the receipt, and the subscription starts then. Verifying leaves the dates unchanged; rejecting pauses the subscription until the owner corrects the transfer and you verify it.'}
+      </p>
+      <div className="segmented payment-filters" role="group" aria-label={ar ? 'فلتر' : 'Filter'}>
+        {filters.map((item) => (
+          <button
+            key={item.id}
+            type="button"
+            className={item.id === filter ? 'active' : ''}
+            aria-pressed={item.id === filter}
+            onClick={() => {
+              setFilter(item.id);
+              setOrders(null);
+              setNotice(false);
+            }}
+          >
+            {item.label}
+            {item.count != null && <span className="badge">{item.count}</span>}
+          </button>
+        ))}
+      </div>
       {notice && <p role="status">{ar ? 'قرار المراجعة اتحفظ.' : 'Review decision saved.'}</p>}
       {error != null && (
         <p role="alert" className="notice error">
@@ -67,21 +122,85 @@ export function OnboardingPayments({ lang }: { lang: Language }) {
         <p role="status">{ar ? 'بنحمّل التحويلات…' : 'Loading transfers…'}</p>
       )}
       {orders?.length === 0 && (
-        <p>{ar ? 'مفيش تحويلات قيد المراجعة.' : 'No transfers awaiting review.'}</p>
+        <p>
+          {reviewing
+            ? ar
+              ? 'مفيش تحويلات قيد المراجعة.'
+              : 'No transfers awaiting review.'
+            : ar
+              ? 'مفيش تحويلات هنا.'
+              : 'No transfers here.'}
+        </p>
       )}
-      {orders?.map((order) => (
-        <PaymentReview
-          key={order.receipt_key}
-          order={order}
-          lang={lang}
-          onConfirmed={() => {
-            setOrders((previous) => previous?.filter((row) => row.id !== order.id) ?? null);
-            setNotice(true);
-          }}
-        />
-      ))}
+      {!reviewing && orders && orders.length > 0 && (
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>{ar ? 'المحل' : 'Shop'}</th>
+                <th>{ar ? 'النوع' : 'Type'}</th>
+                <th>{ar ? 'المبلغ' : 'Amount'}</th>
+                <th>{ar ? 'رقم العملية' : 'Reference'}</th>
+                <th>{ar ? 'القرار' : 'Decision'}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {orders.map((order) => (
+                <tr key={order.id}>
+                  <td>
+                    <bdi>{order.shop_name}</bdi>
+                    <br />
+                    <small dir="ltr">{order.owner_email}</small>
+                  </td>
+                  <td>{purposeLabel(ar, order)}</td>
+                  <td>{(order.amount_minor / 100).toLocaleString('en-US')} EGP</td>
+                  <td dir="ltr">{order.confirmed_reference ?? order.submitted_reference}</td>
+                  <td>
+                    {order.confirmed_at
+                      ? day(ar, order.confirmed_at)
+                      : order.rejected_at
+                        ? day(ar, order.rejected_at) + ' · ' + (order.rejection_reason ?? '')
+                        : ''}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+      {reviewing &&
+        orders?.map((order) => (
+          <PaymentReview
+            key={order.receipt_key}
+            order={order}
+            lang={lang}
+            onConfirmed={() => {
+              setOrders((previous) => previous?.filter((row) => row.id !== order.id) ?? null);
+              setCounts((previous) =>
+                previous
+                  ? {
+                      pending: Math.max(0, previous.pending - 1),
+                      live: Math.max(0, previous.live - (order.live ? 1 : 0)),
+                    }
+                  : previous,
+              );
+              setNotice(true);
+            }}
+          />
+        ))}
     </section>
   );
+}
+
+function purposeLabel(ar: boolean, order: Payment) {
+  if (order.correction) return ar ? 'تحويل مصحّح' : 'Corrected transfer';
+  return order.purpose === 'renewal'
+    ? ar
+      ? 'تجديد'
+      : 'Renewal'
+    : ar
+      ? 'أول اشتراك'
+      : 'First month';
 }
 
 function PaymentReview({
@@ -167,8 +286,13 @@ function PaymentReview({
         </h2>
         <span className="payment-review-badges">
           {order.live && <span className="badge">{ar ? 'المحل شغال' : 'Shop is live'}</span>}
-          {order.correction && (
-            <span className="badge">{ar ? 'تحويل مصحّح' : 'Corrected transfer'}</span>
+          <span className="badge">{purposeLabel(ar, order)}</span>
+          {order.earlier_rejections > 0 && (
+            <span className="badge warning">
+              {ar
+                ? `اترفض له ${order.earlier_rejections} تحويل قبل كده`
+                : `${order.earlier_rejections} earlier rejection(s)`}
+            </span>
           )}
         </span>
       </div>
@@ -195,6 +319,14 @@ function PaymentReview({
             <>
               <dt>{ar ? 'وصل الإيصال' : 'Receipt sent'}</dt>
               <dd>{sentAt}</dd>
+            </>
+          )}
+          {order.period_start && order.period_end && (
+            <>
+              <dt>{ar ? 'فترة الاشتراك' : 'Subscription period'}</dt>
+              <dd>
+                {day(ar, order.period_start)} – {day(ar, order.period_end)}
+              </dd>
             </>
           )}
           <dt>{ar ? 'حساب الاستلام' : 'Receiving account'}</dt>
@@ -259,8 +391,8 @@ function PaymentReview({
           <p className={order.live ? 'notice error' : 'muted'}>
             {order.live
               ? ar
-                ? 'المحل ده شغال دلوقتي. الرفض هيوقفه لحد ما التاجر يصحّح التحويل، وهيوصله إيميل بالسبب.'
-                : 'This shop is live. Rejecting pauses it until the owner corrects the transfer; they get an email with the reason.'
+                ? 'المحل ده شغال دلوقتي. الرفض هيوقف الاشتراك لحد ما التاجر يصحّح التحويل وتأكده إنت، وهيوصله إيميل وإشعار في لوحة المحل بالسبب. بيانات المحل والعملاء والأختام مش هتتمسح.'
+                : 'This shop is live. Rejecting pauses the subscription until the owner corrects the transfer and you verify it; they get an email and a dashboard notice with the reason. No shop, customer or stamp data is deleted.'
               : ar
                 ? 'التاجر هيوصله إيميل بالسبب ويقدر يصحّح التحويل.'
                 : 'The owner gets an email with the reason and can correct the transfer.'}

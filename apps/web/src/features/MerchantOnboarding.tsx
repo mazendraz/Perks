@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import type { CardData, Language } from '../../../../packages/contracts/src/index.js';
 import { LoyaltyCard } from '../../../../packages/ui/src/LoyaltyCard.js';
 import { Icon } from '../../../../packages/ui/src/Icon.js';
@@ -26,7 +26,7 @@ type Draft = {
 };
 type Publication = { merchantId: string; placementId: string; code: string };
 type Plan = { plan_key: string; name_ar: string; name_en: string; amount_minor: number };
-type Order = {
+export type Order = {
   id: string;
   plan_key?: string;
   amount_minor: number;
@@ -45,7 +45,7 @@ function readImage(file: File) {
     reader.readAsDataURL(file);
   });
 }
-const money = (ar: boolean, minor: number) =>
+export const money = (ar: boolean, minor: number) =>
   new Intl.NumberFormat(ar ? 'ar-EG-u-nu-latn' : 'en-EG', {
     style: 'currency',
     currency: 'EGP',
@@ -173,7 +173,7 @@ export function MerchantOnboarding({ lang }: { lang: Language }) {
           ? `${planName(ar, plans, order.plan_key)} · ${money(ar, order.amount_minor)}`
           : undefined,
     },
-    { id: 'publish', label: ar ? 'انشر محلك' : 'Publish your shop' },
+    { id: 'publish', label: ar ? 'تفعيل المحل' : 'Shop goes live' },
   ];
   // Payment cannot be reopened once a receipt is with the reviewer.
   const editable = (id: StepId) => done[id] && id !== open && (id === 'name' || id === 'card');
@@ -184,8 +184,8 @@ export function MerchantOnboarding({ lang }: { lang: Language }) {
         <h1>{ar ? 'جهّز محلك' : 'Set up your shop'}</h1>
         <p className="muted">
           {ar
-            ? '4 خطوات وتبدأ تدّي أختام لزباينك. كل حاجة بتتحفظ أول بأول، وتقدر تكمّل في أي وقت.'
-            : 'Four steps and you can start stamping. Everything is saved as you go, so you can finish any time.'}
+            ? 'خطوات قليلة وتبدأ تدّي أختام لزباينك. أول ما تبعت إيصال التحويل محلك بيشتغل على طول. كل حاجة بتتحفظ أول بأول، وتقدر تكمّل في أي وقت.'
+            : 'A few steps and you can start stamping. Your shop goes live as soon as you send the transfer receipt. Everything is saved as you go.'}
         </p>
       </header>
       <ol className="onboarding-steps" aria-label={ar ? 'خطوات التجهيز' : 'Setup steps'}>
@@ -249,6 +249,7 @@ export function MerchantOnboarding({ lang }: { lang: Language }) {
         )}
         {open === 'publish' && draft && order && (
           <PublishStep
+            auto
             lang={lang}
             draft={draft}
             order={order}
@@ -715,7 +716,7 @@ function PaymentStep({
           <span>
             {ar ? 'حوّل ' : 'Send '}
             <strong>{money(ar, order.amount_minor)}</strong>
-            {ar ? ' بالظبط على عنوان InstaPay ده:' : ' exactly to this InstaPay address:'}
+            {ar ? ' بالظبط على رقم InstaPay ده:' : ' exactly to this InstaPay number:'}
           </span>
           <CopyField value={order.recipient_account} lang={lang} />
         </li>
@@ -726,16 +727,16 @@ function PaymentStep({
         </li>
         <li>
           {ar
-            ? 'اكتب رقم العملية وارفع الصورة هنا، وإحنا هنراجعها.'
-            : 'Enter the transaction number and upload the screenshot here for review.'}
+            ? 'اكتب رقم العملية وارفع الصورة هنا. محلك هيتفعّل على طول، وإحنا هنراجع التحويل بعدها ونبعتلك إيميل بالنتيجة.'
+            : 'Enter the transaction number and upload the screenshot here. Your shop goes live straight away; we review the transfer afterwards and email you the result.'}
         </li>
       </ol>
-      <PaymentReceipt order={order} onSaved={onOrder} lang={lang} />
+      <PaymentReceipt activates order={order} onSaved={onOrder} lang={lang} />
     </>
   );
 }
 
-function CopyField({ value, lang }: { value: string; lang: Language }) {
+export function CopyField({ value, lang }: { value: string; lang: Language }) {
   const ar = lang === 'ar';
   const [copied, setCopied] = useState(false);
   return (
@@ -765,6 +766,7 @@ function CopyField({ value, lang }: { value: string; lang: Language }) {
 }
 
 function PublishStep({
+  auto = false,
   lang,
   draft,
   order,
@@ -772,6 +774,8 @@ function PublishStep({
   onPublished,
   onRefresh,
 }: {
+  /** Activate on arrival: the receipt was just sent, so the shop goes live without another click. */
+  auto?: boolean;
   lang: Language;
   draft: Draft;
   order: Order;
@@ -783,6 +787,15 @@ function PublishStep({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<unknown>(null);
   const setup = draft.details.setup;
+  const started = useRef(false);
+  // An owner with an unresolved rejected transfer waits for the admin before going live.
+  const needsReview = error instanceof ApiError && error.code === 'ONBOARDING_REVIEW_REQUIRED';
+  useEffect(() => {
+    if (!auto || started.current) return;
+    started.current = true;
+    void publish();
+    // Run once on arrival only.
+  }, []);
 
   async function publish() {
     if (busy) return;
@@ -803,8 +816,34 @@ function PublishStep({
 
   return (
     <>
-      <StepHeading id="publish" title={ar ? 'كل حاجة جاهزة' : 'Everything is ready'} />
-      {order.confirmed_at ? (
+      <StepHeading
+        id="publish"
+        title={
+          needsReview
+            ? ar
+              ? 'تحويلك تحت المراجعة'
+              : 'Your transfer is being reviewed'
+            : busy
+              ? ar
+                ? 'بنفعّل محلك…'
+                : 'Activating your shop…'
+              : ar
+                ? 'كل حاجة جاهزة'
+                : 'Everything is ready'
+        }
+      />
+      {needsReview ? (
+        <div className="notice onboarding-review-status" role="status">
+          <p>
+            {ar
+              ? 'عشان كان فيه تحويل قبل كده اترفض، المحل هيتفعّل بعد ما نأكد التحويل ده. هيوصلك إيميل أول ما يتأكد، وساعتها تنشر محلك بضغطة.'
+              : 'Because an earlier transfer was rejected, this shop goes live once we verify this transfer. We will email you as soon as it is verified; then publish with one click.'}
+          </p>
+          <button type="button" className="text-button" onClick={onRefresh}>
+            {ar ? 'حدّث حالة الدفع' : 'Refresh payment status'}
+          </button>
+        </div>
+      ) : order.confirmed_at ? (
         <p className="notice success" role="status">
           <Icon name="check" size={18} /> {ar ? 'التحويل اتأكد.' : 'Your payment is confirmed.'}
         </p>
@@ -847,23 +886,31 @@ function PublishStep({
           {ar ? 'شهريًا' : 'a month'}
         </dd>
       </dl>
-      {!order.confirmed_at && (
+      {!order.confirmed_at && !needsReview && (
         <p className="muted">
           {ar
-            ? 'مش لازم تستنى المراجعة: انشر محلك دلوقتي وزباينك يبدأوا ياخدوا أختام على طول. لو طلعت مشكلة في التحويل، هنبعتلك إيميل بالسبب والمحل هيتوقف مؤقتًا لحد ما تصلّحها، وكروت زباينك وأختامهم مش هتضيع.'
-            : 'No need to wait for the review: publish now and customers can start collecting stamps. If there is a problem with the transfer, we will email you the reason and pause the shop until it is fixed. Customer cards and stamps are kept.'}
+            ? 'مش لازم تستنى المراجعة: محلك بيتفعّل دلوقتي وزباينك يبدأوا ياخدوا أختام على طول، ومدة الاشتراك بتبدأ من لحظة التفعيل. لو طلعت مشكلة في التحويل، هنبعتلك إيميل بالسبب والاشتراك هيتوقف مؤقتًا لحد ما تصلّحها، وكل بيانات المحل وكروت زباينك وأختامهم محفوظة.'
+            : 'No need to wait for the review: your shop goes live now and customers can start collecting stamps; the subscription period starts at activation. If there is a problem with the transfer, we will email you the reason and pause the subscription until it is fixed. All shop data, customer cards and stamps are kept.'}
         </p>
       )}
-      {error != null && (
+      {error != null && !needsReview && (
         <p className="notice error" role="alert">
           {errorText(error, lang)}
         </p>
       )}
-      <div className="form-actions">
-        <button className="primary" type="button" disabled={busy} onClick={() => void publish()}>
-          {busy ? (ar ? 'بننشر المحل…' : 'Publishing…') : ar ? 'انشر محلك' : 'Publish your shop'}
-        </button>
-      </div>
+      {!needsReview && (
+        <div className="form-actions">
+          <button className="primary" type="button" disabled={busy} onClick={() => void publish()}>
+            {busy
+              ? ar
+                ? 'بنفعّل المحل…'
+                : 'Activating…'
+              : ar
+                ? 'فعّل محلك'
+                : 'Activate your shop'}
+          </button>
+        </div>
+      )}
     </>
   );
 }
@@ -994,7 +1041,7 @@ function PaymentCorrection({ draft, lang }: { draft: Draft; lang: Language }) {
               <span>
                 {ar ? 'حوّل ' : 'Send '}
                 <strong>{money(ar, order.amount_minor)}</strong>
-                {ar ? ' على عنوان InstaPay ده:' : ' to this InstaPay address:'}
+                {ar ? ' على رقم InstaPay ده:' : ' to this InstaPay number:'}
               </span>
               <CopyField value={order.recipient_account} lang={lang} />
             </li>
@@ -1011,11 +1058,14 @@ function PaymentCorrection({ draft, lang }: { draft: Draft; lang: Language }) {
   );
 }
 
-function PaymentReceipt({
+export function PaymentReceipt({
   order,
   onSaved,
   lang,
+  activates = false,
 }: {
+  /** Sending this receipt turns the shop on (first payment), rather than only asking for review. */
+  activates?: boolean;
   order: Order;
   onSaved: (order: Order) => void;
   lang: Language;
@@ -1117,9 +1167,13 @@ function PaymentReceipt({
             ? ar
               ? 'بنرفع الإيصال…'
               : 'Uploading receipt…'
-            : ar
-              ? 'ابعت الإيصال'
-              : 'Submit receipt'}
+            : activates
+              ? ar
+                ? 'ابعت الإيصال وفعّل محلك'
+                : 'Send receipt and go live'
+              : ar
+                ? 'ابعت الإيصال'
+                : 'Submit receipt'}
         </button>
       </div>
     </form>

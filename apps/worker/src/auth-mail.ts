@@ -10,6 +10,7 @@ const linkPaths: Partial<Record<MailKind, string>> = {
   onboarding_payment_confirmed: '/merchant',
   onboarding_payment_rejected: '/onboarding',
   onboarding_receipt_submitted: '/platform/onboarding-payments',
+  merchant_welcome: '/onboarding',
 };
 
 export async function runAuthMail(pool: pg.Pool, c: ServiceConfig) {
@@ -27,12 +28,20 @@ export async function runAuthMail(pool: pg.Pool, c: ServiceConfig) {
       (kind === 'merchant_welcome' ? '?welcome=1' : '');
     // A confirmation queued before the live flag existed (071) went to a published shop.
     const live = payload.live !== false;
+    // A welcome queued before 072 still carries a password link; newer ones follow a verified code.
     const link =
-      kind === 'password_reset' || kind === 'merchant_welcome'
-        ? resetLink()
-        : kind === 'onboarding_payment_confirmed' && !live
-          ? c.PUBLIC_APP_ORIGIN + '/onboarding'
-          : c.PUBLIC_APP_ORIGIN + (linkPaths[kind] ?? '/login');
+      kind === 'email_verification'
+        ? undefined
+        : kind === 'password_reset' ||
+            (kind === 'merchant_welcome' && typeof payload.encryptedToken === 'string')
+          ? resetLink()
+          : kind === 'onboarding_payment_confirmed' && !live
+            ? c.PUBLIC_APP_ORIGIN + '/onboarding'
+            : c.PUBLIC_APP_ORIGIN + (linkPaths[kind] ?? '/login');
+    const code =
+      kind === 'email_verification'
+        ? unseal(String(payload.encryptedCode), c.AUTH_PEPPER)
+        : undefined;
     const text = (value: unknown) => (typeof value === 'string' && value ? value : undefined);
     const content = mailTemplate(kind, job.locale, {
       link,
@@ -40,12 +49,20 @@ export async function runAuthMail(pool: pg.Pool, c: ServiceConfig) {
       reason: text(payload.reason),
       suspended: payload.suspended === true,
       live,
+      renewal: payload.renewal === true,
+      code,
+      origin: c.PUBLIC_APP_ORIGIN,
     });
     await createMailer(c, pool).send({
       ...content,
       to: job.email,
       idempotencyKey: job.mail_id,
-      metadata: { kind: job.kind, link, expiresAt: job.expires_at.toISOString() },
+      metadata: {
+        kind: job.kind,
+        ...(link ? { link } : {}),
+        ...(code ? { code } : {}),
+        expiresAt: job.expires_at.toISOString(),
+      },
     });
   } catch (cause) {
     if (cause instanceof MailFailure) {

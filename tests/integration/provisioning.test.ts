@@ -25,6 +25,41 @@ after(async () => {
   await app.close();
   await db.end();
 });
+const signupRequest = (email: string) => ({
+  method: 'POST' as const,
+  url: '/api/v1/auth/merchant-signup',
+  payload: { email, name: 'New merchant', locale: 'en' as const },
+});
+const codeMails = async (email: string) =>
+  (
+    await db.query(
+      `SELECT o.payload FROM auth_mail_outbox o JOIN users u ON u.id=o.user_id
+       WHERE u.email=$1 AND o.kind='email_verification' ORDER BY o.created_at`,
+      [email],
+    )
+  ).rows;
+const emailedCode = async (email: string) => {
+  const mails = await codeMails(email);
+  return unseal(mails.at(-1)!.payload.encryptedCode, c.AUTH_PEPPER);
+};
+let shade = 0;
+/** A receipt image no other order has sent (the same file cannot pay twice). */
+const freshImage = async () => {
+  const { default: sharp } = await import('sharp');
+  shade += 1;
+  return (
+    await sharp({
+      create: {
+        width: 12,
+        height: 12,
+        channels: 3,
+        background: { r: shade % 256, g: Math.floor(shade / 256) % 256, b: 200 },
+      },
+    })
+      .png()
+      .toBuffer()
+  ).toString('base64');
+};
 test('a new merchant verifies their email, sets a password and signs in to their draft', async () => {
   const origin = c.PUBLIC_APP_ORIGIN;
   const email = 'signup-' + randomUUID() + '@example.test';
@@ -36,19 +71,68 @@ test('a new merchant verifies their email, sets a password and signs in to their
     payload: { email, name: 'New merchant', locale: 'en' },
   });
   assert.equal(signup.statusCode, 202, signup.body);
-  const mail = (
+  const code = await emailedCode(email);
+  // The code is stored only as a keyed hash, never in the clear.
+  const stored = (
     await db.query(
-      `SELECT o.payload FROM auth_mail_outbox o JOIN users u ON u.id=o.user_id
-     WHERE u.email=$1 AND o.kind='merchant_welcome'`,
+      'SELECT v.code_hash FROM email_verification_codes v JOIN users u ON u.id=v.user_id WHERE u.email=$1',
       [email],
     )
-  ).rows[0];
-  assert.ok(mail);
+  ).rows;
+  assert.equal(stored.length, 1);
+  assert.notEqual(stored[0].code_hash, code);
+  // A second request inside the minute sends no second code.
+  await app.inject({ ...signupRequest(email), headers: { origin } });
+  assert.equal((await codeMails(email)).length, 1);
+  const verifyUrl = '/api/v1/auth/merchant-signup/verify';
+  const wrong = String((Number(code) + 1) % 1_000_000).padStart(6, '0');
+  const bad = await app.inject({
+    method: 'POST',
+    url: verifyUrl,
+    headers: { origin },
+    payload: { email, code: wrong },
+  });
+  assert.equal(bad.statusCode, 400, bad.body);
+  assert.equal(bad.json().error.code, 'VERIFICATION_CODE_INVALID');
+  // An address with no pending sign-up answers exactly like a wrong code.
+  const unknown = await app.inject({
+    method: 'POST',
+    url: verifyUrl,
+    headers: { origin },
+    payload: { email: 'nobody-' + randomUUID() + '@example.test', code },
+  });
+  assert.equal(unknown.statusCode, 400);
+  assert.equal(unknown.json().error.code, 'VERIFICATION_CODE_INVALID');
+  // No password can be set before the address is verified.
+  assert.equal(
+    (await db.query('SELECT email_verified_at,password_hash FROM users WHERE email=$1', [email]))
+      .rows[0].email_verified_at,
+    null,
+  );
+  const verified = await app.inject({
+    method: 'POST',
+    url: verifyUrl,
+    headers: { origin },
+    payload: { email, code },
+  });
+  assert.equal(verified.statusCode, 200, verified.body);
+  assert.ok(
+    (await db.query('SELECT email_verified_at FROM users WHERE email=$1', [email])).rows[0]
+      .email_verified_at,
+  );
+  // A code works once.
+  const replay = await app.inject({
+    method: 'POST',
+    url: verifyUrl,
+    headers: { origin },
+    payload: { email, code },
+  });
+  assert.equal(replay.statusCode, 400);
   const reset = {
     method: 'POST' as const,
     url: '/api/v1/auth/password/reset',
     headers: { origin },
-    payload: { token: unseal(mail.payload.encryptedToken, c.AUTH_PEPPER), password },
+    payload: { token: verified.json().passwordToken, password },
   };
   const confirmed = await app.inject(reset);
   assert.equal(confirmed.statusCode, 200, confirmed.body);
@@ -62,6 +146,15 @@ test('a new merchant verifies their email, sets a password and signs in to their
   assert.equal(fresh.statusCode, 200, fresh.body);
   assert.equal(fresh.json().onboarding, true);
   assert.deepEqual(fresh.json().grants, []);
+  // Welcome mail follows the first password, without a password link.
+  const welcome = (
+    await db.query(
+      `SELECT o.payload,o.reset_token_id FROM auth_mail_outbox o JOIN users u ON u.id=o.user_id
+       WHERE u.email=$1 AND o.kind='merchant_welcome'`,
+      [email],
+    )
+  ).rows;
+  assert.deepEqual(welcome, [{ payload: {}, reset_token_id: null }]);
   assert.equal((await app.inject(reset)).statusCode, 410);
   const signedIn = await app.inject({
     method: 'POST',
@@ -301,7 +394,10 @@ test('onboarding orders quote the server catalog and reuse a quote on retry', as
     admins,
   );
   assert.deepEqual(await mailFor('onboarding_payment_confirmed', `onboarding-confirmed:${id}`), [
-    { email: 'owner@bunn.test', payload: { shopName: draft.details.name, live: true } },
+    {
+      email: 'owner@bunn.test',
+      payload: { shopName: draft.details.name, live: true, renewal: false },
+    },
   ]);
 
   const newDraft = (await app.inject({ method: 'POST', url: draftUrl, headers })).json().draft;
@@ -317,7 +413,7 @@ test('onboarding orders quote the server catalog and reuse a quote on retry', as
     method: 'POST',
     url: request.url + '/' + secondOrder.id + '/receipt',
     headers,
-    payload: { reference: 'ORDER-456', image: image.toString('base64') },
+    payload: { reference: 'ORDER-456', image: await freshImage() },
   });
   assert.equal(secondReceipt.statusCode, 200, secondReceipt.body);
   const secondPublished = await app.inject({
@@ -340,7 +436,12 @@ test('onboarding orders quote the server catalog and reuse a quote on retry', as
     [
       {
         email: 'owner@bunn.test',
-        payload: { shopName: 'Second café', reason: 'Transfer not received', suspended: true },
+        payload: {
+          shopName: 'Second café',
+          reason: 'Transfer not received',
+          suspended: true,
+          renewal: false,
+        },
       },
     ],
   );
@@ -369,7 +470,7 @@ test('onboarding orders quote the server catalog and reuse a quote on retry', as
     method: 'POST',
     url: request.url + '/' + correctedOrder.id + '/receipt',
     headers,
-    payload: { reference: 'ORDER-789', image: image.toString('base64') },
+    payload: { reference: 'ORDER-789', image: await freshImage() },
   });
   assert.equal(corrected.statusCode, 200, corrected.body);
   const corrections = (await app.inject({ url: reviewPath, headers: pa })).json().orders;
@@ -395,6 +496,265 @@ test('onboarding orders quote the server catalog and reuse a quote on retry', as
     restored.publication.code,
   ]);
   assert.equal(reopened.rows[0].value.status, 'active');
+});
+/** Signs up a new shop owner through the emailed code and returns their signed-in headers. */
+async function newOwner() {
+  const origin = c.PUBLIC_APP_ORIGIN;
+  const email = 'owner-' + randomUUID() + '@example.test';
+  assert.equal(
+    (await app.inject({ ...signupRequest(email), headers: { origin } })).statusCode,
+    202,
+  );
+  const verified = await app.inject({
+    method: 'POST',
+    url: '/api/v1/auth/merchant-signup/verify',
+    headers: { origin },
+    payload: { email, code: await emailedCode(email) },
+  });
+  assert.equal(verified.statusCode, 200, verified.body);
+  const signedIn = await app.inject({
+    method: 'POST',
+    url: '/api/v1/auth/password/reset',
+    headers: { origin },
+    payload: { token: verified.json().passwordToken, password: 'Test-merchant-password-12' },
+  });
+  assert.equal(signedIn.statusCode, 200, signedIn.body);
+  return {
+    email,
+    headers: {
+      cookie: signedIn.cookies.map(({ name, value }) => name + '=' + value).join('; '),
+      origin,
+      'x-csrf-token': signedIn.json().csrfToken as string,
+    },
+  };
+}
+const draftUrl = '/api/v1/merchant-onboarding/draft';
+const orderUrl = '/api/v1/merchant-onboarding/order';
+const reviewUrl = '/api/v1/platform/onboarding-payments';
+const shopSetup = {
+  branchName: 'Downtown',
+  branchAddress: '12 Main Street',
+  rewardTitle: 'Free coffee',
+  threshold: 6,
+  cardColor: '#173d37',
+};
+/** Fills a draft for the owner and quotes the growth plan. */
+async function readyDraft(headers: Record<string, string>, name: string) {
+  const created = (await app.inject({ method: 'POST', url: draftUrl, headers })).json().draft;
+  const saved = await app.inject({
+    method: 'PATCH',
+    url: draftUrl,
+    headers,
+    payload: { name, setup: shopSetup, revision: created.revision },
+  });
+  assert.equal(saved.statusCode, 200, saved.body);
+  const order = await app.inject({
+    method: 'POST',
+    url: orderUrl,
+    headers,
+    payload: { planKey: 'growth' },
+  });
+  assert.equal(order.statusCode, 200, order.body);
+  return { draft: saved.json().draft, order: order.json().order };
+}
+const sendReceipt = async (
+  headers: Record<string, string>,
+  orderId: string,
+  reference: string,
+  image?: string,
+) =>
+  app.inject({
+    method: 'POST',
+    url: orderUrl + '/' + orderId + '/receipt',
+    headers,
+    payload: { reference, image: image ?? (await freshImage()) },
+  });
+const publishDraft = (headers: Record<string, string>, draft: { id: string; revision: number }) =>
+  app.inject({
+    method: 'POST',
+    url: draftUrl + '/' + draft.id + '/publish',
+    headers,
+    payload: { revision: draft.revision },
+  });
+const reviewRow = async (status: string, id: string) => {
+  const list = await app.inject({ url: reviewUrl + '?status=' + status, headers: pa });
+  assert.equal(list.statusCode, 200, list.body);
+  return list.json().orders.find((row: { id: string }) => row.id === id);
+};
+
+test('a transfer activates the shop at once; the review verifies or pauses it, and renewals follow the same rules', async () => {
+  const a = await newOwner();
+  const first = await readyDraft(a.headers, 'Instant café');
+  const imageA = await freshImage();
+  const reference = 'IPN-' + randomUUID().slice(0, 8);
+  assert.equal((await sendReceipt(a.headers, first.order.id, reference, imageA)).statusCode, 200);
+  const published = await publishDraft(a.headers, first.draft);
+  assert.equal(published.statusCode, 200, published.body);
+  const merchantId = published.json().publication.merchantId;
+  // Live straight away: the subscription is active and its period started at activation.
+  const live = await db.query(
+    `SELECT m.status,s.status AS sub,s.current_period_start,s.current_period_end,o.period_start,o.period_end
+     FROM merchants m JOIN merchant_subscriptions s ON s.merchant_id=m.id
+     JOIN merchant_onboarding_orders o ON o.id=$2 WHERE m.id=$1`,
+    [merchantId, first.order.id],
+  );
+  assert.equal(live.rows[0].status, 'active');
+  assert.equal(live.rows[0].sub, 'active');
+  assert.equal(live.rows[0].period_start.getTime(), live.rows[0].current_period_start.getTime());
+  const billingUrl = '/api/v1/merchant-onboarding/billing?merchantId=' + merchantId;
+  const pending = (await app.inject({ url: billingUrl, headers: a.headers })).json().billing;
+  assert.equal(pending.paymentStatus, 'pending_review');
+  assert.equal(pending.renewal, 'blocked');
+  // Another owner cannot read this shop's billing.
+  const b = await newOwner();
+  assert.equal((await app.inject({ url: billingUrl, headers: b.headers })).json().billing, null);
+
+  // The same transaction number (spelled differently) or the same receipt cannot pay again.
+  const second = await readyDraft(b.headers, 'Copycat café');
+  const reusedRef = await sendReceipt(b.headers, second.order.id, ' ' + reference.toLowerCase());
+  assert.equal(reusedRef.statusCode, 409, reusedRef.body);
+  assert.equal(reusedRef.json().error.code, 'ONBOARDING_TRANSFER_REUSED');
+  const reusedImage = await sendReceipt(b.headers, second.order.id, 'IPN-other-1', imageA);
+  assert.equal(reusedImage.json().error.code, 'ONBOARDING_TRANSFER_REUSED');
+  assert.equal((await sendReceipt(b.headers, second.order.id, 'IPN-other-2')).statusCode, 200);
+
+  // Admin filter: live shops whose transfer is still under review.
+  const queued = await reviewRow('live', first.order.id);
+  assert.ok(queued);
+  assert.equal(queued.payment_status, 'pending_review');
+  assert.equal(queued.purpose, 'activation');
+  assert.equal(await reviewRow('live', second.order.id), undefined);
+  assert.ok(await reviewRow('pending', second.order.id));
+  const counts = (await app.inject({ url: reviewUrl, headers: pa })).json().counts;
+  assert.ok(counts.live >= 1 && counts.pending >= counts.live);
+
+  const confirmed = await app.inject({
+    method: 'POST',
+    url: reviewUrl + '/' + first.order.id + '/confirm',
+    headers: pa,
+    payload: {
+      reference,
+      receiptKey: queued.receipt_key,
+      amountMinor: first.order.amount_minor,
+      recipientAccountId: queued.recipient_account,
+    },
+  });
+  assert.equal(confirmed.statusCode, 200, confirmed.body);
+  // Verifying changes no dates: the payment covers the period that began at activation.
+  const after = await db.query(
+    `SELECT s.current_period_start,s.current_period_end,p.starts_at,p.ends_at
+     FROM merchant_subscriptions s JOIN subscription_payments p ON p.merchant_id=s.merchant_id
+     WHERE s.merchant_id=$1`,
+    [merchantId],
+  );
+  assert.equal(after.rows.length, 1);
+  assert.equal(
+    after.rows[0].current_period_end.getTime(),
+    live.rows[0].current_period_end.getTime(),
+  );
+  assert.equal(after.rows[0].starts_at.getTime(), live.rows[0].period_start.getTime());
+  assert.ok(await reviewRow('verified', first.order.id));
+  const audit = await db.query(
+    "SELECT action FROM audit_events WHERE target_id=$1 AND action LIKE 'merchant.onboarding.transfer_%' ORDER BY at",
+    [first.order.id],
+  );
+  assert.deepEqual(
+    audit.rows.map((row) => row.action),
+    ['merchant.onboarding.transfer_submitted', 'merchant.onboarding.transfer_verified'],
+  );
+
+  // Renewal opens a week before the end, adds the month at once, and is reviewed afterwards.
+  const renewalUrl = '/api/v1/merchant-onboarding/billing/renewal';
+  const early = await app.inject({
+    method: 'POST',
+    url: renewalUrl,
+    headers: a.headers,
+    payload: { merchantId },
+  });
+  assert.equal(early.statusCode, 409, early.body);
+  assert.equal(early.json().error.code, 'ONBOARDING_RENEWAL_TOO_EARLY');
+  await db.query(
+    "UPDATE merchant_subscriptions SET current_period_end=clock_timestamp()+interval '3 days' WHERE merchant_id=$1",
+    [merchantId],
+  );
+  const opened = await app.inject({
+    method: 'POST',
+    url: renewalUrl,
+    headers: a.headers,
+    payload: { merchantId },
+  });
+  assert.equal(opened.statusCode, 200, opened.body);
+  const renewal = opened.json().billing.openRenewal;
+  assert.equal(renewal.amount_minor, first.order.amount_minor);
+  const again = await app.inject({
+    method: 'POST',
+    url: renewalUrl,
+    headers: a.headers,
+    payload: { merchantId },
+  });
+  assert.equal(again.json().billing.openRenewal.id, renewal.id);
+  const periodEnd = (
+    await db.query('SELECT current_period_end FROM merchant_subscriptions WHERE merchant_id=$1', [
+      merchantId,
+    ])
+  ).rows[0].current_period_end as Date;
+  assert.equal(
+    (await sendReceipt(a.headers, renewal.id, 'IPN-renew-' + randomUUID())).statusCode,
+    200,
+  );
+  const extended = (
+    await db.query('SELECT current_period_end FROM merchant_subscriptions WHERE merchant_id=$1', [
+      merchantId,
+    ])
+  ).rows[0].current_period_end as Date;
+  assert.equal(extended.getTime() - periodEnd.getTime(), 30 * 86_400_000);
+  const renewing = (await app.inject({ url: billingUrl, headers: a.headers })).json().billing;
+  assert.equal(renewing.paymentStatus, 'pending_review');
+  assert.equal(renewing.purpose, 'renewal');
+  // No second renewal can be stacked on an unverified one.
+  const stacked = await app.inject({
+    method: 'POST',
+    url: renewalUrl,
+    headers: a.headers,
+    payload: { merchantId },
+  });
+  assert.equal(stacked.json().error.code, 'ONBOARDING_RENEWAL_BLOCKED');
+
+  // A rejected renewal pauses the shop (data kept) and tells the owner why.
+  const renewalRow = await reviewRow('pending', renewal.id);
+  assert.equal(renewalRow.purpose, 'renewal');
+  const rejected = await app.inject({
+    method: 'POST',
+    url: reviewUrl + '/' + renewal.id + '/reject',
+    headers: pa,
+    payload: { receiptKey: renewalRow.receipt_key, reason: 'No such transfer' },
+  });
+  assert.equal(rejected.statusCode, 200, rejected.body);
+  const paused = await db.query(
+    'SELECT m.status,(SELECT count(*)::int FROM programs p WHERE p.merchant_id=m.id) AS programs FROM merchants m WHERE m.id=$1',
+    [merchantId],
+  );
+  assert.deepEqual(paused.rows[0], { status: 'suspended', programs: 1 });
+  const rejectedBilling = (await app.inject({ url: billingUrl, headers: a.headers })).json()
+    .billing;
+  assert.equal(rejectedBilling.paymentStatus, 'rejected');
+  assert.equal(rejectedBilling.rejectionReason, 'No such transfer');
+  const rejectionMail = await db.query(
+    "SELECT payload FROM auth_mail_outbox WHERE dedupe_key='onboarding-rejected:'||$1",
+    [renewal.id],
+  );
+  assert.equal(rejectionMail.rows[0].payload.renewal, true);
+  assert.ok(await reviewRow('rejected', renewal.id));
+
+  // While that rejection stands, a new shop from the same owner waits for the admin.
+  const third = await readyDraft(a.headers, 'Second try café');
+  assert.equal(
+    (await sendReceipt(a.headers, third.order.id, 'IPN-' + randomUUID())).statusCode,
+    200,
+  );
+  const gated = await publishDraft(a.headers, third.draft);
+  assert.equal(gated.statusCode, 409, gated.body);
+  assert.equal(gated.json().error.code, 'ONBOARDING_REVIEW_REQUIRED');
 });
 test('non-admin cannot provision; admin must prove MFA', async () => {
   const owner = await login(app, 'owner@bunn.test');

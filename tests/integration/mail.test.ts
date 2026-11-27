@@ -169,7 +169,7 @@ test('reset mail survives an API restart, crosses a real TLS SMTP server once, o
   assert.ok(!subject.includes(token));
   const repeat = new SmtpMailer(smtp, worker);
   await repeat.send({
-    ...mailTemplate('password_reset', 'en', { link: resetLink }),
+    ...mailTemplate('password_reset', 'en', { link: resetLink, origin }),
     to: user.email,
     idempotencyKey: job.id,
   });
@@ -226,7 +226,7 @@ test('invitations use the same SMTP adapter in production and a lost SMTP accept
   const unknownId = randomUUID(),
     uncertain = new SmtpMailer(smtp, worker),
     content = {
-      ...mailTemplate('password_changed', 'en', { link: origin + '/login' }),
+      ...mailTemplate('password_changed', 'en', { link: origin + '/login', origin }),
       to: 'ambiguous@nuqta.test',
       idempotencyKey: unknownId,
     };
@@ -297,7 +297,7 @@ test('mail payloads and delivery state are private; runtime/auth cannot dispatch
 test('a database connection error after SMTP acceptance cannot be mistaken for a safe transport retry', async () => {
   const id = randomUUID(),
     message = {
-      ...mailTemplate('password_changed', 'en', { link: origin + '/login' }),
+      ...mailTemplate('password_changed', 'en', { link: origin + '/login', origin }),
       to: 'db-ambiguity@nuqta.test',
       idempotencyKey: id,
     };

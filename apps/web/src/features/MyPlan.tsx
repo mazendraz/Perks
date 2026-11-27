@@ -1,4 +1,5 @@
 import { WhyDisabled } from '../controls/WhyDisabled.js';
+import { SelfServeBilling } from './SelfServeBilling.js';
 import { useEffect, useState, type FormEvent } from 'react';
 import type { Language } from '../../../../packages/contracts/src/index.js';
 import {
@@ -440,6 +441,8 @@ export function MyPlan({
           )}
         </div>
       </div>
+
+      <SelfServeBilling merchantId={merchantId} lang={lang} />
 
       {state.request && (
         <div className={'panel plan-request ' + state.request.status}>

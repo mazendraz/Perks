@@ -1,7 +1,7 @@
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 import { authenticated } from '../auth.js';
-import { transaction, type Pools } from '../db.js';
+import { transaction, type DB, type Pools } from '../db.js';
 import { requireCondition } from '../errors.js';
 import type { Config } from '../config.js';
 import { sanitizeLogo } from '../storage/logo.js';
@@ -131,6 +131,23 @@ export function merchantOnboardingModule(app: FastifyInstance, pools: Pools, c: 
   app.get(reviewPath, async (req) => {
     const actor = authenticated(req);
     platform(actor);
+    // pending: every transfer awaiting review (default); live: the ones whose shop is already
+    // running on them; verified / rejected: the latest decisions.
+    const { status } = z
+      .object({ status: z.enum(['pending', 'live', 'verified', 'rejected']).default('pending') })
+      .parse(req.query ?? {});
+    const where = {
+      pending: 'o.receipt_key IS NOT NULL AND o.confirmed_at IS NULL AND o.rejected_at IS NULL',
+      live: "o.receipt_key IS NOT NULL AND o.confirmed_at IS NULL AND o.rejected_at IS NULL AND m.status='active'",
+      verified: 'o.confirmed_at IS NOT NULL',
+      rejected: 'o.rejected_at IS NOT NULL',
+    }[status];
+    const order =
+      status === 'verified'
+        ? 'o.confirmed_at DESC'
+        : status === 'rejected'
+          ? 'o.rejected_at DESC'
+          : 'o.receipt_submitted_at NULLS FIRST, o.created_at';
     return transaction(
       pools.pool,
       async (db) => {
@@ -141,14 +158,26 @@ export function merchantOnboardingModule(app: FastifyInstance, pools: Pools, c: 
                 u.display_name AS owner_name, u.email AS owner_email,
                 -- Live means customers can use it now: a paused shop awaiting a correction is not.
                 coalesce(m.status='active', false) AS live,
-                o.corrects_order_id IS NOT NULL AS correction
+                o.corrects_order_id IS NOT NULL AS correction, o.purpose,
+                onboarding_payment_status(o) AS payment_status, o.period_start, o.period_end,
+                o.confirmed_at, o.confirmed_reference, o.rejected_at, o.rejection_reason,
+                (SELECT count(*)::int FROM merchant_onboarding_orders x
+                 WHERE x.draft_id=o.draft_id AND x.rejected_at IS NOT NULL) AS earlier_rejections
          FROM merchant_onboarding_orders o JOIN merchant_onboarding_drafts d ON d.id=o.draft_id
          JOIN plans p ON p.id=o.plan_id JOIN users u ON u.id=d.owner_id
          LEFT JOIN merchants m ON m.id=d.merchant_id
-         WHERE o.receipt_key IS NOT NULL AND o.confirmed_at IS NULL AND o.rejected_at IS NULL
-         ORDER BY o.receipt_submitted_at NULLS FIRST, o.created_at LIMIT 100`,
+         WHERE ${where}
+         ORDER BY ${order} LIMIT 100`,
         );
-        return { orders: result.rows };
+        const counts = (
+          await db.query(
+            `SELECT count(*) FILTER (WHERE o.receipt_key IS NOT NULL AND o.confirmed_at IS NULL AND o.rejected_at IS NULL)::int AS pending,
+                    count(*) FILTER (WHERE o.receipt_key IS NOT NULL AND o.confirmed_at IS NULL AND o.rejected_at IS NULL AND m.status='active')::int AS live
+             FROM merchant_onboarding_orders o JOIN merchant_onboarding_drafts d ON d.id=o.draft_id
+             LEFT JOIN merchants m ON m.id=d.merchant_id`,
+          )
+        ).rows[0];
+        return { orders: result.rows, counts };
       },
       actor,
     );
@@ -257,6 +286,88 @@ export function merchantOnboardingModule(app: FastifyInstance, pools: Pools, c: 
     );
   });
 
+  // The owner's view of a self-service shop's payments: is the latest transfer verified, under
+  // review or rejected, and may a renewal be paid now? Shops not set up by self sign-up get null.
+  const billingPath = '/api/v1/merchant-onboarding/billing';
+  const billingState = async (db: DB, merchantId: string, ownerId: string) => {
+    const row = (
+      await db.query(
+        `SELECT d.id AS draft_id, s.current_period_end, s.price_minor, s.status AS subscription_status,
+                m.status AS merchant_status, onboarding_owner_needs_review(d.owner_id) AS needs_review,
+                o.id AS order_id, o.purpose, onboarding_payment_status(o) AS payment_status,
+                o.amount_minor, o.submitted_reference, o.receipt_submitted_at, o.rejection_reason,
+                o.period_start, o.period_end,
+                (SELECT row_to_json(r) FROM (
+                   SELECT x.id, x.amount_minor, x.recipient_account FROM merchant_onboarding_orders x
+                   WHERE x.draft_id=d.id AND x.purpose='renewal' AND x.receipt_key IS NULL
+                     AND x.rejected_at IS NULL ORDER BY x.created_at DESC LIMIT 1) r) AS open_renewal,
+                EXISTS (SELECT 1 FROM merchant_onboarding_orders x WHERE x.draft_id=d.id
+                  AND x.confirmed_at IS NULL AND (x.receipt_key IS NOT NULL OR x.rejected_at IS NOT NULL)) AS unresolved
+         FROM merchant_onboarding_drafts d JOIN merchants m ON m.id=d.merchant_id
+         LEFT JOIN merchant_subscriptions s ON s.merchant_id=d.merchant_id
+         LEFT JOIN LATERAL (SELECT * FROM merchant_onboarding_orders y
+           WHERE y.draft_id=d.id AND y.receipt_key IS NOT NULL
+           ORDER BY y.receipt_submitted_at DESC NULLS LAST, y.created_at DESC LIMIT 1) o ON true
+         WHERE d.merchant_id=$1 AND d.owner_id=$2`,
+        [merchantId, ownerId],
+      )
+    ).rows[0];
+    if (!row) return null;
+    const end = row.current_period_end ? new Date(row.current_period_end) : null;
+    const opensAt = end ? new Date(end.getTime() - 7 * 86_400_000) : null;
+    const renewal = row.open_renewal
+      ? 'open'
+      : row.merchant_status !== 'active' || row.unresolved || row.needs_review
+        ? 'blocked'
+        : !end || !row.price_minor
+          ? 'blocked'
+          : opensAt! > new Date()
+            ? 'too_early'
+            : 'available';
+    return {
+      paymentStatus: row.payment_status ?? 'awaiting_transfer',
+      purpose: row.purpose ?? 'activation',
+      amountMinor: row.amount_minor,
+      reference: row.submitted_reference,
+      submittedAt: row.receipt_submitted_at,
+      rejectionReason: row.payment_status === 'rejected' ? row.rejection_reason : null,
+      periodStart: row.period_start,
+      periodEnd: row.period_end,
+      currentPeriodEnd: row.current_period_end,
+      renewal,
+      renewalOpensAt: opensAt,
+      renewalPriceMinor: row.price_minor,
+      openRenewal: row.open_renewal,
+      recipient: c.ONBOARDING_INSTAPAY_ADDRESS,
+    };
+  };
+  app.get(billingPath, async (req) => {
+    const actor = authenticated(req);
+    requireCondition(actor.authMethod !== 'device', 'FORBIDDEN', 403);
+    const { merchantId } = z.object({ merchantId: z.uuid() }).parse(req.query ?? {});
+    return transaction(
+      pools.pool,
+      async (db) => ({ billing: await billingState(db, merchantId, actor.id) }),
+      actor,
+    );
+  });
+  app.post(billingPath + '/renewal', async (req) => {
+    const actor = authenticated(req);
+    requireCondition(actor.authMethod !== 'device' && !actor.preview, 'FORBIDDEN', 403);
+    const { merchantId } = z.object({ merchantId: z.uuid() }).strict().parse(req.body);
+    return transaction(
+      pools.pool,
+      async (db) => {
+        await db.query('SELECT start_subscription_renewal($1,$2)', [
+          merchantId,
+          c.ONBOARDING_INSTAPAY_ADDRESS,
+        ]);
+        return { billing: await billingState(db, merchantId, actor.id) };
+      },
+      actor,
+    );
+  });
+
   app.get('/api/v1/merchant-onboarding/plans', async (req) => {
     const actor = authenticated(req);
     requireCondition(actor.authMethod !== 'device', 'FORBIDDEN', 403);
@@ -302,20 +413,22 @@ export function merchantOnboardingModule(app: FastifyInstance, pools: Pools, c: 
         .strict()
         .parse(req.body);
       const receipt = await sanitizeLogo(image);
+      // The uploaded file's fingerprint: the same receipt cannot pay for a second order.
+      const fingerprint = tokenHash(Buffer.from(image, 'base64').toString('base64'));
       return transaction(
         pools.pool,
         async (db) => {
           const result = await db.query(
             `UPDATE merchant_onboarding_orders o
              SET submitted_reference=$1,receipt_key=gen_random_uuid(),receipt_image=$2,
-                 receipt_submitted_at=clock_timestamp()
+                 receipt_submitted_at=clock_timestamp(),receipt_sha256=$5
              FROM merchant_onboarding_drafts d
              WHERE o.id=$3 AND o.draft_id=d.id AND d.owner_id=$4
-               AND (d.merchant_id IS NULL OR o.corrects_order_id IS NOT NULL)
+               AND (d.merchant_id IS NULL OR o.corrects_order_id IS NOT NULL OR o.purpose='renewal')
                AND o.confirmed_at IS NULL AND o.rejected_at IS NULL
              RETURNING o.id,onboarding_plan_key(o.plan_id) AS plan_key,
                o.amount_minor,o.recipient_account,o.submitted_reference,o.confirmed_at`,
-            [reference, receipt.bytes, id, actor.id],
+            [reference, receipt.bytes, id, actor.id, fingerprint],
           );
           requireCondition(result.rows[0], 'NOT_FOUND', 404);
           return { order: result.rows[0] };

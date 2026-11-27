@@ -12,7 +12,14 @@ export interface MailMessage {
   text: string;
   html: string;
   idempotencyKey: string;
-  metadata?: { kind: string; link?: string; merchantId?: string; expiresAt?: string };
+  /** Local file sink only; never sent over SMTP. */
+  metadata?: {
+    kind: string;
+    link?: string;
+    code?: string;
+    merchantId?: string;
+    expiresAt?: string;
+  };
 }
 export interface Mailer {
   send(message: MailMessage): Promise<void>;

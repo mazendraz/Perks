@@ -3,20 +3,27 @@ import { passwordEnabled, type Config } from './config.js';
 import { transaction, type DB, type Pools } from './db.js';
 import { authenticated } from './actor.js';
 import { requireCondition } from './errors.js';
-import { keyedHash, opaqueToken, tokenHash } from './crypto.js';
+import { keyedHash, opaqueToken, otpCode, safeEqual, tokenHash } from './crypto.js';
+import { randomUUID } from 'node:crypto';
 import { setTimeout } from 'node:timers/promises';
 import { hashPassword, verifyPassword } from './passwords.js';
 import { seal } from './outbox.js';
 import { z } from 'zod';
 import {
+  emailInput,
   loginInput,
   changePasswordInput,
   resetRequestInput,
   resetPasswordInput,
 } from '../../../packages/contracts/src/auth.js';
 
+const RESEND_SECONDS = 60;
+const CODES_PER_HOUR = 5;
+
 type Issue = (reply: FastifyReply, id: string, version: number) => Promise<{ csrfToken: string }>;
 export function passwordAuth(app: FastifyInstance, pools: Pools, c: Config, issue: Issue) {
+  const codeHash = (id: string, code: string) =>
+    keyedHash('email-code:' + id + ':' + code, c.AUTH_PEPPER);
   const enabled = () => requireCondition(passwordEnabled(c), 'PASSWORD_AUTH_NOT_CONFIGURED', 503);
   app.post(
     '/api/v1/auth/login',
@@ -208,57 +215,112 @@ export function passwordAuth(app: FastifyInstance, pools: Pools, c: Config, issu
       return issue(reply, actor.id, version);
     },
   );
+  // Self sign-up proves the owner reads the address with a six-digit code (10 minutes, one use,
+  // five tries) before the account gets a password. The answer is the same whether or not the
+  // address already has an account, so sign-up never reveals who is registered.
   app.post(
     '/api/v1/auth/merchant-signup',
-    { config: { rateLimit: { max: 5, timeWindow: '10 minutes' } } },
+    { config: { rateLimit: { max: 10, timeWindow: '10 minutes' } } },
     async (req, reply) => {
       enabled();
       requireCondition(c.ONBOARDING_INSTAPAY_ADDRESS, 'ONBOARDING_PAYMENT_UNAVAILABLE', 503);
       const { email, name, locale } = z
         .object({
-          email: z
-            .email()
-            .max(254)
-            .transform((value) => value.toLowerCase()),
+          email: emailInput,
           name: z.string().trim().min(2).max(120),
           locale: z.enum(['ar', 'en']),
         })
         .strict()
         .parse(req.body);
-      const token = opaqueToken();
       await transaction(pools.authPool, async (db) => {
         const { id } = (
           await db.query('SELECT start_merchant_signup($1,$2,$3) AS id', [email, name, locale])
         ).rows[0];
         if (!id) return;
-        // A new owner may open the welcome email hours later, so its single-use link lasts a day
-        // (a password reset link stays at 30 minutes).
-        const created = (
+        // Serialise codes per account: a minute between codes and at most five an hour.
+        await db.query('SELECT id FROM users WHERE id=$1 FOR UPDATE', [id]);
+        const recent = (
           await db.query(
-            `INSERT INTO password_reset_tokens(user_id,token_hash,credential_version,expires_at)
-           SELECT id,$2,password_version,clock_timestamp()+interval '24 hours'
-           FROM users WHERE id=$1 AND password_hash IS NULL
-           RETURNING id,credential_version,expires_at`,
-            [id, tokenHash(token)],
+            `SELECT count(*)::int AS hour,
+                    coalesce(bool_or(created_at>clock_timestamp()-interval '${RESEND_SECONDS} seconds'),false) AS fresh
+             FROM email_verification_codes
+             WHERE user_id=$1 AND created_at>clock_timestamp()-interval '1 hour'`,
+            [id],
           )
         ).rows[0];
-        if (!created) return;
+        if (recent.fresh || recent.hour >= CODES_PER_HOUR) return;
+        const codeId = randomUUID();
+        const code = otpCode();
+        const created = (
+          await db.query(
+            `INSERT INTO email_verification_codes(id,user_id,code_hash,expires_at)
+             VALUES($1,$2,$3,clock_timestamp()+interval '10 minutes') RETURNING expires_at`,
+            [codeId, id, codeHash(codeId, code)],
+          )
+        ).rows[0];
         await db.query(
-          `INSERT INTO auth_mail_outbox(user_id,kind,reset_token_id,credential_version,payload,locale,dedupe_key,expires_at)
-           VALUES($1,'merchant_welcome',$2,$3,$4,$5,$6,$7)`,
+          `INSERT INTO auth_mail_outbox(user_id,kind,verification_code_id,credential_version,payload,locale,dedupe_key,expires_at)
+           SELECT id,'email_verification',$2,password_version,$3,$4,$5,$6 FROM users WHERE id=$1`,
           [
             id,
-            created.id,
-            created.credential_version,
-            { encryptedToken: seal(token, c.AUTH_PEPPER) },
+            codeId,
+            { encryptedCode: seal(code, c.AUTH_PEPPER) },
             locale,
-            'merchant-welcome:' + created.id,
+            'email-verification:' + codeId,
             created.expires_at,
           ],
         );
       });
       reply.code(202);
-      return { accepted: true };
+      return { accepted: true, resendAfterSeconds: RESEND_SECONDS };
+    },
+  );
+  app.post(
+    '/api/v1/auth/merchant-signup/verify',
+    { config: { rateLimit: { max: 10, timeWindow: '10 minutes' } } },
+    async (req) => {
+      enabled();
+      const { email, code } = z
+        .object({ email: emailInput, code: z.string().regex(/^[0-9]{6}$/) })
+        .strict()
+        .parse(req.body);
+      const token = opaqueToken();
+      const verified = await transaction(pools.authPool, async (db) => {
+        // Only a new owner still without a password can verify this way; anyone else gets the
+        // same answer as a wrong code.
+        const row = (
+          await db.query(
+            `SELECT v.id,v.code_hash,v.user_id,u.password_version FROM users u
+             JOIN LATERAL (SELECT * FROM email_verification_codes x WHERE x.user_id=u.id
+                           ORDER BY x.created_at DESC LIMIT 1) v ON true
+             WHERE u.email=$1 AND u.status='active' AND u.password_hash IS NULL
+               AND v.used_at IS NULL AND v.expires_at>clock_timestamp() AND v.attempts<5
+               AND is_onboarding_owner(u.id)
+             FOR UPDATE OF u`,
+            [email],
+          )
+        ).rows[0];
+        if (!row) return null;
+        const matches = safeEqual(row.code_hash, codeHash(row.id, code));
+        await db.query(
+          'UPDATE email_verification_codes SET attempts=attempts+1, used_at=CASE WHEN $2 THEN clock_timestamp() END WHERE id=$1',
+          [row.id, matches],
+        );
+        if (!matches) return null;
+        await db.query(
+          'UPDATE users SET email_verified_at=coalesce(email_verified_at,clock_timestamp()) WHERE id=$1',
+          [row.user_id],
+        );
+        // The verified owner chooses a password next, with a short single-use token.
+        await db.query(
+          `INSERT INTO password_reset_tokens(user_id,token_hash,credential_version,expires_at)
+           VALUES($1,$2,$3,clock_timestamp()+interval '30 minutes')`,
+          [row.user_id, tokenHash(token), row.password_version],
+        );
+        return true;
+      });
+      requireCondition(verified, 'VERIFICATION_CODE_INVALID', 400);
+      return { verified: true, passwordToken: token };
     },
   );
   app.post(
@@ -309,17 +371,25 @@ export function passwordAuth(app: FastifyInstance, pools: Pools, c: Config, issu
       const reset = await transaction(pools.authPool, async (db) => {
         const row = (
           await db.query(
-            "SELECT t.id,t.user_id,u.email,is_onboarding_owner(u.id) AS onboarding FROM password_reset_tokens t JOIN users u ON u.id=t.user_id WHERE t.token_hash=$1 AND t.used_at IS NULL AND t.expires_at>clock_timestamp() AND t.credential_version=u.password_version AND u.status='active' AND password_session_portal(u.id)<>'customer' FOR UPDATE OF u,t",
+            "SELECT t.id,t.user_id,u.email,u.preferred_locale,u.password_hash IS NULL AS first_password,is_onboarding_owner(u.id) AS onboarding FROM password_reset_tokens t JOIN users u ON u.id=t.user_id WHERE t.token_hash=$1 AND t.used_at IS NULL AND t.expires_at>clock_timestamp() AND t.credential_version=u.password_version AND u.status='active' AND password_session_portal(u.id)<>'customer' FOR UPDATE OF u,t",
             [tokenHash(p.token)],
           )
         ).rows[0];
         requireCondition(row, 'RESET_LINK_INVALID', 410);
         const { password_version: version } = (
           await db.query(
-            'UPDATE users SET password_hash=$1,password_version=password_version+1,password_must_change=false WHERE id=$2 RETURNING password_version',
+            // Opening an emailed link (or entering an emailed code) proves the address.
+            'UPDATE users SET password_hash=$1,password_version=password_version+1,password_must_change=false,email_verified_at=coalesce(email_verified_at,clock_timestamp()) WHERE id=$2 RETURNING password_version',
             [hash, row.user_id],
           )
         ).rows[0];
+        if (row.onboarding && row.first_password)
+          await db.query(
+            `INSERT INTO auth_mail_outbox(user_id,kind,credential_version,payload,locale,dedupe_key,expires_at)
+             VALUES($1,'merchant_welcome',$2,'{}',$3,$4,clock_timestamp()+interval '1 day')
+             ON CONFLICT(dedupe_key) DO NOTHING`,
+            [row.user_id, version, row.preferred_locale, 'merchant-welcome:' + row.user_id],
+          );
         await db.query('UPDATE password_reset_tokens SET used_at=clock_timestamp() WHERE id=$1', [
           row.id,
         ]);

@@ -42,7 +42,7 @@ export async function runOne(pool: pg.Pool, c: ServiceConfig): Promise<boolean> 
           ...mailTemplate(
             'invitation',
             (context.locale || claim.payload.locale) === 'en' ? 'en' : 'ar',
-            { link, business: context.name },
+            { link, business: context.name, origin: c.PUBLIC_APP_ORIGIN },
           ),
           to: context.email,
           idempotencyKey: claim.outbox_id,

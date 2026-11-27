@@ -215,7 +215,10 @@ try {
   assert.deepEqual(Object.keys(services.migrate.environment).sort(), [
     'APP_ENV',
     'DATABASE_MIGRATOR_URL',
+    'MIGRATION_BACKUP',
   ]);
+  // The image has no pg_dump; Compose relies on pgBackRest for the pre-upgrade backup.
+  assert.equal(services.migrate.environment.MIGRATION_BACKUP, 'off');
   for (const name of ['api', 'worker'])
     assert.equal(services[name].depends_on.migrate.condition, 'service_completed_successfully');
   pass('Compose parses; DB is private and process credentials are separated');

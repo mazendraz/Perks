@@ -46,7 +46,7 @@ The manual GitHub workflow `Deploy (manual)` is the second, non-Compose release 
 
 ### Pre-migration backup (both release paths)
 
-`npm run db:migrate` dumps the database with `pg_dump` (custom format, owner-only file) before it applies any pending migration on a production or staging database, and refuses to migrate when the dump fails. Files go to `MIGRATION_BACKUP_DIR` (default `.local/pre-migrate-backups` in the checkout). The host needs `pg_dump` of the server's major version or newer (`postgresql-client-17` on Ubuntu, or set `PG_DUMP_PATH`). Restore into an empty database with `pg_restore --no-owner`. Copy the file off the server: a same-host dump does not replace the off-host backups. `MIGRATION_BACKUP=always` requests the same dump on any other database.
+`npm run db:migrate` dumps the database with `pg_dump` (custom format, owner-only file) before it applies any pending migration on a production or staging database, and refuses to migrate when the dump fails. A brand-new database (no migration applied yet) is not dumped. The Compose `migrate` service sets `MIGRATION_BACKUP=off` because its image has no `pg_dump`; there, take the pgBackRest backup described under "Update and rollback". Files go to `MIGRATION_BACKUP_DIR` (default `.local/pre-migrate-backups` in the checkout). The host needs `pg_dump` of the server's major version or newer (`postgresql-client-17` on Ubuntu, or set `PG_DUMP_PATH`). Restore into an empty database with `pg_restore --no-owner`. Copy the file off the server: a same-host dump does not replace the off-host backups. `MIGRATION_BACKUP=always` requests the same dump on any other database.
 
 ### Email deliverability (DNS)
 

@@ -130,6 +130,8 @@ services:
     command: [node, dist/db/migrate.js]
     environment:
       APP_ENV: ${APP_ENV:-production}
+      # The image has no pg_dump: on Compose the pre-upgrade backup is pgBackRest's (README).
+      MIGRATION_BACKUP: 'off'
       DATABASE_MIGRATOR_URL: postgresql://nuqta_migrator:${NUQTA_MIGRATOR_DB_PASSWORD}@postgres:5432/nuqta
     networks: [database]
     depends_on: { postgres: { condition: service_healthy } }

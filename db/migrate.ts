@@ -58,13 +58,15 @@ try {
   );
   const files = (await readdir('db/migrations')).filter((f) => f.endsWith('.sql')).sort();
   // A deployed database is dumped before any new migration touches it; no dump, no migration.
-  // MIGRATION_BACKUP=always asks for the same dump elsewhere.
-  if (production || process.env.MIGRATION_BACKUP === 'always') {
+  // A brand-new database has nothing to keep. MIGRATION_BACKUP=always asks for the dump anywhere;
+  // =off is for Compose, whose pgBackRest service takes the pre-upgrade backup (deploy/README.md).
+  const backup = process.env.MIGRATION_BACKUP;
+  if ((production && backup !== 'off') || backup === 'always') {
     const applied = new Set(
       (await db.query('SELECT name FROM schema_migrations')).rows.map((row) => row.name),
     );
     const pending = files.filter((file) => !applied.has(file));
-    if (pending.length) backupBeforeMigrating(c.DATABASE_MIGRATOR_URL, pending[0]!);
+    if (pending.length && applied.size) backupBeforeMigrating(c.DATABASE_MIGRATOR_URL, pending[0]!);
   }
   for (const file of files) {
     const sql = await readFile('db/migrations/' + file, 'utf8'),

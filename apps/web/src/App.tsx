@@ -6,6 +6,7 @@ import { ControlLocale } from './controls/locale.js';
 import {
   portalForPath,
   defaultPortal,
+  homeRoute,
   portalInfo,
   applyPortalManifest,
   type Portal,
@@ -199,7 +200,7 @@ export function App() {
       history.replaceState({}, '', '/login');
       window.dispatchEvent(new PopStateEvent('popstate'));
     } else if ((route === '/' || route === '/portals') && session && sessionPortal === portal)
-      navigate('/' + defaultPortal(session));
+      navigate(homeRoute(session));
   }, [session, sessionPortal, portal, route]);
   useEffect(() => {
     if (
@@ -400,7 +401,7 @@ export function App() {
                   !route.startsWith('/join/') &&
                   !route.startsWith('/invite/')
                 )
-                  navigate('/' + defaultPortal(next));
+                  navigate(homeRoute(next));
               }}
             />
           ) : (

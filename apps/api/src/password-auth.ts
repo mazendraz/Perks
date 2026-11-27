@@ -304,18 +304,20 @@ export function passwordAuth(app: FastifyInstance, pools: Pools, c: Config, issu
       enabled();
       const p = resetPasswordInput.parse(req.body),
         hash = await hashPassword(p.password, c.AUTH_PEPPER);
-      const onboarding = await transaction(pools.authPool, async (db) => {
+      const reset = await transaction(pools.authPool, async (db) => {
         const row = (
           await db.query(
-            "SELECT t.id,t.user_id,u.email,u.password_hash IS NULL AS first_password FROM password_reset_tokens t JOIN users u ON u.id=t.user_id WHERE t.token_hash=$1 AND t.used_at IS NULL AND t.expires_at>clock_timestamp() AND t.credential_version=u.password_version AND u.status='active' AND password_session_portal(u.id)<>'customer' FOR UPDATE OF u,t",
+            "SELECT t.id,t.user_id,u.email,is_onboarding_owner(u.id) AS onboarding FROM password_reset_tokens t JOIN users u ON u.id=t.user_id WHERE t.token_hash=$1 AND t.used_at IS NULL AND t.expires_at>clock_timestamp() AND t.credential_version=u.password_version AND u.status='active' AND password_session_portal(u.id)<>'customer' FOR UPDATE OF u,t",
             [tokenHash(p.token)],
           )
         ).rows[0];
         requireCondition(row, 'RESET_LINK_INVALID', 410);
-        await db.query(
-          'UPDATE users SET password_hash=$1,password_version=password_version+1,password_must_change=false WHERE id=$2',
-          [hash, row.user_id],
-        );
+        const { password_version: version } = (
+          await db.query(
+            'UPDATE users SET password_hash=$1,password_version=password_version+1,password_must_change=false WHERE id=$2 RETURNING password_version',
+            [hash, row.user_id],
+          )
+        ).rows[0];
         await db.query('UPDATE password_reset_tokens SET used_at=clock_timestamp() WHERE id=$1', [
           row.id,
         ]);
@@ -327,8 +329,20 @@ export function passwordAuth(app: FastifyInstance, pools: Pools, c: Config, issu
           'UPDATE password_login_guards SET failures=0,locked_until=NULL WHERE email=$1',
           [row.email],
         );
-        return row.first_password === true;
+        return {
+          userId: row.user_id as string,
+          version: version as number,
+          onboarding: row.onboarding === true,
+        };
       });
+      // A shop owner who just set their first password from the emailed link (which proves they
+      // own the address) goes straight back to their setup instead of signing in a second time.
+      if (reset.onboarding)
+        return {
+          changed: true,
+          onboarding: true,
+          ...(await issue(reply, reset.userId, reset.version)),
+        };
       reply.clearCookie(c.COOKIE_SECURE === 'true' ? '__Host-nq_session' : 'nq_session', {
         path: '/',
         secure: c.COOKIE_SECURE === 'true',
@@ -339,7 +353,7 @@ export function passwordAuth(app: FastifyInstance, pools: Pools, c: Config, issu
         secure: c.COOKIE_SECURE === 'true',
         sameSite: 'strict',
       });
-      return { changed: true, onboarding };
+      return { changed: true, onboarding: false };
     },
   );
 }

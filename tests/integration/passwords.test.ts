@@ -244,6 +244,10 @@ test('password recovery is generic, single-use and version-fenced, and revokes p
   );
   assert.equal(resets.filter((r) => r.statusCode === 200).length, 1);
   assert.equal(resets.filter((r) => r.statusCode === 410).length, 1);
+  // Only a self-service shop owner is signed in by the link; staff sign in again themselves.
+  const accepted = resets.find((r) => r.statusCode === 200)!.json();
+  assert.equal(accepted.onboarding, false);
+  assert.equal(accepted.csrfToken, undefined);
   assert.equal(
     (await app.inject({ url: '/api/v1/session', headers: actor.headers })).statusCode,
     401,

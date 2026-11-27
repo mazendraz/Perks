@@ -53,6 +53,15 @@ test('a new merchant verifies their email, sets a password and signs in to their
   const confirmed = await app.inject(reset);
   assert.equal(confirmed.statusCode, 200, confirmed.body);
   assert.equal(confirmed.json().onboarding, true);
+  // The emailed link proves the address: the new owner is signed in and lands on their setup.
+  assert.ok(confirmed.json().csrfToken);
+  const fresh = await app.inject({
+    url: '/api/v1/session',
+    headers: { cookie: confirmed.cookies.map(({ name, value }) => name + '=' + value).join('; ') },
+  });
+  assert.equal(fresh.statusCode, 200, fresh.body);
+  assert.equal(fresh.json().onboarding, true);
+  assert.deepEqual(fresh.json().grants, []);
   assert.equal((await app.inject(reset)).statusCode, 410);
   const signedIn = await app.inject({
     method: 'POST',

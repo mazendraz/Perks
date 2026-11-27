@@ -379,10 +379,16 @@ export function ResetPassword({ token, lang }: { token: string; lang: Language }
               setBusy(true);
               setError('');
               try {
-                const result = await api<{ onboarding: boolean }>('/auth/password/reset', {
-                  method: 'POST',
-                  body: { token, password },
-                });
+                const result = await api<{ onboarding: boolean; csrfToken?: string }>(
+                  '/auth/password/reset',
+                  { method: 'POST', body: { token, password } },
+                );
+                // A new shop owner is already signed in: carry on with the shop setup.
+                if (result.onboarding && result.csrfToken) {
+                  setCsrf(result.csrfToken);
+                  location.assign('/onboarding');
+                  return;
+                }
                 setOnboarding(result.onboarding);
                 setDone(true);
                 setPassword('');

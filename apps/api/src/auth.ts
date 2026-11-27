@@ -332,15 +332,26 @@ export function authModule(app: FastifyInstance, pools: Pools, c: Config) {
   });
   app.get('/api/v1/session', async (req) => {
     const actor = authenticated(req);
-    const grants = await transaction(
+    const { grants, onboarding } = await transaction(
       pools.pool,
-      async (db) =>
-        (
+      async (db) => ({
+        grants: (
           await db.query(
             "SELECT s.id,s.merchant_id,s.role,s.max_qty,m.name,m.slug,m.status,m.timezone,m.primary_color,m.logo_asset_id,coalesce((SELECT jsonb_agg(jsonb_build_object('id',b.id,'name',b.name)) FROM staff_branch_grants g JOIN branches b ON b.id=g.branch_id AND b.merchant_id=g.merchant_id WHERE g.staff_id=s.id AND b.status='active'),'[]') AS branches FROM staff_memberships s JOIN merchants m ON m.id=s.merchant_id WHERE s.user_id=$1 AND s.status='active' ORDER BY m.name",
             [actor.id],
           )
         ).rows,
+        // A shop owner who signed up on their own and has not published yet: their home is
+        // the setup page, not the (empty) customer card page.
+        onboarding:
+          actor.authMethod !== 'device' &&
+          !!(
+            await db.query(
+              'SELECT 1 FROM merchant_onboarding_drafts WHERE owner_id=$1 AND merchant_id IS NULL',
+              [actor.id],
+            )
+          ).rowCount,
+      }),
       actor,
     );
     // A staff browser that also holds a customer's card: sign-out asks whether to keep it.
@@ -369,6 +380,7 @@ export function authModule(app: FastifyInstance, pools: Pools, c: Config) {
       },
       csrfToken: req.cookies[req.csrfCookieName] || '',
       grants,
+      onboarding,
     };
   });
   mfaModule(app, pools, c);

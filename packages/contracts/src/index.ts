@@ -39,6 +39,8 @@ export interface Session {
   };
   csrfToken: string;
   grants: Grant[];
+  /** Owns a self-service shop draft that is not published yet. */
+  onboarding?: boolean;
 }
 export interface CardData {
   stamp_ink?: { ledgerId: string; ordinal: number }[];

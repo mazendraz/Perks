@@ -69,3 +69,12 @@ export function defaultPortal(session: Session): Portal {
         ? 'cashier'
         : 'customer';
 }
+/**
+ * Where a signed-in person lands. A shop owner who signed up on their own and has not published
+ * yet has no staff grant, so their portal would be the empty customer page: send them back to
+ * the setup page they left instead.
+ */
+export function homeRoute(session: Session): string {
+  const portal = defaultPortal(session);
+  return portal === 'customer' && session.onboarding ? '/onboarding' : '/' + portal;
+}

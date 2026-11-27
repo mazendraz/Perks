@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import type { Language, CardData } from '../../../../packages/contracts/src/index.js';
 import { LoyaltyCard } from '../../../../packages/ui/src/LoyaltyCard.js';
 import { Icon } from '../../../../packages/ui/src/Icon.js';
-import { api, errorText, setCsrf } from '../api.js';
+import { api, ApiError, errorText, setCsrf } from '../api.js';
 import { PasswordField } from '../controls/PasswordField.js';
 import { portalInfo, type Portal } from '../portals.js';
 
@@ -339,18 +339,35 @@ export function Login({
   );
 }
 export function ResetPassword({ token, lang }: { token: string; lang: Language }) {
+  // The welcome email of a new shop owner opens this page with ?welcome=1: same form, first-time copy.
+  const welcome = new URLSearchParams(location.search).has('welcome');
   const ar = lang === 'ar',
     [password, setPassword] = useState(''),
     [confirm, setConfirm] = useState(''),
     [busy, setBusy] = useState(false),
     [error, setError] = useState(''),
-    [done, setDone] = useState(false),
-    [onboarding, setOnboarding] = useState(false);
+    [expired, setExpired] = useState(false),
+    [done, setDone] = useState(false);
   return (
     <main id="main" className="auth-reset">
       <section className="panel">
-        <span className="eyebrow">PERKS ACCOUNT</span>
-        <h1>{ar ? 'باسورد جديد. بداية سهلة.' : 'A fresh password.'}</h1>
+        <span className="eyebrow">{ar ? 'حساب Perks' : 'Perks account'}</span>
+        <h1>
+          {welcome
+            ? ar
+              ? 'اختار باسورد لحسابك'
+              : 'Choose a password for your account'
+            : ar
+              ? 'باسورد جديد. بداية سهلة.'
+              : 'A fresh password.'}
+        </h1>
+        {welcome && !done && (
+          <p className="muted">
+            {ar
+              ? 'دي آخر خطوة في التسجيل. بعدها هتدخل على طول تجهّز محلك.'
+              : 'This is the last sign-up step. Next you go straight to setting up your shop.'}
+          </p>
+        )}
         {done ? (
           <>
             <p role="status">
@@ -362,7 +379,7 @@ export function ResetPassword({ token, lang }: { token: string; lang: Language }
               className="primary"
               onClick={() => {
                 setCsrf('');
-                location.assign(onboarding ? '/onboarding' : '/login');
+                location.assign('/login');
               }}
             >
               {ar ? 'تسجيل الدخول' : 'Sign in'}
@@ -389,25 +406,38 @@ export function ResetPassword({ token, lang }: { token: string; lang: Language }
                   location.assign('/onboarding');
                   return;
                 }
-                setOnboarding(result.onboarding);
                 setDone(true);
                 setPassword('');
                 setConfirm('');
               } catch (e) {
                 setError(errorText(e, lang));
+                setExpired(e instanceof ApiError && e.code === 'RESET_LINK_INVALID');
               } finally {
                 setBusy(false);
               }
             }}
           >
             <PasswordField
-              label={ar ? 'كلمة المرور الجديدة' : 'New password'}
+              label={
+                welcome
+                  ? ar
+                    ? 'كلمة المرور'
+                    : 'Password'
+                  : ar
+                    ? 'كلمة المرور الجديدة'
+                    : 'New password'
+              }
               lang={lang}
               required
               autoComplete="new-password"
               minLength={10}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              hint={
+                <small className="field-hint">
+                  {ar ? '10 حروف على الأقل.' : 'At least 10 characters.'}
+                </small>
+              }
             />
             <PasswordField
               label={ar ? 'تأكيد كلمة المرور' : 'Confirm password'}
@@ -420,10 +450,22 @@ export function ResetPassword({ token, lang }: { token: string; lang: Language }
             {error && (
               <p role="alert" className="error-text">
                 {error}
+                {expired && welcome && (
+                  <>
+                    {' '}
+                    <a href="/onboarding/signup">{ar ? 'ابعت لينك جديد' : 'Send a new link'}</a>
+                  </>
+                )}
               </p>
             )}
             <button className="primary" disabled={busy} aria-busy={busy}>
-              {ar ? 'حفظ كلمة المرور' : 'Save password'}
+              {welcome
+                ? ar
+                  ? 'احفظ وكمّل تجهيز المحل'
+                  : 'Save and set up your shop'
+                : ar
+                  ? 'حفظ كلمة المرور'
+                  : 'Save password'}
             </button>
           </form>
         )}

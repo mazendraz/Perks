@@ -2801,3 +2801,6 @@ input[inputmode='numeric'] {
     justify-content: center;
   }
 }
+.small-print {
+  font-size: 12px;
+}

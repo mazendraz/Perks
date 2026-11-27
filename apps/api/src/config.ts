@@ -3,6 +3,7 @@ import { isAbsolute, relative, resolve, parse, sep } from 'node:path';
 import { z } from 'zod';
 import { isIP } from 'node:net';
 import { keysMatch } from './webpush.js';
+import { ACTIVE_MARKET } from '../../../packages/domain/src/market.js';
 if (existsSync('.env')) process.loadEnvFile('.env');
 const schema = z.object({
   APP_ENV: z.enum(['development', 'test', 'staging', 'production']).default('development'),
@@ -19,7 +20,14 @@ const schema = z.object({
   MAIL_TRANSPORT: z.enum(['file', 'smtp']).default('file'),
   MAIL_FILE_ROOT: z.string().min(1).default('.local/mail'),
   STORAGE_ROOT: z.string().min(1).default('.local'),
-  ONBOARDING_INSTAPAY_ADDRESS: z.string().trim().max(120).optional(),
+  // Self-service subscriptions are paid to the official WhatsApp number by InstaPay; an empty
+  // value (compose passes one when unset) keeps that default.
+  ONBOARDING_INSTAPAY_ADDRESS: z
+    .string()
+    .trim()
+    .max(120)
+    .optional()
+    .transform((value) => value || ACTIVE_MARKET.instapay),
   TRUSTED_PROXIES: z.string().default(''),
   // Live update (SSE) stream caps: whole process, per signed-in user, per client address.
   LIVE_MAX_STREAMS: z.coerce.number().int().min(1).default(200),

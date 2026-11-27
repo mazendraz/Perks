@@ -1,6 +1,7 @@
+import { ACTIVE_MARKET } from '../../../../packages/domain/src/market.js';
 import type { PublicPlanKey } from '../../../../packages/contracts/src/plan-catalog.js';
 
-export const SUPPORT_PHONE = '201006111380';
+export const SUPPORT_PHONE = ACTIVE_MARKET.whatsapp;
 
 /** Sales lines by the device's language; any other language (Arabic included) uses SUPPORT_PHONE. */
 const PHONE_BY_LANGUAGE: Record<string, string> = {
@@ -26,27 +27,14 @@ export interface PriceCurrency {
   unit: string;
   name: string;
 }
-const EGP: PriceCurrency = { unit: 'جنيه', name: 'الجنيه المصري' };
-const EUR: PriceCurrency = { unit: 'يورو', name: 'اليورو' };
-const CURRENCY_BY_LANGUAGE: Record<string, PriceCurrency> = {
-  en: { unit: 'دولار', name: 'الدولار الأمريكي' },
-  fr: EUR,
-  es: EUR,
-  de: EUR,
-  it: EUR,
-  ru: { unit: 'روبل', name: 'الروبل الروسي' },
-  tr: { unit: 'ليرة', name: 'الليرة التركية' },
-};
-const GBP: PriceCurrency = { unit: 'جنيه إسترليني', name: 'الجنيه الإسترليني' };
-
 /**
- * The currency label for the device's language. Only the label changes: the amount is shown as is,
- * so 25 stays 25 whether it reads جنيه, يورو or دولار. British English ("en-GB") reads pounds.
+ * Prices are in the active market's currency for every visitor: we sell in Egypt only, so a
+ * French or English device still reads جنيه (the amount is what self sign-up charges).
  */
-export function priceCurrencyFor(language: string | undefined): PriceCurrency {
-  if (/^en[-_]gb$/i.test(language ?? '')) return GBP;
-  return CURRENCY_BY_LANGUAGE[baseLanguage(language)] ?? EGP;
-}
+export const PRICE_CURRENCY: PriceCurrency = {
+  unit: ACTIVE_MARKET.unitAr,
+  name: ACTIVE_MARKET.nameAr,
+};
 export const VOICE = '/business/voice/';
 
 /** Every sentence the guide can say, with the recording that matches it word for word. */

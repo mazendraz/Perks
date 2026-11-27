@@ -30,7 +30,7 @@ function el<K extends keyof HTMLElementTagNameMap>(
 }
 const money = (n: number) => Math.round(n).toLocaleString('en-US');
 const deviceLanguage = navigator.languages?.[0] ?? navigator.language;
-const currency = priceCurrencyFor(deviceLanguage);
+const currency = PRICE_CURRENCY;
 const prefersReducedMotion = () => {
   try {
     return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -68,7 +68,7 @@ import {
   CLIP_SECONDS,
   PLAN_LINE,
   VOICE,
-  priceCurrencyFor,
+  PRICE_CURRENCY,
   supportPhoneFor,
   type LineKey,
 } from './lines.js';

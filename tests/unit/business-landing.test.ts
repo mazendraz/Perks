@@ -1,13 +1,14 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile, stat } from 'node:fs/promises';
+import { readFileSync } from 'node:fs';
 import {
   LINES,
   CLIP_SECONDS,
   PLAN_LINE,
   SUPPORT_PHONE,
   supportPhoneFor,
-  priceCurrencyFor,
+  PRICE_CURRENCY,
 } from '../../apps/web/src/business/lines.js';
 import { publicPlanCatalog } from '../../packages/contracts/src/plan-catalog.js';
 
@@ -80,13 +81,9 @@ test('the WhatsApp number follows the device language', () => {
     assert.equal(supportPhoneFor(lang), SUPPORT_PHONE, String(lang));
 });
 
-test('the price currency label follows the device language', () => {
-  const unit = (lang: string | undefined) => priceCurrencyFor(lang).unit;
-  for (const lang of ['fr-FR', 'es', 'de-AT', 'it-IT']) assert.equal(unit(lang), 'يورو', lang);
-  assert.equal(unit('en-US'), 'دولار');
-  assert.equal(unit('en'), 'دولار');
-  assert.equal(unit('en-GB'), 'جنيه إسترليني');
-  assert.equal(unit('ru-RU'), 'روبل');
-  assert.equal(unit('tr'), 'ليرة');
-  for (const lang of ['ar-EG', 'ja', undefined]) assert.equal(unit(lang), 'جنيه', String(lang));
+test('prices are in Egyptian pounds whatever the device language', () => {
+  assert.equal(PRICE_CURRENCY.unit, 'جنيه');
+  assert.equal(PRICE_CURRENCY.name, 'الجنيه المصري');
+  const main = readFileSync('apps/web/src/business/main.ts', 'utf8');
+  assert.doesNotMatch(main, /priceCurrencyFor|CURRENCY_BY_LANGUAGE/);
 });

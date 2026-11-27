@@ -66,3 +66,44 @@ test('the local mail sink writes a complete file once under concurrency and forb
     await rm(root, { recursive: true, force: true });
   }
 });
+test('self-service onboarding mail greets, reports the review outcome and escapes reviewer text', () => {
+  const link = 'https://nuqta.example.test/onboarding';
+  const welcome = mailTemplate('merchant_welcome', 'ar', {
+    link: 'https://nuqta.example.test/reset-password/fixture-token?welcome=1',
+    name: 'منى',
+  });
+  assert.equal(welcome.subject, 'أهلًا بيك! حسابك جاهز · Perks');
+  assert.ok(welcome.text.includes('أهلًا منى، فاضل خطوة واحدة'));
+  assert.ok(!welcome.text.includes('لو طلبت تغيير الباسورد'));
+  assert.ok(!welcome.subject.includes('fixture-token'));
+
+  const confirmed = mailTemplate('onboarding_payment_confirmed', 'en', {
+    link,
+    business: 'Ghazal Cafe',
+  });
+  assert.ok(confirmed.text.includes('subscription transfer for Ghazal Cafe'));
+
+  const paused = mailTemplate('onboarding_payment_rejected', 'en', {
+    link,
+    business: 'Ghazal Cafe',
+    reason: '<b>Amount</b> missing',
+    suspended: true,
+  });
+  assert.ok(paused.text.includes('the shop is paused'));
+  assert.ok(paused.text.includes('Reason: <b>Amount</b> missing'));
+  assert.ok(paused.html.includes('Reason: &lt;b&gt;Amount&lt;/b&gt; missing'));
+  assert.ok(!paused.html.includes('<b>Amount'));
+  const pending = mailTemplate('onboarding_payment_rejected', 'ar', {
+    link,
+    business: 'كافيه غزال',
+    reason: 'المبلغ ناقص',
+  });
+  assert.ok(pending.text.includes('عشان نكمّل تفعيل محلك'));
+  assert.ok(!pending.text.includes('اتوقف'));
+
+  const review = mailTemplate('onboarding_receipt_submitted', 'ar', {
+    link: 'https://nuqta.example.test/platform/onboarding-payments',
+    business: 'كافيه غزال',
+  });
+  assert.ok(review.text.includes('كافيه غزال رفع إيصال تحويل الاشتراك'));
+});

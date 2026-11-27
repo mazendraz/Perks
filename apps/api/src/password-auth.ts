@@ -231,10 +231,12 @@ export function passwordAuth(app: FastifyInstance, pools: Pools, c: Config, issu
           await db.query('SELECT start_merchant_signup($1,$2,$3) AS id', [email, name, locale])
         ).rows[0];
         if (!id) return;
+        // A new owner may open the welcome email hours later, so its single-use link lasts a day
+        // (a password reset link stays at 30 minutes).
         const created = (
           await db.query(
             `INSERT INTO password_reset_tokens(user_id,token_hash,credential_version,expires_at)
-           SELECT id,$2,password_version,clock_timestamp()+interval '30 minutes'
+           SELECT id,$2,password_version,clock_timestamp()+interval '24 hours'
            FROM users WHERE id=$1 AND password_hash IS NULL
            RETURNING id,credential_version,expires_at`,
             [id, tokenHash(token)],
@@ -243,14 +245,14 @@ export function passwordAuth(app: FastifyInstance, pools: Pools, c: Config, issu
         if (!created) return;
         await db.query(
           `INSERT INTO auth_mail_outbox(user_id,kind,reset_token_id,credential_version,payload,locale,dedupe_key,expires_at)
-           VALUES($1,'password_reset',$2,$3,$4,$5,$6,$7)`,
+           VALUES($1,'merchant_welcome',$2,$3,$4,$5,$6,$7)`,
           [
             id,
             created.id,
             created.credential_version,
-            { encryptedToken: seal(token, c.AUTH_PEPPER) },
+            { encryptedToken: seal(token, c.AUTH_PEPPER), name },
             locale,
-            'password-reset:' + created.id,
+            'merchant-welcome:' + created.id,
             created.expires_at,
           ],
         );

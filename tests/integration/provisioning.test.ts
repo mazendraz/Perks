@@ -39,7 +39,7 @@ test('a new merchant verifies their email, sets a password and signs in to their
   const mail = (
     await db.query(
       `SELECT o.payload FROM auth_mail_outbox o JOIN users u ON u.id=o.user_id
-     WHERE u.email=$1 AND o.kind='password_reset'`,
+     WHERE u.email=$1 AND o.kind='merchant_welcome'`,
       [email],
     )
   ).rows[0];
@@ -248,6 +248,30 @@ test('onboarding orders quote the server catalog and reuse a quote on retry', as
   assert.deepEqual(ledger.rows, [
     { amount_minor: plan.amount_minor, payment_reference: 'ORDER-123' },
   ]);
+  // Every platform admin hears about the receipt; the owner hears that it was confirmed, once.
+  const mailFor = async (kind: string, key: string) =>
+    (
+      await db.query(
+        `SELECT u.email,o.payload FROM auth_mail_outbox o JOIN users u ON u.id=o.user_id
+         WHERE o.kind=$1 AND o.dedupe_key LIKE $2 ORDER BY u.email`,
+        [kind, key],
+      )
+    ).rows;
+  const admins = (
+    await db.query(
+      "SELECT email FROM users WHERE global_role='platform_admin' AND status='active' AND email IS NOT NULL ORDER BY email",
+    )
+  ).rows.map((row) => row.email);
+  assert.ok(admins.length > 0);
+  assert.deepEqual(
+    (
+      await mailFor('onboarding_receipt_submitted', `onboarding-receipt:${queued.receipt_key}:%`)
+    ).map((row) => row.email),
+    admins,
+  );
+  assert.deepEqual(await mailFor('onboarding_payment_confirmed', `onboarding-confirmed:${id}`), [
+    { email: 'owner@bunn.test', payload: { shopName: draft.details.name } },
+  ]);
 
   const newDraft = (await app.inject({ method: 'POST', url: draftUrl, headers })).json().draft;
   const newSetup = await app.inject({
@@ -280,6 +304,15 @@ test('onboarding orders quote the server catalog and reuse a quote on retry', as
     payload: { receiptKey: secondReview.receipt_key, reason: 'Transfer not received' },
   });
   assert.equal(rejected.statusCode, 200, rejected.body);
+  assert.deepEqual(
+    await mailFor('onboarding_payment_rejected', `onboarding-rejected:${secondOrder.id}`),
+    [
+      {
+        email: 'owner@bunn.test',
+        payload: { shopName: 'Second café', reason: 'Transfer not received', suspended: true },
+      },
+    ],
+  );
   const stopped = await db.query('SELECT resolve_placement($1) AS value', [
     secondPublished.json().publication.code,
   ]);

@@ -193,6 +193,14 @@ test('onboarding orders quote the server catalog and reuse a quote on retry', as
   });
   assert.equal(uploaded.statusCode, 200, uploaded.body);
   assert.equal(uploaded.json().order.submitted_reference, 'ORDER-123');
+  // Sending the receipt again replaces it; admins are not mailed a second time for the order.
+  const reuploaded = await app.inject({
+    method: 'POST',
+    url: request.url + '/' + id + '/receipt',
+    headers,
+    payload: { reference: 'ORDER-123', image: image.toString('base64') },
+  });
+  assert.equal(reuploaded.statusCode, 200, reuploaded.body);
   const reviewPath = '/api/v1/platform/onboarding-payments';
   assert.equal((await app.inject({ url: reviewPath, headers })).statusCode, 403);
   const queue = await app.inject({ url: reviewPath, headers: pa });
@@ -287,13 +295,13 @@ test('onboarding orders quote the server catalog and reuse a quote on retry', as
   ).rows.map((row) => row.email);
   assert.ok(admins.length > 0);
   assert.deepEqual(
-    (
-      await mailFor('onboarding_receipt_submitted', `onboarding-receipt:${queued.receipt_key}:%`)
-    ).map((row) => row.email),
+    (await mailFor('onboarding_receipt_submitted', `onboarding-receipt:${id}:%`)).map(
+      (row) => row.email,
+    ),
     admins,
   );
   assert.deepEqual(await mailFor('onboarding_payment_confirmed', `onboarding-confirmed:${id}`), [
-    { email: 'owner@bunn.test', payload: { shopName: draft.details.name } },
+    { email: 'owner@bunn.test', payload: { shopName: draft.details.name, live: true } },
   ]);
 
   const newDraft = (await app.inject({ method: 'POST', url: draftUrl, headers })).json().draft;
@@ -342,6 +350,14 @@ test('onboarding orders quote the server catalog and reuse a quote on retry', as
   assert.equal(stopped.rows[0].value.status, 'unavailable');
   const suspendedDraft = (await app.inject({ url: draftUrl, headers })).json().draft;
   assert.equal(suspendedDraft.rejection_reason, 'Transfer not received');
+  // An open draft for another shop must not hide the paused one from its own notice.
+  const pausedId = secondPublished.json().publication.merchantId;
+  await app.inject({ method: 'POST', url: draftUrl, headers });
+  assert.equal((await app.inject({ url: draftUrl, headers })).json().draft.publication, null);
+  const paused = (await app.inject({ url: draftUrl + '?merchantId=' + pausedId, headers })).json()
+    .draft;
+  assert.equal(paused.publication.merchantId, pausedId);
+  assert.equal(paused.rejection_reason, 'Transfer not received');
   const correction = await app.inject({
     method: 'POST',
     url: draftUrl + '/' + newDraft.id + '/correction',
@@ -358,6 +374,9 @@ test('onboarding orders quote the server catalog and reuse a quote on retry', as
   assert.equal(corrected.statusCode, 200, corrected.body);
   const corrections = (await app.inject({ url: reviewPath, headers: pa })).json().orders;
   const correctionReview = corrections.find((row: { id: string }) => row.id === correctedOrder.id);
+  // The shop is paused while the correction waits: the reviewer must not see it as live.
+  assert.equal(correctionReview.correction, true);
+  assert.equal(correctionReview.live, false);
   const approvedCorrection = await app.inject({
     ...confirmation,
     url: reviewPath + '/' + correctedOrder.id + '/confirm',
@@ -368,7 +387,8 @@ test('onboarding orders quote the server catalog and reuse a quote on retry', as
     },
   });
   assert.equal(approvedCorrection.statusCode, 200, approvedCorrection.body);
-  const restored = (await app.inject({ url: draftUrl, headers })).json().draft;
+  const restored = (await app.inject({ url: draftUrl + '?merchantId=' + pausedId, headers })).json()
+    .draft;
   assert.deepEqual(restored.publication, secondPublished.json().publication);
   assert.equal(restored.rejection_reason, null);
   const reopened = await db.query('SELECT resolve_placement($1) AS value', [

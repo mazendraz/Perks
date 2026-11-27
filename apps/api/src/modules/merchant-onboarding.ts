@@ -24,7 +24,7 @@ export function merchantOnboardingModule(app: FastifyInstance, pools: Pools, c: 
   const files = createFileStore(c);
   const orderPath = '/api/v1/merchant-onboarding/order';
   const orderFields =
-    'id, plan_id, (SELECT m.plan_key FROM merchant_onboarding_monthly_plans() m WHERE m.plan_id=merchant_onboarding_orders.plan_id) AS plan_key, amount_minor, currency, duration_days, recipient_account';
+    'id, plan_id, onboarding_plan_key(plan_id) AS plan_key, amount_minor, currency, duration_days, recipient_account';
   const reviewPath = '/api/v1/platform/onboarding-payments';
 
   app.get(path + '/:id/logo', async (req, reply) => {
@@ -137,11 +137,14 @@ export function merchantOnboardingModule(app: FastifyInstance, pools: Pools, c: 
         const result = await db.query(
           `SELECT o.id, o.amount_minor, o.currency, o.recipient_account, o.submitted_reference,
                 o.receipt_key, o.receipt_submitted_at, d.details->>'name' AS shop_name,
-                p.key AS plan_key, p.name_en AS plan_name, u.display_name AS owner_name,
-                u.email AS owner_email, d.merchant_id IS NOT NULL AS live,
+                p.key AS plan_key, p.name_ar AS plan_name_ar, p.name_en AS plan_name_en,
+                u.display_name AS owner_name, u.email AS owner_email,
+                -- Live means customers can use it now: a paused shop awaiting a correction is not.
+                coalesce(m.status='active', false) AS live,
                 o.corrects_order_id IS NOT NULL AS correction
          FROM merchant_onboarding_orders o JOIN merchant_onboarding_drafts d ON d.id=o.draft_id
          JOIN plans p ON p.id=o.plan_id JOIN users u ON u.id=d.owner_id
+         LEFT JOIN merchants m ON m.id=d.merchant_id
          WHERE o.receipt_key IS NOT NULL AND o.confirmed_at IS NULL AND o.rejected_at IS NULL
          ORDER BY o.receipt_submitted_at NULLS FIRST, o.created_at LIMIT 100`,
         );
@@ -271,10 +274,9 @@ export function merchantOnboardingModule(app: FastifyInstance, pools: Pools, c: 
       pools.pool,
       async (db) => {
         const result = await db.query(
-          `SELECT o.id, p.plan_key, o.amount_minor, o.recipient_account, o.submitted_reference,
-                  o.confirmed_at, o.rejection_reason
+          `SELECT o.id, onboarding_plan_key(o.plan_id) AS plan_key, o.amount_minor,
+                  o.recipient_account, o.submitted_reference, o.confirmed_at, o.rejection_reason
            FROM merchant_onboarding_orders o JOIN merchant_onboarding_drafts d ON d.id=o.draft_id
-           LEFT JOIN merchant_onboarding_monthly_plans() p ON p.plan_id=o.plan_id
            WHERE d.owner_id=$1 AND d.merchant_id IS NULL
            ORDER BY o.confirmed_at DESC NULLS LAST, o.created_at DESC LIMIT 1`,
           [actor.id],
@@ -311,7 +313,7 @@ export function merchantOnboardingModule(app: FastifyInstance, pools: Pools, c: 
              WHERE o.id=$3 AND o.draft_id=d.id AND d.owner_id=$4
                AND (d.merchant_id IS NULL OR o.corrects_order_id IS NOT NULL)
                AND o.confirmed_at IS NULL AND o.rejected_at IS NULL
-             RETURNING o.id,(SELECT m.plan_key FROM merchant_onboarding_monthly_plans() m WHERE m.plan_id=o.plan_id) AS plan_key,
+             RETURNING o.id,onboarding_plan_key(o.plan_id) AS plan_key,
                o.amount_minor,o.recipient_account,o.submitted_reference,o.confirmed_at`,
             [reference, receipt.bytes, id, actor.id],
           );
@@ -380,16 +382,28 @@ export function merchantOnboardingModule(app: FastifyInstance, pools: Pools, c: 
   app.get(path, async (req) => {
     const actor = authenticated(req);
     requireCondition(actor.authMethod !== 'device', 'FORBIDDEN', 403);
+    // ?merchantId= picks the draft a given published shop came from (the paused-shop notice);
+    // otherwise the open draft comes first.
+    const { merchantId } = z.object({ merchantId: z.uuid().optional() }).parse(req.query ?? {});
     return transaction(
       pools.pool,
       async (db) => {
+        // A published shop is paused while its latest rejected transfer has no confirmed
+        // transfer after it; the reason shown is that latest rejection, also after a correction
+        // was rejected in turn.
         const result = await db.query(
           `SELECT ${draftFields}, (
-             SELECT rejection_reason FROM merchant_onboarding_orders WHERE id=published_order_id
+             SELECT r.rejection_reason FROM merchant_onboarding_orders r
+             WHERE d.merchant_id IS NOT NULL AND r.draft_id=d.id AND r.rejected_at IS NOT NULL
+               AND NOT EXISTS (
+                 SELECT 1 FROM merchant_onboarding_orders c
+                 WHERE c.draft_id=d.id AND c.confirmed_at IS NOT NULL AND c.created_at>r.created_at)
+             ORDER BY r.rejected_at DESC LIMIT 1
            ) AS rejection_reason
-           FROM merchant_onboarding_drafts
-           WHERE owner_id=$1 ORDER BY (merchant_id IS NULL) DESC, created_at DESC LIMIT 1`,
-          [actor.id],
+           FROM merchant_onboarding_drafts d
+           WHERE owner_id=$1 AND ($2::uuid IS NULL OR merchant_id=$2)
+           ORDER BY (merchant_id IS NULL) DESC, created_at DESC LIMIT 1`,
+          [actor.id, merchantId ?? null],
         );
         return { draft: result.rows[0] ?? null };
       },

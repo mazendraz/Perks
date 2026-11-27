@@ -250,7 +250,7 @@ export function passwordAuth(app: FastifyInstance, pools: Pools, c: Config, issu
             id,
             created.id,
             created.credential_version,
-            { encryptedToken: seal(token, c.AUTH_PEPPER), name },
+            { encryptedToken: seal(token, c.AUTH_PEPPER) },
             locale,
             'merchant-welcome:' + created.id,
             created.expires_at,
@@ -337,8 +337,8 @@ export function passwordAuth(app: FastifyInstance, pools: Pools, c: Config, issu
           onboarding: row.onboarding === true,
         };
       });
-      // A shop owner who just set their first password from the emailed link (which proves they
-      // own the address) goes straight back to their setup instead of signing in a second time.
+      // A shop owner who has not published yet (welcome link or a later reset; either emailed link
+      // proves they own the address) goes straight back to their setup instead of signing in again.
       if (reset.onboarding)
         return {
           changed: true,

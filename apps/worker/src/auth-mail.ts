@@ -25,17 +25,21 @@ export async function runAuthMail(pool: pg.Pool, c: ServiceConfig) {
       '/reset-password/' +
       unseal(String(payload.encryptedToken), c.AUTH_PEPPER) +
       (kind === 'merchant_welcome' ? '?welcome=1' : '');
+    // A confirmation queued before the live flag existed (071) went to a published shop.
+    const live = payload.live !== false;
     const link =
       kind === 'password_reset' || kind === 'merchant_welcome'
         ? resetLink()
-        : c.PUBLIC_APP_ORIGIN + (linkPaths[kind] ?? '/login');
+        : kind === 'onboarding_payment_confirmed' && !live
+          ? c.PUBLIC_APP_ORIGIN + '/onboarding'
+          : c.PUBLIC_APP_ORIGIN + (linkPaths[kind] ?? '/login');
     const text = (value: unknown) => (typeof value === 'string' && value ? value : undefined);
     const content = mailTemplate(kind, job.locale, {
       link,
-      name: text(payload.name),
       business: text(payload.shopName),
       reason: text(payload.reason),
       suspended: payload.suspended === true,
+      live,
     });
     await createMailer(c, pool).send({
       ...content,

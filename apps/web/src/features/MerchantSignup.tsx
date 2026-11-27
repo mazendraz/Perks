@@ -81,7 +81,7 @@ export function MerchantSignup({ lang }: { lang: Language }) {
                 {errorText(error, lang)}
               </p>
             )}
-            {resent && !wait && error == null && (
+            {resent && error == null && (
               <p className="notice success" role="status">
                 {ar ? 'بعتنا اللينك تاني.' : 'We sent the link again.'}
               </p>

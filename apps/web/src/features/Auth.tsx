@@ -450,10 +450,14 @@ export function ResetPassword({ token, lang }: { token: string; lang: Language }
             {error && (
               <p role="alert" className="error-text">
                 {error}
+                {/* The link may have expired, or already set the password: offer both ways on. */}
                 {expired && welcome && (
                   <>
                     {' '}
+                    {ar ? 'لو لسه ماختارتش باسورد، ' : 'Not chosen a password yet? '}
                     <a href="/onboarding/signup">{ar ? 'ابعت لينك جديد' : 'Send a new link'}</a>
+                    {ar ? '. ولو اخترته قبل كده، ' : '. Already chose one? '}
+                    <a href="/login">{ar ? 'سجّل دخول' : 'Sign in'}</a>.
                   </>
                 )}
               </p>

@@ -11,7 +11,8 @@ type Payment = {
   receipt_key: string;
   receipt_submitted_at: string | null;
   shop_name: string;
-  plan_name: string;
+  plan_name_ar: string;
+  plan_name_en: string;
   owner_name: string | null;
   owner_email: string | null;
   /** The shop was already published: rejecting pauses a live shop. */
@@ -175,7 +176,8 @@ function PaymentReview({
         <dl className="onboarding-summary">
           <dt>{ar ? 'الباقة' : 'Plan'}</dt>
           <dd>
-            <bdi>{order.plan_name}</bdi> · {expected} {ar ? 'شهريًا' : 'a month'}
+            <bdi>{ar ? order.plan_name_ar : order.plan_name_en}</bdi> · {expected}{' '}
+            {ar ? 'شهريًا' : 'a month'}
           </dd>
           <dt>{ar ? 'صاحب المحل' : 'Owner'}</dt>
           <dd>

@@ -20,7 +20,11 @@ function useRejectedTransfer(grant: Grant) {
   useEffect(() => {
     if (grant.role !== 'owner') return;
     let active = true;
-    void api<{ draft: OnboardingDraft | null }>('/merchant-onboarding/draft', {}, false)
+    void api<{ draft: OnboardingDraft | null }>(
+      '/merchant-onboarding/draft?merchantId=' + encodeURIComponent(grant.merchant_id),
+      {},
+      false,
+    )
       .then(({ draft }) => {
         if (
           active &&

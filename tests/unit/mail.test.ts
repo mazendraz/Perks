@@ -66,22 +66,31 @@ test('the local mail sink writes a complete file once under concurrency and forb
     await rm(root, { recursive: true, force: true });
   }
 });
-test('self-service onboarding mail greets, reports the review outcome and escapes reviewer text', () => {
+test('self-service onboarding mail welcomes, reports the review outcome and escapes reviewer text', () => {
   const link = 'https://nuqta.example.test/onboarding';
   const welcome = mailTemplate('merchant_welcome', 'ar', {
     link: 'https://nuqta.example.test/reset-password/fixture-token?welcome=1',
-    name: 'منى',
   });
   assert.equal(welcome.subject, 'أهلًا بيك! حسابك جاهز · Perks');
-  assert.ok(welcome.text.includes('أهلًا منى، فاضل خطوة واحدة'));
+  assert.ok(welcome.text.startsWith('أهلًا بيك! حسابك جاهز\n\nفاضل خطوة واحدة'));
   assert.ok(!welcome.text.includes('لو طلبت تغيير الباسورد'));
   assert.ok(!welcome.subject.includes('fixture-token'));
 
   const confirmed = mailTemplate('onboarding_payment_confirmed', 'en', {
     link,
     business: 'Ghazal Cafe',
+    live: true,
   });
   assert.ok(confirmed.text.includes('subscription transfer for Ghazal Cafe'));
+  assert.ok(confirmed.text.includes('Open shop dashboard:'));
+  // Confirmed before publishing: the owner is told to publish, not sent to a dashboard.
+  const unpublished = mailTemplate('onboarding_payment_confirmed', 'ar', {
+    link,
+    business: 'كافيه غزال',
+    live: false,
+  });
+  assert.ok(unpublished.text.includes('فاضل تنشر محلك'));
+  assert.ok(unpublished.text.includes('انشر محلك: ' + link));
 
   const paused = mailTemplate('onboarding_payment_rejected', 'en', {
     link,

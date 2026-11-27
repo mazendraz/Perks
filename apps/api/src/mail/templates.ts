@@ -11,12 +11,12 @@ export interface MailData {
   link?: string;
   /** Business or shop name. */
   business?: string;
-  /** The recipient's own name, for a greeting. */
-  name?: string;
   /** Why a transfer was rejected, written by the reviewer. */
   reason?: string;
   /** The rejected shop was already live and is now paused. */
   suspended?: boolean;
+  /** The confirmed shop is already published (otherwise the owner still has to publish it). */
+  live?: boolean;
 }
 const escape = (value: string) =>
   value.replace(
@@ -52,25 +52,32 @@ function copy(kind: MailKind, ar: boolean, data: MailData): Copy {
           : 'Your account password was changed and previous sessions were signed out. If this was not you, recover your account and contact your account administrator.',
         action: ar ? 'استعادة الحساب' : 'Recover account',
       };
+    // No greeting by name: sign-up is unauthenticated, so a name typed there must never be mailed
+    // to whatever address was entered with it.
     case 'merchant_welcome':
       return {
         title: ar ? 'أهلًا بيك! حسابك جاهز' : 'Welcome! Your account is ready',
-        message:
-          (data.name ? (ar ? 'أهلًا ' : 'Hi ') + data.name + (ar ? '، ' : ', ') : '') +
-          (ar
-            ? 'فاضل خطوة واحدة: اختار باسورد لحسابك من الزرار اللي تحت، وبعدها هتكمّل تجهيز محلك على طول. الرابط بيشتغل مرة واحدة ولمدة 24 ساعة.'
-            : (data.name ? 'one' : 'One') +
-              ' step left: choose a password with the button below, then carry straight on with setting up your shop. The link works once, for 24 hours.'),
+        message: ar
+          ? 'فاضل خطوة واحدة: اختار باسورد لحسابك من الزرار اللي تحت، وبعدها هتكمّل تجهيز محلك على طول. الرابط بيشتغل مرة واحدة ولمدة 24 ساعة.'
+          : 'One step left: choose a password with the button below, then carry straight on with setting up your shop. The link works once, for 24 hours.',
         action: ar ? 'اختار الباسورد وكمّل' : 'Choose a password',
       };
     case 'onboarding_payment_confirmed':
-      return {
-        title: ar ? 'التحويل اتأكد' : 'Payment confirmed',
-        message: ar
-          ? `استلمنا تحويل اشتراك ${shop}، واشتراكك شغال. تقدر تكمّل من لوحة المحل.`
-          : `We received the subscription transfer for ${shop} and your subscription is active. Carry on from your shop dashboard.`,
-        action: ar ? 'افتح لوحة المحل' : 'Open shop dashboard',
-      };
+      return data.live
+        ? {
+            title: ar ? 'التحويل اتأكد' : 'Payment confirmed',
+            message: ar
+              ? `استلمنا تحويل اشتراك ${shop}، واشتراكك شغال. تقدر تكمّل من لوحة المحل.`
+              : `We received the subscription transfer for ${shop} and your subscription is active. Carry on from your shop dashboard.`,
+            action: ar ? 'افتح لوحة المحل' : 'Open shop dashboard',
+          }
+        : {
+            title: ar ? 'التحويل اتأكد' : 'Payment confirmed',
+            message: ar
+              ? `استلمنا تحويل اشتراك ${shop}. فاضل تنشر محلك عشان زباينك يبدأوا ياخدوا أختام.`
+              : `We received the subscription transfer for ${shop}. Publish your shop so customers can start collecting stamps.`,
+            action: ar ? 'انشر محلك' : 'Publish your shop',
+          };
     case 'onboarding_payment_rejected':
       return {
         title: ar ? 'مقدرناش نأكد التحويل' : 'We could not confirm your transfer',

@@ -629,8 +629,12 @@ function renderPlans() {
         billing +
         '.',
     );
-    // Sign-up on the site takes the monthly Starter, Growth and Pro plans; the rest is a chat.
-    const selfServe = !state.annual && SELF_SERVE_PLANS.has(p.key);
+    // Sign-up on the site takes the base monthly Starter, Growth and Pro plans. A quote with extra
+    // branches or staff on top, annual billing and Scale are a chat, so the price shown is the
+    // price charged.
+    const extras =
+      isRec && r.kind === 'plan' && (r.quote.extraBranches > 0 || r.quote.extraStaff > 0);
+    const selfServe = !state.annual && !extras && SELF_SERVE_PLANS.has(p.key);
     c.cta.textContent = selfServe ? 'ابدأ بـ ' + p.name : 'عايز ' + p.name;
     c.cta.href = selfServe ? '/onboarding/signup?plan=' + p.key : chat;
     if (selfServe) {

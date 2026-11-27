@@ -43,7 +43,11 @@ export default defineConfig({
     host: '127.0.0.1',
     port: 5173,
     strictPort: true,
-    proxy: { '/api': 'http://127.0.0.1:4100', '/health': 'http://127.0.0.1:4100' },
+    // Follows the API's PORT, so a busy 4100 can be avoided with PORT=… npm run dev.
+    proxy: {
+      '/api': 'http://127.0.0.1:' + (process.env.PORT || 4100),
+      '/health': 'http://127.0.0.1:' + (process.env.PORT || 4100),
+    },
   },
   build: {
     outDir: 'dist',

@@ -44,6 +44,14 @@ The manual GitHub workflow `Deploy (manual)` is the second, non-Compose release 
 - After migrations it restarts `perks` and `perks-worker`. Success requires `/health/ready` = 200 (every migration shipped with the build applied, restricted roles) **and** the worker active on the same process with no automatic restarts for `WORKER_STABLE_SECONDS` (default 15). If the deploy user can see the worker heartbeat file (no systemd `PrivateTmp`), set `WORKER_HEARTBEAT_FILE` to require a heartbeat written after the restart.
 - Rollback stays manual: check out the previous approved SHA only when the schema is backward compatible, as in the Compose procedure above.
 
+### Pre-migration backup (both release paths)
+
+`npm run db:migrate` dumps the database with `pg_dump` (custom format, owner-only file) before it applies any pending migration on a production or staging database, and refuses to migrate when the dump fails. Files go to `MIGRATION_BACKUP_DIR` (default `.local/pre-migrate-backups` in the checkout). The host needs `pg_dump` of the server's major version or newer (`postgresql-client-17` on Ubuntu, or set `PG_DUMP_PATH`). Restore into an empty database with `pg_restore --no-owner`. Copy the file off the server: a same-host dump does not replace the off-host backups. `MIGRATION_BACKUP=always` requests the same dump on any other database.
+
+### Email deliverability (DNS)
+
+Mail is sent from `SMTP_FROM` through the configured SMTP provider. Before real merchants sign up, publish for that sender's domain: an SPF TXT record that includes the provider, the DKIM record(s) the provider gives you, and a DMARC record (start with `v=DMARC1; p=none; rua=mailto:<a mailbox you read>`, move to `quarantine` once reports are clean). Without them Gmail and Outlook mark or reject sign-up codes as spam. On 2026-11-27 perks.systems had no SPF, DKIM, DMARC or MX records.
+
 ## Optional providers on Compose
 
 Apple Wallet, Google Wallet and Web Push are disabled in `compose.yml`, which does not pass their settings through. To enable them, copy `compose.providers.example.yml` to a private `compose.providers.yml`, keep only the providers in the release, set `NUQTA_PROVIDER_SECRETS_DIR` to a private read-only credential directory and add `-f deploy/compose.providers.yml` after the base file. Verify the rendered API and worker settings with `docker compose ... config api worker`, and verify delivery with dedicated provider test accounts before launch.

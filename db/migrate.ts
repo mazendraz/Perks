@@ -1,4 +1,7 @@
 import { readFile, readdir } from 'node:fs/promises';
+import { chmodSync, mkdirSync, statSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import { join, resolve } from 'node:path';
 import { createHash } from 'node:crypto';
 import pg from 'pg';
 import { readMigrationConfig } from '../apps/api/src/config.js';
@@ -53,7 +56,17 @@ try {
   await db.query(
     'CREATE TABLE IF NOT EXISTS schema_migrations(name text PRIMARY KEY,sha256 text NOT NULL,applied_at timestamptz NOT NULL DEFAULT now())',
   );
-  for (const file of (await readdir('db/migrations')).filter((f) => f.endsWith('.sql')).sort()) {
+  const files = (await readdir('db/migrations')).filter((f) => f.endsWith('.sql')).sort();
+  // A deployed database is dumped before any new migration touches it; no dump, no migration.
+  // MIGRATION_BACKUP=always asks for the same dump elsewhere.
+  if (production || process.env.MIGRATION_BACKUP === 'always') {
+    const applied = new Set(
+      (await db.query('SELECT name FROM schema_migrations')).rows.map((row) => row.name),
+    );
+    const pending = files.filter((file) => !applied.has(file));
+    if (pending.length) backupBeforeMigrating(c.DATABASE_MIGRATOR_URL, pending[0]!);
+  }
+  for (const file of files) {
     const sql = await readFile('db/migrations/' + file, 'utf8'),
       hash = createHash('sha256').update(sql).digest('hex');
     const old = await db.query('SELECT sha256 FROM schema_migrations WHERE name=$1', [file]);
@@ -80,7 +93,7 @@ try {
   await db.query('GRANT SELECT ON users TO nuqta_auth');
   await db.query('REVOKE INSERT,UPDATE ON users FROM nuqta_auth');
   await db.query(
-    'GRANT INSERT(email,display_name,auth_subject,password_hash,password_version,preferred_locale),UPDATE(email,auth_subject,totp_secret,last_totp_counter,password_hash,password_version,preferred_locale,password_must_change) ON users TO nuqta_auth',
+    'GRANT INSERT(email,display_name,auth_subject,password_hash,password_version,preferred_locale),UPDATE(email,auth_subject,totp_secret,last_totp_counter,password_hash,password_version,preferred_locale,password_must_change,email_verified_at) ON users TO nuqta_auth',
   );
   await db.query('GRANT SELECT,INSERT,UPDATE ON sessions,auth_challenges TO nuqta_auth');
   for (const t of ['merchants', 'branches', 'staff_memberships', 'staff_branch_grants'])
@@ -100,4 +113,36 @@ try {
   process.exitCode = 1;
 } finally {
   await db.end();
+}
+
+/**
+ * Writes a pg_dump (custom format, restorable with pg_restore) of the whole database to
+ * MIGRATION_BACKUP_DIR (default .local/pre-migrate-backups), readable by its owner only. The
+ * password goes through the environment, never the command line. Any failure stops the migration.
+ */
+function backupBeforeMigrating(url: string, firstPending: string) {
+  const target = new URL(url);
+  const dir = resolve(process.env.MIGRATION_BACKUP_DIR || '.local/pre-migrate-backups');
+  mkdirSync(dir, { recursive: true, mode: 0o700 });
+  const stamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const file = join(dir, `pre-${firstPending.replace(/\.sql$/, '')}-${stamp}.dump`);
+  execFileSync(
+    process.env.PG_DUMP_PATH || 'pg_dump',
+    [
+      '--format=custom',
+      '--no-owner',
+      '--file=' + file,
+      '--host=' + target.hostname,
+      '--port=' + (target.port || '5432'),
+      '--username=' + decodeURIComponent(target.username),
+      '--dbname=' + decodeURIComponent(target.pathname.slice(1)),
+    ],
+    {
+      stdio: ['ignore', 'inherit', 'inherit'],
+      env: { ...process.env, PGPASSWORD: decodeURIComponent(target.password) },
+    },
+  );
+  chmodSync(file, 0o600);
+  if (!statSync(file).size) throw new Error('Pre-migration backup is empty: ' + file);
+  console.log('Pre-migration backup written: ' + file);
 }

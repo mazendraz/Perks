@@ -77,6 +77,23 @@ test('a new merchant verifies their email, sets a password and signs in to their
   });
   assert.equal(draft.statusCode, 200, draft.body);
   assert.ok(draft.json().draft.id);
+  // An owner without a shop yet cannot read the plans table: the order still names its plan.
+  const owner = {
+    cookie: signedIn.cookies.map(({ name, value }) => name + '=' + value).join('; '),
+    origin,
+    'x-csrf-token': signedIn.json().csrfToken,
+  };
+  const quoted = await app.inject({
+    method: 'POST',
+    url: '/api/v1/merchant-onboarding/order',
+    headers: owner,
+    payload: { planKey: 'growth' },
+  });
+  assert.equal(quoted.statusCode, 200, quoted.body);
+  assert.equal(quoted.json().order.plan_key, 'growth');
+  const resumed = await app.inject({ url: '/api/v1/merchant-onboarding/order', headers: owner });
+  assert.equal(resumed.json().order?.id, quoted.json().order.id);
+  assert.equal(resumed.json().order.plan_key, 'growth');
 });
 test('a signed-in shop owner can resume and update only their own onboarding draft', async () => {
   const url = '/api/v1/merchant-onboarding/draft';

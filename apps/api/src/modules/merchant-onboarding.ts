@@ -23,7 +23,8 @@ export function merchantOnboardingModule(app: FastifyInstance, pools: Pools, c: 
   const path = '/api/v1/merchant-onboarding/draft';
   const files = createFileStore(c);
   const orderPath = '/api/v1/merchant-onboarding/order';
-  const orderFields = 'id, plan_id, amount_minor, currency, duration_days, recipient_account';
+  const orderFields =
+    'id, plan_id, (SELECT m.plan_key FROM merchant_onboarding_monthly_plans() m WHERE m.plan_id=merchant_onboarding_orders.plan_id) AS plan_key, amount_minor, currency, duration_days, recipient_account';
   const reviewPath = '/api/v1/platform/onboarding-payments';
 
   app.get(path + '/:id/logo', async (req, reply) => {
@@ -266,9 +267,10 @@ export function merchantOnboardingModule(app: FastifyInstance, pools: Pools, c: 
       pools.pool,
       async (db) => {
         const result = await db.query(
-          `SELECT o.id, o.amount_minor, o.recipient_account, o.submitted_reference, o.confirmed_at,
-                  o.rejection_reason
+          `SELECT o.id, p.plan_key, o.amount_minor, o.recipient_account, o.submitted_reference,
+                  o.confirmed_at, o.rejection_reason
            FROM merchant_onboarding_orders o JOIN merchant_onboarding_drafts d ON d.id=o.draft_id
+           LEFT JOIN merchant_onboarding_monthly_plans() p ON p.plan_id=o.plan_id
            WHERE d.owner_id=$1 AND d.merchant_id IS NULL
            ORDER BY o.confirmed_at DESC NULLS LAST, o.created_at DESC LIMIT 1`,
           [actor.id],
@@ -304,7 +306,8 @@ export function merchantOnboardingModule(app: FastifyInstance, pools: Pools, c: 
              WHERE o.id=$3 AND o.draft_id=d.id AND d.owner_id=$4
                AND (d.merchant_id IS NULL OR o.corrects_order_id IS NOT NULL)
                AND o.confirmed_at IS NULL AND o.rejected_at IS NULL
-             RETURNING o.id,o.amount_minor,o.recipient_account,o.submitted_reference,o.confirmed_at`,
+             RETURNING o.id,(SELECT m.plan_key FROM merchant_onboarding_monthly_plans() m WHERE m.plan_id=o.plan_id) AS plan_key,
+               o.amount_minor,o.recipient_account,o.submitted_reference,o.confirmed_at`,
             [reference, receipt.bytes, id, actor.id],
           );
           requireCondition(result.rows[0], 'NOT_FOUND', 404);

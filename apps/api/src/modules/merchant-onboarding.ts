@@ -136,10 +136,14 @@ export function merchantOnboardingModule(app: FastifyInstance, pools: Pools, c: 
       async (db) => {
         const result = await db.query(
           `SELECT o.id, o.amount_minor, o.currency, o.recipient_account, o.submitted_reference,
-                o.receipt_key, d.details->>'name' AS shop_name
+                o.receipt_key, o.receipt_submitted_at, d.details->>'name' AS shop_name,
+                p.key AS plan_key, p.name_en AS plan_name, u.display_name AS owner_name,
+                u.email AS owner_email, d.merchant_id IS NOT NULL AS live,
+                o.corrects_order_id IS NOT NULL AS correction
          FROM merchant_onboarding_orders o JOIN merchant_onboarding_drafts d ON d.id=o.draft_id
+         JOIN plans p ON p.id=o.plan_id JOIN users u ON u.id=d.owner_id
          WHERE o.receipt_key IS NOT NULL AND o.confirmed_at IS NULL AND o.rejected_at IS NULL
-         ORDER BY o.created_at LIMIT 100`,
+         ORDER BY o.receipt_submitted_at NULLS FIRST, o.created_at LIMIT 100`,
         );
         return { orders: result.rows };
       },
@@ -301,7 +305,8 @@ export function merchantOnboardingModule(app: FastifyInstance, pools: Pools, c: 
         async (db) => {
           const result = await db.query(
             `UPDATE merchant_onboarding_orders o
-             SET submitted_reference=$1,receipt_key=gen_random_uuid(),receipt_image=$2
+             SET submitted_reference=$1,receipt_key=gen_random_uuid(),receipt_image=$2,
+                 receipt_submitted_at=clock_timestamp()
              FROM merchant_onboarding_drafts d
              WHERE o.id=$3 AND o.draft_id=d.id AND d.owner_id=$4
                AND (d.merchant_id IS NULL OR o.corrects_order_id IS NOT NULL)

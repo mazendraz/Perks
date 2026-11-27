@@ -9,7 +9,15 @@ type Payment = {
   recipient_account: string;
   submitted_reference: string;
   receipt_key: string;
+  receipt_submitted_at: string | null;
   shop_name: string;
+  plan_name: string;
+  owner_name: string | null;
+  owner_email: string | null;
+  /** The shop was already published: rejecting pauses a live shop. */
+  live: boolean;
+  /** A corrected transfer after an earlier rejection. */
+  correction: boolean;
 };
 
 export function OnboardingPayments({ lang }: { lang: Language }) {
@@ -90,10 +98,24 @@ function PaymentReview({
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<unknown>(null);
-  const expected = new Intl.NumberFormat(ar ? 'ar-EG' : 'en-EG', {
+  const expected = new Intl.NumberFormat(ar ? 'ar-EG-u-nu-latn' : 'en-EG', {
     style: 'currency',
     currency: 'EGP',
+    maximumFractionDigits: 0,
   }).format(order.amount_minor / 100);
+  const receiptUrl =
+    '/api/v1' +
+    endpoint +
+    '/' +
+    order.id +
+    '/receipt?__portal=platform&version=' +
+    order.receipt_key;
+  const sentAt = order.receipt_submitted_at
+    ? new Intl.DateTimeFormat(ar ? 'ar-EG-u-nu-latn' : 'en-GB', {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+      }).format(new Date(order.receipt_submitted_at))
+    : null;
 
   async function confirm(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -137,34 +159,56 @@ function PaymentReview({
   }
 
   return (
-    <article className="panel">
-      <h2>{order.shop_name}</h2>
-      <dl>
-        <dt>{ar ? 'المبلغ المطلوب' : 'Expected amount'}</dt>
-        <dd>{expected}</dd>
-        <dt>{ar ? 'حساب الاستلام' : 'Receiving account'}</dt>
-        <dd>
-          <bdi>{order.recipient_account}</bdi>
-        </dd>
-        <dt>{ar ? 'رقم العملية المرسل' : 'Submitted reference'}</dt>
-        <dd>
-          <bdi>{order.submitted_reference}</bdi>
-        </dd>
-      </dl>
-      <a
-        href={
-          '/api/v1' +
-          endpoint +
-          '/' +
-          order.id +
-          '/receipt?__portal=platform&version=' +
-          order.receipt_key
-        }
-        target="_blank"
-        rel="noreferrer"
-      >
-        {ar ? 'افتح صورة الإيصال' : 'Open receipt image'}
-      </a>
+    <article className="panel payment-review">
+      <div className="payment-review-head">
+        <h2>
+          <bdi>{order.shop_name}</bdi>
+        </h2>
+        <span className="payment-review-badges">
+          {order.live && <span className="badge">{ar ? 'المحل شغال' : 'Shop is live'}</span>}
+          {order.correction && (
+            <span className="badge">{ar ? 'تحويل مصحّح' : 'Corrected transfer'}</span>
+          )}
+        </span>
+      </div>
+      <div className="payment-review-body">
+        <dl className="onboarding-summary">
+          <dt>{ar ? 'الباقة' : 'Plan'}</dt>
+          <dd>
+            <bdi>{order.plan_name}</bdi> · {expected} {ar ? 'شهريًا' : 'a month'}
+          </dd>
+          <dt>{ar ? 'صاحب المحل' : 'Owner'}</dt>
+          <dd>
+            <bdi>{order.owner_name}</bdi>
+            {order.owner_email && (
+              <>
+                {' · '}
+                <a href={'mailto:' + order.owner_email} dir="ltr">
+                  {order.owner_email}
+                </a>
+              </>
+            )}
+          </dd>
+          {sentAt && (
+            <>
+              <dt>{ar ? 'وصل الإيصال' : 'Receipt sent'}</dt>
+              <dd>{sentAt}</dd>
+            </>
+          )}
+          <dt>{ar ? 'حساب الاستلام' : 'Receiving account'}</dt>
+          <dd>
+            <bdi dir="ltr">{order.recipient_account}</bdi>
+          </dd>
+          <dt>{ar ? 'رقم العملية من التاجر' : 'Owner’s reference'}</dt>
+          <dd>
+            <bdi dir="ltr">{order.submitted_reference}</bdi>
+          </dd>
+        </dl>
+        <a className="payment-review-receipt" href={receiptUrl} target="_blank" rel="noreferrer">
+          <img src={receiptUrl} alt={ar ? 'صورة الإيصال' : 'Receipt image'} loading="lazy" />
+          <span>{ar ? 'افتح الإيصال بالحجم الكامل' : 'Open full-size receipt'}</span>
+        </a>
+      </div>
       <form onSubmit={confirm} aria-busy={busy}>
         <p>
           {ar
@@ -191,6 +235,7 @@ function PaymentReview({
             step="0.01"
             required
             disabled={busy}
+            placeholder={String(order.amount_minor / 100)}
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
           />
@@ -206,24 +251,42 @@ function PaymentReview({
           </button>
         </div>
       </form>
-      <form onSubmit={reject} aria-busy={busy}>
-        <label>
-          {ar ? 'سبب الرفض اللي هيظهر للتاجر' : 'Rejection reason shown to the merchant'}
-          <textarea
-            required
-            minLength={4}
-            maxLength={500}
-            disabled={busy}
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-          />
-        </label>
-        <div className="form-actions">
-          <button className="secondary" disabled={busy || reason.trim().length < 4}>
-            {ar ? 'ارفض التحويل' : 'Reject transfer'}
-          </button>
-        </div>
-      </form>
+      <details className="payment-review-reject">
+        <summary>{ar ? 'التحويل مش مظبوط؟ ارفضه' : 'Transfer not right? Reject it'}</summary>
+        <form onSubmit={reject} aria-busy={busy}>
+          <p className={order.live ? 'notice error' : 'muted'}>
+            {order.live
+              ? ar
+                ? 'المحل ده شغال دلوقتي. الرفض هيوقفه لحد ما التاجر يصحّح التحويل، وهيوصله إيميل بالسبب.'
+                : 'This shop is live. Rejecting pauses it until the owner corrects the transfer; they get an email with the reason.'
+              : ar
+                ? 'التاجر هيوصله إيميل بالسبب ويقدر يصحّح التحويل.'
+                : 'The owner gets an email with the reason and can correct the transfer.'}
+          </p>
+          <label>
+            {ar ? 'سبب الرفض اللي هيظهر للتاجر' : 'Rejection reason shown to the merchant'}
+            <textarea
+              required
+              minLength={4}
+              maxLength={500}
+              disabled={busy}
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+            />
+          </label>
+          <div className="form-actions">
+            <button className="danger" disabled={busy || reason.trim().length < 4}>
+              {order.live
+                ? ar
+                  ? 'ارفض ووقّف المحل'
+                  : 'Reject and pause shop'
+                : ar
+                  ? 'ارفض التحويل'
+                  : 'Reject transfer'}
+            </button>
+          </div>
+        </form>
+      </details>
     </article>
   );
 }

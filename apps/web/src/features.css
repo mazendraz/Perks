@@ -2804,3 +2804,54 @@ input[inputmode='numeric'] {
 .small-print {
   font-size: 12px;
 }
+/* Platform review of self-service InstaPay transfers. */
+.payment-review-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.payment-review-head h2 {
+  margin: 0;
+}
+.payment-review-badges {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.payment-review-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 180px;
+  gap: 16px;
+  align-items: start;
+}
+.payment-review-receipt {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+  text-align: center;
+}
+.payment-review-receipt img {
+  width: 100%;
+  max-height: 240px;
+  object-fit: contain;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #fafafc;
+}
+.payment-review-reject {
+  margin-block-start: 12px;
+  border-top: 1px solid var(--border);
+  padding-block-start: 8px;
+}
+.payment-review-reject > summary {
+  cursor: pointer;
+  font-weight: 700;
+  padding-block: 8px;
+}
+@media (max-width: 640px) {
+  .payment-review-body {
+    grid-template-columns: 1fr;
+  }
+}

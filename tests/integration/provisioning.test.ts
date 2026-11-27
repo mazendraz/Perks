@@ -199,6 +199,12 @@ test('onboarding orders quote the server catalog and reuse a quote on retry', as
   assert.equal(queue.statusCode, 200, queue.body);
   const queued = queue.json().orders.find((row: { id: string }) => row.id === id);
   assert.ok(queued);
+  // The reviewer sees who is paying for what, when, and whether the shop is live yet.
+  assert.equal(queued.plan_key, plan.plan_key);
+  assert.equal(queued.owner_email, 'owner@bunn.test');
+  assert.equal(queued.live, false);
+  assert.equal(queued.correction, false);
+  assert.ok(Date.parse(queued.receipt_submitted_at) > 0);
   const receipt = await app.inject({
     url: reviewPath + '/' + id + '/receipt?version=' + queued.receipt_key,
     headers: pa,

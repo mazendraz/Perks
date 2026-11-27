@@ -523,6 +523,8 @@ const TAGS: Record<PublicPlanKey, string> = {
   scale: 'سلسلة',
 };
 
+/** Plans an owner can sign up for and pay on the site (monthly); kept in step with migration 067. */
+const SELF_SERVE_PLANS = new Set<string>(['starter', 'growth', 'pro']);
 const plansBox = one<HTMLElement>('[data-plans]');
 const planCards = publicPlanCatalog.map((p) => {
   const card = el('article', 'plan');
@@ -540,13 +542,15 @@ const planCards = publicPlanCatalog.map((p) => {
   const detail = el('p', 'plan-detail');
   detail.hidden = true;
   const cta = el('a', 'btn navy wide', 'عايز ' + p.name);
-  cta.target = '_blank';
-  cta.rel = 'noopener noreferrer';
+  // Under a self-service CTA, WhatsApp stays one tap away for owners who would rather talk first.
+  const alt = el('a', 'plan-alt', 'أو كلّمنا على واتساب');
+  alt.target = '_blank';
+  alt.rel = 'noopener noreferrer';
   const foot = el('div', 'plan-foot');
-  foot.append(detail, cta);
+  foot.append(detail, cta, alt);
   card.append(badge, head, priceRow, sub, list, foot);
   plansBox.append(card);
-  return { plan: p, card, badge, amount, per, sub, detail, cta };
+  return { plan: p, card, badge, amount, per, sub, detail, cta, alt };
 });
 
 const COMPARE: [string, (p: PublicPlan) => string][] = [
@@ -614,7 +618,7 @@ function renderPlans() {
         ' في الشهر'
       : '';
     c.cta.className = 'btn wide ' + (isRec ? 'lime' : 'navy');
-    c.cta.href = whatsapp(
+    const chat = whatsapp(
       'أهلًا Perks، عايز باقة ' +
         p.name +
         '. عندي ' +
@@ -625,6 +629,19 @@ function renderPlans() {
         billing +
         '.',
     );
+    // Sign-up on the site takes the monthly Starter, Growth and Pro plans; the rest is a chat.
+    const selfServe = !state.annual && SELF_SERVE_PLANS.has(p.key);
+    c.cta.textContent = selfServe ? 'ابدأ بـ ' + p.name : 'عايز ' + p.name;
+    c.cta.href = selfServe ? '/onboarding/signup?plan=' + p.key : chat;
+    if (selfServe) {
+      c.cta.removeAttribute('target');
+      c.cta.removeAttribute('rel');
+    } else {
+      c.cta.target = '_blank';
+      c.cta.rel = 'noopener noreferrer';
+    }
+    c.alt.href = chat;
+    c.alt.hidden = !selfServe;
     c.detail.hidden = !isRec;
     if (isRec && r.kind === 'plan') {
       const q = r.quote;

@@ -14,6 +14,7 @@ import {
 import { suggestedStamps } from '../../../../packages/contracts/src/branding.js';
 import { publicPlanCatalog } from '../../../../packages/contracts/src/plan-catalog.js';
 import type { MerchantOnboardingSetup } from '../../../../packages/contracts/src/merchant-onboarding.js';
+import { SIGNUP_PLAN_KEY } from './MerchantSignup.js';
 
 type Draft = {
   logo_id?: string | null;
@@ -595,7 +596,16 @@ function PaymentStep({
   onOrder: (order: Order) => void;
 }) {
   const ar = lang === 'ar';
-  const [selected, setSelected] = useState(order?.plan_key ?? plans[0]?.plan_key ?? '');
+  const [selected, setSelected] = useState(() => {
+    if (order?.plan_key) return order.plan_key;
+    let picked: string | null = null;
+    try {
+      picked = localStorage.getItem(SIGNUP_PLAN_KEY);
+    } catch {
+      /* Storage blocked: fall back to the first plan. */
+    }
+    return plans.find((plan) => plan.plan_key === picked)?.plan_key ?? plans[0]?.plan_key ?? '';
+  });
   const [choosing, setChoosing] = useState(!order || !!order.rejection_reason);
   const [error, setError] = useState<unknown>(null);
   const [busy, setBusy] = useState(false);

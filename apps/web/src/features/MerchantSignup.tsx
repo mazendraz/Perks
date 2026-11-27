@@ -3,9 +3,24 @@ import type { Language } from '../../../../packages/contracts/src/index.js';
 import { api, errorText } from '../api.js';
 
 const RESEND_AFTER_SECONDS = 60;
+/** The plan picked on the landing page, preselected later in the setup's payment step. */
+export const SIGNUP_PLAN_KEY = 'perks-signup-plan';
+const PLAN_NAMES: Record<string, string> = { starter: 'Starter', growth: 'Growth', pro: 'Pro' };
+
+function rememberPlan(): string | null {
+  const plan = new URLSearchParams(location.search).get('plan') ?? '';
+  if (!PLAN_NAMES[plan]) return null;
+  try {
+    localStorage.setItem(SIGNUP_PLAN_KEY, plan);
+  } catch {
+    /* Storage blocked: the owner simply picks the plan again later. */
+  }
+  return plan;
+}
 
 export function MerchantSignup({ lang }: { lang: Language }) {
   const ar = lang === 'ar';
+  const [plan] = useState(rememberPlan);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [busy, setBusy] = useState(false);
@@ -113,6 +128,15 @@ export function MerchantSignup({ lang }: { lang: Language }) {
                 ? 'اكتب اسمك وإيميلك وهنبعتلك لينك تختار منه باسورد. بعدها تجهّز محلك في 4 خطوات وتدفع الاشتراك الشهري بـ InstaPay.'
                 : 'Enter your name and email and we will send you a link to choose a password. Then set up your shop in four steps and pay the monthly plan by InstaPay.'}
             </p>
+            {plan && (
+              <p className="notice">
+                {ar ? 'اخترت باقة ' : 'You picked the '}
+                <bdi>
+                  <strong>{PLAN_NAMES[plan]}</strong>
+                </bdi>
+                {ar ? '. تقدر تغيّرها وقت الدفع.' : ' plan. You can change it at payment.'}
+              </p>
+            )}
             <form onSubmit={submit} aria-busy={busy}>
               <label>
                 {ar ? 'اسمك' : 'Your name'}

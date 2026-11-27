@@ -858,6 +858,16 @@ html:not(.js) .tap {
   flex-direction: column;
   gap: 10px;
 }
+.plan-alt {
+  align-self: center;
+  font-size: 14px;
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.plan-alt[hidden] {
+  display: none;
+}
 .plan-detail {
   background: var(--lime);
   border-radius: 10px;

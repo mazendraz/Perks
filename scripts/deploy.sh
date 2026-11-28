@@ -81,8 +81,17 @@ main() {
   echo "==> npm run build"
   npm run build
 
-  echo "==> npm run db:migrate"
-  npm run db:migrate
+  # The live server may still run with APP_ENV=development, where db:migrate would not dump on
+  # its own. A release always dumps first: no verified backup, no migration (db/migrate.ts).
+  # Overridable with MIGRATION_BACKUP / MIGRATION_BACKUP_DIR, but never silently skipped here.
+  local backup_mode="${MIGRATION_BACKUP:-always}"
+  local backup_dir="${MIGRATION_BACKUP_DIR:-/var/backups/perks/pre-migrate}"
+  if [[ "$backup_mode" == "off" ]]; then
+    echo "ERROR: MIGRATION_BACKUP=off is refused by the native deploy." >&2
+    exit 1
+  fi
+  echo "==> npm run db:migrate (pre-migration backup: $backup_mode -> $backup_dir)"
+  MIGRATION_BACKUP="$backup_mode" MIGRATION_BACKUP_DIR="$backup_dir" npm run db:migrate
 
   local restart_at
   restart_at="$(date +%s)"

@@ -275,7 +275,17 @@ try {
     const asset = login.body.match(/(?:src|href)="(\/assets\/[^"?]+\.js)"/)?.[1];
     assert.ok(asset);
     assert.match(String((await request(asset)).headers['cache-control']), /immutable/);
-    pass('HTTPS proxy, SPA fallback, HSTS, CSP and static cache headers verified');
+    // "/" is the shop-owner landing page; the app opens at "/app" and the old link redirects home.
+    const landing = await request('/');
+    assert.equal(landing.status, 200);
+    assert.equal(landing.headers['cache-control'], 'no-cache');
+    assert.match(landing.body, /href="\/login"/);
+    assert.doesNotMatch(landing.body, /id="root"/);
+    assert.match((await request('/app')).body, /id="root"/);
+    const old = await request('/business');
+    assert.equal(old.status, 308);
+    assert.equal(old.headers.location, '/');
+    pass('HTTPS proxy, landing page, SPA fallback, HSTS, CSP and static cache headers verified');
     for (const flag of ['SUPERUSER', 'BYPASSRLS']) {
       await checked(
         [

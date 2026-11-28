@@ -8,6 +8,14 @@ import {
 } from '../../../../packages/contracts/src/plan-catalog.js';
 import { recommendPlan, annualPrice } from '../../../../packages/domain/src/plan-recommendation.js';
 
+/* --------------------------------------------------------- installed app */
+
+// Home-screen installs from before the app moved to "/app" still open "/"; send them to the app.
+const standalone =
+  window.matchMedia?.('(display-mode: standalone)').matches ||
+  (navigator as Navigator & { standalone?: boolean }).standalone === true;
+if (standalone) location.replace('/app' + location.search);
+
 /* ------------------------------------------------------------------ helpers */
 
 function one<T extends Element>(selector: string, root: ParentNode = document): T {

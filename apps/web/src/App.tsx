@@ -149,15 +149,15 @@ export function App() {
       // A customer without a session may already have the anonymous bootstrap
       // CSRF token. A language refresh must not erase it before registration.
       if (portal !== 'customer') setCsrf('');
-      // The home-screen app opens "/". A staff session was found above and is routed to its
+      // The home-screen app opens "/app". A staff session was found above and is routed to its
       // portal; otherwise a card linked to this device opens the card, and anyone else signs in.
-      if (signedOut && !portal && location.pathname === '/') {
+      if (signedOut && !portal && location.pathname === '/app') {
         const home = await customerHome();
-        if (location.pathname === '/') {
+        if (location.pathname === '/app') {
           history.replaceState({}, '', home);
           window.dispatchEvent(new PopStateEvent('popstate'));
           // A route into another portal re-runs this refresh for the new page, so keep the
-          // loading screen. "/login" has the same (undefined) portal as "/", so nothing would
+          // loading screen. "/login" has the same (undefined) portal as "/app", so nothing would
           // re-run: settle here instead of leaving the visitor on the loading screen.
           if (portalForPath(home) !== portal) return;
         }
@@ -199,7 +199,7 @@ export function App() {
     if (route.endsWith('/login') && route !== '/login' && route !== '/customer/login') {
       history.replaceState({}, '', '/login');
       window.dispatchEvent(new PopStateEvent('popstate'));
-    } else if ((route === '/' || route === '/portals') && session && sessionPortal === portal)
+    } else if ((route === '/app' || route === '/portals') && session && sessionPortal === portal)
       navigate(homeRoute(session));
   }, [session, sessionPortal, portal, route]);
   useEffect(() => {
@@ -286,7 +286,7 @@ export function App() {
         <header className="topbar" data-portal={portal} ref={setHeader}>
           <button
             className="wordmark"
-            onClick={() => navigate(portal ? '/' + portal : '/')}
+            onClick={() => navigate(portal ? '/' + portal : '/app')}
             aria-label={ar ? 'الرئيسية - Perks' : 'Perks home'}
           >
             <img className="perks-wordmark" src="/brand/perks-logo-wordmark.svg" alt="Perks" />
@@ -313,7 +313,7 @@ export function App() {
               card, so for them it lives in My account with a warning. */}
             {session &&
               portal !== 'customer' &&
-              route !== '/' &&
+              route !== '/app' &&
               route !== '/portals' &&
               route !== '/login' && (
                 <>
@@ -376,7 +376,7 @@ export function App() {
             <MerchantSignup lang={lang} />
           ) : route === '/onboarding' && session ? (
             <MerchantOnboarding key={session.user.id} lang={lang} />
-          ) : !session || route === '/login' || route === '/' || route === '/portals' ? (
+          ) : !session || route === '/login' || route === '/app' || route === '/portals' ? (
             <Login
               key={
                 route.startsWith('/join/')

@@ -7,12 +7,14 @@ async function main() {
   const { app, config } = await buildApp();
   const assets = resolve('apps/web/dist');
   if (existsSync(assets)) {
-    await app.register(fastifyStatic, { root: assets });
+    await app.register(fastifyStatic, { root: assets, index: false });
+    // "/" is the shop-owner landing page (a separate HTML entry); the app starts at "/app".
+    app.get('/', (_req, reply) =>
+      reply.header('Cache-Control', 'no-cache').sendFile('business/index.html'),
+    );
     app.setNotFoundHandler((req, reply) => {
       const path = req.url.split('?')[0];
-      // The shop-owner landing page is a separate HTML entry; "/" stays the customers' app.
-      if (path === '/business' || path === '/business/')
-        return reply.header('Cache-Control', 'no-cache').sendFile('business/index.html');
+      if (path === '/business' || path === '/business/') return reply.redirect('/', 308);
       if (
         req.url.startsWith('/api/') ||
         req.url.startsWith('/health/') ||

@@ -1,7 +1,7 @@
 import { readFile, readdir } from 'node:fs/promises';
 import { chmodSync, mkdirSync, statSync } from 'node:fs';
 import { execFileSync } from 'node:child_process';
-import { join, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { createHash } from 'node:crypto';
 import pg from 'pg';
 import { readMigrationConfig } from '../apps/api/src/config.js';
@@ -146,5 +146,18 @@ function backupBeforeMigrating(url: string, firstPending: string) {
   );
   chmodSync(file, 0o600);
   if (!statSync(file).size) throw new Error('Pre-migration backup is empty: ' + file);
+  // A dump that pg_restore cannot read is no backup: list its table of contents before migrating.
+  const restore =
+    process.env.PG_RESTORE_PATH ||
+    (process.env.PG_DUMP_PATH
+      ? join(dirname(process.env.PG_DUMP_PATH), 'pg_restore')
+      : 'pg_restore');
+  const toc = execFileSync(restore, ['--list', file], {
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'inherit'],
+    maxBuffer: 64 * 1024 * 1024,
+  });
+  if (!/TABLE DATA public schema_migrations /.test(toc))
+    throw new Error('Pre-migration backup is unreadable or incomplete: ' + file);
   console.log('Pre-migration backup written: ' + file);
 }
